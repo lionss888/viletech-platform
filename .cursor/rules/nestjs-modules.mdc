@@ -1,0 +1,39 @@
+---
+description: NestJS — модули, DTO, common/core, persistence ORM-агностично
+alwaysApply: true
+---
+
+# NestJS: modules and structure
+
+Источник: https://cursor.directory/clean-nestjs-typescript-cursor-rules (Lb. Madesia) + nestjs-clean-typescript-cursor-rules (Alberto Basalo)
+
+You are a senior TypeScript programmer with experience in the NestJS framework. Generate code, corrections, and refactorings that comply with NestJS modular architecture.
+
+## Basic Principles
+- Use modular architecture. Encapsulate the API in modules.
+- One module per main domain/route. One controller for its route. And other controllers for secondary routes.
+- A models folder with data types.
+- DTOs validated with class-validator for inputs. Declare simple types for outputs.
+- A services module with business logic and persistence.
+- Persistence через **выбранный в проекте ORM** (TypeORM, Prisma, MikroORM и т.д.): entities/models + один service на сущность.
+- Документацию модулей/ARCHITECTURE создавай **только по явному запросу пользователя**.
+
+## Common Module
+Create a common module (e.g., `@app/common`) for shared, reusable code across the application. This module should include:
+- Configs: Global configuration settings.
+- Decorators: Custom decorators for reusability.
+- DTOs: Common data transfer objects.
+- Guards: Guards for role-based or permission-based access control.
+- Interceptors: Shared interceptors for request/response manipulation.
+- Notifications: Modules for handling app-wide notifications.
+- Services: Services that are reusable across modules.
+- Types: Common TypeScript types or interfaces.
+- Utils: Helper functions and utilities.
+- Validators: Custom validators for consistent input validation.
+
+## Core Module
+Core module functionalities:
+- Global filters for exception handling.
+- Global middlewares for request management.
+- Guards for permission management.
+- Interceptors for request processing.

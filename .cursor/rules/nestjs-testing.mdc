@@ -1,0 +1,19 @@
+---
+description: NestJS — Jest unit/e2e тесты для controllers и services
+alwaysApply: true
+---
+
+# NestJS: testing
+
+Источник: https://cursor.directory/clean-nestjs-typescript-cursor-rules / nestjs-clean-typescript-cursor-rules
+
+Согласовано с правилами построения: всегда создавай тесты к сервисам, модулям и публичным функциям.
+
+## Testing
+- Use the standard Jest framework for testing.
+- Write tests for each controller and service.
+- Write end to end tests for each api module.
+- Follow Arrange-Act-Assert; name variables clearly: inputX, mockX, actualX, expectedX.
+- Use test doubles for dependencies; prefer real behavior for cheap third-party calls.
+- Write acceptance tests for each module (Given-When-Then).
+- Не добавляй публичные smoke-эндпоинты вроде `admin/test` на controllers — для финтеха это риск.

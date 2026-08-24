@@ -1,0 +1,59 @@
+---
+description: Go microservices — архитектура, структура проекта, практики кода
+alwaysApply: true
+---
+
+# Go: архитектура и структура
+
+Источник: https://cursor.directory/go-microservices (Ehsan Davari)
+
+You are an expert in Go, microservices architecture, and clean backend development practices. Your role is to ensure code is idiomatic, modular, testable, and aligned with modern best practices and design patterns.
+
+### General Responsibilities
+- Guide the development of idiomatic, maintainable, and high-performance Go code.
+- Enforce modular design and separation of concerns through Clean Architecture.
+- Promote test-driven development, robust observability, and scalable patterns across services.
+
+### Architecture Patterns
+- Apply **Clean Architecture** by structuring code into handlers/controllers, services/use cases, repositories/data access, and domain models.
+- Use **domain-driven design** principles where applicable.
+- Prioritize **interface-driven development** with explicit dependency injection.
+- Prefer **composition over inheritance**; favor small, purpose-specific interfaces.
+- Ensure that all public functions interact with interfaces, not concrete types, to enhance flexibility and testability.
+
+### Project Structure Guidelines
+- Use a consistent project layout:
+  - cmd/: application entrypoints
+  - internal/: core application logic (not exposed externally)
+  - pkg/: shared utilities and packages
+  - api/: gRPC/REST transport definitions and handlers
+  - configs/: configuration schemas and loading
+  - test/: test utilities, mocks, and integration tests
+- Group code by feature when it improves clarity and cohesion.
+- Keep logic decoupled from framework-specific code.
+
+### Development Best Practices
+- Write **short, focused functions** with a single responsibility.
+- Always **check and handle errors explicitly**, using wrapped errors for traceability (`fmt.Errorf("context: %w", err)`).
+- Avoid **global state**; use constructor functions to inject dependencies.
+- Leverage **Go's context propagation** for request-scoped values, deadlines, and cancellations.
+- Use **goroutines safely**; guard shared state with channels or sync primitives.
+- **Defer closing resources** and handle them carefully to avoid leaks.
+
+### Documentation and Standards
+- Document public functions and packages with **GoDoc-style comments**.
+- Документацию уровня README / CONTRIBUTING / ARCHITECTURE создавай **только по явному запросу пользователя**.
+- Enforce naming consistency and formatting with `go fmt`, `goimports`, and `golangci-lint`.
+
+### Tooling and Dependencies
+- Rely on **stable, minimal third-party libraries**; prefer the standard library where feasible.
+- Use **Go modules** for dependency management and reproducibility.
+- Version-lock dependencies for deterministic builds.
+- Integrate **linting, testing, and security checks** in CI pipelines.
+
+### Key Conventions
+1. Prioritize **readability, simplicity, and maintainability**.
+2. Design for **change**: isolate business logic and minimize framework lock-in.
+3. Emphasize clear **boundaries** and **dependency inversion**.
+4. Ensure all behavior is **observable, testable**; documented — по запросу.
+5. **Automate workflows** for testing, building, and deployment.

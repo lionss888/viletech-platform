@@ -1,0 +1,142 @@
+Ветки всех sandbox-репозиториев vs ТД + vd-audit
+Дата: 24.08.2026
+Метод: fetch tip всех heads (--depth 1), скоринг ключевых enum/кабинетов vs ТД.
+Ветки: fea 280 | frontend 422 | exchange-backend 43 | exchange-frontend 22 | design-system 8.
+
+
+================================================================================
+0. vd-audit
+================================================================================
+
+Папка Documents/vd-audit на диске ПУСТАЯ (только .icloud-заглушки и пустые каталоги).
+Содержимое аудита восстановлено по локальным артефактам:
+
+- /Users/levpogosov/Downloads/fea-stage.zip
+  commit 53785a2373f4564239fca6f92a29ab7ffd86d622
+  == git origin/prod в sandbox6902635/fea  (байт-в-байт тот же tip)
+
+- /Users/levpogosov/Downloads/v360/fea-stage
+- /Users/levpogosov/Downloads/v360/frontend-stage
+
+Это и есть снимок «что точно работало» после аудита (≈ июль 2025).
+Пока iCloud не скачан — опираться на v360 + fea prod.
+
+
+================================================================================
+1. fea (бэкенд ВЭД) — 280 веток
+================================================================================
+
+Покрытие ТД (роли+статусы+документы+import/export):
+- 278/280 веток = продукт ВЭД (score ≥8/10)
+- 2 ветки без FormPayment: fta, v1-migration — не брать
+
+ENV-ветки (критично):
+
+| ветка      | дата tip      | INTERNAL CO | TREASURER / provider_invoice | score |
+|------------|---------------|-------------|------------------------------|-------|
+| prod       | 2025-07-16    | ДА (+controllers) | нет treasurer в ролях | 10  |
+| release_10 | 2025-07-09    | ДА          | нет                          | 10    |
+| develop    | 2025-05-22    | ДА + LOGIST | нет                          | 10    |
+| main       | 2026-04-08    | ДА + TREASURER + SENIOR_PROVIDER | да (частично) | 10 |
+| stage      | 2026-08-18    | НЕТ (роль и controllers удалены) | ДА (treasurer, attraction, provider_invoice, refund) | 9 |
+| dev        | ~как stage    | НЕТ         | ДА                           | 9     |
+
+ВАЖНО:
+- ТД требует Internal + External compliance.
+- Аудит-снимок = prod = 53785a2.
+- stage/dev новее и богаче платежами, но УБРАЛИ internal compliance — не совпадают с ТД «как написано» и ломают пару с frontend stage (где UI internal CO ещё есть).
+
+Уверенно брать (бэкенд под ТД):
+1) fea origin/prod          — аудит-verified baseline
+2) fea origin/release_10    — близкий релиз того же поколения
+3) fea origin/main          — если нужны treasurer/senior_provider И сохранить INTERNAL CO
+
+Не брать как единственную базу без доработки:
+- fea origin/stage / origin/dev — нет INTERNAL CO
+
+
+================================================================================
+2. frontend — 422 ветки
+================================================================================
+
+| ветка      | дата tip   | продукт                         | score |
+|------------|------------|----------------------------------|-------|
+| stage      | 2026-08-19 | ВЭД UI полный (admin-ved: ICO/CO/manager/provider/treasurer/attraction) | 10 |
+| develop    | 2026-08-19 | то же                            | 10 |
+| release_10 | 2025-07-08 | ВЭД UI (с INTERNAL CO)           | 10 |
+| prod       | 2024-09-16 | Crypto 360 ONLY                  | 0  |
+
+- 400/422 веток — ВЭД (score≥8)
+- 13 веток crypto-only (включая prod)
+- Кабинеты на stage: attraction-manager, compliance-officer, internal-compliance-officer, provider, treasurer, payments
+
+Уверенно брать:
+1) frontend origin/stage или develop — актуальный ВЭД UI
+2) frontend origin/release_10 или локальный v360/frontend-stage — пара к fea prod (аудит)
+
+НЕ брать: frontend origin/prod (это Crypto 360)
+
+
+================================================================================
+3. exchange-backend / exchange-frontend
+================================================================================
+
+main — пустые README-заготовки на всех проверках.
+stage/dev и почти все feature — продукт КРИПТО-ОБМЕНА:
+- роли: User, ExchangeManager, ComplianceOfficer
+- статусы FormWaitingVerification (обмен), НЕ агентский ВЭД-пакет
+- score 2/10 vs ТД
+
+Уверенно: НЕ база для платформы банка по ТД.
+Можно брать только как соседний exchange-продукт / референс статусов FORM_*.
+
+
+================================================================================
+4. design-system — 8 веток
+================================================================================
+
+main — пустой README.
+feature/* — Storybook UI-kit (button, icons, loader, textarea, mobile…).
+Нет FormPayment / ролей / ВЭД-домена.
+
+Уверенно: только опциональный UI-kit, не бизнес-логика.
+
+
+================================================================================
+5. ЧТО БРАТЬ УВЕРЕННО (уровень уверенности высокий)
+================================================================================
+
+A. База «аудит подтвердил, совпадает с ТД 1:1 по ролям/статусам/документам»
+   Backend:  sandbox6902635/fea @ prod (= Downloads/fea-stage.zip = v360/fea-stage)
+   Frontend: sandbox6902635/frontend @ release_10  ИЛИ  v360/frontend-stage
+   Почему: commit fea prod = артефакт аудита; есть User / Internal CO / External CO /
+   Manager / Provider; FORM_*; агентский договор / поручение / отчёт; import/export;
+   аванс/постоплата; ТН ВЭД.
+
+B. Актуальный UI ВЭД (август 2026)
+   Frontend: origin/stage или origin/develop
+   Backend для пары: НЕ origin/stage (там нет Internal CO).
+   Брать fea origin/main (есть INTERNAL CO + treasurer) и сверять API,
+   либо вернуть Internal CO из prod/main в stage перед использованием stage.
+
+C. Не брать как основу ВЭД
+   - frontend prod
+   - exchange-backend / exchange-frontend (любые ветки)
+   - design-system (кроме UI-примитивов)
+   - fea: fta, v1-migration
+   - fea stage/dev без восстановления Internal CO — противоречит ТД
+
+D. Feature/release ветки fea+frontend (сотни)
+   Почти все — вариации того же ВЭД-продукта; не дают нового «другого продукта».
+   Брать точечно только если нужен конкретный тикет (VM-5 SWIFT, agency-agreement и т.д.),
+   поверх базы A или B.
+
+
+================================================================================
+6. ОГРАНИЧЕНИЯ ЧЕСТНОСТИ
+================================================================================
+
+- Просмотрены tips всех heads, не полная история каждого коммита внутри ветки.
+- vd-audit в Documents не прочитан с диска (iCloud); эквивалент = v360 + fea prod.
+- «99.9%» относится к выбору репозитория/ветки как базы под ТД, не к баг-фри рантайму
+  без прогона e2e на стенде.

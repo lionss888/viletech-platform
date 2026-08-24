@@ -1,0 +1,135 @@
+Анализ указанных репозиториев sandbox vs ТД ВЭД
+Дата: 24.08.2026
+
+Ссылки:
+- https://gitlab.com/sandbox6902635/design-system
+- https://gitlab.com/sandbox6902635/exchange-backend
+- https://gitlab.com/sandbox6902635/exchange-frontend
+- https://gitlab.com/sandbox6902635/fea
+- https://gitlab.com/sandbox6902635/frontend
+
+
+================================================================================
+1. sandbox6902635/fea  — ГЛАВНЫЙ ИСТОЧНИК ПОД ТД
+================================================================================
+
+Продукт: Fea360, NestJS backend внешнеэкономических платежей.
+Это не «похожий обменник», а тот же домен, что в документе начальника отдела.
+
+Роли (AccountRole) — прямое покрытие ТД +:
+- USER
+- INTERNAL_COMPLIANCE_OFFICER
+- COMPLIANCE_OFFICER          (= external compliance из ТД)
+- MANAGER
+- PROVIDER (+ SENIOR_PROVIDER)
+- TREASURER, ROOT, REPORTER, ONE_C  — сверх ТД
+
+Статусы заявки (FormPaymentStatus) — дословное совпадение с ТД:
+- FORM_WAITING_VERIFICATION
+- FORM_WAITING_CORRECTIONS
+- FORM_ACCEPTED
+- CANCELED_BY_COMPLIANCE_OFFICER
+- COMPLETED
+плюс внутренний комплаенс организации:
+- ORGANIZATION_WAITING_VERIFICATION / ORGANIZATION_VERIFICATION
+- CANCELED_BY_INTERNAL_COMPLIANCE_OFFICER
+
+Стадии (FormPaymentStage) = процесс из ТД:
+организация → внешний комплаенс → агентский договор → поручение
+→ платёж клиент/контрагент → отчёт агента → отгрузка → completed
+
+Направление/условия из ТД уже в коде:
+- IMPORT / EXPORT
+- GOOD / SERVICE
+- ADVANCE / POST_PAYMENT
+- ТН ВЭД (hsCode), контрагент RUSSIAN/FOREIGN
+- распознавание инвойса, ChatGPT-анализ контрагента
+
+Документы:
+- агентский договор (CONTRACT_WAITING*)
+- поручение принципала (SIGNING_ORDER*, генерация PDF/DOCX)
+- отчёт агента (REPORT_*, GENERATE_AGENT_REPORT)
+- инвойс провайдера (PROVIDER_INVOICE)
+- поручение казначея
+шаблоны Excel с полями: курс, % агента, ТНВЭД, SWIFT, получатель
+
+Кабинеты API под роли:
+form-payment/web/{site, manager, compliance-officer,
+internal-compliance-officer, provider, treasurer, admin, one-c}
+
+Вывод: брать fea как backend-основу ВЭД-платформы.
+ТД описывает подмножество уже реализованного процесса.
+
+
+================================================================================
+2. sandbox6902635/frontend
+================================================================================
+
+Nuxt-кабинет Crypto 360 (сделки CRYPTO_TO_FIAT / FIAT_TO_CRYPTO).
+Роли: CLIENT, COMPLIANCE_OFFICER, OPERATION_MANAGER, VALIDATION_MANAGER.
+Документы: invoice / act, не агентский пакет ВЭД.
+
+Полезность для ТД: средняя — UX кабинетов/стадий, не домен ВЭД.
+Не путать с fea.
+
+
+================================================================================
+3. sandbox6902635/exchange-backend
+   sandbox6902635/exchange-frontend
+================================================================================
+
+Пустые GitLab-заготовки (только шаблонный README, initial commit).
+Рабочий код обменника лежит локально: Documents/_Exchange Platform
+(Nest + Nuxt, статусы form_waiting_* — но продукт = crypto exchange).
+
+Для ТД ВЭД сами gitlab-репо бесполезны; локальная копия — как соседний продукт.
+
+
+================================================================================
+4. sandbox6902635/design-system
+================================================================================
+
+Пустой README-заглушка. Не использовать.
+
+
+================================================================================
+5. ОБНОВЛЁННЫЙ ПРИОРИТЕТ
+================================================================================
+
+1. sandbox/fea                          ← backend ВЭД = ТД
+2. sandbox/frontend + monorepo          ← UX/процесс обменника, не ВЭД-документы
+3. _Exchange Platform (локально)        ← тот же язык FORM_*, другой продукт
+4. fintech-platform / amg_all           ← банкинг-каркас и коннекторы
+5. gitlab AMG, AMG-Flow, 360Flow, DS    ← слабо / пусто
+
+Практический вывод:
+реализацию для отдела ВЭД начинать от fea, а не собирать флоу заявок
+из fintech/AMG. ТД — спецификация кабинетов/документов поверх Fea360.
+Недостающее относительно ТД скорее во frontend fea (его в списке нет)
+и в адаптации ролей казначея/1C, если банку они не нужны.
+
+
+================================================================================
+6. УТОЧНЕНИЕ ПО ВЕТКАМ (24.08.2026)
+================================================================================
+
+Первичный разбор НЕ покрывал все ветки: клон был --depth 1 по default HEAD.
+
+Что реально смотрели сначала:
+- fea          → main (default)
+- frontend     → prod (default)  ← там Crypto 360, НЕ полный ВЭД UI
+- exchange-*   → main            ← пустые заготовки
+- design-system→ main            ← пусто
+
+После проверки веток:
+- fea: stage / develop / prod / main — ВЭД-бэкенд на всех; роли чуть отличаются
+  (main: INTERNAL_COMPLIANCE; stage: +ATTRACTION_MANAGER; develop: +LOGIST*)
+- frontend stage/develop — ЭТО UI Fea/ВЭД (FormPayment, internal CO, provider,
+  agent report, admin-ved). prod — Crypto 360. Вывод «frontend бесполезен для ТД»
+  был неточен: смотреть stage/develop, не prod.
+- exchange-backend/frontend: main пустой; stage/dev содержат полный обменник
+  (Nest/Nuxt), близкий к локальному _Exchange Platform.
+- design-system: на feature/* есть компоненты; main пустой.
+
+Итог: для ТД рабочая пара — fea (stage/develop) + frontend (stage/develop).
+Все feature/release ветки (~сотни) не разбирались по одной.

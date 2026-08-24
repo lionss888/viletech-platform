@@ -1,0 +1,17 @@
+---
+description: Go microservices — unit/integration тесты, покрытие, моки
+alwaysApply: true
+---
+
+# Go: testing
+
+Источник: https://cursor.directory/go-microservices (Ehsan Davari)
+
+Согласовано с правилами построения: всегда создавай тесты к сервисам, модулям и публичным функциям.
+
+### Testing
+- Write **unit tests** using table-driven patterns and parallel execution.
+- **Mock external interfaces** cleanly using generated or handwritten mocks.
+- Separate **fast unit tests** from slower integration and E2E tests.
+- Ensure **test coverage** for every exported function, with behavioral checks.
+- Use tools like `go test -cover` to ensure adequate test coverage.

@@ -1,0 +1,25 @@
+---
+description: Go microservices — безопасность, resilience, concurrency, performance
+alwaysApply: true
+---
+
+# Go: resilience, security, concurrency
+
+Источник: https://cursor.directory/go-microservices (Ehsan Davari)
+
+### Security and Resilience
+- Apply **input validation and sanitization** rigorously, especially on inputs from external sources.
+- Use secure defaults for **JWT, cookies**, and configuration settings.
+- Isolate sensitive operations with clear **permission boundaries**.
+- Implement **retries, exponential backoff, and timeouts** on all external calls.
+- Use **circuit breakers and rate limiting** for service protection.
+- Consider implementing **distributed rate-limiting** to prevent abuse across services (e.g., using Redis).
+
+### Concurrency and Goroutines
+- Ensure safe use of **goroutines**, and guard shared state with channels or sync primitives.
+- Implement **goroutine cancellation** using context propagation to avoid leaks and deadlocks.
+
+### Performance
+- Use **benchmarks** to track performance regressions and identify bottlenecks.
+- Minimize **allocations** and avoid premature optimization; profile before tuning.
+- Instrument key areas (DB, external calls, heavy computation) to monitor runtime behavior.
