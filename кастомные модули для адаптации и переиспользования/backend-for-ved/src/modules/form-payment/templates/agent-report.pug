@@ -1,0 +1,201 @@
+doctype html
+html(lang="ru")
+    head
+        meta(charset="UTF-8")
+        style.
+            body {
+                font-family: Arial, sans-serif;
+                max-width: 800px;
+                margin: 20px auto;
+                padding: 20px;
+                line-height: 1.25;
+                font-size: 10pt;
+            }
+
+            .header {
+                text-align: center;
+            }
+
+            .date {
+                text-align: right;
+                margin-bottom: 20px;
+            }
+
+            .content {
+                text-align: justify;
+                margin-bottom: 20px;
+            }
+
+            .signatures {
+                width: 100%;
+                margin-top: 10px;
+                page-break-inside: avoid;
+                border-collapse: collapse;
+            }
+
+            .signature-cell {
+                width: 50%;
+                padding-left: 15px;
+                padding-right: 15px;
+                border: 1px solid #000;
+                vertical-align: top;
+                text-align: left;
+            }
+
+            .title {
+                font-weight: normal;
+                margin-bottom: 10px;
+            }
+
+            .position {
+                margin: 0;
+            }
+
+            .signature-container {
+                position: relative;
+                height: 50px; /* Важно: фиксированная высота */
+                margin-bottom: 10px;
+            }
+
+            .signature-image {
+                position: absolute;
+                left: 30px;
+                bottom: 0px;
+                object-fit: contain;
+                background-size: contain;
+                max-width: 100px;
+                max-height: 100px;
+                height: auto;
+                z-index: 1;
+            }
+
+            .stamp-image {
+                position: absolute;
+                left: 110px;
+                bottom: -100px;
+                object-fit: contain;
+                background-size: contain;
+                max-width: 200px;
+                max-height: 200px;
+                height: auto;
+                z-index: 1;
+            }
+
+            .signature-line {
+                position: absolute;
+                left: 0;
+                bottom: 0;
+                width: 200px;
+                margin: 0;
+                text-align: center;
+            }
+
+            .footnote {
+                font-size: 0.8em;
+                margin-top: 5px;
+                page-break-inside: avoid;
+            }
+
+    body
+        .header Отчёт агента № #{reportNumber}
+
+        .date #{date} г.
+
+        .content
+            p
+                | #{agentCompany}, именуемое в дальнейшем «Агент», в лице #{agentPositionGenitive}
+                | #{agentNameGenitive}, действующего на основании Устава, представляет,
+                | а #{principalCompany}, именуемое в дальнейшем «Принципал»,
+                | в лице #{principalPositionGenitive} #{principalNameGenitive}, действующего на основании
+                | #{principalBasis}, в рамках Агентского Договора
+                | № #{contractInfo.number} от #{contractInfo.date} года, именуемое в дальнейшем "Договор",
+                | принимает настоящий Отчёт об исполнении Поручения Принципала
+                | № #{orderNumber} от #{orderDate} года, именуемое в дальнейшем «Поручение».
+
+            ol
+                li
+                    | В результате оказания услуг Агент, по поручению и в интересах Принципала,
+                    | перечислил&nbsp;
+                    span.highlight #{beneficiaryName} от invoice #{invoiceNumber} date #{invoiceDate}
+                    |  &nbsp;денежные средства
+                    | в сумме&nbsp;
+                    span.highlight #{amount} #{currency}
+                    | &nbsp;(#{amountInWords}), что эквивалентно сумме&nbsp;
+                    span.highlight #{convertedAmount}&nbsp; #{convertedCurrency}&nbsp;
+                    |  (#{convertedAmountInWords}).
+
+                li
+                    | Факт исполнения обязательств Агентом в соответствии с пунктом 2.3 Договора подтверждается
+                    | банковским документом и является неотъемлемой частью к настоящему Отчёту Агента.
+                    if paymentDate && paymentNumber
+                        |  Платёжное поручение от #{paymentDate} № #{paymentNumber}.
+
+                li
+                    | В рамках Договора Принципал перечисляет в возмещение затрат Агенту сумму
+                    | в размере&nbsp;
+                    span.highlight #{convertedAmount} #{convertedCurrency}&nbsp;
+                    | (#{convertedAmountInWords}).
+
+                li
+                    | Сумма вознаграждения Агента в соответствии с пунктом 3.2 Договора составляет&nbsp;
+                    span.highlight #{commissionAmount} #{convertedCurrency}
+                    |, которая определяется как&nbsp;
+
+                    if commissionPercent && !feeFix
+                        span.highlight #{commissionPercent}%
+                        | &nbsp;от&nbsp;
+                        span.highlight #{amount} #{currency}
+                    if !commissionPercent && feeFix
+                        span.highlight #{feeFix} #{feeFixCurrency}
+                    if commissionPercent && feeFix
+                        span.highlight #{commissionPercent}%
+                        | &nbsp;от&nbsp;
+                        span.highlight #{amount} #{currency}
+                        | &nbsp;и #{feeFix} #{feeFixCurrency}
+
+                    |, пересчитанных в #{convertedCurrency} по курсу&nbsp;
+
+                    if commissionPercent && !feeFix
+                        span.highlight #{rate}
+                    if !commissionPercent && feeFix
+                        span.highlight #{currencyFeeRate}
+                    if commissionPercent && feeFix
+                        span.highlight #{rate} и #{currencyFeeRate} соответственно
+                    |, указанному(ой) в Поручении № #{orderNumber}
+                    | от #{orderDate} года.
+
+            p
+                | Услуги оказаны в установленные сроки, в полном объёме и с надлежащим качеством.
+                | Претензий друг к другу Стороны не имеют.
+
+            table.signatures
+                tr
+                    td.signature-cell
+                        p.title Принципал:
+                        .signature-container
+                            .signature-line _________________
+                        p.position #{principalPosition}
+                        p.position #{principalCompany}
+                        if principalName
+                            p.position #{principalName}
+                        else
+                            p &nbsp;
+
+                    td.signature-cell
+                        p.title Агент:
+                        .signature-container
+                            if agentSignatureBase64Full
+                                img.signature-image(src=agentSignatureBase64Full alt="Подпись")
+                            if agentStampBase64Full
+                                img.stamp-image(src=agentStampBase64Full alt="Печать")
+                            .signature-line _________________
+                        p.position #{agentPosition}
+                        p.position #{agentCompany}
+                        if agentName
+                            p.position #{agentName}
+                        else
+                            p &nbsp;
+
+
+        .footnote
+            | ² При необходимости Приложение №2 "Форма Отчета Агента" может быть дополнено необходимой информацией.

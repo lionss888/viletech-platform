@@ -1,0 +1,152 @@
+syntax = "proto3";
+
+package amg.events.v1;
+
+option go_package = "amg-flow-backend/internal/grpc/events";
+
+import "google/protobuf/timestamp.proto";
+import "google/protobuf/any.proto";
+
+// Event Bus - события между микросервисами
+service EventService {
+  rpc PublishEvent(PublishEventRequest) returns (PublishEventResponse);
+  rpc SubscribeToEvents(SubscribeToEventsRequest) returns (stream Event);
+  rpc GetEventHistory(GetEventHistoryRequest) returns (GetEventHistoryResponse);
+}
+
+// Event entity
+message Event {
+  string id = 1;
+  string event_type = 2;
+  string aggregate_id = 3;
+  string aggregate_type = 4;
+  google.protobuf.Any event_data = 5;
+  google.protobuf.Timestamp timestamp = 6;
+  string source_service = 7;
+  string correlation_id = 8;
+  string causation_id = 9;
+  int32 version = 10;
+}
+
+// Event types
+enum EventType {
+  EVENT_TYPE_UNSPECIFIED = 0;
+  
+  // User events
+  EVENT_TYPE_USER_CREATED = 1;
+  EVENT_TYPE_USER_UPDATED = 2;
+  EVENT_TYPE_USER_DELETED = 3;
+  EVENT_TYPE_USER_AUTHENTICATED = 4;
+  
+  // Payment events
+  EVENT_TYPE_WALLET_CREATED = 10;
+  EVENT_TYPE_WALLET_UPDATED = 11;
+  EVENT_TYPE_TRANSACTION_CREATED = 12;
+  EVENT_TYPE_TRANSACTION_PROCESSED = 13;
+  EVENT_TYPE_TRANSACTION_FAILED = 14;
+  EVENT_TYPE_PAYMENT_PROCESSED = 15;
+  EVENT_TYPE_PAYMENT_REFUNDED = 16;
+  
+  // Banking events
+  EVENT_TYPE_ACCOUNT_CREATED = 20;
+  EVENT_TYPE_ACCOUNT_UPDATED = 21;
+  EVENT_TYPE_LIMITS_SET = 22;
+  EVENT_TYPE_FRAUD_DETECTED = 23;
+  EVENT_TYPE_FEES_CALCULATED = 24;
+  
+  // Analytics events
+  EVENT_TYPE_EVENT_TRACKED = 30;
+  EVENT_TYPE_ANALYTICS_GENERATED = 31;
+  EVENT_TYPE_INSIGHTS_GENERATED = 32;
+  EVENT_TYPE_RECOMMENDATIONS_GENERATED = 33;
+  
+  // System events
+  EVENT_TYPE_SAGA_STARTED = 40;
+  EVENT_TYPE_SAGA_COMPLETED = 41;
+  EVENT_TYPE_SAGA_FAILED = 42;
+  EVENT_TYPE_SAGA_COMPENSATED = 43;
+}
+
+// Requests
+message PublishEventRequest {
+  string event_type = 1;
+  string aggregate_id = 2;
+  string aggregate_type = 3;
+  google.protobuf.Any event_data = 4;
+  string source_service = 5;
+  string correlation_id = 6;
+  string causation_id = 7;
+}
+
+message SubscribeToEventsRequest {
+  repeated string event_types = 1;
+  string service_name = 2;
+  string consumer_group = 3;
+}
+
+message GetEventHistoryRequest {
+  string aggregate_id = 1;
+  string aggregate_type = 2;
+  google.protobuf.Timestamp from_date = 3;
+  google.protobuf.Timestamp to_date = 4;
+  int32 limit = 5;
+  int32 offset = 6;
+}
+
+// Responses
+message PublishEventResponse {
+  string event_id = 1;
+  bool success = 2;
+  string error_message = 3;
+}
+
+message GetEventHistoryResponse {
+  repeated Event events = 1;
+  int32 total = 2;
+  bool success = 3;
+  string error_message = 4;
+}
+
+// Event data types
+message UserCreatedEventData {
+  string user_id = 1;
+  string email = 2;
+  string first_name = 3;
+  string last_name = 4;
+}
+
+message WalletCreatedEventData {
+  string wallet_id = 1;
+  string user_id = 2;
+  string currency = 3;
+}
+
+message TransactionCreatedEventData {
+  string transaction_id = 1;
+  string wallet_id = 2;
+  string amount = 3;
+  string currency = 4;
+  string type = 5;
+}
+
+message SagaStartedEventData {
+  string saga_id = 1;
+  string saga_type = 2;
+  string correlation_id = 3;
+  google.protobuf.Any saga_data = 4;
+}
+
+message SagaCompletedEventData {
+  string saga_id = 1;
+  string saga_type = 2;
+  string correlation_id = 3;
+  google.protobuf.Any result = 4;
+}
+
+message SagaFailedEventData {
+  string saga_id = 1;
+  string saga_type = 2;
+  string correlation_id = 3;
+  string error_message = 4;
+  string error_code = 5;
+}

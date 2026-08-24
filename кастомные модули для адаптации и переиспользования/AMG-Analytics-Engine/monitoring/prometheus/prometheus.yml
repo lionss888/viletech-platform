@@ -1,0 +1,70 @@
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+
+rule_files:
+  - "rules/*.yml"
+
+alerting:
+  alertmanagers:
+    - static_configs:
+        - targets:
+          - alertmanager:9093
+
+scrape_configs:
+  # Prometheus сам себя
+  - job_name: 'prometheus'
+    static_configs:
+      - targets: ['localhost:9090']
+
+  # AMG Dashboard
+  - job_name: 'amg-dashboard'
+    static_configs:
+      - targets: ['dashboard:8502']
+    metrics_path: '/metrics'
+    scrape_interval: 30s
+
+  # PostgreSQL
+  - job_name: 'postgres'
+    static_configs:
+      - targets: ['postgres:5432']
+    metrics_path: '/metrics'
+    scrape_interval: 30s
+
+  # ClickHouse
+  - job_name: 'clickhouse'
+    static_configs:
+      - targets: ['clickhouse:8123']
+    metrics_path: '/metrics'
+    scrape_interval: 30s
+
+  # Node Exporter для системных метрик
+  - job_name: 'node-exporter'
+    static_configs:
+      - targets: ['node-exporter:9100']
+    scrape_interval: 15s
+
+  # cAdvisor для Docker контейнеров
+  - job_name: 'cadvisor'
+    static_configs:
+      - targets: ['cadvisor:8080']
+    scrape_interval: 15s
+
+  # Blackbox exporter для проверки доступности
+  - job_name: 'blackbox'
+    static_configs:
+      - targets:
+        - 'http://dashboard:8502'
+        - 'http://storybook:6006'
+        - 'http://clickhouse:8123'
+        - 'http://pgadmin:80'
+    metrics_path: '/probe'
+    params:
+      module: [http_2xx]
+    relabel_configs:
+      - source_labels: [__address__]
+        target_label: __param_target
+      - source_labels: [__param_target]
+        target_label: instance
+      - target_label: __address__
+        replacement: blackbox:9115

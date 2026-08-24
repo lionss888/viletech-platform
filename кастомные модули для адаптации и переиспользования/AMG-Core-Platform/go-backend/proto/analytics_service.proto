@@ -1,0 +1,140 @@
+syntax = "proto3";
+
+package amg.analytics.v1;
+
+option go_package = "amg-flow-backend/internal/grpc/analytics";
+
+import "google/protobuf/timestamp.proto";
+
+// Analytics Service - аналитика и AI
+service AnalyticsService {
+  rpc TrackEvent(TrackEventRequest) returns (TrackEventResponse);
+  rpc GetAnalytics(GetAnalyticsRequest) returns (AnalyticsResponse);
+  rpc ProcessChat(ProcessChatRequest) returns (ProcessChatResponse);
+  rpc GenerateInsights(GenerateInsightsRequest) returns (InsightsResponse);
+  rpc GetRecommendations(GetRecommendationsRequest) returns (RecommendationsResponse);
+}
+
+// Event entity
+message Event {
+  string id = 1;
+  string user_id = 2;
+  string event_type = 3;
+  string event_data = 4; // JSON string
+  google.protobuf.Timestamp timestamp = 5;
+  string session_id = 6;
+  string ip_address = 7;
+  string user_agent = 8;
+}
+
+// Analytics entity
+message Analytics {
+  string id = 1;
+  string user_id = 2;
+  string metric_name = 3;
+  string metric_value = 4;
+  string period = 5; // daily, weekly, monthly
+  google.protobuf.Timestamp date = 6;
+  google.protobuf.Timestamp created_at = 7;
+}
+
+// Chat entity
+message ChatMessage {
+  string id = 1;
+  string session_id = 2;
+  string user_id = 3;
+  string message = 4;
+  string role = 5; // user, assistant, system
+  google.protobuf.Timestamp timestamp = 6;
+}
+
+// Insights entity
+message Insight {
+  string id = 1;
+  string user_id = 2;
+  string insight_type = 3;
+  string title = 4;
+  string description = 5;
+  string confidence = 6; // decimal as string
+  google.protobuf.Timestamp created_at = 7;
+}
+
+// Recommendation entity
+message Recommendation {
+  string id = 1;
+  string user_id = 2;
+  string recommendation_type = 3;
+  string title = 4;
+  string description = 5;
+  string action = 6;
+  string priority = 7; // high, medium, low
+  google.protobuf.Timestamp created_at = 8;
+}
+
+// Requests
+message TrackEventRequest {
+  string user_id = 1;
+  string event_type = 2;
+  string event_data = 3; // JSON string
+  string session_id = 4;
+  string ip_address = 5;
+  string user_agent = 6;
+}
+
+message GetAnalyticsRequest {
+  string user_id = 1;
+  string metric_name = 2;
+  string period = 3;
+  google.protobuf.Timestamp from_date = 4;
+  google.protobuf.Timestamp to_date = 5;
+}
+
+message ProcessChatRequest {
+  string session_id = 1;
+  string user_id = 2;
+  string message = 3;
+  string context = 4; // JSON string
+}
+
+message GenerateInsightsRequest {
+  string user_id = 1;
+  string data_type = 2;
+  string data = 3; // JSON string
+}
+
+message GetRecommendationsRequest {
+  string user_id = 1;
+  string recommendation_type = 2;
+  int32 limit = 3;
+}
+
+// Responses
+message TrackEventResponse {
+  string event_id = 1;
+  bool success = 2;
+  string error_message = 3;
+}
+
+message AnalyticsResponse {
+  repeated Analytics analytics = 1;
+  bool success = 2;
+  string error_message = 3;
+}
+
+message ProcessChatResponse {
+  ChatMessage response = 1;
+  bool success = 2;
+  string error_message = 3;
+}
+
+message InsightsResponse {
+  repeated Insight insights = 1;
+  bool success = 2;
+  string error_message = 3;
+}
+
+message RecommendationsResponse {
+  repeated Recommendation recommendations = 1;
+  bool success = 2;
+  string error_message = 3;
+}

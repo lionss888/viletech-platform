@@ -1,0 +1,5 @@
+source: https://github.com/lionss888/amg_all/tree/a54948483919e51f918b23f7a72332f2a68c5dd9/AMG-Integration-Hub
+repo: https://github.com/lionss888/amg_all.git
+commit: a54948483919e51f918b23f7a72332f2a68c5dd9
+path: AMG-Integration-Hub
+downloaded: 2026-08-24

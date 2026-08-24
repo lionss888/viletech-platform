@@ -1,0 +1,1 @@
+export const CONTRACT_CLIENT = 'CONTRACT_CLIENT';

@@ -1,0 +1,181 @@
+/* 
+ * Global Styles
+ * Подключение токенов и базовых стилей для приложения
+ */
+
+/* Импорт дизайн-токенов из Figma */
+@import './tokens.css';
+
+/* Импорт Tailwind CSS */
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Базовые стили */
+@layer base {
+  /* Установка базовых стилей для HTML и body */
+  html {
+    font-family: var(--font-family-body);
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  body {
+    background-color: var(--color-background-primary);
+    color: var(--color-text-primary);
+    font-size: var(--font-size-text-md);
+    line-height: var(--line-height-text-md);
+    font-weight: var(--font-weight-regular);
+    transition: background-color var(--transition-normal) var(--transition-ease-in-out-cubic),
+                color var(--transition-normal) var(--transition-ease-in-out-cubic);
+  }
+
+  /* Заголовки */
+  h1 {
+    font-family: var(--font-family-display);
+    font-size: var(--font-size-display-lg);
+    line-height: var(--line-height-display-lg);
+    font-weight: var(--font-weight-bold);
+    color: var(--color-text-primary);
+  }
+
+  h2 {
+    font-family: var(--font-family-display);
+    font-size: var(--font-size-display-md);
+    line-height: var(--line-height-display-md);
+    font-weight: var(--font-weight-semibold);
+    color: var(--color-text-primary);
+  }
+
+  h3 {
+    font-family: var(--font-family-display);
+    font-size: var(--font-size-display-sm);
+    line-height: var(--line-height-display-sm);
+    font-weight: var(--font-weight-semibold);
+    color: var(--color-text-primary);
+  }
+
+  h4 {
+    font-family: var(--font-family-display);
+    font-size: var(--font-size-display-xs);
+    line-height: var(--line-height-display-xs);
+    font-weight: var(--font-weight-medium);
+    color: var(--color-text-primary);
+  }
+
+  h5 {
+    font-family: var(--font-family-display);
+    font-size: var(--font-size-text-xl);
+    line-height: var(--line-height-text-xl);
+    font-weight: var(--font-weight-medium);
+    color: var(--color-text-primary);
+  }
+
+  h6 {
+    font-family: var(--font-family-display);
+    font-size: var(--font-size-text-lg);
+    line-height: var(--line-height-text-lg);
+    font-weight: var(--font-weight-medium);
+    color: var(--color-text-primary);
+  }
+
+  /* Параграфы и текст */
+  p {
+    color: var(--color-text-secondary);
+    margin-bottom: var(--spacing-4);
+  }
+
+  /* Ссылки */
+  a {
+    color: var(--color-primary-600);
+    text-decoration: none;
+    transition: color var(--transition-fast) var(--transition-ease-in-out-cubic);
+  }
+
+  a:hover {
+    color: var(--color-primary-700);
+  }
+
+  a:focus {
+    outline: 2px solid var(--color-border-focus);
+    outline-offset: 2px;
+  }
+
+  /* Кнопки */
+  button {
+    font-family: var(--font-family-body);
+    transition: all var(--transition-fast) var(--transition-ease-in-out-cubic);
+  }
+
+  button:focus {
+    outline: 2px solid var(--color-border-focus);
+    outline-offset: 2px;
+  }
+
+  /* Формы */
+  input, textarea, select {
+    font-family: var(--font-family-body);
+    color: var(--color-text-primary);
+    background-color: var(--color-surface-primary);
+    border: 1px solid var(--color-border-primary);
+    border-radius: var(--border-radius-md);
+    transition: border-color var(--transition-fast) var(--transition-ease-in-out-cubic),
+                box-shadow var(--transition-fast) var(--transition-ease-in-out-cubic);
+  }
+
+  input:focus, textarea:focus, select:focus {
+    outline: none;
+    border-color: var(--color-border-focus);
+    box-shadow: 0 0 0 3px var(--color-primary-50);
+  }
+
+  /* Код */
+  code {
+    font-family: var(--font-family-mono);
+    font-size: 0.875em;
+    background-color: var(--color-surface-secondary);
+    padding: var(--spacing-1) var(--spacing-2);
+    border-radius: var(--border-radius-sm);
+  }
+
+  pre {
+    font-family: var(--font-family-mono);
+    background-color: var(--color-surface-secondary);
+    padding: var(--spacing-4);
+    border-radius: var(--border-radius-lg);
+    overflow-x: auto;
+  }
+
+  pre code {
+    background: none;
+    padding: 0;
+  }
+}
+
+/* Компонентные стили */
+@layer components {
+  /* Утилитарные классы для работы с токенами */
+  .surface-elevated {
+    background-color: var(--color-surface-elevated);
+    box-shadow: var(--shadow-md);
+  }
+
+  .text-primary {
+    color: var(--color-text-primary);
+  }
+
+  .text-secondary {
+    color: var(--color-text-secondary);
+  }
+
+  .text-tertiary {
+    color: var(--color-text-tertiary);
+  }
+
+  /* Анимации для плавных переходов */
+  .transition-theme {
+    transition: background-color var(--transition-normal) var(--transition-ease-in-out-cubic),
+                color var(--transition-normal) var(--transition-ease-in-out-cubic),
+                border-color var(--transition-normal) var(--transition-ease-in-out-cubic);
+  }
+}

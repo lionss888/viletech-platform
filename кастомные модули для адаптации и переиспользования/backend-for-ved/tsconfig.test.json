@@ -1,0 +1,13 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "types": ["jest"],
+    "baseUrl": "./src",
+    "paths": {
+      "lib/*": ["lib/*"],
+      "modules/*": ["modules/*"],
+      "src/*": ["*"]
+    }
+  },
+  "include": ["src/**/*.ts", ".claude-project/tasks/V-47/tests/**/*.spec.ts"]
+}

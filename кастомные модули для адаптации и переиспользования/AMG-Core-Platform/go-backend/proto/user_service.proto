@@ -1,0 +1,103 @@
+syntax = "proto3";
+
+package amg.user.v1;
+
+option go_package = "amg-flow-backend/internal/grpc/user";
+
+import "google/protobuf/timestamp.proto";
+
+// User Service - управление пользователями
+service UserService {
+  rpc CreateUser(CreateUserRequest) returns (UserResponse);
+  rpc GetUser(GetUserRequest) returns (UserResponse);
+  rpc UpdateUser(UpdateUserRequest) returns (UserResponse);
+  rpc DeleteUser(DeleteUserRequest) returns (DeleteUserResponse);
+  rpc ListUsers(ListUsersRequest) returns (ListUsersResponse);
+  rpc AuthenticateUser(AuthenticateUserRequest) returns (AuthenticateUserResponse);
+}
+
+// User entity
+message User {
+  string id = 1;
+  string email = 2;
+  string first_name = 3;
+  string last_name = 4;
+  string phone = 5;
+  UserStatus status = 6;
+  google.protobuf.Timestamp created_at = 7;
+  google.protobuf.Timestamp updated_at = 8;
+}
+
+enum UserStatus {
+  USER_STATUS_UNSPECIFIED = 0;
+  USER_STATUS_ACTIVE = 1;
+  USER_STATUS_INACTIVE = 2;
+  USER_STATUS_SUSPENDED = 3;
+  USER_STATUS_PENDING_VERIFICATION = 4;
+}
+
+// Requests
+message CreateUserRequest {
+  string email = 1;
+  string first_name = 2;
+  string last_name = 3;
+  string phone = 4;
+  string password = 5;
+}
+
+message GetUserRequest {
+  string id = 1;
+}
+
+message UpdateUserRequest {
+  string id = 1;
+  string email = 2;
+  string first_name = 3;
+  string last_name = 4;
+  string phone = 5;
+  UserStatus status = 6;
+}
+
+message DeleteUserRequest {
+  string id = 1;
+}
+
+message ListUsersRequest {
+  int32 page = 1;
+  int32 page_size = 2;
+  string search = 3;
+  UserStatus status = 4;
+}
+
+message AuthenticateUserRequest {
+  string email = 1;
+  string password = 2;
+}
+
+// Responses
+message UserResponse {
+  User user = 1;
+  bool success = 2;
+  string error_message = 3;
+}
+
+message DeleteUserResponse {
+  bool success = 1;
+  string error_message = 2;
+}
+
+message ListUsersResponse {
+  repeated User users = 1;
+  int32 total = 2;
+  int32 page = 3;
+  int32 page_size = 4;
+  bool success = 5;
+  string error_message = 6;
+}
+
+message AuthenticateUserResponse {
+  string token = 1;
+  User user = 2;
+  bool success = 3;
+  string error_message = 4;
+}

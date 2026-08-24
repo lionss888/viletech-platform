@@ -1,0 +1,156 @@
+syntax = "proto3";
+
+package amg.banking.v1;
+
+option go_package = "amg-flow-backend/internal/grpc/banking";
+
+import "google/protobuf/timestamp.proto";
+
+// Banking Service - банковские операции
+service BankingService {
+  rpc CreateAccount(CreateAccountRequest) returns (AccountResponse);
+  rpc GetAccount(GetAccountRequest) returns (AccountResponse);
+  rpc UpdateAccount(UpdateAccountRequest) returns (AccountResponse);
+  rpc SetLimits(SetLimitsRequest) returns (LimitsResponse);
+  rpc GetLimits(GetLimitsRequest) returns (LimitsResponse);
+  rpc CheckFraud(CheckFraudRequest) returns (FraudResponse);
+  rpc GetFees(GetFeesRequest) returns (FeesResponse);
+}
+
+// Account entity
+message Account {
+  string id = 1;
+  string user_id = 2;
+  string account_number = 3;
+  string routing_number = 4;
+  string bank_name = 5;
+  AccountType type = 6;
+  AccountStatus status = 7;
+  google.protobuf.Timestamp created_at = 8;
+  google.protobuf.Timestamp updated_at = 9;
+}
+
+enum AccountType {
+  ACCOUNT_TYPE_UNSPECIFIED = 0;
+  ACCOUNT_TYPE_CHECKING = 1;
+  ACCOUNT_TYPE_SAVINGS = 2;
+  ACCOUNT_TYPE_BUSINESS = 3;
+}
+
+enum AccountStatus {
+  ACCOUNT_STATUS_UNSPECIFIED = 0;
+  ACCOUNT_STATUS_ACTIVE = 1;
+  ACCOUNT_STATUS_SUSPENDED = 2;
+  ACCOUNT_STATUS_CLOSED = 3;
+  ACCOUNT_STATUS_PENDING = 4;
+}
+
+// Limits entity
+message Limits {
+  string id = 1;
+  string user_id = 2;
+  string daily_limit = 3; // decimal as string
+  string monthly_limit = 4; // decimal as string
+  string transaction_limit = 5; // decimal as string
+  string currency = 6;
+  google.protobuf.Timestamp created_at = 7;
+  google.protobuf.Timestamp updated_at = 8;
+}
+
+// Fraud entity
+message FraudCheck {
+  string id = 1;
+  string user_id = 2;
+  string transaction_id = 3;
+  FraudRisk risk_level = 4;
+  string reason = 5;
+  bool blocked = 6;
+  google.protobuf.Timestamp created_at = 7;
+}
+
+enum FraudRisk {
+  FRAUD_RISK_UNSPECIFIED = 0;
+  FRAUD_RISK_LOW = 1;
+  FRAUD_RISK_MEDIUM = 2;
+  FRAUD_RISK_HIGH = 3;
+  FRAUD_RISK_CRITICAL = 4;
+}
+
+// Fees entity
+message Fees {
+  string id = 1;
+  string service_type = 2;
+  string fee_type = 3;
+  string amount = 4; // decimal as string
+  string currency = 5;
+  bool is_percentage = 6;
+  google.protobuf.Timestamp created_at = 7;
+  google.protobuf.Timestamp updated_at = 8;
+}
+
+// Requests
+message CreateAccountRequest {
+  string user_id = 1;
+  string bank_name = 2;
+  AccountType type = 3;
+}
+
+message GetAccountRequest {
+  string id = 1;
+}
+
+message UpdateAccountRequest {
+  string id = 1;
+  string bank_name = 2;
+  AccountStatus status = 3;
+}
+
+message SetLimitsRequest {
+  string user_id = 1;
+  string daily_limit = 2;
+  string monthly_limit = 3;
+  string transaction_limit = 4;
+  string currency = 5;
+}
+
+message GetLimitsRequest {
+  string user_id = 1;
+}
+
+message CheckFraudRequest {
+  string user_id = 1;
+  string transaction_id = 2;
+  string amount = 3;
+  string currency = 4;
+  string description = 5;
+}
+
+message GetFeesRequest {
+  string service_type = 1;
+  string currency = 2;
+}
+
+// Responses
+message AccountResponse {
+  Account account = 1;
+  bool success = 2;
+  string error_message = 3;
+}
+
+message LimitsResponse {
+  Limits limits = 1;
+  bool success = 2;
+  string error_message = 3;
+}
+
+message FraudResponse {
+  FraudCheck fraud_check = 1;
+  bool success = 2;
+  string error_message = 3;
+}
+
+message FeesResponse {
+  repeated Fees fees = 1;
+  bool success = 2;
+  string error_message = 3;
+}

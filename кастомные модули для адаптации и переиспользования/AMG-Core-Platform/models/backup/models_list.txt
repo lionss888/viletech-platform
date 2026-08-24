@@ -1,0 +1,4 @@
+NAME                          ID              SIZE      MODIFIED          
+mistral:7b-instruct-q4_0      b17615239298    4.1 GB    14 minutes ago       
+codellama:7b-instruct-q4_0    8fdf8f752f6e    3.8 GB    31 minutes ago       
+llama3.2:3b-instruct-q4_0     9b9453afbdd6    1.9 GB    About an hour ago    

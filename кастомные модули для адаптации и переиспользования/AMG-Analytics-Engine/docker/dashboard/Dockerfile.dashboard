@@ -1,0 +1,26 @@
+# Используем официальный образ Python
+FROM python:3.11-slim
+
+# Устанавливаем рабочую директорию
+WORKDIR /app
+
+# Копируем файлы зависимостей
+COPY requirements.txt .
+
+# Устанавливаем зависимости
+RUN pip install --no-cache-dir -r requirements.txt
+
+# Копируем исходный код приложения
+COPY src/core/amg_dashboard.py .
+COPY src/core/amg_connector.py .
+COPY src/core/amg_data_consumer.py .
+COPY src/core/metrics_module.py .
+COPY src/services/auth_module.py .
+COPY src/frontend/custom_dashboard_components.py .
+COPY src/frontend/styles/custom_dashboard_framework.css .
+
+# Открытие порта
+EXPOSE 8502
+
+# Команда запуска
+CMD ["streamlit", "run", "amg_dashboard.py", "--server.port=8502", "--server.address=0.0.0.0"]

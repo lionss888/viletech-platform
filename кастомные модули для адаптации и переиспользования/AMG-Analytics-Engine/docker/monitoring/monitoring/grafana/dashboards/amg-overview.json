@@ -1,0 +1,175 @@
+{
+  "dashboard": {
+    "id": null,
+    "title": "AMG Banking Core - Обзор системы",
+    "tags": ["amg", "banking", "overview"],
+    "style": "dark",
+    "timezone": "browser",
+    "panels": [
+      {
+        "id": 1,
+        "title": "Статус сервисов",
+        "type": "stat",
+        "targets": [
+          {
+            "expr": "up{job=\"blackbox\"}",
+            "legendFormat": "{{instance}}"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "color": {
+              "mode": "thresholds"
+            },
+            "thresholds": {
+              "steps": [
+                {"color": "red", "value": 0},
+                {"color": "green", "value": 1}
+              ]
+            }
+          }
+        },
+        "gridPos": {"h": 8, "w": 12, "x": 0, "y": 0}
+      },
+      {
+        "id": 2,
+        "title": "CPU использование",
+        "type": "gauge",
+        "targets": [
+          {
+            "expr": "100 - (avg(irate(node_cpu_seconds_total{mode=\"idle\"}[5m])) * 100)",
+            "legendFormat": "CPU %"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "min": 0,
+            "max": 100,
+            "thresholds": {
+              "steps": [
+                {"color": "green", "value": 0},
+                {"color": "yellow", "value": 70},
+                {"color": "red", "value": 90}
+              ]
+            }
+          }
+        },
+        "gridPos": {"h": 8, "w": 6, "x": 12, "y": 0}
+      },
+      {
+        "id": 3,
+        "title": "Использование памяти",
+        "type": "gauge",
+        "targets": [
+          {
+            "expr": "(node_memory_MemTotal_bytes - node_memory_MemAvailable_bytes) / node_memory_MemTotal_bytes * 100",
+            "legendFormat": "Memory %"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "min": 0,
+            "max": 100,
+            "thresholds": {
+              "steps": [
+                {"color": "green", "value": 0},
+                {"color": "yellow", "value": 80},
+                {"color": "red", "value": 95}
+              ]
+            }
+          }
+        },
+        "gridPos": {"h": 8, "w": 6, "x": 18, "y": 0}
+      },
+      {
+        "id": 4,
+        "title": "HTTP запросы в секунду",
+        "type": "graph",
+        "targets": [
+          {
+            "expr": "rate(amg_http_requests_total[5m])",
+            "legendFormat": "{{method}} {{endpoint}}"
+          }
+        ],
+        "gridPos": {"h": 8, "w": 12, "x": 0, "y": 8}
+      },
+      {
+        "id": 5,
+        "title": "Время ответа HTTP",
+        "type": "graph",
+        "targets": [
+          {
+            "expr": "histogram_quantile(0.95, rate(amg_http_request_duration_seconds_bucket[5m]))",
+            "legendFormat": "95th percentile"
+          }
+        ],
+        "gridPos": {"h": 8, "w": 12, "x": 12, "y": 8}
+      },
+      {
+        "id": 6,
+        "title": "Активные пользователи",
+        "type": "stat",
+        "targets": [
+          {
+            "expr": "amg_active_users",
+            "legendFormat": "Active Users"
+          }
+        ],
+        "gridPos": {"h": 4, "w": 6, "x": 0, "y": 16}
+      },
+      {
+        "id": 7,
+        "title": "Транзакции в секунду",
+        "type": "graph",
+        "targets": [
+          {
+            "expr": "rate(amg_transactions_total[5m])",
+            "legendFormat": "{{type}} - {{status}}"
+          }
+        ],
+        "gridPos": {"h": 8, "w": 12, "x": 6, "y": 16}
+      },
+      {
+        "id": 8,
+        "title": "Ошибки в секунду",
+        "type": "graph",
+        "targets": [
+          {
+            "expr": "rate(amg_errors_total[5m])",
+            "legendFormat": "{{type}} - {{severity}}"
+          }
+        ],
+        "gridPos": {"h": 8, "w": 12, "x": 18, "y": 16}
+      },
+      {
+        "id": 9,
+        "title": "Использование диска",
+        "type": "graph",
+        "targets": [
+          {
+            "expr": "100 - (node_filesystem_avail_bytes{mountpoint=\"/\"} / node_filesystem_size_bytes{mountpoint=\"/\"} * 100)",
+            "legendFormat": "Disk Usage %"
+          }
+        ],
+        "gridPos": {"h": 8, "w": 12, "x": 0, "y": 24}
+      },
+      {
+        "id": 10,
+        "title": "Docker контейнеры",
+        "type": "stat",
+        "targets": [
+          {
+            "expr": "count(container_cpu_usage_seconds_total)",
+            "legendFormat": "Total Containers"
+          }
+        ],
+        "gridPos": {"h": 4, "w": 6, "x": 12, "y": 24}
+      }
+    ],
+    "time": {
+      "from": "now-1h",
+      "to": "now"
+    },
+    "refresh": "30s"
+  }
+}

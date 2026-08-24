@@ -1,0 +1,119 @@
+# Конфигурация интеграций AMG Core Platform
+integrations:
+  # Striga Banking Platform
+  striga:
+    enabled: true
+    api_url: "${STRIGA_API_URL:-https://api-sandbox.striga.com}"
+    api_key: "${STRIGA_API_KEY}"
+    api_secret: "${STRIGA_API_SECRET}"
+    webhook_secret: "${STRIGA_WEBHOOK_SECRET}"
+    environment: "${STRIGA_ENVIRONMENT:-sandbox}"
+    sandbox: true
+    timeout: 30s
+    rate_limit: 100
+    retry_count: 3
+
+  # RailsR Banking API
+  railsr:
+    enabled: true
+    api_url: "${RAILSR_API_URL:-https://api.railsr.com}"
+    api_key: "${RAILSR_API_KEY}"
+    client_id: "${RAILSR_CLIENT_ID}"
+    client_secret: "${RAILSR_CLIENT_SECRET}"
+    token_url: "${RAILSR_TOKEN_URL:-https://api.railsr.com/oauth/token}"
+    webhook_secret: "${RAILSR_WEBHOOK_SECRET}"
+    environment: "${RAILSR_ENVIRONMENT:-PLAY}"  # PLAY или PLAYLive
+    sandbox: true
+    timeout: 30s
+    rate_limit: 50
+    retry_count: 3
+
+  # Bitso Crypto Exchange
+  bitso:
+    enabled: false  # Отключена по умолчанию
+    api_url: "${BITSO_API_URL:-https://api.bitso.com}"
+    api_key: "${BITSO_API_KEY}"
+    api_secret: "${BITSO_API_SECRET}"
+    environment: "${BITSO_ENVIRONMENT:-sandbox}"
+    sandbox: true
+    timeout: 10s
+    rate_limit: 300  # Bitso имеет высокий лимит
+    retry_count: 2
+
+  # Apaylo Payment API
+  apaylo:
+    enabled: false  # Отключена по умолчанию
+    api_url: "${APAYLO_API_URL}"
+    api_key: "${APAYLO_API_KEY}"
+    merchant_id: "${APAYLO_MERCHANT_ID}"
+    webhook_secret: "${APAYLO_WEBHOOK_SECRET}"
+    environment: "${APAYLO_ENVIRONMENT:-sandbox}"
+    sandbox: true
+    timeout: 30s
+    rate_limit: 100
+    retry_count: 3
+
+# Глобальные настройки
+global:
+  # Логирование интеграций
+  logging:
+    level: "${INTEGRATIONS_LOG_LEVEL:-info}"
+    format: "json"
+    include_request_body: false
+    include_response_body: false
+
+  # Мониторинг
+  monitoring:
+    health_check_interval: 30s
+    metrics_enabled: true
+    tracing_enabled: true
+
+  # Безопасность
+  security:
+    encrypt_credentials: true
+    rotate_keys: true
+    audit_requests: true
+
+# Webhook конфигурация
+webhooks:
+  # Общие настройки
+  global:
+    timeout: 30s
+    retry_attempts: 3
+    retry_delay: 5s
+    verify_ssl: true
+
+  # Endpoint'ы для каждой интеграции
+  endpoints:
+    striga: "/api/v1/webhooks/striga"
+    railsr: "/api/v1/webhooks/railsr"
+    bitso: "/api/v1/webhooks/bitso"
+    apaylo: "/api/v1/webhooks/apaylo"
+
+# Настройки для разработки
+development:
+  # Включить дополнительное логирование
+  debug_logging: true
+  
+  # Использовать моки вместо реальных API
+  use_mocks: false
+  
+  # Сохранять запросы/ответы для отладки
+  save_requests: true
+  
+  # Папка для сохранения логов запросов
+  requests_log_dir: "./logs/integrations"
+
+# Настройки для production
+production:
+  # Отключить debug логирование
+  debug_logging: false
+  
+  # Всегда использовать реальные API
+  use_mocks: false
+  
+  # Не сохранять запросы в production
+  save_requests: false
+  
+  # Строгая валидация SSL
+  strict_ssl: true

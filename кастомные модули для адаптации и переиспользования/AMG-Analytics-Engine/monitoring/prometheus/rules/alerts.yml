@@ -1,0 +1,106 @@
+groups:
+  - name: AMG Banking Core Alerts
+    rules:
+      # Алерты доступности сервисов
+      - alert: DashboardDown
+        expr: up{job="amg-dashboard"} == 0
+        for: 1m
+        labels:
+          severity: critical
+        annotations:
+          summary: "AMG Dashboard недоступен"
+          description: "Dashboard не отвечает более 1 минуты"
+
+      - alert: PostgresDown
+        expr: up{job="postgres"} == 0
+        for: 1m
+        labels:
+          severity: critical
+        annotations:
+          summary: "PostgreSQL недоступен"
+          description: "База данных не отвечает более 1 минуты"
+
+      - alert: ClickHouseDown
+        expr: up{job="clickhouse"} == 0
+        for: 1m
+        labels:
+          severity: critical
+        annotations:
+          summary: "ClickHouse недоступен"
+          description: "ClickHouse не отвечает более 1 минуты"
+
+      # Алерты производительности
+      - alert: HighCPUUsage
+        expr: 100 - (avg by(instance) (irate(node_cpu_seconds_total{mode="idle"}[5m])) * 100) > 80
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Высокое использование CPU"
+          description: "CPU используется более 80% на {{ $labels.instance }}"
+
+      - alert: HighMemoryUsage
+        expr: (node_memory_MemTotal_bytes - node_memory_MemAvailable_bytes) / node_memory_MemTotal_bytes * 100 > 85
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Высокое использование памяти"
+          description: "Память используется более 85% на {{ $labels.instance }}"
+
+      - alert: HighDiskUsage
+        expr: (node_filesystem_size_bytes - node_filesystem_free_bytes) / node_filesystem_size_bytes * 100 > 90
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Высокое использование диска"
+          description: "Диск заполнен более чем на 90% на {{ $labels.instance }}"
+
+      # Алерты Docker контейнеров
+      - alert: ContainerRestarting
+        expr: increase(container_start_time_seconds[15m]) > 3
+        for: 1m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Контейнер перезапускается"
+          description: "Контейнер {{ $labels.name }} перезапускался более 3 раз за 15 минут"
+
+      # Алерты базы данных
+      - alert: PostgresConnections
+        expr: pg_stat_database_numbackends > 100
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Много подключений к PostgreSQL"
+          description: "Более 100 активных подключений к базе данных"
+
+      - alert: PostgresSlowQueries
+        expr: rate(pg_stat_activity_max_tx_duration[5m]) > 30
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Медленные запросы PostgreSQL"
+          description: "Запросы выполняются дольше 30 секунд"
+
+      # Алерты веб-сервисов
+      - alert: HighResponseTime
+        expr: histogram_quantile(0.95, rate(http_request_duration_seconds_bucket[5m])) > 2
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Высокое время ответа"
+          description: "95% запросов выполняются дольше 2 секунд"
+
+      - alert: HighErrorRate
+        expr: rate(http_requests_total{status=~"5.."}[5m]) / rate(http_requests_total[5m]) > 0.05
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Высокий процент ошибок"
+          description: "Более 5% запросов завершаются с ошибкой 5xx"

@@ -1,0 +1,196 @@
+/* Monexa Exact Colors - из картинок */
+
+:root {
+  /* Основные цвета Monexa */
+  --monexa-white: #ffffff;
+  --monexa-black: #000000;
+  --monexa-dark-grey: #222222;
+  --monexa-medium-grey: #666666;
+  --monexa-light-grey: #f5f5f5;
+  --monexa-border-grey: #e5e5e5;
+  
+  /* Текст */
+  --monexa-text-dark: #333333;
+  --monexa-text-light: #666666;
+  --monexa-text-white: #ffffff;
+  
+  /* Фоны */
+  --monexa-bg-white: #ffffff;
+  --monexa-bg-dark: #222222;
+  --monexa-bg-light: #f9f9f9;
+  
+  /* Кнопки */
+  --monexa-btn-primary: #000000;
+  --monexa-btn-secondary: #ffffff;
+  --monexa-btn-border: #e5e5e5;
+  
+  /* Навигация */
+  --monexa-nav-active: #f5f5f5;
+  --monexa-nav-inactive: transparent;
+  
+  /* Карточки */
+  --monexa-card-dark: #222222;
+  --monexa-card-light: #ffffff;
+  --monexa-card-border: #e5e5e5;
+  
+  /* Тени */
+  --monexa-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  --monexa-shadow-dark: 0 4px 12px rgba(0, 0, 0, 0.2);
+  
+  /* Скругления */
+  --monexa-radius: 8px;
+  --monexa-radius-small: 4px;
+  
+  /* Типографика */
+  --monexa-font: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  --monexa-font-size-large: 2.5rem;
+  --monexa-font-size-medium: 1.25rem;
+  --monexa-font-size-small: 0.875rem;
+  --monexa-font-weight-bold: 700;
+  --monexa-font-weight-medium: 500;
+  --monexa-font-weight-normal: 400;
+}
+
+/* Убираем все мои синие градиенты и цвета */
+.monexa-container {
+  font-family: var(--monexa-font);
+  background: var(--monexa-bg-white);
+  color: var(--monexa-text-dark);
+}
+
+/* Навигация точно как на картинке */
+.monexa-nav {
+  background: var(--monexa-bg-white);
+  border-bottom: 1px solid var(--monexa-border-grey);
+}
+
+.monexa-nav-logo {
+  color: var(--monexa-black);
+  font-weight: var(--monexa-font-weight-bold);
+}
+
+.monexa-nav-link {
+  color: var(--monexa-text-dark);
+  background: var(--monexa-nav-inactive);
+}
+
+.monexa-nav-link.active {
+  background: var(--monexa-nav-active);
+  color: var(--monexa-text-dark);
+}
+
+.monexa-nav-link:hover {
+  background: var(--monexa-nav-active);
+  color: var(--monexa-text-dark);
+}
+
+/* Кнопка точно как на картинке */
+.monexa-btn-primary {
+  background: var(--monexa-btn-primary);
+  color: var(--monexa-text-white);
+  border: none;
+  border-radius: var(--monexa-radius);
+  font-weight: var(--monexa-font-weight-medium);
+}
+
+.monexa-btn-secondary {
+  background: var(--monexa-btn-secondary);
+  color: var(--monexa-text-dark);
+  border: 1px solid var(--monexa-btn-border);
+  border-radius: var(--monexa-radius);
+  font-weight: var(--monexa-font-weight-medium);
+}
+
+/* Карточки точно как на картинке */
+.monexa-card-dark {
+  background: var(--monexa-card-dark);
+  color: var(--monexa-text-white);
+  border-radius: var(--monexa-radius);
+  box-shadow: var(--monexa-shadow);
+}
+
+.monexa-card-light {
+  background: var(--monexa-card-light);
+  color: var(--monexa-text-dark);
+  border: 1px solid var(--monexa-card-border);
+  border-radius: var(--monexa-radius);
+  box-shadow: var(--monexa-shadow);
+}
+
+/* Заголовки точно как на картинке */
+.monexa-title-large {
+  font-size: var(--monexa-font-size-large);
+  font-weight: var(--monexa-font-weight-bold);
+  color: var(--monexa-text-dark);
+  line-height: 1.2;
+}
+
+.monexa-title-medium {
+  font-size: var(--monexa-font-size-medium);
+  font-weight: var(--monexa-font-weight-bold);
+  color: var(--monexa-text-dark);
+}
+
+.monexa-title-white {
+  font-size: var(--monexa-font-size-medium);
+  font-weight: var(--monexa-font-weight-bold);
+  color: var(--monexa-text-white);
+}
+
+/* Текст точно как на картинке */
+.monexa-text-dark {
+  color: var(--monexa-text-dark);
+  font-weight: var(--monexa-font-weight-normal);
+}
+
+.monexa-text-light {
+  color: var(--monexa-text-light);
+  font-weight: var(--monexa-font-weight-normal);
+}
+
+.monexa-text-white {
+  color: var(--monexa-text-white);
+  font-weight: var(--monexa-font-weight-normal);
+}
+
+/* Убираем все градиенты и яркие цвета */
+.monexa-hero {
+  background: var(--monexa-bg-white);
+  color: var(--monexa-text-dark);
+}
+
+.monexa-hero-title {
+  color: var(--monexa-text-dark);
+}
+
+.monexa-hero-subtitle {
+  color: var(--monexa-text-light);
+}
+
+/* Форма входа точно как на картинке */
+.monexa-login-container {
+  background: var(--monexa-bg-white);
+  border: 1px solid var(--monexa-card-border);
+  border-radius: var(--monexa-radius);
+  box-shadow: var(--monexa-shadow);
+}
+
+.monexa-login-title {
+  color: var(--monexa-text-dark);
+  font-weight: var(--monexa-font-weight-bold);
+}
+
+.monexa-login-subtitle {
+  color: var(--monexa-text-light);
+}
+
+.monexa-input {
+  border: 1px solid var(--monexa-border-grey);
+  border-radius: var(--monexa-radius-small);
+  color: var(--monexa-text-dark);
+}
+
+.monexa-input:focus {
+  border-color: var(--monexa-black);
+  box-shadow: 0 0 0 2px rgba(0, 0, 0, 0.1);
+}

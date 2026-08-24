@@ -1,0 +1,131 @@
+groups:
+  - name: amg-flow-alerts
+    rules:
+      # Высокий уровень ошибок HTTP
+      - alert: HighHTTPErrorRate
+        expr: (rate(http_requests_total{status=~"5.."}[5m]) / rate(http_requests_total[5m])) * 100 > 5
+        for: 2m
+        labels:
+          severity: warning
+          service: "{{ $labels.job }}"
+        annotations:
+          summary: "High HTTP error rate detected"
+          description: "HTTP error rate is {{ $value }}% for service {{ $labels.job }}"
+
+      # Высокая задержка HTTP запросов
+      - alert: HighHTTPLatency
+        expr: histogram_quantile(0.95, rate(http_request_duration_seconds_bucket[5m])) > 2
+        for: 2m
+        labels:
+          severity: warning
+          service: "{{ $labels.job }}"
+        annotations:
+          summary: "High HTTP latency detected"
+          description: "95th percentile latency is {{ $value }}s for service {{ $labels.job }}"
+
+      # Сервис недоступен
+      - alert: ServiceDown
+        expr: up == 0
+        for: 1m
+        labels:
+          severity: critical
+          service: "{{ $labels.job }}"
+        annotations:
+          summary: "Service is down"
+          description: "Service {{ $labels.job }} has been down for more than 1 minute"
+
+      # Высокое использование памяти
+      - alert: HighMemoryUsage
+        expr: (node_memory_MemTotal_bytes - node_memory_MemAvailable_bytes) / node_memory_MemTotal_bytes * 100 > 80
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High memory usage"
+          description: "Memory usage is {{ $value }}%"
+
+      # Высокое использование CPU
+      - alert: HighCPUUsage
+        expr: 100 - (avg by(instance) (irate(node_cpu_seconds_total{mode="idle"}[5m])) * 100) > 80
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High CPU usage"
+          description: "CPU usage is {{ $value }}%"
+
+      # Мало свободного места на диске
+      - alert: LowDiskSpace
+        expr: (node_filesystem_avail_bytes{mountpoint="/"} / node_filesystem_size_bytes{mountpoint="/"}) * 100 < 10
+        for: 5m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Low disk space"
+          description: "Disk space is {{ $value }}% full"
+
+      # Высокий уровень ошибок AI запросов
+      - alert: HighAIErrorRate
+        expr: (rate(ai_requests_total{status="error"}[5m]) / rate(ai_requests_total[5m])) * 100 > 10
+        for: 3m
+        labels:
+          severity: warning
+          service: "ai-processing"
+        annotations:
+          summary: "High AI error rate"
+          description: "AI error rate is {{ $value }}%"
+
+      # Высокая задержка AI запросов
+      - alert: HighAILatency
+        expr: histogram_quantile(0.95, rate(ai_request_duration_seconds_bucket[5m])) > 30
+        for: 3m
+        labels:
+          severity: warning
+          service: "ai-processing"
+        annotations:
+          summary: "High AI processing latency"
+          description: "95th percentile AI processing time is {{ $value }}s"
+
+      # Проблемы с базой данных
+      - alert: DatabaseConnectionIssues
+        expr: rate(database_errors_total[5m]) > 0.1
+        for: 2m
+        labels:
+          severity: warning
+          service: "database"
+        annotations:
+          summary: "Database connection issues"
+          description: "Database error rate is {{ $value }} errors/sec"
+
+      # Проблемы с Ollama сервисом
+      - alert: OllamaConnectionIssues
+        expr: rate(ollama_connection_errors_total[5m]) > 0.05
+        for: 2m
+        labels:
+          severity: warning
+          service: "ollama"
+        annotations:
+          summary: "Ollama connection issues"
+          description: "Ollama connection error rate is {{ $value }} errors/sec"
+
+      # Много активных горутин (для Go сервиса)
+      - alert: HighGoroutineCount
+        expr: goroutines_count > 1000
+        for: 5m
+        labels:
+          severity: warning
+          service: "go-backend"
+        annotations:
+          summary: "High goroutine count"
+          description: "Goroutine count is {{ $value }}"
+
+      # Много активных разговоров
+      - alert: HighActiveConversations
+        expr: active_conversations > 100
+        for: 10m
+        labels:
+          severity: info
+          service: "chat"
+        annotations:
+          summary: "High number of active conversations"
+          description: "Active conversations count is {{ $value }}"

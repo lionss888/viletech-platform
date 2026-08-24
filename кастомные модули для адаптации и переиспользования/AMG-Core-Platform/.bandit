@@ -1,0 +1,5 @@
+[bandit]
+exclude_dirs = tests,venv,env,.venv
+skips = B101,B601,B603
+severity = medium
+confidence = medium

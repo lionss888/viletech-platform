@@ -1,0 +1,50 @@
+run:
+  timeout: 5m
+  modules-download-mode: readonly
+
+linters-settings:
+  gosec:
+    severity: medium
+    confidence: medium
+    includes:
+      - G401
+      - G402
+      - G403
+      - G501
+      - G601
+  govulncheck:
+    mode: govulncheck
+  staticcheck:
+    checks: ["all"]
+
+linters:
+  enable:
+    - gosec
+    - govulncheck
+    - staticcheck
+    - ineffassign
+    - misspell
+    - gocyclo
+    - goconst
+    - gocritic
+    - gosec
+    - gosimple
+    - govet
+    - ineffassign
+    - misspell
+    - nakedret
+    - prealloc
+    - typecheck
+    - unconvert
+    - unparam
+    - unused
+    - varcheck
+    - whitespace
+
+issues:
+  exclude-rules:
+    - path: _test\.go
+      linters:
+        - gosec
+        - goconst
+        - gocyclo

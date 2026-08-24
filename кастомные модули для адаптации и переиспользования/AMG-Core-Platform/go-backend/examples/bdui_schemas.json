@@ -1,0 +1,282 @@
+{
+  "schemas": [
+    {
+      "name": "loan-application",
+      "title": "Заявка на кредит",
+      "description": "Форма для подачи заявки на кредит",
+      "type": "form",
+      "fields": [
+        {
+          "name": "full_name",
+          "label": "ФИО",
+          "type": "text",
+          "required": true,
+          "validation": {
+            "required": true,
+            "min": 2,
+            "max": 100
+          }
+        },
+        {
+          "name": "email",
+          "label": "Email",
+          "type": "email",
+          "required": true,
+          "validation": {
+            "required": true,
+            "pattern": "^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}$"
+          }
+        },
+        {
+          "name": "phone",
+          "label": "Телефон",
+          "type": "tel",
+          "required": true,
+          "validation": {
+            "required": true,
+            "pattern": "^\\+?[1-9]\\d{1,14}$"
+          }
+        },
+        {
+          "name": "loan_amount",
+          "label": "Сумма кредита",
+          "type": "number",
+          "required": true,
+          "default": 100000,
+          "validation": {
+            "required": true,
+            "min": 10000,
+            "max": 5000000
+          },
+          "business_rule": "credit_score_check"
+        },
+        {
+          "name": "income",
+          "label": "Ежемесячный доход",
+          "type": "number",
+          "required": true,
+          "validation": {
+            "required": true,
+            "min": 30000
+          },
+          "business_rule": "income_verification"
+        },
+        {
+          "name": "employment_type",
+          "label": "Тип занятости",
+          "type": "select",
+          "required": true,
+          "options": [
+            {"value": "employed", "label": "Наемный работник"},
+            {"value": "self_employed", "label": "Самозанятый"},
+            {"value": "business_owner", "label": "Предприниматель"},
+            {"value": "unemployed", "label": "Безработный"}
+          ]
+        },
+        {
+          "name": "credit_purpose",
+          "label": "Цель кредита",
+          "type": "select",
+          "required": true,
+          "options": [
+            {"value": "consumer", "label": "Потребительский"},
+            {"value": "mortgage", "label": "Ипотека"},
+            {"value": "auto", "label": "Автокредит"},
+            {"value": "business", "label": "Бизнес"}
+          ]
+        }
+      ],
+      "actions": [
+        {
+          "name": "submit",
+          "label": "Подать заявку",
+          "type": "submit",
+          "endpoint": "/api/v1/loans/apply",
+          "method": "POST"
+        },
+        {
+          "name": "reset",
+          "label": "Очистить",
+          "type": "reset"
+        }
+      ],
+      "layout": {
+        "type": "grid",
+        "columns": 2,
+        "gap": "16px",
+        "sections": [
+          {
+            "title": "Личная информация",
+            "fields": ["full_name", "email", "phone"]
+          },
+          {
+            "title": "Финансовая информация",
+            "fields": ["loan_amount", "income", "employment_type"]
+          },
+          {
+            "title": "Дополнительная информация",
+            "fields": ["credit_purpose"]
+          }
+        ]
+      },
+      "permissions": ["user", "loan_officer"]
+    },
+    {
+      "name": "user-profile",
+      "title": "Профиль пользователя",
+      "description": "Форма для обновления профиля пользователя",
+      "type": "form",
+      "fields": [
+        {
+          "name": "first_name",
+          "label": "Имя",
+          "type": "text",
+          "required": true,
+          "validation": {
+            "required": true,
+            "min": 2,
+            "max": 50
+          }
+        },
+        {
+          "name": "last_name",
+          "label": "Фамилия",
+          "type": "text",
+          "required": true,
+          "validation": {
+            "required": true,
+            "min": 2,
+            "max": 50
+          }
+        },
+        {
+          "name": "email",
+          "label": "Email",
+          "type": "email",
+          "required": true,
+          "validation": {
+            "required": true
+          }
+        },
+        {
+          "name": "phone",
+          "label": "Телефон",
+          "type": "tel",
+          "required": false
+        },
+        {
+          "name": "date_of_birth",
+          "label": "Дата рождения",
+          "type": "date",
+          "required": true,
+          "business_rule": "age_verification"
+        },
+        {
+          "name": "address",
+          "label": "Адрес",
+          "type": "textarea",
+          "required": false,
+          "props": {
+            "rows": 3
+          }
+        }
+      ],
+      "actions": [
+        {
+          "name": "save",
+          "label": "Сохранить",
+          "type": "submit",
+          "endpoint": "/api/v1/profile/update",
+          "method": "PUT"
+        },
+        {
+          "name": "cancel",
+          "label": "Отмена",
+          "type": "button"
+        }
+      ],
+      "layout": {
+        "type": "grid",
+        "columns": 2,
+        "gap": "16px"
+      },
+      "permissions": ["user"]
+    },
+    {
+      "name": "dashboard",
+      "title": "Панель управления",
+      "description": "Основная панель управления системой",
+      "type": "dashboard",
+      "components": [
+        {
+          "id": "stats-cards",
+          "type": "stats",
+          "props": {
+            "title": "Статистика",
+            "cards": [
+              {
+                "title": "Всего пользователей",
+                "value": "{{user_count}}",
+                "icon": "users"
+              },
+              {
+                "title": "Активные сессии",
+                "value": "{{active_sessions}}",
+                "icon": "activity"
+              },
+              {
+                "title": "Обработано запросов",
+                "value": "{{processed_requests}}",
+                "icon": "requests"
+              }
+            ]
+          }
+        },
+        {
+          "id": "recent-activity",
+          "type": "table",
+          "props": {
+            "title": "Последняя активность",
+            "endpoint": "/api/v1/analytics/recent",
+            "columns": [
+              {"key": "user", "label": "Пользователь"},
+              {"key": "action", "label": "Действие"},
+              {"key": "timestamp", "label": "Время"}
+            ]
+          }
+        }
+      ],
+      "tabs": [
+        {
+          "id": "overview",
+          "label": "Обзор",
+          "content": {
+            "id": "overview-content",
+            "type": "overview"
+          },
+          "active": true
+        },
+        {
+          "id": "analytics",
+          "label": "Аналитика",
+          "content": {
+            "id": "analytics-content",
+            "type": "analytics"
+          }
+        },
+        {
+          "id": "settings",
+          "label": "Настройки",
+          "content": {
+            "id": "settings-content",
+            "type": "settings"
+          }
+        }
+      ],
+      "metadata": {
+        "refresh_interval": 30000,
+        "auto_refresh": true
+      }
+    }
+  ]
+}

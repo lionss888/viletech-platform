@@ -1,0 +1,152 @@
+syntax = "proto3";
+
+package amg.payment.v1;
+
+option go_package = "amg-flow-backend/internal/grpc/payment";
+
+import "google/protobuf/timestamp.proto";
+
+// Payment Service - управление платежами
+service PaymentService {
+  rpc CreateWallet(CreateWalletRequest) returns (WalletResponse);
+  rpc GetWallet(GetWalletRequest) returns (WalletResponse);
+  rpc CreateTransaction(CreateTransactionRequest) returns (TransactionResponse);
+  rpc GetTransaction(GetTransactionRequest) returns (TransactionResponse);
+  rpc ListTransactions(ListTransactionsRequest) returns (ListTransactionsResponse);
+  rpc ProcessPayment(ProcessPaymentRequest) returns (ProcessPaymentResponse);
+  rpc RefundPayment(RefundPaymentRequest) returns (RefundPaymentResponse);
+}
+
+// Wallet entity
+message Wallet {
+  string id = 1;
+  string user_id = 2;
+  string currency = 3;
+  string balance = 4; // decimal as string
+  WalletStatus status = 5;
+  google.protobuf.Timestamp created_at = 6;
+  google.protobuf.Timestamp updated_at = 7;
+}
+
+enum WalletStatus {
+  WALLET_STATUS_UNSPECIFIED = 0;
+  WALLET_STATUS_ACTIVE = 1;
+  WALLET_STATUS_SUSPENDED = 2;
+  WALLET_STATUS_CLOSED = 3;
+}
+
+// Transaction entity
+message Transaction {
+  string id = 1;
+  string wallet_id = 2;
+  string from_wallet_id = 3;
+  string to_wallet_id = 4;
+  string amount = 5; // decimal as string
+  string currency = 6;
+  TransactionType type = 7;
+  TransactionStatus status = 8;
+  string description = 9;
+  string reference = 10;
+  google.protobuf.Timestamp created_at = 11;
+  google.protobuf.Timestamp updated_at = 12;
+}
+
+enum TransactionType {
+  TRANSACTION_TYPE_UNSPECIFIED = 0;
+  TRANSACTION_TYPE_DEPOSIT = 1;
+  TRANSACTION_TYPE_WITHDRAWAL = 2;
+  TRANSACTION_TYPE_TRANSFER = 3;
+  TRANSACTION_TYPE_PAYMENT = 4;
+  TRANSACTION_TYPE_REFUND = 5;
+}
+
+enum TransactionStatus {
+  TRANSACTION_STATUS_UNSPECIFIED = 0;
+  TRANSACTION_STATUS_PENDING = 1;
+  TRANSACTION_STATUS_PROCESSING = 2;
+  TRANSACTION_STATUS_COMPLETED = 3;
+  TRANSACTION_STATUS_FAILED = 4;
+  TRANSACTION_STATUS_CANCELLED = 5;
+}
+
+// Wallet Requests
+message CreateWalletRequest {
+  string user_id = 1;
+  string currency = 2;
+}
+
+message GetWalletRequest {
+  string id = 1;
+}
+
+// Transaction Requests
+message CreateTransactionRequest {
+  string wallet_id = 1;
+  string to_wallet_id = 2;
+  string amount = 3;
+  string currency = 4;
+  TransactionType type = 5;
+  string description = 6;
+  string reference = 7;
+}
+
+message GetTransactionRequest {
+  string id = 1;
+}
+
+message ListTransactionsRequest {
+  string wallet_id = 1;
+  int32 page = 2;
+  int32 page_size = 3;
+  TransactionType type = 4;
+  TransactionStatus status = 5;
+  google.protobuf.Timestamp from_date = 6;
+  google.protobuf.Timestamp to_date = 7;
+}
+
+message ProcessPaymentRequest {
+  string transaction_id = 1;
+  string payment_method = 2;
+  string payment_reference = 3;
+}
+
+message RefundPaymentRequest {
+  string transaction_id = 1;
+  string reason = 2;
+}
+
+// Responses
+message WalletResponse {
+  Wallet wallet = 1;
+  bool success = 2;
+  string error_message = 3;
+}
+
+message TransactionResponse {
+  Transaction transaction = 1;
+  bool success = 2;
+  string error_message = 3;
+}
+
+message ListTransactionsResponse {
+  repeated Transaction transactions = 1;
+  int32 total = 2;
+  int32 page = 3;
+  int32 page_size = 4;
+  bool success = 5;
+  string error_message = 6;
+}
+
+message ProcessPaymentResponse {
+  string payment_id = 1;
+  string status = 2;
+  bool success = 3;
+  string error_message = 4;
+}
+
+message RefundPaymentResponse {
+  string refund_id = 1;
+  string status = 2;
+  bool success = 3;
+  string error_message = 4;
+}

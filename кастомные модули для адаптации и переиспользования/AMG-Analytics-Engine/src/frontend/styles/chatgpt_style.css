@@ -1,0 +1,428 @@
+body { background: red !important; }
+
+/* ChatGPT Style Dashboard - Современный минималистичный дизайн */
+
+:root {
+  /* Основные цвета ChatGPT */
+  --chatgpt-bg-primary: #ffffff;
+  --chatgpt-bg-secondary: #f7f7f8;
+  --chatgpt-bg-tertiary: #f0f0f0;
+  
+  /* Текст */
+  --chatgpt-text-primary: #2d3748;
+  --chatgpt-text-secondary: #4a5568;
+  --chatgpt-text-muted: #718096;
+  --chatgpt-text-white: #ffffff;
+  
+  /* Акценты */
+  --chatgpt-accent-blue: #10a37f;
+  --chatgpt-accent-blue-hover: #0d8a6f;
+  --chatgpt-accent-green: #10a37f;
+  --chatgpt-accent-green-hover: #0d8a6f;
+  
+  /* Границы */
+  --chatgpt-border-light: #e2e8f0;
+  --chatgpt-border-medium: #cbd5e0;
+  --chatgpt-border-dark: #a0aec0;
+  
+  /* Тени */
+  --chatgpt-shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+  --chatgpt-shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+  --chatgpt-shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+  
+  /* Скругления */
+  --chatgpt-radius-sm: 6px;
+  --chatgpt-radius-md: 8px;
+  --chatgpt-radius-lg: 12px;
+  --chatgpt-radius-xl: 16px;
+  
+  /* Типографика */
+  --chatgpt-font: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', sans-serif;
+  --chatgpt-font-size-xs: 0.75rem;
+  --chatgpt-font-size-sm: 0.875rem;
+  --chatgpt-font-size-base: 1rem;
+  --chatgpt-font-size-lg: 1.125rem;
+  --chatgpt-font-size-xl: 1.25rem;
+  --chatgpt-font-size-2xl: 1.5rem;
+  --chatgpt-font-size-3xl: 1.875rem;
+  
+  /* Переходы */
+  --chatgpt-transition: all 0.2s ease-in-out;
+  --chatgpt-transition-fast: all 0.15s ease-in-out;
+}
+
+/* Основные стили */
+.chatgpt-container {
+  font-family: var(--chatgpt-font);
+  background: var(--chatgpt-bg-primary);
+  color: var(--chatgpt-text-primary);
+  line-height: 1.6;
+  min-height: 100vh;
+}
+
+/* Навигация */
+.chatgpt-nav {
+  background: var(--chatgpt-bg-primary);
+  border-bottom: 1px solid var(--chatgpt-border-light);
+  padding: 1rem 0;
+  box-shadow: var(--chatgpt-shadow-sm);
+}
+
+.chatgpt-nav-container {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 1.5rem;
+}
+
+.chatgpt-nav-logo {
+  color: var(--chatgpt-text-primary);
+  font-size: var(--chatgpt-font-size-xl);
+  font-weight: 600;
+  text-decoration: none;
+  transition: var(--chatgpt-transition);
+}
+
+.chatgpt-nav-logo:hover {
+  color: var(--chatgpt-accent-blue);
+}
+
+.chatgpt-nav-menu {
+  display: flex;
+  gap: 2rem;
+  align-items: center;
+}
+
+.chatgpt-nav-link {
+  color: var(--chatgpt-text-secondary);
+  text-decoration: none;
+  font-weight: 500;
+  padding: 0.5rem 1rem;
+  border-radius: var(--chatgpt-radius-md);
+  transition: var(--chatgpt-transition);
+}
+
+.chatgpt-nav-link:hover {
+  color: var(--chatgpt-text-primary);
+  background: var(--chatgpt-bg-secondary);
+}
+
+.chatgpt-nav-link.active {
+  color: var(--chatgpt-accent-blue);
+  background: rgba(16, 163, 127, 0.1);
+}
+
+/* Кнопки */
+.chatgpt-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.75rem 1.5rem;
+  border-radius: var(--chatgpt-radius-md);
+  font-weight: 500;
+  font-size: var(--chatgpt-font-size-sm);
+  text-decoration: none;
+  border: none;
+  cursor: pointer;
+  transition: var(--chatgpt-transition);
+  white-space: nowrap;
+}
+
+.chatgpt-btn-primary {
+  background: var(--chatgpt-accent-blue);
+  color: var(--chatgpt-text-white);
+  box-shadow: var(--chatgpt-shadow-sm);
+}
+
+.chatgpt-btn-primary:hover {
+  background: var(--chatgpt-accent-blue-hover);
+  transform: translateY(-1px);
+  box-shadow: var(--chatgpt-shadow-md);
+}
+
+.chatgpt-btn-secondary {
+  background: var(--chatgpt-bg-primary);
+  color: var(--chatgpt-text-primary);
+  border: 1px solid var(--chatgpt-border-medium);
+}
+
+.chatgpt-btn-secondary:hover {
+  background: var(--chatgpt-bg-secondary);
+  border-color: var(--chatgpt-border-dark);
+}
+
+.chatgpt-btn-ghost {
+  background: transparent;
+  color: var(--chatgpt-text-secondary);
+  border: 1px solid transparent;
+}
+
+.chatgpt-btn-ghost:hover {
+  background: var(--chatgpt-bg-secondary);
+  color: var(--chatgpt-text-primary);
+}
+
+/* Карточки */
+.chatgpt-card {
+  background: var(--chatgpt-bg-primary);
+  border: 1px solid var(--chatgpt-border-light);
+  border-radius: var(--chatgpt-radius-lg);
+  padding: 1.5rem;
+  box-shadow: var(--chatgpt-shadow-sm);
+  transition: var(--chatgpt-transition);
+}
+
+.chatgpt-card:hover {
+  box-shadow: var(--chatgpt-shadow-md);
+  transform: translateY(-2px);
+}
+
+.chatgpt-card-header {
+  margin-bottom: 1rem;
+}
+
+.chatgpt-card-title {
+  font-size: var(--chatgpt-font-size-lg);
+  font-weight: 600;
+  color: var(--chatgpt-text-primary);
+  margin: 0 0 0.5rem 0;
+}
+
+.chatgpt-card-subtitle {
+  font-size: var(--chatgpt-font-size-sm);
+  color: var(--chatgpt-text-muted);
+  margin: 0;
+}
+
+.chatgpt-card-content {
+  color: var(--chatgpt-text-secondary);
+}
+
+/* Заголовки */
+.chatgpt-title-1 {
+  font-size: var(--chatgpt-font-size-3xl);
+  font-weight: 700;
+  color: var(--chatgpt-text-primary);
+  line-height: 1.2;
+  margin: 0 0 1rem 0;
+}
+
+.chatgpt-title-2 {
+  font-size: var(--chatgpt-font-size-2xl);
+  font-weight: 600;
+  color: var(--chatgpt-text-primary);
+  line-height: 1.3;
+  margin: 0 0 0.75rem 0;
+}
+
+.chatgpt-title-3 {
+  font-size: var(--chatgpt-font-size-xl);
+  font-weight: 600;
+  color: var(--chatgpt-text-primary);
+  line-height: 1.4;
+  margin: 0 0 0.5rem 0;
+}
+
+/* Текст */
+.chatgpt-text-large {
+  font-size: var(--chatgpt-font-size-lg);
+  color: var(--chatgpt-text-primary);
+  line-height: 1.6;
+}
+
+.chatgpt-text-base {
+  font-size: var(--chatgpt-font-size-base);
+  color: var(--chatgpt-text-secondary);
+  line-height: 1.6;
+}
+
+.chatgpt-text-small {
+  font-size: var(--chatgpt-font-size-sm);
+  color: var(--chatgpt-text-muted);
+  line-height: 1.5;
+}
+
+/* Формы */
+.chatgpt-form-group {
+  margin-bottom: 1.5rem;
+}
+
+.chatgpt-label {
+  display: block;
+  font-size: var(--chatgpt-font-size-sm);
+  font-weight: 500;
+  color: var(--chatgpt-text-primary);
+  margin-bottom: 0.5rem;
+}
+
+.chatgpt-input {
+  width: 100%;
+  padding: 0.75rem 1rem;
+  border: 1px solid var(--chatgpt-border-medium);
+  border-radius: var(--chatgpt-radius-md);
+  font-size: var(--chatgpt-font-size-base);
+  color: var(--chatgpt-text-primary);
+  background: var(--chatgpt-bg-primary);
+  transition: var(--chatgpt-transition);
+}
+
+.chatgpt-input:focus {
+  outline: none;
+  border-color: var(--chatgpt-accent-blue);
+  box-shadow: 0 0 0 3px rgba(16, 163, 127, 0.1);
+}
+
+.chatgpt-input::placeholder {
+  color: var(--chatgpt-text-muted);
+}
+
+/* Сетка */
+.chatgpt-grid {
+  display: grid;
+  gap: 1.5rem;
+}
+
+.chatgpt-grid-2 {
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+}
+
+.chatgpt-grid-3 {
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+}
+
+.chatgpt-grid-4 {
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+}
+
+/* Flexbox утилиты */
+.chatgpt-flex {
+  display: flex;
+}
+
+.chatgpt-flex-col {
+  flex-direction: column;
+}
+
+.chatgpt-items-center {
+  align-items: center;
+}
+
+.chatgpt-justify-between {
+  justify-content: space-between;
+}
+
+.chatgpt-justify-center {
+  justify-content: center;
+}
+
+.chatgpt-gap-2 {
+  gap: 0.5rem;
+}
+
+.chatgpt-gap-4 {
+  gap: 1rem;
+}
+
+.chatgpt-gap-6 {
+  gap: 1.5rem;
+}
+
+/* Отступы */
+.chatgpt-p-4 {
+  padding: 1rem;
+}
+
+.chatgpt-p-6 {
+  padding: 1.5rem;
+}
+
+.chatgpt-p-8 {
+  padding: 2rem;
+}
+
+.chatgpt-mb-4 {
+  margin-bottom: 1rem;
+}
+
+.chatgpt-mb-6 {
+  margin-bottom: 1.5rem;
+}
+
+.chatgpt-mb-8 {
+  margin-bottom: 2rem;
+}
+
+/* Контейнер */
+.chatgpt-container-max {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 1.5rem;
+}
+
+/* Адаптивность */
+@media (max-width: 768px) {
+  .chatgpt-nav-menu {
+    gap: 1rem;
+  }
+  
+  .chatgpt-grid-2,
+  .chatgpt-grid-3,
+  .chatgpt-grid-4 {
+    grid-template-columns: 1fr;
+  }
+  
+  .chatgpt-container-max {
+    padding: 0 1rem;
+  }
+  
+  .chatgpt-title-1 {
+    font-size: var(--chatgpt-font-size-2xl);
+  }
+  
+  .chatgpt-title-2 {
+    font-size: var(--chatgpt-font-size-xl);
+  }
+}
+
+/* Анимации */
+@keyframes chatgpt-fade-in {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.chatgpt-fade-in {
+  animation: chatgpt-fade-in 0.3s ease-out;
+}
+
+/* Статусы */
+.chatgpt-status-success {
+  color: var(--chatgpt-accent-green);
+  background: rgba(16, 163, 127, 0.1);
+  padding: 0.5rem 1rem;
+  border-radius: var(--chatgpt-radius-md);
+  font-size: var(--chatgpt-font-size-sm);
+}
+
+.chatgpt-status-error {
+  color: #e53e3e;
+  background: rgba(229, 62, 62, 0.1);
+  padding: 0.5rem 1rem;
+  border-radius: var(--chatgpt-radius-md);
+  font-size: var(--chatgpt-font-size-sm);
+}
+
+.chatgpt-status-warning {
+  color: #d69e2e;
+  background: rgba(214, 158, 46, 0.1);
+  padding: 0.5rem 1rem;
+  border-radius: var(--chatgpt-radius-md);
+  font-size: var(--chatgpt-font-size-sm);
+}

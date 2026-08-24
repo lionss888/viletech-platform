@@ -1,0 +1,122 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: abs_postgres
+    environment:
+      POSTGRES_DB: abs_core
+      POSTGRES_USER: abs_user
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ../../database/schemas/init.sql:/docker-entrypoint-initdb.d/01-init.sql
+      - ../../database/schemas/superadmin_setup.sql:/docker-entrypoint-initdb.d/02-superadmin.sql
+      - ../../database/schemas/analytics.sql:/docker-entrypoint-initdb.d/03-analytics.sql
+      - ../../database/data/sample_data.sql:/docker-entrypoint-initdb.d/04-sample-data.sql
+    restart: always
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U abs_user -d abs_core"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  pgadmin:
+    image: dpage/pgadmin4
+    container_name: abs_pgadmin
+    environment:
+      PGADMIN_DEFAULT_EMAIL: ${PGADMIN_DEFAULT_EMAIL}
+      PGADMIN_DEFAULT_PASSWORD: ${PGADMIN_DEFAULT_PASSWORD}
+    ports:
+      - "5050:80"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: always
+    volumes:
+      - pgadmin_data:/var/lib/pgadmin
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:80/misc/ping"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+
+  dashboard:
+    build:
+      context: ../..
+      dockerfile: docker/dashboard/Dockerfile.dashboard
+    container_name: abs_dashboard
+    ports:
+      - "8502:8502"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: always
+    environment:
+      - POSTGRES_HOST=${DB_HOST:-postgres}
+      - POSTGRES_PORT=${DB_PORT:-5432}
+      - POSTGRES_DB=${DB_NAME:-abs_core}
+      - POSTGRES_USER=${DB_USER:-lionss}
+      - POSTGRES_PASSWORD=${DB_PASSWORD}
+    networks:
+      - default
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8502')"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  clickhouse:
+    image: clickhouse/clickhouse-server:latest
+    container_name: abs_clickhouse
+    ports:
+      - "8123:8123"   # HTTP
+      - "9000:9000"   # Native
+    environment:
+      - CLICKHOUSE_DB=${CLICKHOUSE_DB:-abs_analytics}
+      - CLICKHOUSE_USER=${CLICKHOUSE_USER:-default}
+      - CLICKHOUSE_PASSWORD=${CLICKHOUSE_PASSWORD:-}
+      - CLICKHOUSE_DEFAULT_ACCESS_MANAGEMENT=1
+    volumes:
+      - clickhouse_data:/var/lib/clickhouse
+      - ../../database/clickhouse/init:/docker-entrypoint-initdb.d
+    restart: always
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:8123/ping"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+
+  storybook:
+    build:
+      context: ../../src/frontend/storybook
+      dockerfile: Dockerfile
+    container_name: abs_storybook
+    ports:
+      - "6006:6006"
+    restart: always
+    environment:
+      - NODE_ENV=development
+    volumes:
+      - ../../src/frontend/storybook/src:/app/src
+      - ../../src/frontend/storybook/.storybook:/app/.storybook
+    healthcheck:
+      test: ["CMD", "node", "-e", "require('http').get('http://127.0.0.1:6006', (res) => process.exit(res.statusCode === 200 ? 0 : 1))"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+
+volumes:
+  postgres_data:
+  pgadmin_data:
+  clickhouse_data:
+
+networks:
+  default:
+    driver: bridge

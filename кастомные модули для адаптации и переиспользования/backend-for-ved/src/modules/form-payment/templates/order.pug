@@ -1,0 +1,145 @@
+html
+    head
+        title Order
+        style.
+            body {
+                font-family: Arial, sans-serif;
+            }
+
+            #main {
+                width: 800px;
+
+                .title {
+                    text-align: center;
+                }
+
+                #table {
+                    width: 800px;
+                    border-collapse: collapse;
+                    margin-bottom: 50px;
+                    margin-top: 20px;
+
+                    th, td {
+                        border: 1px solid;
+                        padding: 5px 3px;
+                    }
+                }
+            }
+    body
+        #main
+            p.title Поручение Принципала № #{orderNumber} от #{orderDate}
+            p
+                | #{clientOrganizationBusinessForm ? clientOrganizationBusinessForm + ' ' : ''}#{clientOrganizationName},
+                | именуемое в дальнейшем &quot;Принципал&quot;,
+                | поручает #{agentOrganizationName}, именуемое в дальнейшем &quot;Агент&quot;, в
+                | соответствии с условиями Агентского договора № #{agentContractNumber} от #{agentContractDate}, 
+                if isImport
+                    | дает Поручение провести оплату третьему лицу, именуемое в дальнейшем &quot;Бенефициар&quot;, со следующими условиями:
+                else
+                    | дает Поручение принять денежные средства, причитающиеся Принципалу в соответсвии с условиями настоящего Договора, со следующими условиями:
+                table#table
+                    tr
+                        td № п/п
+                        td(colspan="2" align='center') Детали Поручения
+                    tr
+                        td 1
+                        td Наименование Бенефициара
+                        td #{counterpartyName}
+                    tr
+                        td 2
+                        td Контракт (и (или) иной документ) (№, дата)
+                        td invoice #{invoiceNumber} date #{invoiceDate}
+                    tr
+                        td 3
+                        td Сумма платежа в адрес Бенефициара
+                        td #{counterpartyCurrencyIcon} #{amount}
+                    tr
+                        td 4
+                        td Валюта платежа в адрес Бенефициара
+                        td #{counterpartyCurrency}
+                    tr
+                        td 5
+                        td Банк Бенефициара
+                        td #{bankName}
+                    tr
+                        td 6
+                        td SWIFT
+                        td #{swiftCode}
+                    tr
+                        td 7
+                        td Счет Бенефициара
+                        td #{accountNumber}
+                    tr
+                        td 8
+                        td Назначение платежа, при перечислении средств Бенефициару
+                        td invoice #{invoiceNumber} date #{invoiceDate}
+
+                    if currencyRate
+                        tr
+                            td 9
+                            td Курс пересчета
+                            td #{currencyRate}
+                                if currencyFeeRate && feeFix
+                                    | ,#{currencyFeeRate}
+
+                    if coverAmount
+                        if isImport
+                            tr
+                                td 10
+                                td
+                                    | Сумма платежа при перечислении
+                                    | средств на счет Агента
+                                td #{coverAmount} #{clientCurrencyIcon}
+
+                            tr
+                                td 11
+                                td
+                                    | Валюта платежа при перечислении
+                                    | средств на счет Агента
+                                td #{clientCurrency}
+                        else
+                            tr
+                                td 10
+                                td
+                                    | Сумма платежа при перечислении
+                                    | средств на счет Клиента
+                                td #{coverAmount} #{clientCurrencyIcon}
+
+                            tr
+                                td 11
+                                td
+                                    | Валюта платежа при перечислении
+                                    | средств на счет Клиента
+                                td #{clientCurrency}
+
+                    if feePercent || feeFix
+                        tr
+                            td 12
+                            td(colspan="2") Агентское вознаграждение
+                        tr
+                            td 12.1
+                            td
+                                | Ставка агентского вознаграждения в
+                                | соответствии с пунктом 3.2 Договора:
+                            if feePercent && !feeFix
+                                td #{feePercent}%
+                            if !feePercent && feeFix
+                                td #{feeFix} #{feeFixCurrency}
+                            if feePercent && feeFix
+                                td #{feePercent}% + #{feeFix} #{feeFixCurrency}
+                        if feeAmount
+                            tr
+                                td 12.2
+                                td
+                                    | Сумма оплаты агентского
+                                    | вознаграждения
+                                td
+                                    - const feePaymentLines = (feePaymentText || '').split('\n').filter(Boolean)
+                                    each line, index in feePaymentLines
+                                        | #{line}
+                                        if index !== feePaymentLines.length - 1
+                                            br
+                p Принципал:
+                p ___________________/
+                p #{clientSignerName}
+                p #{clientOrganizationBusinessForm} #{clientOrganizationName}

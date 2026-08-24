@@ -1,0 +1,100 @@
+# gRPC Makefile for AMG Core Platform
+
+# Variables
+PROTO_DIR := proto
+GRPC_DIR := internal/grpc
+PROTOC := protoc
+PROTOC_GEN_GO := protoc-gen-go
+PROTOC_GEN_GO_GRPC := protoc-gen-go-grpc
+
+# Go paths
+GO_MODULE := amg-flow-backend
+GO_OUT := $(GRPC_DIR)
+
+# Proto files
+PROTO_FILES := $(wildcard $(PROTO_DIR)/*.proto)
+
+# Default target
+.PHONY: all
+all: generate
+
+# Generate gRPC code from proto files
+.PHONY: generate
+generate: $(PROTO_FILES)
+	@echo "Generating gRPC code..."
+	@for proto in $(PROTO_FILES); do \
+		echo "Processing $$proto..."; \
+		$(PROTOC) \
+			--proto_path=$(PROTO_DIR) \
+			--go_out=$(GO_OUT) \
+			--go_opt=paths=source_relative \
+			--go-grpc_out=$(GO_OUT) \
+			--go-grpc_opt=paths=source_relative \
+			$$proto; \
+	done
+	@echo "gRPC code generation completed"
+
+# Clean generated files
+.PHONY: clean
+clean:
+	@echo "Cleaning generated gRPC files..."
+	@find $(GRPC_DIR) -name "*.pb.go" -delete
+	@echo "Clean completed"
+
+# Install required tools
+.PHONY: install-tools
+install-tools:
+	@echo "Installing gRPC tools..."
+	@go install google.golang.org/protobuf/cmd/protoc-gen-go@latest
+	@go install google.golang.org/grpc/cmd/protoc-gen-go-grpc@latest
+	@echo "Tools installed"
+
+# Check if tools are installed
+.PHONY: check-tools
+check-tools:
+	@echo "Checking gRPC tools..."
+	@which $(PROTOC) > /dev/null || (echo "protoc not found. Install Protocol Buffers compiler." && exit 1)
+	@which $(PROTOC_GEN_GO) > /dev/null || (echo "protoc-gen-go not found. Run 'make install-tools'." && exit 1)
+	@which $(PROTOC_GEN_GO_GRPC) > /dev/null || (echo "protoc-gen-go-grpc not found. Run 'make install-tools'." && exit 1)
+	@echo "All tools are available"
+
+# Format generated code
+.PHONY: format
+format:
+	@echo "Formatting generated code..."
+	@go fmt ./$(GRPC_DIR)/...
+	@echo "Formatting completed"
+
+# Run tests for gRPC
+.PHONY: test-grpc
+test-grpc:
+	@echo "Running gRPC tests..."
+	@go test ./$(GRPC_DIR)/... -v
+	@echo "gRPC tests completed"
+
+# Build gRPC server
+.PHONY: build-grpc
+build-grpc: generate
+	@echo "Building gRPC server..."
+	@go build -o bin/grpc-server ./cmd/grpc
+	@echo "Build completed"
+
+# Run gRPC server
+.PHONY: run-grpc
+run-grpc: build-grpc
+	@echo "Running gRPC server..."
+	@./bin/grpc-server
+
+# Help
+.PHONY: help
+help:
+	@echo "Available targets:"
+	@echo "  generate      - Generate gRPC code from proto files"
+	@echo "  clean         - Clean generated files"
+	@echo "  install-tools - Install required gRPC tools"
+	@echo "  check-tools   - Check if required tools are installed"
+	@echo "  format        - Format generated code"
+	@echo "  test-grpc     - Run gRPC tests"
+	@echo "  build-grpc    - Build gRPC server"
+	@echo "  run-grpc      - Run gRPC server"
+	@echo "  help          - Show this help"
