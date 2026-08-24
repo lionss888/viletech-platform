@@ -2,3 +2,4 @@ __pycache__/
 *.pyc
 *.vscdb-shm
 *.vscdb-wal
+snapshot/canvases/node_modules/

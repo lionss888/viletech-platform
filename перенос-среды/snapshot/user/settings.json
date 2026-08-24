@@ -1,0 +1,8 @@
+{
+    "window.commandCenter": true,
+    "cursor.windowSwitcher.sidebarHoverCollapsed": true,
+    "update.releaseTrack": "stable",
+    "git.autofetch": true,
+    "makefile.configureOnOpen": true,
+    "githubPullRequests.createOnPublishBranch": "never"
+}

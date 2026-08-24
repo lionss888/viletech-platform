@@ -20,7 +20,7 @@ SCRIPT_DIR = Path(__file__).resolve().parent
 REPO_ROOT = SCRIPT_DIR.parent
 SNAPSHOT_DIR = SCRIPT_DIR / "snapshot"
 WORKSPACE_FILE_NAME = "viletech-platform.code-workspace"
-SKIP_DIR_NAMES = {".git", "agent-tools", "terminals", "__pycache__"}
+SKIP_DIR_NAMES = {".git", "agent-tools", "terminals", "__pycache__", "node_modules"}
 SKIP_FILE_SUFFIXES = (".vscdb-shm", ".vscdb-wal")
 BLOB_KEY_RE = re.compile(
     rb"(?:composer\.content\.|agentKv:blob:)[0-9a-f]{64}"

@@ -1,0 +1,16 @@
+anysphere.cursorpyright-1.0.12
+anysphere.remote-ssh-1.1.14
+aquilalabs.superflex-1.4.1-universal
+ckolkman.vscode-postgres-1.4.3-universal
+github.vscode-github-actions-0.32.3-universal
+github.vscode-pull-request-github-0.156.0-universal
+gitlab.gitlab-workflow-6.88.1-universal
+golang.go-0.56.0-universal
+ms-azuretools.vscode-containers-2.4.5-universal
+ms-azuretools.vscode-docker-2.0.0-universal
+ms-python.debugpy-2026.6.0-darwin-x64
+ms-python.python-2025.6.1-darwin-x64
+ms-vscode.makefile-tools-0.12.17-universal
+ms-vscode.vscode-github-issue-notebooks-0.0.134-universal
+redhat.vscode-yaml-1.24.0-universal
+vue.volar-3.3.11-universal
