@@ -1,0 +1,79 @@
+name: Security Scan
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main, develop ]
+  schedule:
+    - cron: '0 2 * * 1' # Weekly on Monday at 2 AM
+
+jobs:
+  security-scan:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Set up Go
+      uses: actions/setup-go@v4
+      with:
+        go-version: '1.21'
+    
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.11'
+    
+    - name: Install Go security tools
+      run: |
+        go install github.com/securecodewarrior/gosec/v2/cmd/gosec@latest
+        go install github.com/golangci/golangci-lint/cmd/golangci-lint@latest
+    
+    - name: Install Python security tools
+      run: |
+        pip install bandit safety pip-audit
+    
+    - name: Run security scan
+      run: ./scripts/security-scan.sh all
+    
+    - name: Upload security reports
+      uses: actions/upload-artifact@v3
+      if: always()
+      with:
+        name: security-reports
+        path: security-reports/
+    
+    - name: Comment PR with security results
+      if: github.event_name == 'pull_request'
+      uses: actions/github-script@v6
+      with:
+        script: |
+          const fs = require('fs');
+          const path = require('path');
+          
+          const reportDir = 'security-reports';
+          let comment = '## 🔒 Security Scan Results\n\n';
+          
+          if (fs.existsSync(path.join(reportDir, 'gosec-report.json'))) {
+            const gosecReport = JSON.parse(fs.readFileSync(path.join(reportDir, 'gosec-report.json'), 'utf8'));
+            comment += `### Go Security (Gosec)\n`;
+            comment += `- **Issues found:** ${gosecReport.Stats.Global.NumFound}\n`;
+            comment += `- **High severity:** ${gosecReport.Stats.Global.NumHigh}\n`;
+            comment += `- **Medium severity:** ${gosecReport.Stats.Global.NumMedium}\n\n`;
+          }
+          
+          if (fs.existsSync(path.join(reportDir, 'bandit-report.json'))) {
+            const banditReport = JSON.parse(fs.readFileSync(path.join(reportDir, 'bandit-report.json'), 'utf8'));
+            comment += `### Python Security (Bandit)\n`;
+            comment += `- **Issues found:** ${banditReport.results.length}\n`;
+            comment += `- **High confidence:** ${banditReport.results.filter(r => r.issue_confidence === 'HIGH').length}\n`;
+            comment += `- **Medium confidence:** ${banditReport.results.filter(r => r.issue_confidence === 'MEDIUM').length}\n\n`;
+          }
+          
+          github.rest.issues.createComment({
+            issue_number: context.issue.number,
+            owner: context.repo.owner,
+            repo: context.repo.repo,
+            body: comment
+          });

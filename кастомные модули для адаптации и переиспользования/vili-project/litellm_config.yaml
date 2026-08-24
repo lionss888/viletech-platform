@@ -1,0 +1,182 @@
+# LiteLLM Configuration для VILI
+# Гибридная архитектура: Ollama + TGI (FinGPT) + Cloud fallback
+
+model_list:
+  # ============================================
+  # ЛОКАЛЬНЫЕ МОДЕЛИ (через Ollama + Nginx LB)
+  # ============================================
+  
+  - model_name: local-llama
+    litellm_params:
+      model: ollama/llama3.2
+      api_base: http://nginx:11434
+      stream: true
+  
+  - model_name: local-qwen
+    litellm_params:
+      model: ollama/qwen2.5:7b
+      api_base: http://nginx:11434
+      stream: true
+  
+  - model_name: local-qwen-small
+    litellm_params:
+      model: ollama/qwen2.5:3b
+      api_base: http://nginx:11434
+      stream: true
+  
+  - model_name: local-embedding
+    litellm_params:
+      model: ollama/nomic-embed-text
+      api_base: http://nginx:11434
+  
+  - model_name: local-mistral
+    litellm_params:
+      model: ollama/mistral
+      api_base: http://nginx:11434
+      stream: true
+  
+  - model_name: local-phi
+    litellm_params:
+      model: ollama/phi3:mini
+      api_base: http://nginx:11434
+      stream: true
+  
+  # ============================================
+  # ФИНАНСОВЫЕ МОДЕЛИ (FinGPT через локальный TGI)
+  # ============================================
+  
+  - model_name: fingpt-sentiment
+    litellm_params:
+      model: huggingface/tgi
+      api_base: http://tgi-fingpt:80
+      stream: true
+    model_info:
+      description: "FinGPT sentiment analysis for financial documents"
+      input_cost_per_token: 0.0
+      output_cost_per_token: 0.0
+  
+  - model_name: fingpt-forecaster
+    litellm_params:
+      model: huggingface/tgi
+      api_base: http://tgi-fingpt:80
+      stream: true
+    model_info:
+      description: "FinGPT forecasting for financial markets"
+      input_cost_per_token: 0.0
+      output_cost_per_token: 0.0
+  
+  # ============================================
+  # ОБЛАЧНЫЕ МОДЕЛИ (fallback)
+  # ============================================
+  
+  - model_name: gpt-4
+    litellm_params:
+      model: gpt-4
+      api_key: os.environ/OPENAI_API_KEY
+  
+  - model_name: gpt-4-turbo
+    litellm_params:
+      model: gpt-4-turbo-preview
+      api_key: os.environ/OPENAI_API_KEY
+  
+  - model_name: claude-3-sonnet
+    litellm_params:
+      model: anthropic/claude-3-sonnet-20240229
+      api_key: os.environ/ANTHROPIC_API_KEY
+  
+  - model_name: claude-3-opus
+    litellm_params:
+      model: anthropic/claude-3-opus-20240229
+      api_key: os.environ/ANTHROPIC_API_KEY
+  
+  - model_name: cloud-embedding
+    litellm_params:
+      model: text-embedding-ada-002
+      api_key: os.environ/OPENAI_API_KEY
+
+# ============================================
+# ROUTER SETTINGS
+# ============================================
+
+router_settings:
+  routing_strategy: "simple-shuffle"  # Распределение нагрузки
+  redis_host: "redis"
+  redis_port: 6379
+  enable_pre_call_checks: true
+
+# ============================================
+# FALLBACK ЦЕПОЧКИ
+# ============================================
+
+# Приоритет: FinGPT (TGI) -> Ollama -> Cloud
+fallbacks:
+  # Для финансового анализа и sentiment
+  - ["fingpt-sentiment", "local-qwen", "gpt-4"]
+  
+  # Для прогнозирования
+  - ["fingpt-forecaster", "local-llama", "gpt-4-turbo"]
+  
+  # Для embedding
+  - ["local-embedding", "cloud-embedding"]
+  
+  # Для общих задач
+  - ["local-llama", "local-qwen", "claude-3-sonnet"]
+
+# ============================================
+# GENERAL SETTINGS
+# ============================================
+
+general_settings:
+  master_key: "sk-vili-2024"  # Замените в production!
+  database_url: "postgresql://vili:vili_password@postgres:5432/litellm"
+  
+  # Логирование
+  log_level: "INFO"
+  
+  # Таймауты
+  request_timeout: 600  # 10 минут для длительных запросов
+  
+  # Cost tracking
+  enable_cost_tracking: true
+  
+  # Callbacks для мониторинга
+  success_callback: ["langfuse"]
+  failure_callback: ["sentry"]
+
+# ============================================
+# LITELLM SETTINGS
+# ============================================
+
+litellm_settings:
+  # Кэширование
+  cache: true
+  cache_params:
+    type: "redis"
+    host: "redis"
+    port: 6379
+    ttl: 3600
+  
+  # Retry логика
+  num_retries: 3
+  retry_policy: "exponential_backoff_retry"
+  
+  # Таймауты
+  timeout: 300
+  
+  # Streaming
+  stream_timeout: 600
+  
+  # Drop params для совместимости
+  drop_params: true
+  
+  # Модификаторы запросов
+  modify_params: true
+
+# ============================================
+# ENVIRONMENT VARIABLES (опционально)
+# ============================================
+
+# В production эти значения должны быть в .env файле:
+# OPENAI_API_KEY=your-openai-key
+# ANTHROPIC_API_KEY=your-anthropic-key
+# HUGGINGFACE_API_KEY=your-huggingface-key (если используется cloud HF)

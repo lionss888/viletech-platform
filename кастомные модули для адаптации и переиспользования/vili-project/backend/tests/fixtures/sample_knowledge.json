@@ -1,0 +1,37 @@
+{
+  "compliance_rules": [
+    {
+      "category": "sanctions",
+      "content_type": "regulation",
+      "content": "OFAC Sanctions: Transactions with entities on the SDN list are prohibited. Financial institutions must screen all parties against the SDN list before processing transactions.",
+      "keywords": ["OFAC", "SDN", "sanctions", "prohibited"],
+      "source": "OFAC Compliance Guidelines"
+    },
+    {
+      "category": "aml",
+      "content_type": "guideline",
+      "content": "Anti-Money Laundering: Transactions exceeding $10,000 require CTR filing. Suspicious activity must be reported via SAR within 30 days of detection.",
+      "keywords": ["AML", "CTR", "SAR", "threshold", "suspicious"],
+      "source": "FinCEN AML Guidelines"
+    },
+    {
+      "category": "kyc",
+      "content_type": "regulation",
+      "content": "Know Your Customer: Financial institutions must verify customer identity using government-issued ID, proof of address, and beneficial ownership information for entities.",
+      "keywords": ["KYC", "identity", "verification", "beneficial ownership"],
+      "source": "BSA/AML Compliance Program"
+    },
+    {
+      "category": "swift",
+      "content_type": "guideline",
+      "content": "SWIFT MT103: Single customer credit transfer message format. Field 50K contains ordering customer, Field 59 contains beneficiary, Field 32A contains value date and amount.",
+      "keywords": ["SWIFT", "MT103", "payment", "message format"],
+      "source": "SWIFT Standards"
+    }
+  ],
+  "country_risk_ratings": {
+    "high_risk": ["IR", "KP", "SY", "CU", "VE", "RU", "BY"],
+    "medium_risk": ["CN", "AE", "SA", "TR", "NG", "PK"],
+    "low_risk": ["US", "GB", "DE", "FR", "JP", "AU", "CA", "CH"]
+  }
+}

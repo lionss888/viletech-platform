@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="ru" data-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>VILI Ассистент - Чат</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/static/css/common.css">
+    <link rel="stylesheet" href="css/chat.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <div class="header-content">
+                <h1>🤖 VILI Ассистент</h1>
+                <div class="header-actions">
+                    <a href="/admin" class="btn-link">База знаний</a>
+                    <button id="clear-chat" class="btn btn-secondary">Очистить чат</button>
+                    <button id="theme-toggle" class="theme-toggle" title="Переключить тему" aria-label="Переключить тему"></button>
+                </div>
+            </div>
+            <p class="subtitle">AI-ассистент для анализа платежных документов и compliance проверок</p>
+        </header>
+
+        <main>
+            <div class="chat-container">
+                <!-- Панель настроек -->
+                <div class="settings-panel">
+                    <h3>⚙️ Настройки</h3>
+                    
+                    <div class="setting-group">
+                        <label for="model-select">Модель LLM:</label>
+                        <select id="model-select">
+                            <option value="local-llama" selected>Llama 3.2 (Локальная)</option>
+                            <option value="local-qwen">Qwen 2.5 7B (Локальная)</option>
+                            <option value="local-mistral">Mistral (Локальная)</option>
+                            <option value="fingpt-sentiment">FinGPT Sentiment</option>
+                        </select>
+                    </div>
+
+                    <div class="setting-group">
+                        <label>
+                            <input type="checkbox" id="use-rag" checked>
+                            Использовать базу знаний (RAG)
+                        </label>
+                    </div>
+
+                    <div class="setting-group">
+                        <label for="temperature">Температура: <span id="temp-value">0.7</span></label>
+                        <input type="range" id="temperature" min="0" max="1" step="0.1" value="0.7">
+                    </div>
+
+                    <div class="setting-group">
+                        <label for="max-tokens">Макс. токенов: <span id="tokens-value">2000</span></label>
+                        <input type="range" id="max-tokens" min="500" max="4000" step="100" value="2000">
+                    </div>
+
+                    <div class="stats">
+                        <h4>📊 Статистика</h4>
+                        <div id="stats-content">
+                            <div class="stat-item">
+                                <span>Сообщений:</span>
+                                <span id="msg-count">0</span>
+                            </div>
+                            <div class="stat-item">
+                                <span>База знаний:</span>
+                                <span id="kb-count">-</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Область чата -->
+                <div class="chat-area">
+                    <div id="messages" class="messages">
+                        <div class="message system-message">
+                            <div class="message-content">
+                                <p>👋 Добро пожаловать! Я VILI - AI-ассистент для анализа платежных документов.</p>
+                                <p>Я могу помочь вам с:</p>
+                                <ul>
+                                    <li>Анализом платежных документов (SWIFT, ISO 20022, и др.)</li>
+                                    <li>Compliance проверками (санкции, AML, KYC)</li>
+                                    <li>Оценкой рисков транзакций</li>
+                                    <li>Ответами на вопросы о финансовых регуляциях</li>
+                                </ul>
+                                <p><strong>Примеры вопросов:</strong></p>
+                                <ul>
+                                    <li>"Что такое FATF рекомендации?"</li>
+                                    <li>"Как проверить санкционный список?"</li>
+                                    <li>"Какие риски у транзакции в Россию?"</li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="input-area">
+                        <form id="chat-form">
+                            <textarea 
+                                id="user-input" 
+                                placeholder="Введите ваш вопрос..." 
+                                rows="3"
+                                autofocus
+                            ></textarea>
+                            <div class="input-actions">
+                                <div class="file-upload">
+                                    <label for="file-input" class="file-label">📎 Файл</label>
+                                    <input type="file" id="file-input" accept=".pdf,.txt,.csv,.xml,.json">
+                                    <span id="file-name"></span>
+                                </div>
+                                <button type="submit" class="btn btn-primary" id="send-btn">
+                                    Отправить
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script src="/static/js/common.js"></script>
+    <script src="js/chat.js"></script>
+</body>
+</html>

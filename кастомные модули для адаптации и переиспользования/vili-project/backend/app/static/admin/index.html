@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="ru" data-theme="light">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>VILI Admin - Управление источниками знаний</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="/static/css/common.css">
+    <link rel="stylesheet" href="css/admin.css">
+</head>
+<body>
+    <div class="admin-layout">
+        <div class="sidebar-overlay"></div>
+        <!-- Sidebar Navigation -->
+        <aside class="sidebar">
+            <div class="sidebar-header">
+                <div class="logo">
+                    <div class="logo-icon">🤖</div>
+                    <div class="logo-text">
+                        <h2>VILI</h2>
+                        <span>Admin</span>
+                    </div>
+                </div>
+            </div>
+            
+            <nav class="sidebar-nav">
+                <a href="/admin" class="nav-item active">
+                    <i class="fas fa-home"></i>
+                    <span>Главная</span>
+                </a>
+                <a href="/chat" class="nav-item">
+                    <i class="fas fa-comments"></i>
+                    <span>Чат</span>
+                </a>
+                <a href="/operators" class="nav-item">
+                    <i class="fas fa-users"></i>
+                    <span>Операторы</span>
+                </a>
+                <div class="nav-divider"></div>
+                <div class="nav-section-title">Управление</div>
+                <a href="/admin" class="nav-item">
+                    <i class="fas fa-database"></i>
+                    <span>Источники знаний</span>
+                </a>
+                <a href="/admin" class="nav-item">
+                    <i class="fas fa-cog"></i>
+                    <span>Настройки</span>
+                </a>
+            </nav>
+            
+            <div class="sidebar-footer">
+                <button id="theme-toggle" class="theme-toggle-btn" title="Переключить тему">
+                    <i class="fas fa-moon"></i>
+                    <span>Тема</span>
+                </button>
+            </div>
+        </aside>
+
+        <!-- Main Content -->
+        <div class="main-content">
+            <div class="sidebar-overlay"></div>
+            <button class="mobile-menu-toggle" id="mobile-menu-toggle" aria-label="Открыть меню">
+                <i class="fas fa-bars"></i>
+            </button>
+            <header class="main-header">
+                <div class="header-content">
+                    <div>
+                        <h1>Управление источниками знаний</h1>
+                        <p>Добавляйте и управляйте источниками для compliance проверок</p>
+                    </div>
+                </div>
+            </header>
+
+            <main class="content-area">
+            <!-- Форма добавления источника -->
+            <section class="add-source-section">
+                <h2>Добавить источник знаний</h2>
+                
+                <div class="form-tabs">
+                    <button class="tab-button active" data-tab="url-tab">По URL</button>
+                    <button class="tab-button" data-tab="file-tab">Загрузить файл</button>
+                </div>
+
+                <!-- Форма URL -->
+                <div id="url-tab" class="tab-content active">
+                    <form id="url-form">
+                        <div class="form-group">
+                            <label for="url-name">Название источника *</label>
+                            <input type="text" id="url-name" name="name" required placeholder="Например: FATF рекомендации">
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="url-source">URL источника *</label>
+                            <input type="url" id="url-source" name="source_url" required placeholder="https://example.com/knowledge">
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="url-description">Описание</label>
+                            <textarea id="url-description" name="description" placeholder="Описание источника знаний"></textarea>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="url-category">Категория (опционально)</label>
+                            <select id="url-category" name="category">
+                                <option value="">Без категории</option>
+                                <option value="ved">ВЭД</option>
+                                <option value="compliance">Compliance</option>
+                                <option value="project_management">Управление проектами</option>
+                            </select>
+                            <small>Выберите категорию для фильтрации поиска</small>
+                        </div>
+                        
+                        <div class="form-group checkbox-group">
+                            <label>
+                                <input type="checkbox" id="url-auto-refresh" name="auto_refresh">
+                                Автоматическое обновление
+                            </label>
+                        </div>
+                        
+                        <button type="submit" class="btn btn-primary">Добавить источник</button>
+                    </form>
+                </div>
+
+                <!-- Форма файла -->
+                <div id="file-tab" class="tab-content">
+                    <form id="file-form">
+                        <div class="form-group">
+                            <label for="file-name">Название источника *</label>
+                            <input type="text" id="file-name" name="name" required placeholder="Например: Санкционный список">
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="file-upload">Файл *</label>
+                            <input type="file" id="file-upload" name="file" required accept=".pdf,.csv,.txt,.json,.xml">
+                            <small>Поддерживаемые форматы: PDF, CSV, TXT, JSON, XML</small>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="file-description">Описание</label>
+                            <textarea id="file-description" name="description" placeholder="Описание источника знаний"></textarea>
+                        </div>
+                        
+                        <button type="submit" class="btn btn-primary">Загрузить источник</button>
+                    </form>
+                </div>
+
+                <div id="form-message" class="message"></div>
+            </section>
+
+            <!-- Список источников -->
+            <section class="sources-list-section">
+                <h2>Существующие источники знаний</h2>
+                
+                <div class="filters">
+                    <label>
+                        <input type="checkbox" id="active-only" checked>
+                        Показывать только активные
+                    </label>
+                    <button id="refresh-list" class="btn btn-secondary">Обновить список</button>
+                </div>
+
+                <div id="sources-list" class="sources-grid">
+                    <div class="loading">Загрузка...</div>
+                </div>
+            </section>
+
+            <!-- Модальное окно для просмотра chunks -->
+            <div id="chunks-modal" class="modal">
+                <div class="modal-content">
+                    <span class="close">&times;</span>
+                    <h2 id="modal-title">Фрагменты источника</h2>
+                    <div id="chunks-list" class="chunks-list">
+                        <div class="loading">Загрузка...</div>
+                    </div>
+                </div>
+            </div>
+            </main>
+        </div>
+    </div>
+
+    <script src="/static/js/common.js"></script>
+    <script src="js/admin.js"></script>
+</body>
+</html>

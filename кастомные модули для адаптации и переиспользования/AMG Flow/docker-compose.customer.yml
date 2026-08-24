@@ -1,0 +1,95 @@
+# Customer External PostgreSQL Override
+# Usage: docker compose -f docker-compose.yml -f docker-compose.customer.yml up --build
+#
+# This override:
+# 1. Removes local PostgreSQL service (uses external cluster)
+# 2. Configures API service to connect to external PostgreSQL
+# 3. Optionally connects to customer's Docker network
+
+version: "3.9"
+
+services:
+  api:
+    environment:
+      # Database connection (from .env.customer or .env)
+      - PG_DSN=${PG_DSN}
+      - DB_POOL_SIZE=${DB_POOL_SIZE:-10}
+      - DB_POOL_TIMEOUT=${DB_POOL_TIMEOUT:-30}
+      
+      # Other settings
+      - APP_ENV=${APP_ENV:-prod}
+      - HOST=${HOST:-0.0.0.0}
+      - PORT=${PORT:-8000}
+      - OLLAMA_HOST=${OLLAMA_HOST:-http://ollama:11434}
+      - OLLAMA_MODEL=${OLLAMA_MODEL:-llama3.1}
+      - ENABLE_CORS=${ENABLE_CORS}
+      - LOG_LEVEL=${LOG_LEVEL:-INFO}
+      - REQUEST_ID_HEADER=${REQUEST_ID_HEADER:-X-Request-ID}
+    
+    # No dependency on local database
+    depends_on: []
+    
+    # Networks: default + optional customer network
+    networks:
+      - default
+      # Uncomment if you need to connect to customer's Docker network:
+      # - customer-pg-net
+    
+    # Optional: Mount custom CA certificate for TLS verification
+    # volumes:
+    #   - ./certs/ca.crt:/etc/pg/ca.crt:ro
+    
+    # Override command to skip local database wait
+    command: >
+      sh -c "
+        echo 'Connecting to external PostgreSQL...' &&
+        echo 'Running migrations...' &&
+        alembic upgrade head &&
+        echo 'Starting API server...' &&
+        uvicorn app.main:app --host 0.0.0.0 --port 8000
+      "
+
+  # Local PostgreSQL service is intentionally removed
+  # The API will connect to external PostgreSQL cluster
+
+  # Ollama service (keep if needed)
+  ollama:
+    image: ollama/ollama:latest
+    ports:
+      - "11434:11434"
+    volumes:
+      - ollama_data:/root/.ollama
+    environment:
+      - OLLAMA_HOST=0.0.0.0
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:11434/api/tags"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+
+  # Client service (keep if needed)
+  client-dev:
+    build:
+      context: ./client
+      dockerfile: Dockerfile.dev
+    ports:
+      - "5173:5173"
+    environment:
+      - VITE_API_BASE_URL=http://localhost:8000
+      - VITE_DEFAULT_MODEL=llama3.1
+    volumes:
+      - ./client:/app
+      - /app/node_modules
+    command: npm run dev
+    depends_on:
+      - api
+
+volumes:
+  ollama_data:
+
+networks:
+  # Uncomment and configure if you need to connect to customer's existing Docker network:
+  # customer-pg-net:
+  #   external: true
+  #   name: customer-postgres-network  # Replace with actual network name

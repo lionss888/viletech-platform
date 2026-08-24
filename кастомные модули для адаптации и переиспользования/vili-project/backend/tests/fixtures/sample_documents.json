@@ -1,0 +1,49 @@
+{
+  "traditional_payment": {
+    "type": "traditional",
+    "format": "SWIFT",
+    "customer_id": "550e8400-e29b-41d4-a716-446655440000",
+    "parsed_data": {
+      "sender": "BANKUS33XXX",
+      "receiver": "BANKEU22XXX",
+      "amount": 10000.00,
+      "currency": "USD",
+      "reference": "REF123456",
+      "sender_name": "ACME Corporation",
+      "sender_address": "123 Main Street, New York, NY 10001",
+      "beneficiary_name": "Sample Beneficiary",
+      "beneficiary_address": "456 Test Avenue, Berlin 10178",
+      "purpose": "PAYMENT FOR INVOICE 12345"
+    }
+  },
+  "crypto_payment": {
+    "type": "crypto",
+    "format": "blockchain",
+    "customer_id": "550e8400-e29b-41d4-a716-446655440001",
+    "parsed_data": {
+      "blockchain": "ethereum",
+      "tx_hash": "0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef",
+      "from_address": "0xABCDEF1234567890ABCDEF1234567890ABCDEF12",
+      "to_address": "0x1234567890ABCDEF1234567890ABCDEF12345678",
+      "amount": 1.5,
+      "currency": "ETH",
+      "gas_used": 21000,
+      "block_number": 18500000
+    }
+  },
+  "high_risk_payment": {
+    "type": "traditional",
+    "format": "SWIFT",
+    "customer_id": "550e8400-e29b-41d4-a716-446655440002",
+    "parsed_data": {
+      "sender": "BANKIR12XXX",
+      "receiver": "BANKRU33XXX",
+      "amount": 500000.00,
+      "currency": "USD",
+      "reference": "HIGHRISK001",
+      "sender_name": "Unknown Entity",
+      "sender_country": "IR",
+      "beneficiary_country": "RU"
+    }
+  }
+}

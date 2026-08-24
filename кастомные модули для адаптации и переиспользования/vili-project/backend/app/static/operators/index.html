@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="ru" data-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>VILI - Аналитика операторов ВЭД</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/static/css/common.css">
+    <link rel="stylesheet" href="css/operators.css">
+</head>
+<body>
+    <div class="container">
+        <!-- Header -->
+        <header>
+            <h1>⚡ VILI Operator Analytics</h1>
+            <p>Аналитика операторов отдела ВЭД с учётом требований 115-ФЗ</p>
+            <div class="header-actions">
+                <a href="/chat" class="btn btn-secondary">← Чат</a>
+                <button id="refresh-btn" class="btn btn-primary">Обновить данные</button>
+                <button id="theme-toggle" class="theme-toggle" title="Переключить тему" aria-label="Переключить тему"></button>
+            </div>
+        </header>
+
+        <!-- Team Statistics -->
+        <div class="team-stats">
+            <div class="stat-card">
+                <div class="stat-value primary" id="stat-total">-</div>
+                <div class="stat-label">Операторов</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value success" id="stat-success">-</div>
+                <div class="stat-label">Avg Success Rate</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value primary" id="stat-compliance">-</div>
+                <div class="stat-label">Avg Compliance</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value warning" id="stat-detection">-</div>
+                <div class="stat-label">Detection Rate</div>
+            </div>
+        </div>
+
+        <!-- Detail Panel (hidden by default) -->
+        <div id="detail-panel" class="detail-panel">
+            <div class="loading">Загрузка...</div>
+        </div>
+
+        <!-- Operators Grid -->
+        <section class="operators-section">
+            <div class="section-header">
+                <h2>Операторы отдела ВЭД</h2>
+            </div>
+            <div id="operators-grid" class="operators-grid">
+                <div class="loading">Загрузка операторов</div>
+            </div>
+        </section>
+
+        <!-- Compliance Context -->
+        <section class="operators-section compliance-context">
+            <div class="section-header">
+                <h2>📋 Контекст Compliance (115-ФЗ)</h2>
+            </div>
+            <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 20px;">
+                <div>
+                    <h4>Ключевые требования</h4>
+                    <ul>
+                        <li>Идентификация клиента (KYC)</li>
+                        <li>Мониторинг операций на подозрительность</li>
+                        <li>Сообщение в Росфинмониторинг</li>
+                        <li>Хранение документов ≥ 5 лет</li>
+                        <li>Регулярное обучение сотрудников</li>
+                    </ul>
+                </div>
+                <div>
+                    <h4>Признаки подозрительных операций</h4>
+                    <ul>
+                        <li>Дробление платежей</li>
+                        <li>Несоответствие назначения платежа</li>
+                        <li>Транзитные операции без смысла</li>
+                        <li>Высокорисковые юрисдикции</li>
+                        <li>Отказ от предоставления документов</li>
+                    </ul>
+                </div>
+                <div>
+                    <h4>SLA и метрики</h4>
+                    <ul>
+                        <li>Время реакции на алерт: <strong>≤ 10 мин</strong></li>
+                        <li>Целевой Compliance Score: <strong>≥ 90%</strong></li>
+                        <li>Допустимый False Negative: <strong>≤ 5%</strong></li>
+                        <li>Detection Rate: <strong>≥ 95%</strong></li>
+                    </ul>
+                </div>
+            </div>
+        </section>
+
+        <!-- Footer -->
+        <footer>
+            <p>VILI Operator Analytics Module • Прототип для демонстрации</p>
+            <p>Данные: демо-режим (синтетические данные)</p>
+        </footer>
+    </div>
+
+    <script src="/static/js/common.js"></script>
+    <script src="js/operators.js"></script>
+</body>
+</html>

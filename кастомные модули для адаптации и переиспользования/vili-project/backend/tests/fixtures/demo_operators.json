@@ -1,0 +1,344 @@
+{
+  "description": "Демо-данные операторов отдела ВЭД для прототипа VILI Operator Analytics",
+  "version": "1.0.0",
+  "generated_at": "2026-01-02",
+  "period": {
+    "start": "2025-12-03",
+    "end": "2026-01-02",
+    "days": 30
+  },
+  "operators": [
+    {
+      "id": "550e8400-e29b-41d4-a716-446655440001",
+      "profile": {
+        "full_name": "Иванов Алексей Петрович",
+        "employee_id": "VED-001",
+        "department": "VED",
+        "position": "Старший менеджер ВЭД",
+        "level": "senior",
+        "hire_date": "2020-03-15",
+        "years_of_experience": 8.5,
+        "years_in_company": 5.8,
+        "certificates": [
+          {
+            "name": "Сертифицированный специалист ВЭД",
+            "issuer": "ТПП РФ",
+            "issue_date": "2022-06-10",
+            "expiry_date": "2027-06-10",
+            "is_valid": true
+          },
+          {
+            "name": "Специалист по валютному контролю",
+            "issuer": "Банк России (программа)",
+            "issue_date": "2023-03-20",
+            "expiry_date": "2028-03-20",
+            "is_valid": true
+          },
+          {
+            "name": "AML/KYC Professional",
+            "issuer": "ACAMS",
+            "issue_date": "2024-01-15",
+            "expiry_date": "2027-01-15",
+            "is_valid": true
+          }
+        ],
+        "languages": ["Русский", "Английский (B2)", "Китайский (A2)"],
+        "specializations": ["Китай", "ЕС", "валютный контроль", "compliance"]
+      },
+      "metrics": {
+        "applications_processed": 156,
+        "applications_approved": 142,
+        "applications_rejected": 12,
+        "applications_pending": 2,
+        "avg_processing_time_min": 28.5,
+        "min_processing_time_min": 12.0,
+        "max_processing_time_min": 95.0,
+        "success_rate": 0.91,
+        "error_rate": 0.02,
+        "compliance_score": 0.97,
+        "red_flags_detected": 8,
+        "red_flags_missed": 0,
+        "false_positive_rate": 0.03,
+        "false_negative_rate": 0.0,
+        "avg_alert_response_time_min": 4.2,
+        "period_start": "2025-12-03",
+        "period_end": "2026-01-02"
+      },
+      "compliance": {
+        "overall_score": 0.97,
+        "risk_level": "low",
+        "kyc_compliance": 0.98,
+        "aml_compliance": 0.97,
+        "sanctions_compliance": 1.0,
+        "documentation_quality": 0.95,
+        "detection_rate": 1.0,
+        "false_negative_rate": 0.0,
+        "alert_response_compliance": 0.96,
+        "violations": [],
+        "violations_count_30d": 0,
+        "violations_count_90d": 1
+      },
+      "daily_stats": [
+        {"date": "2025-12-03", "processed": 5, "approved": 5, "rejected": 0, "flags_detected": 0},
+        {"date": "2025-12-04", "processed": 6, "approved": 5, "rejected": 1, "flags_detected": 1},
+        {"date": "2025-12-05", "processed": 4, "approved": 4, "rejected": 0, "flags_detected": 0},
+        {"date": "2025-12-06", "processed": 7, "approved": 6, "rejected": 1, "flags_detected": 0},
+        {"date": "2025-12-09", "processed": 5, "approved": 5, "rejected": 0, "flags_detected": 1},
+        {"date": "2025-12-10", "processed": 6, "approved": 5, "rejected": 1, "flags_detected": 0},
+        {"date": "2025-12-11", "processed": 5, "approved": 5, "rejected": 0, "flags_detected": 0},
+        {"date": "2025-12-12", "processed": 4, "approved": 4, "rejected": 0, "flags_detected": 1},
+        {"date": "2025-12-13", "processed": 6, "approved": 5, "rejected": 1, "flags_detected": 0},
+        {"date": "2025-12-16", "processed": 5, "approved": 5, "rejected": 0, "flags_detected": 0},
+        {"date": "2025-12-17", "processed": 7, "approved": 6, "rejected": 1, "flags_detected": 1},
+        {"date": "2025-12-18", "processed": 5, "approved": 5, "rejected": 0, "flags_detected": 0},
+        {"date": "2025-12-19", "processed": 6, "approved": 5, "rejected": 1, "flags_detected": 0},
+        {"date": "2025-12-20", "processed": 4, "approved": 4, "rejected": 0, "flags_detected": 1},
+        {"date": "2025-12-23", "processed": 5, "approved": 5, "rejected": 0, "flags_detected": 0},
+        {"date": "2025-12-24", "processed": 6, "approved": 5, "rejected": 1, "flags_detected": 0},
+        {"date": "2025-12-25", "processed": 5, "approved": 5, "rejected": 0, "flags_detected": 1},
+        {"date": "2025-12-26", "processed": 7, "approved": 6, "rejected": 1, "flags_detected": 0},
+        {"date": "2025-12-27", "processed": 5, "approved": 5, "rejected": 0, "flags_detected": 0},
+        {"date": "2025-12-30", "processed": 6, "approved": 5, "rejected": 1, "flags_detected": 1},
+        {"date": "2025-12-31", "processed": 4, "approved": 4, "rejected": 0, "flags_detected": 0},
+        {"date": "2026-01-02", "processed": 5, "approved": 5, "rejected": 0, "flags_detected": 1}
+      ]
+    },
+    {
+      "id": "550e8400-e29b-41d4-a716-446655440002",
+      "profile": {
+        "full_name": "Петрова Мария Сергеевна",
+        "employee_id": "VED-002",
+        "department": "VED",
+        "position": "Менеджер ВЭД",
+        "level": "middle",
+        "hire_date": "2022-09-01",
+        "years_of_experience": 4.2,
+        "years_in_company": 3.3,
+        "certificates": [
+          {
+            "name": "Основы ВЭД",
+            "issuer": "ТПП РФ",
+            "issue_date": "2023-02-15",
+            "expiry_date": "2028-02-15",
+            "is_valid": true
+          },
+          {
+            "name": "English for Business (B1)",
+            "issuer": "Cambridge",
+            "issue_date": "2023-11-20",
+            "expiry_date": null,
+            "is_valid": true
+          }
+        ],
+        "languages": ["Русский", "Английский (B1)"],
+        "specializations": ["ЕС", "СНГ", "документооборот"]
+      },
+      "metrics": {
+        "applications_processed": 128,
+        "applications_approved": 112,
+        "applications_rejected": 14,
+        "applications_pending": 2,
+        "avg_processing_time_min": 38.2,
+        "min_processing_time_min": 18.0,
+        "max_processing_time_min": 120.0,
+        "success_rate": 0.875,
+        "error_rate": 0.04,
+        "compliance_score": 0.89,
+        "red_flags_detected": 5,
+        "red_flags_missed": 1,
+        "false_positive_rate": 0.05,
+        "false_negative_rate": 0.08,
+        "avg_alert_response_time_min": 8.5,
+        "period_start": "2025-12-03",
+        "period_end": "2026-01-02"
+      },
+      "compliance": {
+        "overall_score": 0.89,
+        "risk_level": "low",
+        "kyc_compliance": 0.92,
+        "aml_compliance": 0.88,
+        "sanctions_compliance": 0.95,
+        "documentation_quality": 0.85,
+        "detection_rate": 0.83,
+        "false_negative_rate": 0.08,
+        "alert_response_compliance": 0.85,
+        "violations": [
+          {
+            "violation_type": "delayed_alert_response",
+            "severity": "low",
+            "date": "2025-12-18T14:30:00",
+            "description": "Превышение времени реакции на алерт (12 мин вместо 10)",
+            "resolved": true,
+            "resolution_date": "2025-12-18T14:45:00"
+          }
+        ],
+        "violations_count_30d": 1,
+        "violations_count_90d": 2
+      },
+      "daily_stats": [
+        {"date": "2025-12-03", "processed": 4, "approved": 4, "rejected": 0, "flags_detected": 0},
+        {"date": "2025-12-04", "processed": 5, "approved": 4, "rejected": 1, "flags_detected": 0},
+        {"date": "2025-12-05", "processed": 4, "approved": 3, "rejected": 1, "flags_detected": 1},
+        {"date": "2025-12-06", "processed": 5, "approved": 5, "rejected": 0, "flags_detected": 0},
+        {"date": "2025-12-09", "processed": 4, "approved": 4, "rejected": 0, "flags_detected": 0},
+        {"date": "2025-12-10", "processed": 6, "approved": 5, "rejected": 1, "flags_detected": 1},
+        {"date": "2025-12-11", "processed": 4, "approved": 4, "rejected": 0, "flags_detected": 0},
+        {"date": "2025-12-12", "processed": 5, "approved": 4, "rejected": 1, "flags_detected": 0},
+        {"date": "2025-12-13", "processed": 5, "approved": 5, "rejected": 0, "flags_detected": 1},
+        {"date": "2025-12-16", "processed": 4, "approved": 3, "rejected": 1, "flags_detected": 0},
+        {"date": "2025-12-17", "processed": 6, "approved": 5, "rejected": 1, "flags_detected": 0},
+        {"date": "2025-12-18", "processed": 5, "approved": 5, "rejected": 0, "flags_detected": 1},
+        {"date": "2025-12-19", "processed": 4, "approved": 4, "rejected": 0, "flags_detected": 0},
+        {"date": "2025-12-20", "processed": 5, "approved": 4, "rejected": 1, "flags_detected": 0},
+        {"date": "2025-12-23", "processed": 4, "approved": 4, "rejected": 0, "flags_detected": 0},
+        {"date": "2025-12-24", "processed": 6, "approved": 5, "rejected": 1, "flags_detected": 1},
+        {"date": "2025-12-25", "processed": 4, "approved": 4, "rejected": 0, "flags_detected": 0},
+        {"date": "2025-12-26", "processed": 5, "approved": 4, "rejected": 1, "flags_detected": 0},
+        {"date": "2025-12-27", "processed": 5, "approved": 5, "rejected": 0, "flags_detected": 0},
+        {"date": "2025-12-30", "processed": 6, "approved": 5, "rejected": 1, "flags_detected": 0},
+        {"date": "2025-12-31", "processed": 4, "approved": 3, "rejected": 1, "flags_detected": 0},
+        {"date": "2026-01-02", "processed": 4, "approved": 4, "rejected": 0, "flags_detected": 0}
+      ]
+    },
+    {
+      "id": "550e8400-e29b-41d4-a716-446655440003",
+      "profile": {
+        "full_name": "Сидоров Дмитрий Александрович",
+        "employee_id": "VED-003",
+        "department": "VED",
+        "position": "Младший менеджер ВЭД",
+        "level": "junior",
+        "hire_date": "2025-06-01",
+        "years_of_experience": 1.2,
+        "years_in_company": 0.6,
+        "certificates": [],
+        "languages": ["Русский", "Английский (A2)"],
+        "specializations": ["СНГ"]
+      },
+      "metrics": {
+        "applications_processed": 85,
+        "applications_approved": 68,
+        "applications_rejected": 12,
+        "applications_pending": 5,
+        "avg_processing_time_min": 52.8,
+        "min_processing_time_min": 25.0,
+        "max_processing_time_min": 180.0,
+        "success_rate": 0.80,
+        "error_rate": 0.09,
+        "compliance_score": 0.78,
+        "red_flags_detected": 2,
+        "red_flags_missed": 3,
+        "false_positive_rate": 0.08,
+        "false_negative_rate": 0.15,
+        "avg_alert_response_time_min": 15.3,
+        "period_start": "2025-12-03",
+        "period_end": "2026-01-02"
+      },
+      "compliance": {
+        "overall_score": 0.78,
+        "risk_level": "medium",
+        "kyc_compliance": 0.82,
+        "aml_compliance": 0.75,
+        "sanctions_compliance": 0.88,
+        "documentation_quality": 0.72,
+        "detection_rate": 0.67,
+        "false_negative_rate": 0.15,
+        "alert_response_compliance": 0.70,
+        "violations": [
+          {
+            "violation_type": "missed_red_flag",
+            "severity": "medium",
+            "date": "2025-12-10T11:20:00",
+            "description": "Пропущен признак подозрительной операции (несоответствие документов)",
+            "resolved": true,
+            "resolution_date": "2025-12-10T16:00:00"
+          },
+          {
+            "violation_type": "documentation_error",
+            "severity": "low",
+            "date": "2025-12-17T09:45:00",
+            "description": "Неполное заполнение карточки контрагента",
+            "resolved": true,
+            "resolution_date": "2025-12-17T11:30:00"
+          },
+          {
+            "violation_type": "missed_red_flag",
+            "severity": "medium",
+            "date": "2025-12-23T14:00:00",
+            "description": "Пропущен признак дробления платежей",
+            "resolved": true,
+            "resolution_date": "2025-12-24T10:00:00"
+          }
+        ],
+        "violations_count_30d": 3,
+        "violations_count_90d": 5
+      },
+      "daily_stats": [
+        {"date": "2025-12-03", "processed": 3, "approved": 2, "rejected": 1, "flags_detected": 0},
+        {"date": "2025-12-04", "processed": 4, "approved": 3, "rejected": 1, "flags_detected": 0},
+        {"date": "2025-12-05", "processed": 3, "approved": 3, "rejected": 0, "flags_detected": 0},
+        {"date": "2025-12-06", "processed": 4, "approved": 3, "rejected": 1, "flags_detected": 0},
+        {"date": "2025-12-09", "processed": 3, "approved": 3, "rejected": 0, "flags_detected": 0},
+        {"date": "2025-12-10", "processed": 4, "approved": 3, "rejected": 1, "flags_detected": 0},
+        {"date": "2025-12-11", "processed": 3, "approved": 2, "rejected": 1, "flags_detected": 1},
+        {"date": "2025-12-12", "processed": 4, "approved": 4, "rejected": 0, "flags_detected": 0},
+        {"date": "2025-12-13", "processed": 4, "approved": 3, "rejected": 1, "flags_detected": 0},
+        {"date": "2025-12-16", "processed": 3, "approved": 3, "rejected": 0, "flags_detected": 0},
+        {"date": "2025-12-17", "processed": 5, "approved": 4, "rejected": 1, "flags_detected": 0},
+        {"date": "2025-12-18", "processed": 3, "approved": 3, "rejected": 0, "flags_detected": 0},
+        {"date": "2025-12-19", "processed": 4, "approved": 3, "rejected": 1, "flags_detected": 1},
+        {"date": "2025-12-20", "processed": 3, "approved": 2, "rejected": 1, "flags_detected": 0},
+        {"date": "2025-12-23", "processed": 4, "approved": 4, "rejected": 0, "flags_detected": 0},
+        {"date": "2025-12-24", "processed": 3, "approved": 3, "rejected": 0, "flags_detected": 0},
+        {"date": "2025-12-25", "processed": 4, "approved": 3, "rejected": 1, "flags_detected": 0},
+        {"date": "2025-12-26", "processed": 3, "approved": 3, "rejected": 0, "flags_detected": 0},
+        {"date": "2025-12-27", "processed": 4, "approved": 3, "rejected": 1, "flags_detected": 0},
+        {"date": "2025-12-30", "processed": 3, "approved": 3, "rejected": 0, "flags_detected": 0},
+        {"date": "2025-12-31", "processed": 3, "approved": 2, "rejected": 1, "flags_detected": 0},
+        {"date": "2026-01-02", "processed": 3, "approved": 3, "rejected": 0, "flags_detected": 0}
+      ]
+    }
+  ],
+  "team_summary": {
+    "total_operators": 3,
+    "total_applications_processed": 369,
+    "avg_success_rate": 0.862,
+    "avg_compliance_score": 0.88,
+    "total_red_flags_detected": 15,
+    "total_red_flags_missed": 4,
+    "team_detection_rate": 0.789
+  },
+  "compliance_context": {
+    "applicable_laws": [
+      {
+        "code": "115-FZ",
+        "name": "О противодействии легализации (отмыванию) доходов",
+        "requirements": [
+          "Идентификация клиента (KYC)",
+          "Мониторинг операций на подозрительность",
+          "Сообщение о подозрительных операциях в Росфинмониторинг",
+          "Хранение документов не менее 5 лет",
+          "Обучение сотрудников"
+        ]
+      },
+      {
+        "code": "173-FZ",
+        "name": "О валютном регулировании и валютном контроле",
+        "requirements": [
+          "Соблюдение сроков возврата валютной выручки",
+          "Контроль репатриации",
+          "Правильное оформление паспортов сделок"
+        ]
+      }
+    ],
+    "red_flag_indicators": [
+      "Дробление платежей для обхода порогов",
+      "Несоответствие назначения платежа характеру деятельности",
+      "Транзитные операции без экономического смысла",
+      "Операции с контрагентами из высокорисковых юрисдикций",
+      "Необычно высокая скорость оборота средств",
+      "Отказ от предоставления документов"
+    ],
+    "alert_response_sla_min": 10
+  }
+}

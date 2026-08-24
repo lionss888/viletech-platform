@@ -1,0 +1,316 @@
+services:
+  # ===== OLLAMA CLUSTER (из amg-content-generator) =====
+  # Параллелизация: 2 инстанса с Nginx Load Balancer
+  
+  ollama-1:
+    image: ollama/ollama:latest
+    container_name: vili-ollama-1
+    expose:
+      - "11434"
+    volumes:
+      - vili_model_data:/root/.ollama
+    environment:
+      - OLLAMA_ORIGINS=*
+      - OLLAMA_NUM_PARALLEL=2
+      - OLLAMA_MAX_LOADED_MODELS=2
+      - OLLAMA_KEEP_ALIVE=10m
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "ollama list >/dev/null 2>&1 || exit 1"]
+      interval: 5s
+      timeout: 10s
+      retries: 30
+      start_period: 10s
+  
+  ollama-2:
+    image: ollama/ollama:latest
+    container_name: vili-ollama-2
+    expose:
+      - "11434"
+    volumes:
+      - vili_model_data:/root/.ollama
+    environment:
+      - OLLAMA_ORIGINS=*
+      - OLLAMA_NUM_PARALLEL=2
+      - OLLAMA_MAX_LOADED_MODELS=2
+      - OLLAMA_KEEP_ALIVE=10m
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "ollama list >/dev/null 2>&1 || exit 1"]
+      interval: 5s
+      timeout: 10s
+      retries: 30
+      start_period: 10s
+  
+  # Nginx Load Balancer для Ollama
+  nginx:
+    image: nginx:alpine
+    container_name: vili-nginx
+    ports:
+      - "11434:11434"
+    volumes:
+      - ./nginx-ollama.conf:/etc/nginx/nginx.conf:ro
+    depends_on:
+      ollama-1:
+        condition: service_healthy
+      ollama-2:
+        condition: service_healthy
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf http://localhost:11434/health || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+  
+  # ===== ИНИЦИАЛИЗАЦИЯ OLLAMA МОДЕЛЕЙ =====
+  # ПРИОРИТЕТНЫЕ МОДЕЛИ: только необходимый минимум для быстрого старта
+  # Дополнительные модели загружаются вручную по требованию
+  
+  ollama-init-priority:
+    image: ollama/ollama:latest
+    container_name: vili-ollama-init-priority
+    depends_on:
+      ollama-1:
+        condition: service_healthy
+    volumes:
+      - vili_model_data:/root/.ollama
+    environment:
+      - OLLAMA_HOST=ollama-1:11434
+    entrypoint: ["/bin/sh", "-c"]
+    command:
+      - |
+        set -e
+        
+        pull_model_with_retry() {
+          local MODEL_NAME=$$1
+          local MODEL_DESC=$$2
+          local MAX_RETRIES=3
+          local RETRY=0
+          
+          while [ $$RETRY -lt $$MAX_RETRIES ]; do
+            echo "📥 Загрузка $$MODEL_DESC (попытка $$((RETRY + 1))/3)..."
+            if ollama pull "$$MODEL_NAME" 2>&1; then
+              echo "✅ Модель установлена!"
+              return 0
+            else
+              RETRY=$$((RETRY + 1))
+              if [ $$RETRY -lt $$MAX_RETRIES ]; then
+                echo "⚠️  Ошибка загрузки, повтор через 10 секунд..."
+                sleep 10
+              else
+                echo "❌ Не удалось загрузить $$MODEL_DESC"
+                return 1
+              fi
+            fi
+          done
+        }
+        
+        echo "🚀 VILI: Приоритетная загрузка моделей (быстрый старт)"
+        echo "========================================================"
+        echo "📌 Загружаются только необходимые модели"
+        echo "📌 Дополнительные модели: make ollama-pull-model MODEL=<name>"
+        echo ""
+        
+        # 1. Embedding модель для RAG
+        if ollama list 2>/dev/null | grep -q "nomic-embed-text"; then
+          echo "✅ [1/2] Embedding модель готова"
+        else
+          pull_model_with_retry "nomic-embed-text" "[1/2] Embedding (~275MB)" || exit 1
+        fi
+        
+        # 2. Основная LLM модель
+        if ollama list 2>/dev/null | grep -q "llama3.2"; then
+          echo "✅ [2/2] LLM модель готова"
+        else
+          pull_model_with_retry "llama3.2" "[2/2] LLM (~2GB)" || exit 1
+        fi
+        
+        echo ""
+        echo "🎉 Приоритетные Ollama модели готовы!"
+        echo "💡 FinGPT загружается через TGI (может занять 10-15 минут)"
+        echo "========================================================"
+    restart: "no"
+    stop_grace_period: 60s
+  
+  # Дополнительные модели загружаются вручную по требованию
+  # Используйте: make ollama-pull-model MODEL=qwen2.5:7b
+  
+  # ===== TGI ДЛЯ FINGPT =====
+  # Text Generation Inference для локального FinGPT
+  # ПРИОРИТЕТНАЯ МОДЕЛЬ: загружается при старте системы
+  
+  tgi-fingpt:
+    image: ghcr.io/huggingface/text-generation-inference:latest
+    container_name: vili-tgi-fingpt
+    ports:
+      - "8080:80"
+    environment:
+      - MODEL_ID=FinGPT/fingpt-sentiment_llama2-13b_lora
+      # QUANTIZE отключен для работы без GPU
+      # Для GPU раскомментируйте строку ниже и удалите --disable-custom-kernels из command:
+      # - QUANTIZE=bitsandbytes-nf4
+      - MAX_INPUT_LENGTH=2048
+      - MAX_TOTAL_TOKENS=4096
+      - HUGGING_FACE_HUB_TOKEN=${HUGGINGFACE_API_KEY:-}
+    # Для CPU режима добавляем флаг --disable-custom-kernels
+    # Для GPU: удалите command и раскомментируйте QUANTIZE выше
+    command: --disable-custom-kernels
+    volumes:
+      - vili_tgi_models:/data
+    # Для GPU - раскомментируйте секцию ниже:
+    # deploy:
+    #   resources:
+    #     reservations:
+    #       devices:
+    #         - driver: nvidia
+    #           count: 1
+    #           capabilities: [gpu]
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:80/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 10
+      start_period: 600s  # До 10 минут на загрузку FinGPT модели
+  
+  # ===== LITELLM =====
+  # Unified API для всех LLM (Ollama + TGI + Cloud)
+  
+  litellm:
+    image: ghcr.io/berriai/litellm:main-latest
+    container_name: vili-litellm
+    ports:
+      - "4000:4000"
+    command: ["--config", "/app/config.yaml", "--port", "4000"]
+    environment:
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - DATABASE_URL=postgresql://vili:vili_password@postgres:5432/litellm
+    volumes:
+      - ./litellm_config.yaml:/app/config.yaml:ro
+    depends_on:
+      nginx:
+        condition: service_started
+      # TGI запускается параллельно, LiteLLM работает без него (fallback на другие модели)
+      redis:
+        condition: service_healthy
+      postgres:
+        condition: service_healthy
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:4000/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+  
+  # ===== БАЗА ДАННЫХ =====
+  # PostgreSQL с pgvector для RAG
+  
+  postgres:
+    image: pgvector/pgvector:pg15
+    container_name: vili-db
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_DB: vili
+      POSTGRES_USER: vili
+      POSTGRES_PASSWORD: vili_password
+    volumes:
+      - vili_postgres_data:/var/lib/postgresql/data
+      - ./backend/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U vili -d vili"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+  
+  # ===== REDIS =====
+  # Кэширование и очереди
+  
+  redis:
+    image: redis:7-alpine
+    container_name: vili-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - vili_redis_data:/data
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+  
+  # ===== RABBITMQ =====
+  # Очереди задач
+  
+  rabbitmq:
+    image: rabbitmq:3-management-alpine
+    container_name: vili-rabbitmq
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    environment:
+      RABBITMQ_DEFAULT_USER: vili
+      RABBITMQ_DEFAULT_PASS: vili_password
+    volumes:
+      - vili_rabbitmq_data:/var/lib/rabbitmq
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+  
+  # ===== BACKEND =====
+  # FastAPI backend для VILI
+  
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: vili-backend
+    ports:
+      - "8000:8000"
+    environment:
+      - DATABASE_URL=postgresql://vili:vili_password@postgres:5432/vili
+      - REDIS_URL=redis://redis:6379/0
+      - RABBITMQ_URL=amqp://vili:vili_password@rabbitmq:5672//
+      - LITELLM_URL=http://litellm:4000
+      - OLLAMA_URL=http://nginx:11434
+      - TGI_URL=http://tgi-fingpt:80
+      # fea-stage Integration (используйте host.docker.internal для доступа к localhost)
+      - FEA_STAGE_API_URL=http://host.docker.internal:30000/api/1.0
+      - FEA_STAGE_API_KEY=${FEA_STAGE_API_KEY:-}
+      - FEA_STAGE_EMAIL=${FEA_STAGE_EMAIL:-admin@vili.local}
+      - FEA_STAGE_PASSWORD=${FEA_STAGE_PASSWORD:-ViliAdmin2024!}
+      - FEA_STAGE_TIMEOUT=30
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+      litellm:
+        condition: service_started
+      # Загрузка моделей идёт параллельно, backend запускается сразу
+      # Backend будет использовать доступные модели через graceful degradation
+    volumes:
+      - ./backend/app:/app/app
+      - ./logs:/app/logs
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/api/v1/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+
+volumes:
+  vili_model_data:
+  vili_tgi_models:
+  vili_postgres_data:
+  vili_redis_data:
+  vili_rabbitmq_data:
