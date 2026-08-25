@@ -14,6 +14,8 @@ type SchemaRendererProps = {
   onNavigate: (page: string, params?: Record<string, string>) => void;
   onRunAction: (action: BduiAction, body?: Record<string, unknown>) => Promise<unknown>;
   onStatusLoaded?: (status: string) => void;
+  /** Forces list/detail widgets to refetch after CTA. */
+  dataRefreshKey?: string;
 };
 
 function findAction(screen: BduiScreen, actionId: string): BduiAction | undefined {
@@ -94,6 +96,10 @@ export function SchemaRenderer(props: SchemaRendererProps): JSX.Element {
                   dataSource={widget.dataSource}
                   columns={widget.columns}
                   rowIdField={widget.rowIdField}
+                  refreshKey={props.dataRefreshKey}
+                  defaultSort={widget.defaultSort}
+                  sortableKeys={widget.sortableKeys}
+                  emptyMessage={widget.emptyMessage}
                   onRowClick={
                     widget.rowNavigateTo
                       ? (rowId) =>
@@ -111,6 +117,7 @@ export function SchemaRenderer(props: SchemaRendererProps): JSX.Element {
                   field={widget.field}
                   dataSource={widget.dataSource}
                   formId={pathParams.formId ?? ''}
+                  refreshKey={props.dataRefreshKey}
                   onStatusLoaded={props.onStatusLoaded}
                 />
               );
@@ -121,6 +128,7 @@ export function SchemaRenderer(props: SchemaRendererProps): JSX.Element {
                   dataSource={widget.dataSource}
                   fields={widget.fields}
                   formId={pathParams.formId ?? ''}
+                  refreshKey={props.dataRefreshKey}
                 />
               );
             case 'action_bar':

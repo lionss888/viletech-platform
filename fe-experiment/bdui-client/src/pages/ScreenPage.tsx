@@ -61,6 +61,7 @@ export function ScreenPage(props: ScreenPageProps): JSX.Element {
   const [role, setRole] = useState<BduiVedRoleId>(() => getBduiRole());
   const [screen, setScreen] = useState<BduiScreen | null>(null);
   const [detailStatus, setDetailStatus] = useState<string | undefined>(undefined);
+  const [dataRefreshKey, setDataRefreshKey] = useState(0);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const pathParams = useMemo((): Record<string, string> => {
     if (!formId) {
@@ -106,6 +107,7 @@ export function ScreenPage(props: ScreenPageProps): JSX.Element {
       setDetailStatus(nextStatus);
       const loaded = await fetchScreen(props.page, nextStatus, role);
       setScreen(loaded);
+      setDataRefreshKey((previous) => previous + 1);
     },
     [detailStatus, props.page, role],
   );
@@ -199,6 +201,7 @@ export function ScreenPage(props: ScreenPageProps): JSX.Element {
         const loaded = await fetchScreen(props.page, refreshed.status, role);
         setScreen(loaded);
       }
+      setDataRefreshKey((previous) => previous + 1);
       if (action.navigateTo === 'forms.list') {
         handleNavigate('forms.list');
       }
@@ -249,9 +252,31 @@ export function ScreenPage(props: ScreenPageProps): JSX.Element {
           </button>
         </div>
       )}
+      {(props.page === 'forms.create' || props.page === 'forms.detail') && (
+        <nav className="bdui-breadcrumb" aria-label="Навигация по заявкам">
+          <button
+            type="button"
+            className="bdui-breadcrumb__link"
+            onClick={() => handleNavigate('forms.list')}
+          >
+            ← К списку
+          </button>
+          <span className="bdui-breadcrumb__sep" aria-hidden="true">
+            /
+          </span>
+          <span className="bdui-breadcrumb__current">
+            {props.page === 'forms.create'
+              ? 'Новая заявка'
+              : formId
+                ? `Заявка …${formId.slice(-6)}`
+                : 'Заявка'}
+          </span>
+        </nav>
+      )}
       <SchemaRenderer
         screen={screen}
         pathParams={pathParams}
+        dataRefreshKey={`${formId ?? ''}:${detailStatus ?? ''}:${dataRefreshKey}`}
         onNavigate={handleNavigate}
         onRunAction={handleRunAction}
         onStatusLoaded={(nextStatus) => {

@@ -167,3 +167,27 @@ Pages (staff): `login`, `forms.list`, `forms.detail`. User also: `forms.create`.
 - [x] User/Manager hints «PDF с диска» / advance-order
 - [x] Seed Provider fixed ObjectId
 - [ ] Финальный ручной DoD 5 пунктов (оператор после `start-local` + Nest + Vite)
+
+## UI readiness follow-up (E7+)
+
+### Quality gate E7 — Local file storage (MinIO)
+
+- [x] MinIO + `minio-init` (bucket `fea360`) в `docker-compose.yml`
+- [x] `S3_*` / `AWS_*` / `BUCKET_NAME` в `.env.example` + `start-local.sh` (endpoint `http://127.0.0.1:9000`)
+- [x] S3 client: `forcePathStyle` + credentials when endpoint set
+- [x] `node scripts/smoke-bdui-upload.js` — User login → `POST /file-store/upload/pdf` → preview PDF
+
+### Quality gate E8 — Form field fidelity
+
+- [x] Schema keys: `totals.amount` (money_minor), `currency.client`, `status` (не top-level `amount`/`currencyClient`)
+- [x] Client: `formatFieldDisplay` + `refreshKey` на detail/list/status после CTA
+- [x] Wizard: currency lowercase normalize before PATCH
+- [x] Unit: User/Manager builders map DTO paths
+
+### Quality gate E9 — Operator UX (navigation, sort, hints)
+
+- [x] «К списку» на `forms.create` / `forms.detail` (`ScreenPage` breadcrumb → `/forms`)
+- [x] DataTable: client-side sort (`defaultSort`, `sortableKeys`); staff queues по `updateDate` / status
+- [x] Empty list: первый шаг (User — «Новая заявка»; staff — контекст очереди)
+- [x] Hints: PDF 15 Мб / application/pdf (wizard + action_bar); поля сделки на create/detail
+- [x] Unit: E9 hints + sort config в User/role builders

@@ -1,30 +1,15 @@
 import { useEffect, useState } from 'react';
 import type { BduiApiRef, BduiColumn } from '../../types/bdui';
 import { apiRequest, replacePathParams } from '../../api/client';
+import { formatFieldDisplay } from '../../utils/field-display';
 
 type DetailFieldsWidgetProps = {
   dataSource: BduiApiRef;
   fields: BduiColumn[];
   formId: string;
+  /** Bump to reload after CTA / status change. */
+  refreshKey?: string;
 };
-
-function readValue(data: Record<string, unknown>, key: string): string {
-  const value = key.includes('.')
-    ? key.split('.').reduce<unknown>((current, part) => {
-        if (current && typeof current === 'object') {
-          return (current as Record<string, unknown>)[part];
-        }
-        return undefined;
-      }, data)
-    : data[key];
-  if (value === null || value === undefined) {
-    return '—';
-  }
-  if (typeof value === 'object') {
-    return JSON.stringify(value);
-  }
-  return String(value);
-}
 
 export function DetailFieldsWidget(props: DetailFieldsWidgetProps): JSX.Element {
   const [data, setData] = useState<Record<string, unknown> | null>(null);
@@ -40,6 +25,7 @@ export function DetailFieldsWidget(props: DetailFieldsWidgetProps): JSX.Element 
         });
         if (!cancelled) {
           setData(response);
+          setErrorMessage(null);
         }
       } catch (error) {
         if (!cancelled) {
@@ -54,7 +40,7 @@ export function DetailFieldsWidget(props: DetailFieldsWidgetProps): JSX.Element 
     return () => {
       cancelled = true;
     };
-  }, [props.dataSource.method, props.dataSource.path, props.formId]);
+  }, [props.dataSource.method, props.dataSource.path, props.formId, props.refreshKey]);
 
   if (errorMessage) {
     return <p className="bdui-error">{errorMessage}</p>;
@@ -68,7 +54,7 @@ export function DetailFieldsWidget(props: DetailFieldsWidgetProps): JSX.Element 
       {props.fields.map((field) => (
         <div key={field.key} className="bdui-detail-row">
           <dt>{field.label}</dt>
-          <dd>{readValue(data, field.key)}</dd>
+          <dd>{formatFieldDisplay(data, field)}</dd>
         </div>
       ))}
     </dl>

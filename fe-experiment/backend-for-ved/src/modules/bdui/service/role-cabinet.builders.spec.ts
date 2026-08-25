@@ -342,4 +342,59 @@ describe('RoleCabinetBuilders Internal CO', () => {
       .actions.find((action) => action.id === 'cancel_form');
     expect(cancelAction?.requiresTextReason).toBe(true);
   });
+
+  it('maps Manager list/detail amount to totals.amount with money_minor', () => {
+    const list = builders.buildFormsListScreen(BDUI_ROLE_MANAGER);
+    const table = list.widgets.find((widget) => widget.type === 'data_table');
+    expect(table?.type).toBe('data_table');
+    if (table?.type === 'data_table') {
+      expect(table.columns).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({ key: 'status' }),
+          expect.objectContaining({ key: 'totals.amount', format: 'money_minor' }),
+        ]),
+      );
+    }
+    const detail = builders.buildFormsDetailScreen(BDUI_ROLE_MANAGER, FormPaymentStatus.FORM_ACCEPTED);
+    const fields = detail.widgets.find((widget) => widget.type === 'detail_fields');
+    expect(fields?.type).toBe('detail_fields');
+    if (fields?.type === 'detail_fields') {
+      expect(fields.fields).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({ key: 'status' }),
+          expect.objectContaining({ key: 'totals.amount', format: 'money_minor' }),
+          expect.objectContaining({ key: 'currency.client' }),
+        ]),
+      );
+    }
+  });
+
+  it('E9: staff queues default sort and empty messages', () => {
+    const icoList = builders.buildFormsListScreen(BDUI_ROLE_INTERNAL_CO);
+    const icoTable = icoList.widgets.find((widget) => widget.type === 'data_table');
+    expect(icoTable?.type).toBe('data_table');
+    if (icoTable?.type !== 'data_table') {
+      return;
+    }
+    expect(icoTable.defaultSort).toEqual({ key: 'updateDate', direction: 'desc' });
+    expect(icoTable.sortableKeys).toEqual(expect.arrayContaining(['status', 'updateDate']));
+    expect(icoTable.emptyMessage).toMatch(/пуста/);
+
+    const ecoList = builders.buildFormsListScreen(BDUI_ROLE_EXTERNAL_CO);
+    const ecoTable = ecoList.widgets.find((widget) => widget.type === 'data_table');
+    expect(ecoTable?.type).toBe('data_table');
+    if (ecoTable?.type !== 'data_table') {
+      return;
+    }
+    expect(ecoTable.defaultSort).toEqual({ key: 'status', direction: 'asc' });
+
+    const mgrList = builders.buildFormsListScreen(BDUI_ROLE_MANAGER);
+    const mgrTable = mgrList.widgets.find((widget) => widget.type === 'data_table');
+    expect(mgrTable?.type).toBe('data_table');
+    if (mgrTable?.type !== 'data_table') {
+      return;
+    }
+    expect(mgrTable.columns.some((column) => column.key === 'updateDate')).toBe(true);
+    expect(mgrTable.defaultSort?.key).toBe('updateDate');
+  });
 });

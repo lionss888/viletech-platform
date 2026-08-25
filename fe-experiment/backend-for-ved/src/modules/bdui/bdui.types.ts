@@ -7,9 +7,13 @@ export type BduiApiRef = {
   path: string;
 };
 
+export type BduiColumnFormat = 'plain' | 'money_minor';
+
 export type BduiColumn = {
   key: string;
   label: string;
+  /** money_minor: domain stores amount in minor units (e.g. kopecks) → show major. */
+  format?: BduiColumnFormat;
 };
 
 export type BduiFieldType =
@@ -36,9 +40,13 @@ export type BduiField = {
   options?: BduiFieldOption[];
   /** Hint for file fields (e.g. application/pdf). */
   accept?: string;
+  /** Inline help shown under the field label. */
+  hint?: string;
   /** Default string value prefilled in the client. */
   defaultValue?: string;
 };
+
+export type BduiTableSortDirection = 'asc' | 'desc';
 
 /** Client uploads a PDF then puts file id into the action JSON body. */
 export type BduiFileUploadSpec = {
@@ -89,6 +97,12 @@ export type BduiDataTableWidget = {
   columns: BduiColumn[];
   rowNavigateTo?: string;
   rowIdField?: string;
+  /** Client-side default sort for queue readability. */
+  defaultSort?: { key: string; direction: BduiTableSortDirection };
+  /** Column keys the operator can sort by (click header). */
+  sortableKeys?: string[];
+  /** Empty list guidance instead of generic «Нет заявок». */
+  emptyMessage?: string;
 };
 
 export type BduiFormWidget = {

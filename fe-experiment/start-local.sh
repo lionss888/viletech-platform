@@ -46,6 +46,22 @@ if grep -q '^NATS_URL=' .env; then
 else
   echo 'NATS_URL=nats://127.0.0.1:4222' >> .env
 fi
+
+# MinIO (S3-compatible) — required for real PDF upload (E7)
+set_env() {
+  local key="$1"
+  local value="$2"
+  if grep -q "^${key}=" .env; then
+    sed -i.bak "s|^${key}=.*|${key}=${value}|" .env
+  else
+    echo "${key}=${value}" >> .env
+  fi
+}
+set_env S3_REGION us-east-1
+set_env BUCKET_NAME fea360
+set_env S3_ENDPOINT 'http://127.0.0.1:9000'
+set_env AWS_ACCESS_KEY_ID minioadmin
+set_env AWS_SECRET_ACCESS_KEY minioadmin
 rm -f .env.bak
 
 echo "==> docker compose up -d"
@@ -89,6 +105,9 @@ echo "==> Waiting for infra"
 wait_port 127.0.0.1 27017 MongoDB
 wait_port 127.0.0.1 6380 Redis
 wait_port 127.0.0.1 4222 NATS
+wait_port 127.0.0.1 9000 MinIO
+# Allow minio-init to create bucket fea360
+sleep 2
 
 if [ ! -d node_modules ]; then
   echo "==> npm install (backend)"
@@ -123,6 +142,7 @@ Then smoke (API must be up):
 
   cd "$BACKEND"
   node scripts/smoke-bdui-login.js
+  node scripts/smoke-bdui-upload.js
 
 Seed logins: see fe-experiment/LIFECYCLE.md
 EOF

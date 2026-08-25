@@ -12,9 +12,13 @@ export type BduiApiRef = {
   path: string;
 };
 
+export type BduiColumnFormat = 'plain' | 'money_minor';
+
 export type BduiColumn = {
   key: string;
   label: string;
+  /** money_minor: domain stores amount in minor units → show major. */
+  format?: BduiColumnFormat;
 };
 
 export type BduiFieldType =
@@ -40,8 +44,11 @@ export type BduiField = {
   required?: boolean;
   options?: BduiFieldOption[];
   accept?: string;
+  hint?: string;
   defaultValue?: string;
 };
+
+export type BduiTableSortDirection = 'asc' | 'desc';
 
 export type BduiFileUploadSpec = {
   uploadPath: string;
@@ -97,6 +104,9 @@ export type BduiWidget =
       columns: BduiColumn[];
       rowNavigateTo?: string;
       rowIdField?: string;
+      defaultSort?: { key: string; direction: BduiTableSortDirection };
+      sortableKeys?: string[];
+      emptyMessage?: string;
     }
   | { type: 'form'; id: string; fields: BduiField[]; submitAction: string }
   | BduiWizardWidget

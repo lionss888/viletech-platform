@@ -11,8 +11,8 @@ fe-experiment/
   start-local.sh     # compose + .env + seed
   backend-for-ved/   # Nest API + src/modules/bdui
   bdui-client/       # Vite + React schema renderer
-  LIFECYCLE.md       # чеклисты P0–P7 и E1–E6
-  NOTES.md           # gaps / StageHash
+  LIFECYCLE.md       # чеклисты P0–P7 и E1–E7
+  NOTES.md           # gaps / StageHash / MinIO
 ```
 
 ## Быстрый старт (≤15 мин)
@@ -23,7 +23,7 @@ chmod +x start-local.sh
 ./start-local.sh
 ```
 
-Скрипт поднимает Mongo/Redis/NATS (compose), правит `.env` под порты compose (Redis **6380**), сидит 5 ролей.
+Скрипт поднимает Mongo/Redis/NATS/**MinIO** (compose), правит `.env` под порты compose (Redis **6380**, S3 **9000**), сидит 5 ролей.
 
 Два терминала:
 
@@ -42,7 +42,10 @@ Smoke (когда Nest уже up):
 ```bash
 cd fe-experiment/backend-for-ved
 node scripts/smoke-bdui-login.js
+node scripts/smoke-bdui-upload.js
 ```
+
+MinIO console (опционально): http://localhost:9001 (`minioadmin` / `minioadmin`), bucket `fea360`.
 
 ## Seed-аккаунты
 

@@ -1,0 +1,20 @@
+---
+description: Screaming architecture — структура проекта отражает домен, а не слои фреймворка
+alwaysApply: true
+---
+
+# Screaming architecture
+
+Источник: `заметки/чистая-архитектура-конспект-каркас.txt`. Связано: `чистая-архитектура`, `границы-и-контексты`.
+
+По папкам должно быть видно **домен** (заявка, compliance, payment), а не только `controllers / services / repositories`.
+
+## Сигнал для fea / fe-experiment
+
+Желаемые имена по бизнес-возможности:
+
+- `form-payment`, `compliance`, `provider-execution`, `documents`…
+
+а не только generic CRUD-слой.
+
+Новый модуль называй по бизнес-возможности, не по технике. Группировка «все репозитории / все контроллеры» — антипаттерн разреза.

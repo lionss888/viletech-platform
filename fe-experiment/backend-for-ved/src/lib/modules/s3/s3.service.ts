@@ -22,9 +22,25 @@ export class S3Service implements IS3Service {
     private readonly configService: ConfigService,
     @Inject('IShutdownService') private readonly shutdownService: IShutdownService,
   ) {
+    const endpoint = this.configService.get<string>('s3.endpoint');
+    const accessKeyId = process.env.AWS_ACCESS_KEY_ID;
+    const secretAccessKey = process.env.AWS_SECRET_ACCESS_KEY;
     this.s3Client = new S3Client({
-      region: this.configService.get('s3.region'),
-      endpoint: this.configService.get('s3.endpoint'),
+      region: this.configService.get('s3.region') || 'us-east-1',
+      ...(endpoint
+        ? {
+            endpoint,
+            forcePathStyle: true,
+          }
+        : {}),
+      ...(accessKeyId && secretAccessKey
+        ? {
+            credentials: {
+              accessKeyId,
+              secretAccessKey,
+            },
+          }
+        : {}),
     });
   }
 

@@ -7,6 +7,7 @@ type StatusBadgeWidgetProps = {
   dataSource: BduiApiRef;
   formId: string;
   onStatusLoaded?: (status: string) => void;
+  refreshKey?: string;
 };
 
 export function StatusBadgeWidget(props: StatusBadgeWidgetProps): JSX.Element {
@@ -42,7 +43,14 @@ export function StatusBadgeWidget(props: StatusBadgeWidgetProps): JSX.Element {
     return () => {
       cancelled = true;
     };
-  }, [props.dataSource.method, props.dataSource.path, props.field, props.formId, onStatusLoaded]);
+  }, [
+    props.dataSource.method,
+    props.dataSource.path,
+    props.field,
+    props.formId,
+    props.refreshKey,
+    onStatusLoaded,
+  ]);
 
   if (errorMessage) {
     return <p className="bdui-error">{errorMessage}</p>;

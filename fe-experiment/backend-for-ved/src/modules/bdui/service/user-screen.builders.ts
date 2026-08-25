@@ -79,11 +79,15 @@ export class UserScreenBuilders {
             { key: 'direction', label: 'Направление' },
             { key: 'platformPaymentCondition', label: 'Оплата' },
             { key: 'organization.name', label: 'Организация' },
-            { key: 'amount', label: 'Сумма' },
+            { key: 'totals.amount', label: 'Сумма', format: 'money_minor' },
             { key: 'createdAt', label: 'Создана' },
           ],
           rowNavigateTo: 'forms.detail',
           rowIdField: '_id',
+          defaultSort: { key: 'createdAt', direction: 'desc' },
+          sortableKeys: ['status', 'createdAt', 'totals.amount'],
+          emptyMessage:
+            'Пока нет заявок. Нажмите «Новая заявка» ниже — wizard проведёт через документы, условия сделки и организацию.',
         },
       ],
       actions: [
@@ -110,7 +114,14 @@ export class UserScreenBuilders {
         {
           type: 'text',
           id: 'create_intro',
-          content: 'Wizard создания заявки: документы → условия сделки (import / аванс / товар) → организация → отправка',
+          content:
+            'Wizard создания заявки: документы → условия сделки (import / аванс / товар) → организация → отправка. «К списку» — вверху страницы.',
+        },
+        {
+          type: 'text',
+          id: 'create_pdf_hint',
+          content:
+            'Файлы: только PDF, до 15 Мб каждый. Инвойс и контракт можно загрузить на первом шаге или отметить «нет документов».',
         },
         {
           type: 'wizard',
@@ -126,7 +137,8 @@ export class UserScreenBuilders {
             {
               id: 'documents',
               title: 'Документы',
-              description: 'Загрузите инвойс и контракт (PDF) или отметьте «нет документов».',
+              description:
+                'Загрузите инвойс и контракт (PDF до 15 Мб) или отметьте «нет документов» для продолжения без файлов.',
               fields: [
                 {
                   name: 'invoiceFile',
@@ -134,6 +146,7 @@ export class UserScreenBuilders {
                   fieldType: 'file',
                   required: false,
                   accept: 'application/pdf,.pdf',
+                  hint: 'application/pdf, максимум 15 Мб',
                 },
                 {
                   name: 'contractFile',
@@ -141,19 +154,22 @@ export class UserScreenBuilders {
                   fieldType: 'file',
                   required: false,
                   accept: 'application/pdf,.pdf',
+                  hint: 'application/pdf, максимум 15 Мб',
                 },
                 {
                   name: 'noDocuments',
                   label: 'Нет документов',
                   fieldType: 'checkbox',
                   required: false,
+                  hint: 'Если документов пока нет — заявку можно создать и дозагрузить позже на карточке.',
                 },
               ],
             },
             {
               id: 'deal',
               title: 'Условия сделки',
-              description: 'Канонический happy-path: import + аванс + товар.',
+              description:
+                'Канонический happy-path: import + аванс + товар. Условие оплаты и дата отгрузки влияют на этапы после принятия заявки.',
               fields: [
                 {
                   name: 'direction',
@@ -183,6 +199,7 @@ export class UserScreenBuilders {
                   fieldType: 'select',
                   required: true,
                   defaultValue: FormPaymentCondition.ADVANCE,
+                  hint: 'Аванс — оплата до отгрузки; постоплата — доп. поручение и отчёт после поставки.',
                   options: [
                     { value: FormPaymentCondition.ADVANCE, label: 'Аванс' },
                     { value: FormPaymentCondition.POST_PAYMENT, label: 'Постоплата' },
@@ -227,6 +244,7 @@ export class UserScreenBuilders {
                   fieldType: 'select',
                   required: true,
                   defaultValue: FormPaymentKind.GOOD,
+                  hint: 'Товар — типовой импортный сценарий с кодом ТН ВЭД и датой отгрузки.',
                   options: [
                     { value: FormPaymentKind.GOOD, label: 'Товар' },
                     { value: FormPaymentKind.SERVICE, label: 'Услуга' },
@@ -244,6 +262,7 @@ export class UserScreenBuilders {
                   label: 'Дата отгрузки',
                   fieldType: 'date',
                   required: true,
+                  hint: 'Плановая дата поставки/отгрузки — используется в условиях сделки и этапе shipment.',
                 },
               ],
             },
@@ -355,8 +374,8 @@ export class UserScreenBuilders {
           { key: '_id', label: 'ID' },
           { key: 'status', label: 'Статус' },
           { key: 'direction', label: 'Направление' },
-          { key: 'amount', label: 'Сумма' },
-          { key: 'currencyClient', label: 'Валюта' },
+          { key: 'totals.amount', label: 'Сумма', format: 'money_minor' },
+          { key: 'currency.client', label: 'Валюта' },
           { key: 'platformPaymentCondition', label: 'Условие оплаты' },
           { key: 'organization.name', label: 'Организация' },
           { key: 'organization.status', label: 'Статус орг.' },
@@ -374,6 +393,12 @@ export class UserScreenBuilders {
         id: 'draft_hint',
         content:
           'Черновик: проверьте поля и отправьте на проверку (Internal CO для первой орг / External CO иначе).',
+      });
+      widgets.push({
+        type: 'text',
+        id: 'deal_fields_hint',
+        content:
+          'Условия сделки: направление import/export, аванс/постоплата, тип товара и дата отгрузки — см. поля ниже. Документы — PDF до 15 Мб при загрузке с диска.',
       });
     }
     if (isOrgUnderReview) {

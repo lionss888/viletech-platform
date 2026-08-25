@@ -61,5 +61,6 @@ alwaysApply: true
 - **Формы и ввод:** Postel's Law (толерантный ввод, ясные ошибки), Paradox of the Active User (подсказки в контексте).
 - **Онбординг и подсказки:** Paradox of the Active User, Hick's Law, Serial Position Effect, Goal-Gradient, Zeigarnik.
 - **Редизайн и смена интерфейса:** Jakob's Law, Mental Model — сглаживание перехода, превью, возможность отката.
+- **Практика кабинетов ВЭД** (иерархия, паттерны, style guide, top tasks ролей): `ui-web-практики` — не дублируй законы здесь.
 
 **Дополнительно:** https://lawsofux.com

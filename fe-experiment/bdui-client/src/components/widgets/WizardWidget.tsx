@@ -211,12 +211,14 @@ export function WizardWidget(props: WizardWidgetProps): JSX.Element {
     }
     const amountMajor = Number(values.amount);
     const amountMinor = Number.isFinite(amountMajor) ? Math.round(amountMajor * 100) : undefined;
+    const currencyClient = (values.currencyClient || '').toLowerCase();
+    const currencyCounterparty = (values.currencyCounterparty || '').toLowerCase();
     const patchBody: Record<string, unknown> = {
       direction: values.direction,
       paymentMethod: values.paymentMethod,
       platformPaymentCondition: values.platformPaymentCondition,
-      currencyClient: values.currencyClient,
-      currencyCounterparty: values.currencyCounterparty,
+      currencyClient,
+      currencyCounterparty,
       amount: amountMinor,
       organization: values.organization,
     };
@@ -294,6 +296,7 @@ export function WizardWidget(props: WizardWidgetProps): JSX.Element {
       return (
         <label key={field.name} className="bdui-field">
           <span>{field.label}</span>
+          {field.hint ? <span className="bdui-field-hint">{field.hint}</span> : null}
           <input
             type="file"
             accept={field.accept ?? 'application/pdf,.pdf'}
@@ -319,6 +322,7 @@ export function WizardWidget(props: WizardWidgetProps): JSX.Element {
             }}
           />
           <span>{field.label}</span>
+          {field.hint ? <span className="bdui-field-hint">{field.hint}</span> : null}
         </label>
       );
     }
@@ -326,6 +330,7 @@ export function WizardWidget(props: WizardWidgetProps): JSX.Element {
       return (
         <label key={field.name} className="bdui-field">
           <span>{field.label}</span>
+          {field.hint ? <span className="bdui-field-hint">{field.hint}</span> : null}
           <select
             required={field.required}
             value={values[field.name] ?? ''}
@@ -347,6 +352,7 @@ export function WizardWidget(props: WizardWidgetProps): JSX.Element {
       return (
         <label key={field.name} className="bdui-field">
           <span>{field.label}</span>
+          {field.hint ? <span className="bdui-field-hint">{field.hint}</span> : null}
           <select
             required={field.required}
             value={values[field.name] ?? ''}
@@ -366,6 +372,7 @@ export function WizardWidget(props: WizardWidgetProps): JSX.Element {
     return (
       <label key={field.name} className="bdui-field">
         <span>{field.label}</span>
+        {field.hint ? <span className="bdui-field-hint">{field.hint}</span> : null}
         <input
           type={field.fieldType}
           required={field.required}

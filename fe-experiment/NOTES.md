@@ -11,15 +11,56 @@
 | Item | Status |
 |------|--------|
 | `.env` (Redis 6380, NATS 127.0.0.1) | Created |
-| docker compose (mongo/redis/nats/gotenberg) | Up (when Docker running) |
+| docker compose (mongo/redis/nats/gotenberg/minio) | Up (when Docker running) |
 | P0–P6 happy-path import+аванс → COMPLETED | Done |
 | P7 corrections / cancel / postpay branches | Done (see LIFECYCLE.md) |
 | Seed 5 roles + org + stubs | `scripts/seed-bdui-lifecycle.js` |
 | Checklist | [`LIFECYCLE.md`](LIFECYCLE.md) |
 | E1 start-local + smoke | `./start-local.sh`, `scripts/smoke-bdui-login.js` |
 | E2 file upload UI | `requiresFileUpload` + ActionBar picker (stubs только в seed) |
+| E7 local object storage | MinIO `:9000`, bucket `fea360`; `scripts/smoke-bdui-upload.js` |
+| E8 field fidelity | list/detail: `totals.amount`, `currency.client`; refresh after CTA |
+| E9 operator UX | nav «К списку»; table sort; PDF/deal hints; empty list copy |
 
 Open UI: http://localhost:5173
+
+## Form DTO display map (E8)
+
+Site/manager GET form-payment does **not** expose top-level `amount` / `currencyClient` for UI:
+
+| UI label | API path |
+|----------|----------|
+| Статус | `status` |
+| Сумма | `totals.amount` (minor units; BDUI `format: money_minor`) |
+| Валюта | `currency.client` |
+| Валюта контрагента | `currency.counterparty` |
+
+Wizard PATCH still sends `amount` + `currencyClient`/`currencyCounterparty` (lowercase enum) into `/form-payment/{id}/form`.
+
+## Operator UX (E9)
+
+| Surface | Behavior |
+|---------|----------|
+| Create / detail | Breadcrumb «← К списку» → `/forms` (client `ScreenPage`, не отдельный schema widget) |
+| List tables | `defaultSort` + clickable `sortableKeys` (client `DataTableWidget`) |
+| User list default | `createdAt` desc |
+| Staff queues | `updateDate` desc (External CO: `status` asc) |
+| PDF uploads | Wizard + `ActionBarWidget`: application/pdf, max 15 Мб |
+| Deal hints | Wizard step `deal` + User draft detail `deal_fields_hint` |
+
+Schema fields: `BduiDataTableWidget.defaultSort`, `sortableKeys`, `emptyMessage`; `BduiField.hint`.
+
+## Local MinIO (E7)
+
+| Item | Value |
+|------|-------|
+| API | `http://127.0.0.1:9000` |
+| Console | `http://127.0.0.1:9001` |
+| Access key | `minioadmin` (local only) |
+| Secret | `minioadmin` (local only) |
+| Bucket | `fea360` |
+
+`start-local.sh` writes these into `.env`. Nest `S3Service` uses path-style addressing against the endpoint. Without MinIO, upload PDF fails with «Failed to upload file».
 
 ## StageHash: advance vs postpay (import)
 
@@ -58,7 +99,7 @@ Practical BDUI mapping:
 | Schema: payment_sent postpay CTAs | report + advance_signing + payment_received + cancel |
 | Advance-order start/accept | OK |
 | Postpay → COMPLETED | Blocked without `direction`; with StageHash path documented — use import+postPayment + payment_received → report → shipment |
-| Unit BDUI | 76 passed |
+| Unit BDUI | 79 passed |
 ## Seed IDs (fixed)
 
 | Constant | Id |

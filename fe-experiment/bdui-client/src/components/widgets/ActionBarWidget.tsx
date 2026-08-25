@@ -155,9 +155,13 @@ export function ActionBarWidget(props: ActionBarWidgetProps): JSX.Element {
 
   const pendingAccept =
     pendingAction && normalizeUploadSpecs(pendingAction.requiresFileUpload)[pendingSpecIndex]?.accept;
+  const hasFileUploadAction = available.some((action) => normalizeUploadSpecs(action.requiresFileUpload).length > 0);
 
   return (
     <div className="bdui-action-bar">
+      {hasFileUploadAction ? (
+        <p className="bdui-muted bdui-upload-hint">Загрузка с диска: PDF (application/pdf), до 15 Мб.</p>
+      ) : null}
       <input
         ref={fileInputRef}
         type="file"
