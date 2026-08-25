@@ -4,13 +4,13 @@ overview: "BDUI User+Manager закрытие happy-path: подписи дог�
 todos:
   - id: p6-user
     content: User BDUI actions for sign/pay/report/shipment
-    status: pending
+    status: completed
   - id: p6-manager
     content: Manager accept closing docs + completed
-    status: pending
+    status: completed
   - id: p6-qa
     content: "QA gate: full 5-role happy-path to COMPLETED"
-    status: pending
+    status: completed
 isProject: false
 ---
 

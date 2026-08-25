@@ -44,7 +44,7 @@ Pages (staff): `login`, `forms.list`, `forms.detail`. User also: `forms.create`.
 3. [x] P3 External CO accept form
 4. [x] P4 Manager order + assign provider / payment start
 5. [x] P5 Provider execute payment
-6. [ ] P6 User close docs + Manager COMPLETED
+6. [x] P6 User close docs + Manager COMPLETED
 
 ## Quality gate P1
 
@@ -88,6 +88,14 @@ Pages (staff): `login`, `forms.list`, `forms.detail`. User also: `forms.create`.
 - [x] Manual: attach proof → `payment/sent` → `payment_sent`
 - [x] Return → `manager_checking`; Manager CTA `mgr_payment_start`; Provider execute запрещён
 - [x] Чужая заявка другого provider → 404
+
+## Quality gate P6
+
+- [x] Unit: User/Manager closing statuses (report/shipment) + empty CTAs on `COMPLETED` — BDUI tests 70 passed
+- [x] Manual: `payment_sent` → report signing → User report → report start/accept → User shipment → shipment start/accept → `COMPLETED`
+- [x] Регрессия: после `COMPLETED` User/Provider/Manager schema без mutate CTA
+- [x] Аванс: отгрузка (`shipment/accept` + stub `addClosing`) обязательна до complete
+- [x] Самопроверка: финальный переход только Manager `shipment/accept` / `completed` из `shipment_verification`
 
 ## Branches (P7)
 

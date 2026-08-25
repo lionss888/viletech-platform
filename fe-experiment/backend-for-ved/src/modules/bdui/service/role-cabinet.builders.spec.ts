@@ -11,23 +11,34 @@ import {
   BDUI_ACTION_ECO_START,
   BDUI_ACTION_ECO_STOP,
   BDUI_ACTION_MGR_ASSIGN_PROVIDER,
+  BDUI_ACTION_MGR_COMPLETED,
   BDUI_ACTION_MGR_ORDER_ATTACH,
   BDUI_ACTION_MGR_ORDER_GENERATE,
   BDUI_ACTION_MGR_ORDER_REJECT,
   BDUI_ACTION_MGR_PAYMENT_RECEIVED,
   BDUI_ACTION_MGR_PAYMENT_START,
+  BDUI_ACTION_MGR_REPORT_ACCEPT,
+  BDUI_ACTION_MGR_REPORT_SIGNING,
+  BDUI_ACTION_MGR_REPORT_START,
+  BDUI_ACTION_MGR_SHIPMENT_ACCEPT,
+  BDUI_ACTION_MGR_SHIPMENT_START,
   BDUI_ACTION_PROV_ATTACH_PROOF,
   BDUI_ACTION_PROV_PAYMENT_RETURN,
   BDUI_ACTION_PROV_PAYMENT_SENT,
   BDUI_ACTION_PROV_PAYMENT_START,
+  BDUI_ACTION_UPLOAD_REPORT,
+  BDUI_ACTION_UPLOAD_SHIPMENT,
   BDUI_ROLE_EXTERNAL_CO,
   BDUI_ROLE_INTERNAL_CO,
   BDUI_ROLE_MANAGER,
   BDUI_ROLE_PROVIDER,
   BDUI_ROLE_USER,
+  BDUI_SEED_STUB_FILE_ID,
 } from '../bdui.constants';
 import { BduiLifecycleActionResolver } from './bdui-lifecycle-action.resolver';
 import { RoleCabinetBuilders } from './role-cabinet.builders';
+import { UserScreenBuilders } from './user-screen.builders';
+import { BduiUserActionResolver } from './bdui-user-action.resolver';
 
 describe('RoleCabinetBuilders Internal CO', () => {
   let builders: RoleCabinetBuilders;
@@ -142,6 +153,9 @@ describe('RoleCabinetBuilders Internal CO', () => {
       expect(table.dataSource.path).toContain('form_accepted');
       expect(table.dataSource.path).toContain('signing_order_accepted');
       expect(table.dataSource.path).toContain('payment_processing');
+      expect(table.dataSource.path).toContain('payment_sent');
+      expect(table.dataSource.path).toContain('report_waiting_verification');
+      expect(table.dataSource.path).toContain('shipment_verification');
     }
   });
 
@@ -186,6 +200,43 @@ describe('RoleCabinetBuilders Internal CO', () => {
     expect(reject?.requiresTextReason).toBe(true);
   });
 
+  it('builds Manager closing actions for report and shipment', () => {
+    const paymentSent = builders.buildFormsDetailScreen(
+      BDUI_ROLE_MANAGER,
+      FormPaymentStatus.PAYMENT_SENT,
+    );
+    expect(paymentSent.actions.map((action) => action.id)).toEqual([BDUI_ACTION_MGR_REPORT_SIGNING]);
+    expect(paymentSent.widgets.some((widget) => widget.id === 'mgr_hint_report_signing')).toBe(true);
+    const reportWaiting = builders.buildFormsDetailScreen(
+      BDUI_ROLE_MANAGER,
+      FormPaymentStatus.REPORT_WAITING_VERIFICATION,
+    );
+    expect(reportWaiting.actions.map((action) => action.id)).toEqual([BDUI_ACTION_MGR_REPORT_START]);
+    const reportReview = builders.buildFormsDetailScreen(
+      BDUI_ROLE_MANAGER,
+      FormPaymentStatus.REPORT_VERIFICATION,
+    );
+    expect(reportReview.actions.map((action) => action.id)).toContain(BDUI_ACTION_MGR_REPORT_ACCEPT);
+    const shipmentWaiting = builders.buildFormsDetailScreen(
+      BDUI_ROLE_MANAGER,
+      FormPaymentStatus.SHIPMENT_WAITING_VERIFICATION,
+    );
+    expect(shipmentWaiting.actions.map((action) => action.id)).toEqual([BDUI_ACTION_MGR_SHIPMENT_START]);
+    const shipmentReview = builders.buildFormsDetailScreen(
+      BDUI_ROLE_MANAGER,
+      FormPaymentStatus.SHIPMENT_VERIFICATION,
+    );
+    const shipmentIds = shipmentReview.actions.map((action) => action.id);
+    expect(shipmentIds).toEqual(
+      expect.arrayContaining([BDUI_ACTION_MGR_SHIPMENT_ACCEPT, BDUI_ACTION_MGR_COMPLETED]),
+    );
+  });
+
+  it('exposes no Manager mutate CTA on completed', () => {
+    const screen = builders.buildFormsDetailScreen(BDUI_ROLE_MANAGER, FormPaymentStatus.COMPLETED);
+    expect(screen.actions).toEqual([]);
+  });
+
   it('does not expose Manager order actions on Provider for form_accepted', () => {
     const providerActions = resolver.resolveActionIds(
       BDUI_ROLE_PROVIDER,
@@ -227,5 +278,24 @@ describe('RoleCabinetBuilders Internal CO', () => {
     const actions = resolver.resolveActionIds(BDUI_ROLE_PROVIDER, FormPaymentStatus.MANAGER_CHECKING);
     expect(actions).toEqual([]);
     expect(actions).not.toContain(BDUI_ACTION_PROV_PAYMENT_SENT);
+  });
+
+  it('builds User closing detail with stub upload bodies', () => {
+    const userBuilders = new UserScreenBuilders(new BduiUserActionResolver(resolver));
+    const reportScreen = userBuilders.buildFormsDetailScreen(FormPaymentStatus.REPORT_WAITING);
+    expect(reportScreen.actions.map((action) => action.id)).toEqual([BDUI_ACTION_UPLOAD_REPORT]);
+    const reportAction = reportScreen.actions.find((action) => action.id === BDUI_ACTION_UPLOAD_REPORT);
+    expect(reportAction?.staticBody).toMatchObject({ reportSigned: BDUI_SEED_STUB_FILE_ID });
+    expect(reportScreen.widgets.some((widget) => widget.id === 'report_hint')).toBe(true);
+    const shipmentScreen = userBuilders.buildFormsDetailScreen(FormPaymentStatus.SHIPMENT_WAITING);
+    expect(shipmentScreen.actions.map((action) => action.id)).toEqual([BDUI_ACTION_UPLOAD_SHIPMENT]);
+    const shipmentAction = shipmentScreen.actions.find(
+      (action) => action.id === BDUI_ACTION_UPLOAD_SHIPMENT,
+    );
+    expect(shipmentAction?.path).toContain('/shipment/accept');
+    expect(shipmentAction?.staticBody).toMatchObject({ addClosing: [BDUI_SEED_STUB_FILE_ID] });
+    const completedScreen = userBuilders.buildFormsDetailScreen(FormPaymentStatus.COMPLETED);
+    expect(completedScreen.actions).toEqual([]);
+    expect(completedScreen.widgets.some((widget) => widget.id === 'completed_hint')).toBe(true);
   });
 });

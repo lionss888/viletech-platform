@@ -61,11 +61,15 @@ export const BDUI_ACTION_MGR_ORDER_REJECT = 'mgr_order_reject';
 export const BDUI_ACTION_MGR_ASSIGN_PROVIDER = 'mgr_assign_provider';
 export const BDUI_ACTION_MGR_PAYMENT_RECEIVED = 'mgr_payment_received';
 export const BDUI_ACTION_MGR_PAYMENT_START = 'mgr_payment_start';
-export const BDUI_ACTION_MGR_REPORT_SIGNING = 'mgr_report_signing';
-export const BDUI_ACTION_MGR_REPORT_ACCEPT = 'mgr_report_accept';
-export const BDUI_ACTION_MGR_SHIPMENT_ACCEPT = 'mgr_shipment_accept';
-export const BDUI_ACTION_MGR_COMPLETED = 'mgr_completed';
-export const BDUI_ACTION_MGR_CANCEL = 'mgr_cancel';
+  export const BDUI_ACTION_MGR_REPORT_SIGNING = 'mgr_report_signing';
+  export const BDUI_ACTION_MGR_REPORT_START = 'mgr_report_start';
+  export const BDUI_ACTION_MGR_REPORT_STOP = 'mgr_report_stop';
+  export const BDUI_ACTION_MGR_REPORT_ACCEPT = 'mgr_report_accept';
+  export const BDUI_ACTION_MGR_SHIPMENT_START = 'mgr_shipment_start';
+  export const BDUI_ACTION_MGR_SHIPMENT_STOP = 'mgr_shipment_stop';
+  export const BDUI_ACTION_MGR_SHIPMENT_ACCEPT = 'mgr_shipment_accept';
+  export const BDUI_ACTION_MGR_COMPLETED = 'mgr_completed';
+  export const BDUI_ACTION_MGR_CANCEL = 'mgr_cancel';
 
 /** Fixed ids from scripts/seed-bdui-lifecycle.js (agent/contract/stub file). */
 export const BDUI_SEED_STUB_FILE_ID = '6a8dbd010000000000000001';

@@ -27,7 +27,11 @@ import {
   BDUI_ACTION_MGR_PAYMENT_START,
   BDUI_ACTION_MGR_REPORT_ACCEPT,
   BDUI_ACTION_MGR_REPORT_SIGNING,
+  BDUI_ACTION_MGR_REPORT_START,
+  BDUI_ACTION_MGR_REPORT_STOP,
   BDUI_ACTION_MGR_SHIPMENT_ACCEPT,
+  BDUI_ACTION_MGR_SHIPMENT_START,
+  BDUI_ACTION_MGR_SHIPMENT_STOP,
   BDUI_SEED_STUB_FILE_ID,
   BDUI_ACTION_PROV_ATTACH_HASH,
   BDUI_ACTION_PROV_ATTACH_PROOF,
@@ -79,30 +83,50 @@ const CATALOG: Record<string, CatalogEntry> = {
     'PUT',
     '/form-payment/{formId}/form',
   ),
-  [BDUI_ACTION_UPLOAD_ORDER]: action(
-    BDUI_ACTION_UPLOAD_ORDER,
-    'Загрузить поручение',
-    'PUT',
-    '/form-payment/{formId}/order',
-  ),
-  [BDUI_ACTION_UPLOAD_PAYMENTS]: action(
-    BDUI_ACTION_UPLOAD_PAYMENTS,
-    'Загрузить подтверждение оплаты',
-    'PUT',
-    '/form-payment/{formId}/payments',
-  ),
-  [BDUI_ACTION_UPLOAD_REPORT]: action(
-    BDUI_ACTION_UPLOAD_REPORT,
-    'Загрузить отчёт',
-    'PUT',
-    '/form-payment/{formId}/report',
-  ),
-  [BDUI_ACTION_UPLOAD_SHIPMENT]: action(
-    BDUI_ACTION_UPLOAD_SHIPMENT,
-    'Загрузить документы отгрузки',
-    'PUT',
-    '/form-payment/{formId}/shipment',
-  ),
+  [BDUI_ACTION_UPLOAD_ORDER]: {
+    ...action(
+      BDUI_ACTION_UPLOAD_ORDER,
+      'Загрузить поручение',
+      'PUT',
+      '/form-payment/{formId}/order',
+    ),
+    staticBody: {
+      paymentOrderSigned: BDUI_SEED_STUB_FILE_ID,
+    },
+  },
+  [BDUI_ACTION_UPLOAD_PAYMENTS]: {
+    ...action(
+      BDUI_ACTION_UPLOAD_PAYMENTS,
+      'Загрузить подтверждение оплаты',
+      'PUT',
+      '/form-payment/{formId}/payments',
+    ),
+    staticBody: {
+      addPayments: [BDUI_SEED_STUB_FILE_ID],
+    },
+  },
+  [BDUI_ACTION_UPLOAD_REPORT]: {
+    ...action(
+      BDUI_ACTION_UPLOAD_REPORT,
+      'Загрузить отчёт',
+      'PUT',
+      '/form-payment/{formId}/report',
+    ),
+    staticBody: {
+      reportSigned: BDUI_SEED_STUB_FILE_ID,
+    },
+  },
+  [BDUI_ACTION_UPLOAD_SHIPMENT]: {
+    ...action(
+      BDUI_ACTION_UPLOAD_SHIPMENT,
+      'Отправить документы отгрузки',
+      'PUT',
+      '/form-payment/{formId}/shipment/accept',
+    ),
+    staticBody: {
+      addClosing: [BDUI_SEED_STUB_FILE_ID],
+    },
+  },
   [BDUI_ACTION_ICO_START]: action(
     BDUI_ACTION_ICO_START,
     'Начать проверку',
@@ -271,11 +295,35 @@ const CATALOG: Record<string, CatalogEntry> = {
     'PUT',
     '/admin/manager/form-payment/{formId}/report/signing',
   ),
+  [BDUI_ACTION_MGR_REPORT_START]: action(
+    BDUI_ACTION_MGR_REPORT_START,
+    'Начать проверку отчёта',
+    'PUT',
+    '/admin/manager/form-payment/{formId}/report/start',
+  ),
+  [BDUI_ACTION_MGR_REPORT_STOP]: action(
+    BDUI_ACTION_MGR_REPORT_STOP,
+    'Остановить проверку отчёта',
+    'PUT',
+    '/admin/manager/form-payment/{formId}/report/stop',
+  ),
   [BDUI_ACTION_MGR_REPORT_ACCEPT]: action(
     BDUI_ACTION_MGR_REPORT_ACCEPT,
     'Подтвердить отчёт',
     'PUT',
     '/admin/manager/form-payment/{formId}/report/accept',
+  ),
+  [BDUI_ACTION_MGR_SHIPMENT_START]: action(
+    BDUI_ACTION_MGR_SHIPMENT_START,
+    'Начать проверку отгрузки',
+    'PUT',
+    '/admin/manager/form-payment/{formId}/shipment/start',
+  ),
+  [BDUI_ACTION_MGR_SHIPMENT_STOP]: action(
+    BDUI_ACTION_MGR_SHIPMENT_STOP,
+    'Остановить проверку отгрузки',
+    'PUT',
+    '/admin/manager/form-payment/{formId}/shipment/stop',
   ),
   [BDUI_ACTION_MGR_SHIPMENT_ACCEPT]: action(
     BDUI_ACTION_MGR_SHIPMENT_ACCEPT,

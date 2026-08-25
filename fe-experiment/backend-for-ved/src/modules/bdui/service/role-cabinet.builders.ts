@@ -28,7 +28,7 @@ const LIST_PATHS: Record<BduiVedRoleId, string> = {
   [BDUI_ROLE_EXTERNAL_CO]:
     '/admin/compliance-officer/form-payment?statuses=form_waiting_verification&statuses=form_verification',
   [BDUI_ROLE_MANAGER]:
-    '/admin/manager/form-payment?statuses=form_accepted&statuses=signing_order&statuses=signing_order_waiting_verification&statuses=signing_order_verification&statuses=signing_order_accepted&statuses=payment_received&statuses=payment_processing&statuses=manager_checking',
+    '/admin/manager/form-payment?statuses=form_accepted&statuses=signing_order&statuses=signing_order_waiting_verification&statuses=signing_order_verification&statuses=signing_order_accepted&statuses=payment_received&statuses=payment_processing&statuses=manager_checking&statuses=payment_sent&statuses=report_waiting&statuses=report_waiting_verification&statuses=report_verification&statuses=shipment_waiting&statuses=shipment_waiting_verification&statuses=shipment_verification',
   [BDUI_ROLE_PROVIDER]:
     '/admin/provider/form-payment?statuses=signing_order_accepted&statuses=payment_received&statuses=payment_processing',
 };
@@ -351,7 +351,7 @@ export class RoleCabinetBuilders {
           type: 'text',
           id: 'list_intro',
           content:
-            'Happy-path import+аванс: form_accepted → поручение → оплата → передача Provider. Список отфильтрован по активным статусам менеджера.',
+            'Happy-path import+аванс: form_accepted → поручение → оплата → Provider → отчёт → отгрузка → COMPLETED. Список включает closing-статусы.',
         },
         {
           type: 'data_table',
@@ -441,6 +441,41 @@ export class RoleCabinetBuilders {
         id: 'mgr_hint_payment',
         content:
           'Назначьте Provider (если ещё нет), зафиксируйте оплату клиента и передайте на исполнение → payment_processing.',
+      });
+    }
+    if (status === FormPaymentStatus.PAYMENT_SENT) {
+      widgets.push({
+        type: 'text',
+        id: 'mgr_hint_report_signing',
+        content: 'Платёж исполнен. Отправьте отчёт клиенту на подпись → report_waiting.',
+      });
+    }
+    if (status === FormPaymentStatus.REPORT_WAITING_VERIFICATION) {
+      widgets.push({
+        type: 'text',
+        id: 'mgr_hint_report_start',
+        content: 'Клиент загрузил отчёт. Начните проверку, затем подтвердите → shipment_waiting.',
+      });
+    }
+    if (status === FormPaymentStatus.REPORT_VERIFICATION) {
+      widgets.push({
+        type: 'text',
+        id: 'mgr_hint_report_review',
+        content: 'Проверка отчёта: подтвердите — статус уйдёт в ожидание отгрузки (аванс).',
+      });
+    }
+    if (status === FormPaymentStatus.SHIPMENT_WAITING_VERIFICATION) {
+      widgets.push({
+        type: 'text',
+        id: 'mgr_hint_shipment_start',
+        content: 'Клиент загрузил закрывающие документы. Начните проверку отгрузки.',
+      });
+    }
+    if (status === FormPaymentStatus.SHIPMENT_VERIFICATION) {
+      widgets.push({
+        type: 'text',
+        id: 'mgr_hint_shipment_review',
+        content: 'Подтвердите отгрузку или завершите заявку → COMPLETED.',
       });
     }
     widgets.push({ type: 'action_bar', id: 'form_actions', actions: actionIds });

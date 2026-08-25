@@ -392,7 +392,41 @@ export class UserScreenBuilders {
       widgets.push({
         type: 'text',
         id: 'signing_order_hint',
-        content: 'Менеджер отправил поручение на подпись. Загрузите подписанный файл поручения.',
+        content: 'Менеджер отправил поручение на подпись. Загрузите подписанный файл поручения (stub).',
+      });
+    }
+    if (status === FormPaymentStatus.SIGNING_ORDER_ACCEPTED) {
+      widgets.push({
+        type: 'text',
+        id: 'payments_hint',
+        content: 'Поручение принято. Загрузите подтверждение оплаты клиента (stub), затем менеджер передаст заявку Provider.',
+      });
+    }
+    if (
+      status === FormPaymentStatus.REPORT_WAITING ||
+      status === FormPaymentStatus.REPORT_WAITING_CORRECTIONS
+    ) {
+      widgets.push({
+        type: 'text',
+        id: 'report_hint',
+        content: 'Загрузите подписанный отчёт агента (stub) — заявка уйдёт на проверку менеджеру.',
+      });
+    }
+    if (
+      status === FormPaymentStatus.SHIPMENT_WAITING ||
+      status === FormPaymentStatus.SHIPMENT_WAITING_CORRECTIONS
+    ) {
+      widgets.push({
+        type: 'text',
+        id: 'shipment_hint',
+        content: 'Аванс: приложите документы отгрузки (stub) и отправьте на проверку менеджеру.',
+      });
+    }
+    if (status === FormPaymentStatus.COMPLETED) {
+      widgets.push({
+        type: 'text',
+        id: 'completed_hint',
+        content: 'Заявка завершена. Действия изменения недоступны.',
       });
     }
     if (isCanceledByEco) {
