@@ -25,7 +25,8 @@ export type BduiFieldType =
   | 'file'
   | 'checkbox'
   | 'date'
-  | 'organization_select';
+  | 'organization_select'
+  | 'counterparty_select';
 
 export type BduiFieldOption = {
   value: string;
@@ -82,6 +83,19 @@ export type BduiAction = {
   requiresFileUpload?: BduiFileUploadSpec | BduiFileUploadSpec[];
   /** Prompt for contract number + date (mgr_contract_attach). */
   requiresContractMeta?: boolean;
+  /** Inline directory create: collect fields then POST (AuthZ on server). */
+  requiresFormFields?: BduiField[];
+  /** Maps flat inline form to API body shape. */
+  inlineCreateKind?: 'organization' | 'counterparty_foreign';
+  /** After inline POST, set this wizard/detail field to created id. */
+  inlineCreateTargetField?: string;
+};
+
+export type BduiWizardInlineCreate = {
+  stepId: string;
+  actionId: string;
+  targetField: string;
+  panelTitle: string;
 };
 
 export type BduiLoginFormWidget = {
@@ -132,6 +146,10 @@ export type BduiWizardWidget = {
   organizationsDataSource: BduiApiRef;
   /** Active currencies for deal step selects (GET /currency). */
   currenciesDataSource?: BduiApiRef;
+  /** User counterparties for deal step (GET /counterparty/list). */
+  counterpartiesDataSource?: BduiApiRef;
+  /** Inline «add directory row» panels on wizard steps. */
+  inlineCreates?: BduiWizardInlineCreate[];
 };
 
 export type BduiStatusBadgeWidget = {
@@ -160,6 +178,19 @@ export type BduiDetailFieldsWidget = {
   fields: BduiColumn[];
 };
 
+export type BduiInlineDirectoryWidget = {
+  type: 'inline_directory';
+  id: string;
+  title: string;
+  description?: string;
+  createActionId: string;
+  listDataSource: BduiApiRef;
+  listIdField?: string;
+  /** PATCH action to link selected/created id onto the form (draft detail). */
+  linkActionId?: string;
+  linkBodyField: string;
+};
+
 export type BduiWidget =
   | BduiLoginFormWidget
   | BduiDataTableWidget
@@ -168,7 +199,8 @@ export type BduiWidget =
   | BduiStatusBadgeWidget
   | BduiActionBarWidget
   | BduiTextWidget
-  | BduiDetailFieldsWidget;
+  | BduiDetailFieldsWidget
+  | BduiInlineDirectoryWidget;
 
 export type BduiScreen = {
   id: string;

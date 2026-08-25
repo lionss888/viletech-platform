@@ -36,6 +36,8 @@ export const BDUI_ACTION_UPLOAD_PAYMENTS = 'upload_payments';
 export const BDUI_ACTION_UPLOAD_REPORT = 'upload_report';
 export const BDUI_ACTION_UPLOAD_SHIPMENT = 'upload_shipment';
 export const BDUI_ACTION_LIST_ORGANIZATIONS = 'list_organizations';
+export const BDUI_ACTION_CREATE_ORGANIZATION = 'create_organization';
+export const BDUI_ACTION_CREATE_COUNTERPARTY = 'create_counterparty';
 
 /** Internal CO */
 export const BDUI_ACTION_ICO_START = 'ico_form_start';

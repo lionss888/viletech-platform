@@ -30,7 +30,8 @@ export type BduiFieldType =
   | 'file'
   | 'checkbox'
   | 'date'
-  | 'organization_select';
+  | 'organization_select'
+  | 'counterparty_select';
 
 export type BduiFieldOption = {
   value: string;
@@ -73,6 +74,16 @@ export type BduiAction = {
   requiresTxHash?: boolean;
   requiresFileUpload?: BduiFileUploadSpec | BduiFileUploadSpec[];
   requiresContractMeta?: boolean;
+  requiresFormFields?: BduiField[];
+  inlineCreateKind?: 'organization' | 'counterparty_foreign';
+  inlineCreateTargetField?: string;
+};
+
+export type BduiWizardInlineCreate = {
+  stepId: string;
+  actionId: string;
+  targetField: string;
+  panelTitle: string;
 };
 
 export type BduiWizardStep = {
@@ -94,6 +105,8 @@ export type BduiWizardWidget = {
   submitAction: string;
   organizationsDataSource: BduiApiRef;
   currenciesDataSource?: BduiApiRef;
+  counterpartiesDataSource?: BduiApiRef;
+  inlineCreates?: BduiWizardInlineCreate[];
 };
 
 export type BduiWidget =
@@ -119,6 +132,17 @@ export type BduiWidget =
       id: string;
       dataSource: BduiApiRef;
       fields: BduiColumn[];
+    }
+  | {
+      type: 'inline_directory';
+      id: string;
+      title: string;
+      description?: string;
+      createActionId: string;
+      listDataSource: BduiApiRef;
+      listIdField?: string;
+      linkActionId?: string;
+      linkBodyField: string;
     };
 
 export type BduiScreen = {

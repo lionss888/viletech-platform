@@ -279,6 +279,7 @@ export function ScreenPage(props: ScreenPageProps): JSX.Element {
         dataRefreshKey={`${formId ?? ''}:${detailStatus ?? ''}:${dataRefreshKey}`}
         onNavigate={handleNavigate}
         onRunAction={handleRunAction}
+        onDirectoryLinked={() => setDataRefreshKey((previous) => previous + 1)}
         onStatusLoaded={(nextStatus) => {
           void handleStatusLoaded(nextStatus);
         }}

@@ -1,6 +1,7 @@
 import { ChangeEvent, FormEvent, useEffect, useMemo, useState } from 'react';
 import { apiRequest, apiUploadFile, replacePathParams } from '../../api/client';
 import type { BduiAction, BduiField, BduiWizardWidget } from '../../types/bdui';
+import { InlineDirectoryPanel } from './InlineDirectoryPanel';
 
 type WizardWidgetProps = {
   widget: BduiWizardWidget;
@@ -23,6 +24,17 @@ type PaginatedOrgs = {
 type CurrencyRow = {
   symbol?: string;
   active?: boolean;
+};
+
+type CounterpartyOption = {
+  _id: string;
+  name?: string;
+  country?: string;
+};
+
+type PaginatedCounterparties = {
+  docs?: CounterpartyOption[];
+  items?: CounterpartyOption[];
 };
 
 type PaginatedCurrencies = {
@@ -107,7 +119,10 @@ export function WizardWidget(props: WizardWidgetProps): JSX.Element {
   );
   const [files, setFiles] = useState<Record<string, File | null>>({});
   const [organizations, setOrganizations] = useState<OrganizationOption[]>([]);
+  const [counterparties, setCounterparties] = useState<CounterpartyOption[]>([]);
   const [currencyOptions, setCurrencyOptions] = useState<Array<{ value: string; label: string }>>([]);
+  const [orgsRefreshKey, setOrgsRefreshKey] = useState(0);
+  const [counterpartiesRefreshKey, setCounterpartiesRefreshKey] = useState(0);
   const [isBusy, setIsBusy] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const currentStep = widget.steps[stepIndex];
@@ -138,7 +153,37 @@ export function WizardWidget(props: WizardWidgetProps): JSX.Element {
       cancelled = true;
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps -- load orgs once per data source
-  }, [widget.organizationsDataSource.method, widget.organizationsDataSource.path]);
+  }, [widget.organizationsDataSource.method, widget.organizationsDataSource.path, orgsRefreshKey]);
+
+  useEffect(() => {
+    if (!widget.counterpartiesDataSource) {
+      return;
+    }
+    let cancelled = false;
+    async function loadCounterparties(): Promise<void> {
+      try {
+        const data = await apiRequest<PaginatedCounterparties | CounterpartyOption[]>(
+          widget.counterpartiesDataSource!.path,
+          { method: widget.counterpartiesDataSource!.method },
+        );
+        if (cancelled) {
+          return;
+        }
+        const list = Array.isArray(data) ? data : data.docs ?? data.items ?? [];
+        setCounterparties(list);
+      } catch {
+        /* optional field */
+      }
+    }
+    void loadCounterparties();
+    return () => {
+      cancelled = true;
+    };
+  }, [
+    widget.counterpartiesDataSource?.method,
+    widget.counterpartiesDataSource?.path,
+    counterpartiesRefreshKey,
+  ]);
 
   useEffect(() => {
     if (!widget.currenciesDataSource) {
@@ -279,6 +324,9 @@ export function WizardWidget(props: WizardWidgetProps): JSX.Element {
       amount: amountMinor,
       organization: values.organization,
     };
+    if (values.counterpartyRef) {
+      patchBody.counterpartyRef = values.counterpartyRef;
+    }
     if (invoiceFileId) {
       patchBody.addAdditional = [invoiceFileId];
     }
@@ -406,6 +454,28 @@ export function WizardWidget(props: WizardWidgetProps): JSX.Element {
         </label>
       );
     }
+    if (field.fieldType === 'counterparty_select') {
+      return (
+        <label key={field.name} className="bdui-field">
+          <span>{field.label}</span>
+          {field.hint ? <span className="bdui-field-hint">{field.hint}</span> : null}
+          <select
+            required={field.required}
+            value={values[field.name] ?? ''}
+            disabled={isBusy}
+            onChange={(event) => updateValue(field.name, event.target.value)}
+          >
+            <option value="">—</option>
+            {counterparties.map((counterparty) => (
+              <option key={counterparty._id} value={counterparty._id}>
+                {counterparty.name ?? counterparty._id}
+                {counterparty.country ? ` · ${counterparty.country}` : ''}
+              </option>
+            ))}
+          </select>
+        </label>
+      );
+    }
     if (field.fieldType === 'select') {
       return (
         <label key={field.name} className="bdui-field">
@@ -442,6 +512,21 @@ export function WizardWidget(props: WizardWidgetProps): JSX.Element {
     );
   }
 
+  const stepInlineCreates = (widget.inlineCreates ?? []).filter(
+    (item) => item.stepId === currentStep.id,
+  );
+
+  function handleInlineCreated(targetField: string, entityId: string, actionId: string): void {
+    updateValue(targetField, entityId);
+    setErrorMessage(null);
+    if (actionId === 'create_organization') {
+      setOrgsRefreshKey((previous) => previous + 1);
+    }
+    if (actionId === 'create_counterparty') {
+      setCounterpartiesRefreshKey((previous) => previous + 1);
+    }
+  }
+
   if (!createAction || !saveAction || !submitAction) {
     return <p className="bdui-error">Wizard schema incomplete: missing actions</p>;
   }
@@ -469,6 +554,24 @@ export function WizardWidget(props: WizardWidgetProps): JSX.Element {
         <h2>{currentStep.title}</h2>
         {currentStep.description ? <p className="bdui-muted">{currentStep.description}</p> : null}
         <div className="bdui-wizard-fields">{currentStep.fields.map(renderField)}</div>
+        {stepInlineCreates.map((inlineSpec) => {
+          const inlineAction = findAction(actions, inlineSpec.actionId);
+          if (!inlineAction) {
+            return null;
+          }
+          return (
+            <InlineDirectoryPanel
+              key={inlineSpec.actionId}
+              action={inlineAction}
+              panelTitle={inlineSpec.panelTitle}
+              isBusy={isBusy}
+              onError={setErrorMessage}
+              onCreated={(entityId) =>
+                handleInlineCreated(inlineSpec.targetField, entityId, inlineSpec.actionId)
+              }
+            />
+          );
+        })}
       </div>
       {errorMessage ? <p className="bdui-error">{errorMessage}</p> : null}
       <div className="bdui-wizard-actions">

@@ -4,7 +4,7 @@ overview: "BDUI-кабинет роли root (SuperAdmin): пользовате�
 todos:
   - id: e12-seed-root
     content: Seed root account + BDUI role id root
-    status: pending
+    status: in_progress
   - id: e12-screens
     content: "BDUI screens: users, directories, forms admin CTA на существующих API"
     status: pending

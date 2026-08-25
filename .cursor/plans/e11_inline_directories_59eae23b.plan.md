@@ -4,13 +4,13 @@ overview: Возможность добавить запись в справоч
 todos:
   - id: e11-api-pick
     content: Выбрать 1–2 справочника с готовым create API
-    status: pending
+    status: completed
   - id: e11-bdui-ui
     content: BDUI action/wizard inline create + refresh options
-    status: pending
+    status: completed
   - id: e11-qa
     content: QA gate E11 AuthZ + happy path; LIFECYCLE
-    status: pending
+    status: completed
 isProject: false
 ---
 

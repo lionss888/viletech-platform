@@ -3,7 +3,9 @@ import { BduiLifecycleActionResolver } from './bdui-lifecycle-action.resolver';
 import { BduiUserActionResolver } from './bdui-user-action.resolver';
 import {
   BDUI_ACTION_ACCEPT_FORM,
+  BDUI_ACTION_CREATE_COUNTERPARTY,
   BDUI_ACTION_CREATE_FORM,
+  BDUI_ACTION_CREATE_ORGANIZATION,
   BDUI_ACTION_SAVE_FORM,
   BDUI_ACTION_UPLOAD_FILE,
 } from '../bdui.constants';
@@ -116,5 +118,55 @@ describe('UserScreenBuilders', () => {
     expect(currencyClient?.hint).toMatch(/currency/i);
     const orgStep = wizard.steps.find((step) => step.id === 'organization');
     expect(orgStep?.description).toMatch(/BDUI Экспорт/);
+  });
+
+  it('E11: create wizard exposes inline directory create actions and step panels', () => {
+    const create = builders.buildFormsCreateScreen();
+    const byId = Object.fromEntries(create.actions.map((action) => [action.id, action]));
+    expect(byId[BDUI_ACTION_CREATE_ORGANIZATION]?.method).toBe('POST');
+    expect(byId[BDUI_ACTION_CREATE_ORGANIZATION]?.path).toBe('/organization');
+    expect(byId[BDUI_ACTION_CREATE_ORGANIZATION]?.inlineCreateKind).toBe('organization');
+    expect(byId[BDUI_ACTION_CREATE_ORGANIZATION]?.requiresFormFields?.length).toBeGreaterThan(0);
+    expect(byId[BDUI_ACTION_CREATE_COUNTERPARTY]?.method).toBe('POST');
+    expect(byId[BDUI_ACTION_CREATE_COUNTERPARTY]?.path).toBe('/counterparty/create');
+    expect(byId[BDUI_ACTION_CREATE_COUNTERPARTY]?.inlineCreateKind).toBe('counterparty_foreign');
+
+    const wizard = create.widgets.find((widget) => widget.type === 'wizard');
+    expect(wizard?.type).toBe('wizard');
+    if (wizard?.type !== 'wizard') {
+      return;
+    }
+    expect(wizard.counterpartiesDataSource?.path).toBe('/counterparty/list');
+    expect(wizard.inlineCreates).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          stepId: 'deal',
+          actionId: BDUI_ACTION_CREATE_COUNTERPARTY,
+          targetField: 'counterpartyRef',
+        }),
+        expect.objectContaining({
+          stepId: 'organization',
+          actionId: BDUI_ACTION_CREATE_ORGANIZATION,
+          targetField: 'organization',
+        }),
+      ]),
+    );
+    const deal = wizard.steps.find((step) => step.id === 'deal');
+    expect(deal?.fields.some((field) => field.fieldType === 'counterparty_select')).toBe(true);
+  });
+
+  it('E11: draft detail inline_directory widget links counterparty via SAVE_FORM', () => {
+    const screen = builders.buildFormsDetailScreen(FormPaymentStatus.DRAFT);
+    const inlineWidget = screen.widgets.find((widget) => widget.type === 'inline_directory');
+    expect(inlineWidget?.type).toBe('inline_directory');
+    if (inlineWidget?.type !== 'inline_directory') {
+      return;
+    }
+    expect(inlineWidget.createActionId).toBe(BDUI_ACTION_CREATE_COUNTERPARTY);
+    expect(inlineWidget.linkActionId).toBe(BDUI_ACTION_SAVE_FORM);
+    expect(inlineWidget.linkBodyField).toBe('counterpartyRef');
+    expect(screen.actions.map((action) => action.id)).toEqual(
+      expect.arrayContaining([BDUI_ACTION_CREATE_COUNTERPARTY, BDUI_ACTION_CREATE_ORGANIZATION]),
+    );
   });
 });

@@ -6,6 +6,7 @@ import { FormWidget } from './widgets/FormWidget';
 import { LoginFormWidget } from './widgets/LoginFormWidget';
 import { StatusBadgeWidget } from './widgets/StatusBadgeWidget';
 import { TextWidget } from './widgets/TextWidget';
+import { InlineDirectoryWidget } from './widgets/InlineDirectoryWidget';
 import { WizardWidget } from './widgets/WizardWidget';
 
 type SchemaRendererProps = {
@@ -16,6 +17,8 @@ type SchemaRendererProps = {
   onStatusLoaded?: (status: string) => void;
   /** Forces list/detail widgets to refetch after CTA. */
   dataRefreshKey?: string;
+  /** Bump parent refresh after inline directory link on detail. */
+  onDirectoryLinked?: () => void;
 };
 
 function findAction(screen: BduiScreen, actionId: string): BduiAction | undefined {
@@ -140,6 +143,16 @@ export function SchemaRenderer(props: SchemaRendererProps): JSX.Element {
                   onAction={async (action, body) => {
                     await props.onRunAction(action, body);
                   }}
+                />
+              );
+            case 'inline_directory':
+              return (
+                <InlineDirectoryWidget
+                  key={widget.id}
+                  widget={widget}
+                  actions={props.screen.actions}
+                  formId={pathParams.formId ?? ''}
+                  onLinked={props.onDirectoryLinked}
                 />
               );
             default:

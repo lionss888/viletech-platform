@@ -199,3 +199,12 @@ Pages (staff): `login`, `forms.list`, `forms.detail`. User also: `forms.create`.
 - [x] Idempotent fixed ids (E10 range отдельно от `BDUI_SEED_*`)
 - [x] `node scripts/smoke-bdui-seed-directories.js`; login 5 ролей не сломан (`smoke-bdui-login.js`)
 - [x] Provider seed без ПДн клиента в counterparty (только бизнес-имена/реквизиты)
+
+### Quality gate E11 — Inline directory create
+
+- [x] Справочники: `POST /organization` (User site) + `POST /counterparty/create` — без нового CRUD UI
+- [x] Wizard: `inlineCreates` на шагах deal/organization; `counterparty_select` + refresh options после create
+- [x] Draft detail: `inline_directory` widget — create + PATCH `counterpartyRef` через `SAVE_FORM`
+- [x] AuthZ: Provider `POST /organization` → 403/401 (не User site)
+- [x] Unit: E11 inline actions + widgets в `user-screen.builders.spec.ts`
+- [x] `node scripts/smoke-bdui-inline-directories.js`

@@ -22,6 +22,7 @@
 | E8 field fidelity | list/detail: `totals.amount`, `currency.client`; refresh after CTA |
 | E9 operator UX | nav «К списку»; table sort; PDF/deal hints; empty list copy |
 | E10 seed directories | currencies, 2 orgs, 2 counterparties, HS×2; wizard API refs |
+| E11 inline directories | org/counterparty inline create in wizard + draft detail; AuthZ on API |
 
 Open UI: http://localhost:5173
 
@@ -37,6 +38,18 @@ Re-seed: `cd backend-for-ved && node scripts/seed-bdui-lifecycle.js` (idempotent
 | `hs-codes` | 0101210000, 8471300000 | wizard HS PATCH |
 
 Smoke: `node scripts/smoke-bdui-seed-directories.js`.
+
+## Inline directories (E11)
+
+| Surface | Behavior |
+|---------|----------|
+| Wizard deal | `counterparty_select` + panel «Добавить контрагента» → `POST /counterparty/create` → refresh list + field |
+| Wizard organization | panel «Добавить организацию» → `POST /organization` → refresh org select |
+| Draft detail | `inline_directory` widget: list + inline create + PATCH `counterpartyRef` |
+
+Schema: `BduiAction.requiresFormFields`, `inlineCreateKind`, `BduiWizardWidget.inlineCreates`, widget `inline_directory`.
+
+Smoke: `node scripts/smoke-bdui-inline-directories.js` (User create + Provider deny on org).
 
 ## Form DTO display map (E8)
 

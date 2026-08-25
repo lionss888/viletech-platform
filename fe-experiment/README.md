@@ -43,6 +43,7 @@ Smoke (когда Nest уже up):
 cd fe-experiment/backend-for-ved
 node scripts/smoke-bdui-login.js
 node scripts/smoke-bdui-upload.js
+node scripts/smoke-bdui-inline-directories.js
 ```
 
 MinIO console (опционально): http://localhost:9001 (`minioadmin` / `minioadmin`), bucket `fea360`.
@@ -71,6 +72,12 @@ MinIO console (опционально): http://localhost:9001 (`minioadmin` / `m
 Fixed lifecycle ids (`BDUI_SEED_*`) не меняются. E10 ids: org `…400002`, counterparty `…800001` / `…800002`.
 
 Проверка: `node scripts/smoke-bdui-seed-directories.js` (Nest up + seed).
+
+### Inline add (E11)
+
+Wizard и черновик detail: добавление организации / foreign counterparty «по месту» через существующие `POST /organization` и `POST /counterparty/create`; после create — запись в select/list options. Provider не создаёт org через User site API.
+
+Проверка: `node scripts/smoke-bdui-inline-directories.js`.
 
 ## UI
 

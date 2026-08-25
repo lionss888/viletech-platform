@@ -10,7 +10,9 @@ import {
 import {
   BDUI_ACTION_ACCEPT_FORM,
   BDUI_ACTION_ADD_INVOICE,
+  BDUI_ACTION_CREATE_COUNTERPARTY,
   BDUI_ACTION_CREATE_FORM,
+  BDUI_ACTION_CREATE_ORGANIZATION,
   BDUI_ACTION_GO_CREATE,
   BDUI_ACTION_LIST_ORGANIZATIONS,
   BDUI_ACTION_LOGIN,
@@ -20,9 +22,92 @@ import {
   BDUI_ROLE_USER,
   BDUI_SCHEMA_VERSION,
 } from '../bdui.constants';
-import { BduiScreen } from '../bdui.types';
+import { BduiField, BduiScreen } from '../bdui.types';
+import { OrganizationBusinessFormType } from 'lib/enums/models/organization.enums';
 import { BduiUserActionResolver } from './bdui-user-action.resolver';
 import { getCatalogActions } from './lifecycle-action.catalog';
+
+function buildOrganizationInlineFields(): BduiField[] {
+  return [
+    { name: 'orgName', label: 'Название', fieldType: 'text', required: true },
+    {
+      name: 'orgInn',
+      label: 'ИНН',
+      fieldType: 'text',
+      required: true,
+      hint: '10 или 12 цифр',
+    },
+    { name: 'orgEmail', label: 'Email', fieldType: 'email', required: true, defaultValue: 'new-org@bdui.local' },
+    { name: 'orgPhone', label: 'Телефон', fieldType: 'text', required: true, defaultValue: '+74950001122' },
+    { name: 'orgSignerName', label: 'Подписант', fieldType: 'text', required: true },
+    {
+      name: 'orgBusinessForm',
+      label: 'Форма',
+      fieldType: 'select',
+      required: true,
+      defaultValue: OrganizationBusinessFormType.OOO,
+      options: [
+        { value: OrganizationBusinessFormType.OOO, label: 'ООО' },
+        { value: OrganizationBusinessFormType.IP, label: 'ИП' },
+      ],
+    },
+    {
+      name: 'orgLegalAddress',
+      label: 'Юридический адрес',
+      fieldType: 'text',
+      required: false,
+      hint: 'Город и адрес для справочника / wizard',
+    },
+  ];
+}
+
+function buildCounterpartyInlineFields(): BduiField[] {
+  return [
+    { name: 'cpName', label: 'Название контрагента', fieldType: 'text', required: true },
+    { name: 'cpCountry', label: 'Страна (код или название)', fieldType: 'text', required: true, defaultValue: 'DE' },
+    { name: 'cpLegalAddress', label: 'Юридический адрес', fieldType: 'text', required: false },
+    { name: 'cpBankName', label: 'Банк', fieldType: 'text', required: true },
+    { name: 'cpBankCountry', label: 'Страна банка', fieldType: 'text', required: true, defaultValue: 'DE' },
+    { name: 'cpAccountNumber', label: 'Номер счёта', fieldType: 'text', required: true },
+    {
+      name: 'cpAccountCurrency',
+      label: 'Валюта счёта',
+      fieldType: 'select',
+      required: true,
+      defaultValue: AllCurrencies.USD,
+      options: [
+        { value: AllCurrencies.USD, label: 'USD' },
+        { value: AllCurrencies.EUR, label: 'EUR' },
+        { value: AllCurrencies.CNY, label: 'CNY' },
+      ],
+    },
+  ];
+}
+
+function buildInlineDirectoryActions(): BduiScreen['actions'] {
+  return [
+    {
+      id: BDUI_ACTION_CREATE_ORGANIZATION,
+      label: 'Сохранить организацию',
+      method: 'POST',
+      path: '/organization',
+      bodyFrom: 'form',
+      inlineCreateKind: 'organization',
+      inlineCreateTargetField: 'organization',
+      requiresFormFields: buildOrganizationInlineFields(),
+    },
+    {
+      id: BDUI_ACTION_CREATE_COUNTERPARTY,
+      label: 'Сохранить контрагента',
+      method: 'POST',
+      path: '/counterparty/create',
+      bodyFrom: 'form',
+      inlineCreateKind: 'counterparty_foreign',
+      inlineCreateTargetField: 'counterpartyRef',
+      requiresFormFields: buildCounterpartyInlineFields(),
+    },
+  ];
+}
 
 /**
  * Builds BDUI screen schemas for the User role experiment pages.
@@ -134,6 +219,21 @@ export class UserScreenBuilders {
           submitAction: BDUI_ACTION_ACCEPT_FORM,
           organizationsDataSource: { method: 'GET', path: '/organization' },
           currenciesDataSource: { method: 'GET', path: '/currency' },
+          counterpartiesDataSource: { method: 'GET', path: '/counterparty/list' },
+          inlineCreates: [
+            {
+              stepId: 'deal',
+              actionId: BDUI_ACTION_CREATE_COUNTERPARTY,
+              targetField: 'counterpartyRef',
+              panelTitle: 'Добавить контрагента',
+            },
+            {
+              stepId: 'organization',
+              actionId: BDUI_ACTION_CREATE_ORGANIZATION,
+              targetField: 'organization',
+              panelTitle: 'Добавить организацию',
+            },
+          ],
           steps: [
             {
               id: 'documents',
@@ -255,6 +355,13 @@ export class UserScreenBuilders {
                   required: true,
                   hint: 'Плановая дата поставки/отгрузки — используется в условиях сделки и этапе shipment.',
                 },
+                {
+                  name: 'counterpartyRef',
+                  label: 'Контрагент (foreign)',
+                  fieldType: 'counterparty_select',
+                  required: false,
+                  hint: 'Необязательно на MVP; можно добавить inline или выбрать из seed.',
+                },
               ],
             },
             {
@@ -327,6 +434,7 @@ export class UserScreenBuilders {
           path: '/organization',
           bodyFrom: 'none',
         },
+        ...buildInlineDirectoryActions(),
       ],
     };
   }
@@ -392,6 +500,17 @@ export class UserScreenBuilders {
         id: 'deal_fields_hint',
         content:
           'Условия сделки: направление import/export, аванс/постоплата, тип товара и дата отгрузки — см. поля ниже. Документы — PDF до 15 Мб при загрузке с диска.',
+      });
+      widgets.push({
+        type: 'inline_directory',
+        id: 'draft_counterparty_inline',
+        title: 'Контрагент',
+        description:
+          'Добавьте иностранного контрагента по месту или выберите из seed — запись сохранится в домене и привяжется к заявке.',
+        createActionId: BDUI_ACTION_CREATE_COUNTERPARTY,
+        listDataSource: { method: 'GET', path: '/counterparty/list' },
+        linkActionId: BDUI_ACTION_SAVE_FORM,
+        linkBodyField: 'counterpartyRef',
       });
     }
     if (isOrgUnderReview) {
@@ -522,6 +641,18 @@ export class UserScreenBuilders {
       id: 'form_actions',
       actions: availableActionIds,
     });
+    const inlineActions = isDraftLike
+      ? [
+          ...buildInlineDirectoryActions(),
+          {
+            id: BDUI_ACTION_SAVE_FORM,
+            label: 'Привязать к заявке',
+            method: 'PATCH' as const,
+            path: '/form-payment/{formId}/form',
+            bodyFrom: 'form' as const,
+          },
+        ]
+      : [];
     return {
       id: 'user.forms.detail',
       role: BDUI_ROLE_USER,
@@ -529,7 +660,7 @@ export class UserScreenBuilders {
       title: 'Заявка',
       version: BDUI_SCHEMA_VERSION,
       widgets,
-      actions: detailActions,
+      actions: [...detailActions, ...inlineActions],
     };
   }
 }

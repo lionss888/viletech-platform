@@ -249,6 +249,41 @@ body {
   cursor: wait;
 }
 
+.bdui-inline-directory {
+  margin-top: 0.75rem;
+  padding-top: 0.5rem;
+  border-top: 1px dashed var(--line);
+}
+
+.bdui-inline-directory__toggle {
+  font: inherit;
+  padding: 0.35rem 0;
+  border: none;
+  background: none;
+  color: var(--accent);
+  cursor: pointer;
+  text-align: left;
+}
+
+.bdui-inline-directory__form {
+  display: flex;
+  flex-direction: column;
+  gap: 0.65rem;
+  margin-top: 0.5rem;
+}
+
+.bdui-inline-directory-block {
+  margin: 1rem 0;
+  padding: 1rem;
+  border: 1px solid var(--line);
+  border-radius: 4px;
+}
+
+.bdui-inline-directory-block__title {
+  margin: 0 0 0.5rem;
+  font-size: 1.05rem;
+}
+
 .bdui-breadcrumb {
   display: flex;
   flex-wrap: wrap;

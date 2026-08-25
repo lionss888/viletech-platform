@@ -4,7 +4,9 @@ import {
   BDUI_ACTION_ACCEPT_FORM,
   BDUI_ACTION_ADD_INVOICE,
   BDUI_ACTION_CANCEL_FORM,
+  BDUI_ACTION_CREATE_COUNTERPARTY,
   BDUI_ACTION_CREATE_FORM,
+  BDUI_ACTION_CREATE_ORGANIZATION,
   BDUI_ACTION_ECO_START,
   BDUI_ACTION_ICO_START,
   BDUI_ACTION_LOGIN,
@@ -107,19 +109,31 @@ describe('BduiSchemaService', () => {
     if (actionBar?.type === 'action_bar') {
       expect(actionBar.actions).toEqual([BDUI_ACTION_ACCEPT_FORM, BDUI_ACTION_CANCEL_FORM]);
     }
-    expect(actualScreen.actions.map((action) => action.id)).toEqual([
-      BDUI_ACTION_ACCEPT_FORM,
-      BDUI_ACTION_CANCEL_FORM,
-    ]);
+    expect(actualScreen.actions.map((action) => action.id)).toEqual(
+      expect.arrayContaining([
+        BDUI_ACTION_ACCEPT_FORM,
+        BDUI_ACTION_CANCEL_FORM,
+        BDUI_ACTION_CREATE_ORGANIZATION,
+        BDUI_ACTION_CREATE_COUNTERPARTY,
+        BDUI_ACTION_SAVE_FORM,
+      ]),
+    );
   });
 
-  it('builds forms.detail with empty actions when status omitted', () => {
+  it('builds forms.detail with inline directory actions when status omitted (draft-like)', () => {
     const actualScreen = service.getUserScreen('forms.detail');
     const actionBar = actualScreen.widgets.find((widget) => widget.type === 'action_bar');
     if (actionBar?.type === 'action_bar') {
       expect(actionBar.actions).toEqual([]);
     }
-    expect(actualScreen.actions).toEqual([]);
+    expect(actualScreen.actions.map((action) => action.id)).toEqual(
+      expect.arrayContaining([
+        BDUI_ACTION_CREATE_ORGANIZATION,
+        BDUI_ACTION_CREATE_COUNTERPARTY,
+        BDUI_ACTION_SAVE_FORM,
+      ]),
+    );
+    expect(actualScreen.widgets.some((widget) => widget.type === 'inline_directory')).toBe(true);
   });
 
   it('throws NotFoundException for unknown page', () => {
