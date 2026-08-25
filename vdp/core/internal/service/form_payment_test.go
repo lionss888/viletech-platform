@@ -34,7 +34,7 @@ func TestAssignDeadlineAndProvider(t *testing.T) {
 	if form.ExecutionDeadline == nil || !form.ExecutionDeadline.Equal(deadline) {
 		t.Fatalf("deadline not set: %#v", form.ExecutionDeadline)
 	}
-	form, err = svc.AssignProvider(ctx, manager, form.ID, seed.ProviderID)
+	form, err = svc.AssignProvider(ctx, manager, form.ID, seed.ProviderID, true)
 	if err != nil {
 		t.Fatal(err)
 	}

@@ -1,0 +1,41 @@
+openapi: 3.0.3
+info:
+  title: VDP Core Forms API
+  version: 1.0.0
+paths:
+  /api/v1/health:
+    get:
+      summary: Health
+      responses:
+        "200":
+          description: ok
+  /api/v1/auth/login:
+    post:
+      summary: Login
+      responses:
+        "200":
+          description: JWT
+  /api/v1/forms:
+    get:
+      summary: List forms
+    post:
+      summary: Create form
+  /api/v1/forms/{id}/actions/{action}:
+    post:
+      summary: Domain action transition
+  /api/v1/{role}/form-payment/{id}/{path}:
+    put:
+      summary: Nest-parity role form action
+      parameters:
+        - name: role
+          in: path
+          required: true
+          schema:
+            type: string
+            enum: [site, manager, provider, eco, ico, treasurer]
+  /api/v1/admin/internal-compliance-officer/organization/{id}/approve:
+    put:
+      summary: ICO approve organization
+  /api/v1/organizations/{id}/unblock-requests:
+    post:
+      summary: Request unblock for blocked organization

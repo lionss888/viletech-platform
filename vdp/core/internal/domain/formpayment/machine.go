@@ -31,13 +31,24 @@ func Apply(cmd Command) (Form, error) {
 		return cmd.Form, nil
 	}
 	if !IsAllowedTransition(cmd.Form.Status, target, cmd.Form.Direction, cmd.Form.RateOnProvider) {
-		return Form{}, apperrors.New(
-			apperrors.ErrCodeConflict,
-			fmt.Sprintf("transition %s -> %s is not allowed", cmd.Form.Status, target),
-		)
+		if !isCancelStatus(target) {
+			return Form{}, apperrors.New(
+				apperrors.ErrCodeConflict,
+				fmt.Sprintf("transition %s -> %s is not allowed", cmd.Form.Status, target),
+			)
+		}
 	}
 	next := cmd.Form
 	next.PrevStatus = cmd.Form.Status
 	next.Status = target
 	return next, nil
+}
+
+func isCancelStatus(s Status) bool {
+	switch s {
+	case StatusCanceledByUser, StatusCanceledByManager, StatusCanceledByComplianceOfficer, StatusCanceledByInternalComplianceOfficer:
+		return true
+	default:
+		return false
+	}
 }

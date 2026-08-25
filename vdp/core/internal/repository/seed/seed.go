@@ -17,7 +17,7 @@ const (
 	OrgID      = "66666666-6666-6666-6666-666666666666"
 )
 
-func Dev(store *repository.Store) {
+func Dev(store repository.Store) {
 	ctx := context.Background()
 	accounts := []domain.Account{
 		{ID: UserID, Email: "user@vdp.local", PasswordHash: service.HashPassword("user"), Role: domain.RoleUser, OrganizationID: OrgID, FullName: "Ivan Petrov", Phone: "+79990000000", Passport: "4510 123456"},
@@ -27,6 +27,7 @@ func Dev(store *repository.Store) {
 		{ID: ProviderID, Email: "provider@vdp.local", PasswordHash: service.HashPassword("provider"), Role: domain.RoleProvider},
 	}
 	for _, account := range accounts {
+		// SaveAccount is upsert — safe to re-run on every process start.
 		_ = store.SaveAccount(ctx, account)
 	}
 	_ = store.SaveOrganization(ctx, domain.Organization{

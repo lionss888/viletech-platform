@@ -18,6 +18,8 @@ const (
 	TypeEDO           Type = "edo"
 	TypeOCR           Type = "ocr"
 	TypePartner       Type = "partner"
+	TypeDocs          Type = "docs"
+	TypeMail          Type = "mail"
 )
 
 type Plugin interface {

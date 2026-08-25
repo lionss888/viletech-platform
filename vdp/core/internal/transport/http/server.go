@@ -24,14 +24,16 @@ type Server struct {
 	auth     *service.AuthService
 	forms    *service.FormPaymentService
 	orgs     *service.OrganizationService
+	catalog  *service.CatalogService
 	publish  *service.HubPublisher
 	mux      *http.ServeMux
 	limiters sync.Map
 }
 
-func NewServer(cfg *config.Config, auth *service.AuthService, forms *service.FormPaymentService, orgs *service.OrganizationService, publish *service.HubPublisher) *Server {
-	srv := &Server{cfg: cfg, auth: auth, forms: forms, orgs: orgs, publish: publish, mux: http.NewServeMux()}
+func NewServer(cfg *config.Config, auth *service.AuthService, forms *service.FormPaymentService, orgs *service.OrganizationService, catalog *service.CatalogService, publish *service.HubPublisher) *Server {
+	srv := &Server{cfg: cfg, auth: auth, forms: forms, orgs: orgs, catalog: catalog, publish: publish, mux: http.NewServeMux()}
 	srv.routes()
+	srv.registerExtendedRoutes()
 	return srv
 }
 
@@ -85,17 +87,23 @@ func (s *Server) handleLogin(w http.ResponseWriter, r *http.Request) {
 
 func (s *Server) handleCreateForm(w http.ResponseWriter, r *http.Request, principal authz.Principal) {
 	var body struct {
-		Direction     string `json:"direction"`
-		Kind          string `json:"kind"`
-		InvoiceAmount string `json:"invoice_amount"`
-		Currency      string `json:"currency"`
+		Direction      string `json:"direction"`
+		Kind           string `json:"kind"`
+		InvoiceAmount  string `json:"invoice_amount"`
+		Currency       string `json:"currency"`
+		NoDocuments    bool   `json:"no_documents"`
+		ContractNumber string `json:"contract_number"`
+		ContractDate   string `json:"contract_date"`
 	}
 	_ = json.NewDecoder(r.Body).Decode(&body)
 	form, err := s.forms.Create(r.Context(), principal, service.CreateInput{
-		Direction:     parseDir(body.Direction),
-		Kind:          parseKind(body.Kind),
-		InvoiceAmount: body.InvoiceAmount,
-		Currency:      body.Currency,
+		Direction:      parseDir(body.Direction),
+		Kind:           parseKind(body.Kind),
+		InvoiceAmount:  body.InvoiceAmount,
+		Currency:       body.Currency,
+		NoDocuments:    body.NoDocuments,
+		ContractNumber: body.ContractNumber,
+		ContractDate:   body.ContractDate,
 	})
 	if err != nil {
 		writeError(w, err)
@@ -162,13 +170,14 @@ func (s *Server) handleDeadline(w http.ResponseWriter, r *http.Request, principa
 
 func (s *Server) handleAssignProvider(w http.ResponseWriter, r *http.Request, principal authz.Principal) {
 	var body struct {
-		ProviderID string `json:"provider_id"`
+		ProviderID   string `json:"provider_id"`
+		ClientAgreed bool   `json:"client_agreed"`
 	}
 	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
 		writeError(w, apperrors.ErrInvalidInput)
 		return
 	}
-	form, err := s.forms.AssignProvider(r.Context(), principal, r.PathValue("id"), body.ProviderID)
+	form, err := s.forms.AssignProvider(r.Context(), principal, r.PathValue("id"), body.ProviderID, body.ClientAgreed)
 	if err != nil {
 		writeError(w, err)
 		return

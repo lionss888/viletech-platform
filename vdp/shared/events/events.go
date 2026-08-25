@@ -9,6 +9,9 @@ const (
 	TypeDiadocSignRequested      = "diadoc.sign_requested"
 	TypeOneCPaymentRequested     = "onec.payment_requested"
 	TypePartnerDispatch          = "partner.dispatch"
+	TypeDocsGenerate             = "docs.generate"
+	TypeMailNotify               = "mail.notify"
+	TypeSocketPush               = "socket.push"
 )
 
 // Envelope is the business-level contract between core and hub.

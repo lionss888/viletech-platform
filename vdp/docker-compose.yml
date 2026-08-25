@@ -1,0 +1,53 @@
+services:
+  postgres-core:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: vdp_core
+      POSTGRES_PASSWORD: vdp_core
+      POSTGRES_DB: vdp_core
+    ports:
+      - "5433:5432"
+    volumes:
+      - ./core/migrations/001_core.sql:/docker-entrypoint-initdb.d/001_core.sql:ro
+      - ./core/migrations/002_extended.sql:/docker-entrypoint-initdb.d/002_extended.sql:ro
+  postgres-hub:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: vdp_hub
+      POSTGRES_PASSWORD: vdp_hub
+      POSTGRES_DB: vdp_hub
+    ports:
+      - "5434:5432"
+    volumes:
+      - ./hub/migrations/001_hub.sql:/docker-entrypoint-initdb.d/001_hub.sql:ro
+      - ./hub/migrations/002_hub.sql:/docker-entrypoint-initdb.d/002_hub.sql:ro
+  hub:
+    build:
+      context: .
+      dockerfile: hub/Dockerfile
+    environment:
+      PORT: "8081"
+      STORE_DRIVER: postgres
+      HUB_SHARED_SECRET: vdp-s2s-dev-secret
+      CORE_URL: http://core:8080
+      DATABASE_URL: postgres://vdp_hub:vdp_hub@postgres-hub:5432/vdp_hub?sslmode=disable
+    ports:
+      - "8081:8081"
+    depends_on:
+      - postgres-hub
+  core:
+    build:
+      context: .
+      dockerfile: core/Dockerfile
+    environment:
+      PORT: "8080"
+      STORE_DRIVER: postgres
+      HUB_URL: http://hub:8081
+      HUB_SHARED_SECRET: vdp-s2s-dev-secret
+      JWT_SECRET: vdp-core-dev-secret
+      DATABASE_URL: postgres://vdp_core:vdp_core@postgres-core:5432/vdp_core?sslmode=disable
+    ports:
+      - "8080:8080"
+    depends_on:
+      - hub
+      - postgres-core

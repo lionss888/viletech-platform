@@ -10,10 +10,10 @@ import (
 )
 
 type OrganizationService struct {
-	store *repository.Store
+	store repository.Store
 }
 
-func NewOrganizationService(store *repository.Store) *OrganizationService {
+func NewOrganizationService(store repository.Store) *OrganizationService {
 	return &OrganizationService{store: store}
 }
 
@@ -72,4 +72,56 @@ func (s *OrganizationService) Approve(ctx context.Context, principal authz.Princ
 		return domain.Organization{}, err
 	}
 	return org, nil
+}
+
+func (s *OrganizationService) UnApprove(ctx context.Context, principal authz.Principal, id string) (domain.Organization, error) {
+	if err := authz.RequireRoles(principal, domain.RoleInternalComplianceOfficer); err != nil {
+		return domain.Organization{}, err
+	}
+	org, err := s.store.OrganizationByID(ctx, id)
+	if err != nil {
+		return domain.Organization{}, err
+	}
+	org.Status = domain.OrgNotApproved
+	org.IsActive = false
+	org.FieldsFrozen = false
+	return org, s.store.SaveOrganization(ctx, org)
+}
+
+func (s *OrganizationService) Block(ctx context.Context, principal authz.Principal, id string) (domain.Organization, error) {
+	if err := authz.RequireRoles(principal, domain.RoleInternalComplianceOfficer, domain.RoleManager); err != nil {
+		return domain.Organization{}, err
+	}
+	org, err := s.store.OrganizationByID(ctx, id)
+	if err != nil {
+		return domain.Organization{}, err
+	}
+	org.Status = domain.OrgBlocked
+	org.Blocked = true
+	org.IsActive = false
+	return org, s.store.SaveOrganization(ctx, org)
+}
+
+func (s *OrganizationService) Update(ctx context.Context, principal authz.Principal, id string, name, inn, country string) (domain.Organization, error) {
+	org, err := s.Get(ctx, principal, id)
+	if err != nil {
+		return domain.Organization{}, err
+	}
+	if org.FieldsFrozen && principal.Role == domain.RoleUser {
+		return domain.Organization{}, apperrors.New(apperrors.ErrCodeConflict, "organization fields are immutable after ICO decision")
+	}
+	if name != "" {
+		org.Name = name
+	}
+	if inn != "" {
+		org.INN = inn
+	}
+	if country != "" {
+		org.Country = country
+	}
+	return org, s.store.SaveOrganization(ctx, org)
+}
+
+func (s *OrganizationService) List(ctx context.Context, principal authz.Principal) ([]domain.Organization, error) {
+	return s.store.ListOrganizations(ctx)
 }

@@ -11,6 +11,7 @@ type Config struct {
 	LogLevel           string
 	Environment        string
 	DatabaseURL        string
+	StoreDriver        string
 	JWTSecret          string
 	JWTExpirationHours int
 	HubURL             string
@@ -26,6 +27,7 @@ func Load() *Config {
 		LogLevel:           getEnv("LOG_LEVEL", "info"),
 		Environment:        getEnv("ENVIRONMENT", "development"),
 		DatabaseURL:        getEnv("DATABASE_URL", "postgres://vdp_core:vdp_core@localhost:5432/vdp_core?sslmode=disable"),
+		StoreDriver:        getEnv("STORE_DRIVER", "postgres"),
 		JWTSecret:          getEnv("JWT_SECRET", "vdp-core-dev-secret"),
 		JWTExpirationHours: getEnvAsInt("JWT_EXPIRATION_HOURS", 24),
 		HubURL:             getEnv("HUB_URL", "http://localhost:8081"),

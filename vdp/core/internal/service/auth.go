@@ -16,12 +16,12 @@ import (
 )
 
 type AuthService struct {
-	store      *repository.Store
+	store      repository.Store
 	jwtSecret  []byte
 	expiresFor time.Duration
 }
 
-func NewAuthService(store *repository.Store, jwtSecret string, hours int) *AuthService {
+func NewAuthService(store repository.Store, jwtSecret string, hours int) *AuthService {
 	if hours <= 0 {
 		hours = 24
 	}

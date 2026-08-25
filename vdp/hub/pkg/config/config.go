@@ -10,6 +10,7 @@ type Config struct {
 	Host            string
 	LogLevel        string
 	DatabaseURL     string
+	StoreDriver     string
 	SharedSecret    string
 	CoreURL         string
 	ExternalTimeout int
@@ -22,6 +23,7 @@ func Load() *Config {
 		Host:            getEnv("HOST", "0.0.0.0"),
 		LogLevel:        getEnv("LOG_LEVEL", "info"),
 		DatabaseURL:     getEnv("DATABASE_URL", "postgres://vdp_hub:vdp_hub@localhost:5432/vdp_hub?sslmode=disable"),
+		StoreDriver:     getEnv("STORE_DRIVER", "postgres"),
 		SharedSecret:    getEnv("HUB_SHARED_SECRET", "vdp-s2s-dev-secret"),
 		CoreURL:         getEnv("CORE_URL", "http://localhost:8080"),
 		ExternalTimeout: getEnvAsInt("EXTERNAL_TIMEOUT_MS", 3000),

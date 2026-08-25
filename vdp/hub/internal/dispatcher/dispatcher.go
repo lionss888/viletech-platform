@@ -11,12 +11,12 @@ import (
 )
 
 type Dispatcher struct {
-	inbox    *inbox.Store
+	inbox    inbox.Store
 	registry *registry.Registry
 	log      *slog.Logger
 }
 
-func New(store *inbox.Store, plugins *registry.Registry, log *slog.Logger) *Dispatcher {
+func New(store inbox.Store, plugins *registry.Registry, log *slog.Logger) *Dispatcher {
 	return &Dispatcher{inbox: store, registry: plugins, log: log}
 }
 
@@ -39,7 +39,9 @@ func (d *Dispatcher) Handle(ctx context.Context, env events.Envelope) (map[strin
 	if err != nil {
 		return nil, fmt.Errorf("plugin %s: %w", pluginName, err)
 	}
-	d.inbox.MarkProcessed(ctx, env, result)
+	if err := d.inbox.MarkProcessed(ctx, env, result); err != nil {
+		return nil, fmt.Errorf("inbox mark: %w", err)
+	}
 	return result, nil
 }
 
@@ -55,6 +57,12 @@ func route(eventType string) (string, string) {
 		return "1c", "cover"
 	case events.TypePartnerDispatch:
 		return "partner", "dispatch"
+	case events.TypeDocsGenerate:
+		return "docs", "generate"
+	case events.TypeMailNotify:
+		return "mail", "notify"
+	case events.TypeSocketPush:
+		return "telegram", "notify"
 	default:
 		return "telegram", "notify"
 	}
