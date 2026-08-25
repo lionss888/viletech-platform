@@ -3,16 +3,20 @@
 
 from __future__ import annotations
 
+import json
 import sqlite3
 import tempfile
 import unittest
 from pathlib import Path
 
 from machine_transfer import (
+    WORKSPACE_FILE_NAME,
     build_replacements,
     collect_blob_refs,
     encode_project_slug,
     export_chat_snapshot,
+    file_uri_variants,
+    find_workspace_storages,
     is_secret_key,
     keys_matching_composers,
     merge_chat_snapshot,
@@ -25,6 +29,24 @@ class EncodeProjectSlugTests(unittest.TestCase):
         input_path = Path("/Users/levpogosov/Downloads/viletech-platform")
         actual = encode_project_slug(input_path)
         self.assertEqual(actual, "Users-levpogosov-Downloads-viletech-platform")
+
+
+class FindWorkspaceStoragesTests(unittest.TestCase):
+    def test_matches_percent_encoded_code_workspace_uri(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            repo_root = Path(temp_dir) / "платформа" / "viletech-platform"
+            repo_root.mkdir(parents=True)
+            (repo_root / WORKSPACE_FILE_NAME).write_text("{}\n", encoding="utf-8")
+            storage_id = "abc123"
+            meta_dir = Path(temp_dir) / "User" / "workspaceStorage" / storage_id
+            meta_dir.mkdir(parents=True)
+            encoded_uri = file_uri_variants(repo_root / WORKSPACE_FILE_NAME)[1]
+            (meta_dir / "workspace.json").write_text(
+                json.dumps({"workspace": encoded_uri}),
+                encoding="utf-8",
+            )
+            actual = find_workspace_storages(Path(temp_dir) / "User", repo_root)
+            self.assertEqual(actual["code-workspace"], meta_dir)
 
 
 class RewriteTextTests(unittest.TestCase):
