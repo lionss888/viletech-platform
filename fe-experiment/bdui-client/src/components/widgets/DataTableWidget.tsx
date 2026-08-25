@@ -15,7 +15,14 @@ type PaginatedRows = {
 };
 
 function readCell(row: Record<string, unknown>, key: string): string {
-  const value = row[key];
+  const value = key.includes('.')
+    ? key.split('.').reduce<unknown>((current, part) => {
+        if (current && typeof current === 'object') {
+          return (current as Record<string, unknown>)[part];
+        }
+        return undefined;
+      }, row)
+    : row[key];
   if (value === null || value === undefined) {
     return '—';
   }

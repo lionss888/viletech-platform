@@ -11,11 +11,11 @@
 | Item | Status |
 |------|--------|
 | `.env` (Redis 6380, NATS 127.0.0.1) | Created |
-| docker compose (mongo/redis/nats/gotenberg) | Up |
-| Nest `npm run dev` :30000 | Running |
-| Vite `npm run dev` :5173 | Running |
-| Test user | `user@bdui.local` / `BduiUser2024!` |
-| BDUI `GET …/schema/user/login` | HTTP 200 |
+| docker compose (mongo/redis/nats/gotenberg) | Up (when Docker running) |
+| P0 lifecycle matrix + multi-role schema API | Done |
+| Seed 5 roles + org | `scripts/seed-bdui-lifecycle.js` |
+| Checklist | [`LIFECYCLE.md`](LIFECYCLE.md) |
+| Unit tests `modules/bdui` | **33 PASS** |
 
 Open UI: http://localhost:5173
 

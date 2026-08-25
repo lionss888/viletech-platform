@@ -1,3 +1,5 @@
+import type { BduiVedRoleId } from './bdui.constants';
+
 export type BduiHttpMethod = 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE';
 
 export type BduiApiRef = {
@@ -10,7 +12,16 @@ export type BduiColumn = {
   label: string;
 };
 
-export type BduiFieldType = 'text' | 'email' | 'password' | 'number' | 'select';
+export type BduiFieldType =
+  | 'text'
+  | 'email'
+  | 'password'
+  | 'number'
+  | 'select'
+  | 'file'
+  | 'checkbox'
+  | 'date'
+  | 'organization_select';
 
 export type BduiFieldOption = {
   value: string;
@@ -23,6 +34,10 @@ export type BduiField = {
   fieldType: BduiFieldType;
   required?: boolean;
   options?: BduiFieldOption[];
+  /** Hint for file fields (e.g. application/pdf). */
+  accept?: string;
+  /** Default string value prefilled in the client. */
+  defaultValue?: string;
 };
 
 export type BduiAction = {
@@ -30,8 +45,12 @@ export type BduiAction = {
   label: string;
   method: BduiHttpMethod;
   path: string;
-  bodyFrom?: 'form' | 'none';
+  bodyFrom?: 'form' | 'none' | 'multipart';
   navigateTo?: string;
+  /** Prompt operator for rejectText before calling API. */
+  requiresTextReason?: boolean;
+  /** Before accept: approve embedded org via ICO organization API. */
+  approveOrganizationFirst?: boolean;
 };
 
 export type BduiLoginFormWidget = {
@@ -54,6 +73,26 @@ export type BduiFormWidget = {
   id: string;
   fields: BduiField[];
   submitAction: string;
+};
+
+export type BduiWizardStep = {
+  id: string;
+  title: string;
+  description?: string;
+  fields: BduiField[];
+};
+
+export type BduiWizardWidget = {
+  type: 'wizard';
+  id: string;
+  steps: BduiWizardStep[];
+  createAction: string;
+  saveAction: string;
+  uploadAction: string;
+  invoiceAction: string;
+  hsCodesAction: string;
+  submitAction: string;
+  organizationsDataSource: BduiApiRef;
 };
 
 export type BduiStatusBadgeWidget = {
@@ -86,6 +125,7 @@ export type BduiWidget =
   | BduiLoginFormWidget
   | BduiDataTableWidget
   | BduiFormWidget
+  | BduiWizardWidget
   | BduiStatusBadgeWidget
   | BduiActionBarWidget
   | BduiTextWidget
@@ -93,7 +133,7 @@ export type BduiWidget =
 
 export type BduiScreen = {
   id: string;
-  role: 'user';
+  role: BduiVedRoleId;
   page: string;
   title: string;
   version: number;
@@ -102,3 +142,5 @@ export type BduiScreen = {
 };
 
 export type BduiUserPage = 'login' | 'forms.list' | 'forms.create' | 'forms.detail';
+
+export type BduiCabinetPage = 'login' | 'forms.list' | 'forms.detail';

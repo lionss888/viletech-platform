@@ -55,12 +55,12 @@ npm run dev
 npm test -- --testPathPattern=modules/bdui --no-coverage
 ```
 
-### 3. Тестовый User
+### 3. Тестовые аккаунты (lifecycle)
 
 ```bash
 cd fe-experiment/backend-for-ved
-node scripts/create-bdui-user.js
-# default: user@bdui.local / BduiUser2024!
+node scripts/seed-bdui-lifecycle.js
+# см. fe-experiment/LIFECYCLE.md
 ```
 
 ### 4. Клиент
@@ -83,7 +83,10 @@ npm run dev
 | `forms.create` | JWT | упрощённое создание |
 | `forms.detail?status=` | JWT | карточка + action_bar |
 
-Эндпоинты: `GET /api/1.0/bdui/schema/user/:page`
+Эндпоинты: `GET /api/1.0/bdui/schema/{role}/{page}`  
+Роли: `user` | `internal_compliance_officer` | `compliance_officer` | `manager` | `provider`
+
+Чеклист сквозного прогона: [`LIFECYCLE.md`](LIFECYCLE.md)
 
 ## Вне скоупа
 

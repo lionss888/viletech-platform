@@ -148,6 +148,129 @@ body {
   cursor: wait;
 }
 
+.bdui-wizard {
+  display: grid;
+  gap: 1.25rem;
+}
+
+.bdui-wizard-steps {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem 1rem;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.bdui-wizard-step {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  color: var(--muted);
+  font-size: 0.9rem;
+}
+
+.bdui-wizard-step--current {
+  color: var(--ink);
+  font-weight: 600;
+}
+
+.bdui-wizard-step--done {
+  color: var(--accent);
+}
+
+.bdui-wizard-step-index {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.5rem;
+  height: 1.5rem;
+  border-radius: 999px;
+  border: 1px solid currentColor;
+  font-size: 0.75rem;
+}
+
+.bdui-wizard-panel h2 {
+  margin: 0 0 0.35rem;
+  font-size: 1.15rem;
+}
+
+.bdui-wizard-fields {
+  display: grid;
+  gap: 0.85rem;
+  max-width: 480px;
+  margin-top: 1rem;
+}
+
+.bdui-field {
+  display: grid;
+  gap: 0.35rem;
+  font-size: 0.92rem;
+}
+
+.bdui-field--checkbox {
+  grid-template-columns: auto 1fr;
+  align-items: center;
+}
+
+.bdui-field input,
+.bdui-field select {
+  font: inherit;
+  padding: 0.55rem 0.7rem;
+  border: 1px solid var(--line);
+  background: #fff;
+  color: var(--ink);
+}
+
+.bdui-wizard-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+}
+
+.bdui-wizard-actions button,
+.bdui-button-secondary {
+  font: inherit;
+  padding: 0.55rem 0.9rem;
+  border: 1px solid var(--accent);
+  background: var(--accent);
+  color: #fff;
+  cursor: pointer;
+}
+
+.bdui-button-secondary {
+  background: #fff;
+  color: var(--ink);
+  border-color: var(--line);
+}
+
+.bdui-wizard-actions button:disabled {
+  opacity: 0.6;
+  cursor: wait;
+}
+
+.bdui-role-picker {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+}
+
+.bdui-role-picker__btn {
+  font: inherit;
+  padding: 0.4rem 0.75rem;
+  border: 1px solid var(--line);
+  background: #fff;
+  color: var(--ink);
+  cursor: pointer;
+}
+
+.bdui-role-picker__btn--active {
+  border-color: var(--accent);
+  background: var(--accent);
+  color: #fff;
+}
+
 .bdui-table-wrap {
   overflow-x: auto;
 }

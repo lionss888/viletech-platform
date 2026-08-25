@@ -1,60 +1,31 @@
 import { Injectable } from '@nestjs/common';
 import { FormPaymentStatus } from 'lib/enums/models/form-payment.enums';
-import {
-  BDUI_ACTION_ACCEPT_CORRECTIONS,
-  BDUI_ACTION_ACCEPT_FORM,
-  BDUI_ACTION_CANCEL_FORM,
-} from '../bdui.constants';
+import { BDUI_ROLE_USER } from '../bdui.constants';
+import { BduiLifecycleActionResolver } from './bdui-lifecycle-action.resolver';
 
 /**
- * Resolves which BDUI action ids a User may invoke for a given form status.
+ * User-facing wrapper over the lifecycle matrix (keeps existing call sites).
  */
 @Injectable()
 export class BduiUserActionResolver {
+  constructor(private readonly lifecycleResolver: BduiLifecycleActionResolver) {}
+
   /**
    * Returns action ids available to the User role for the given form status.
    */
   resolveActionIds(status: FormPaymentStatus | string | undefined): string[] {
-    if (!status) {
-      return [];
-    }
-    const actionIds: string[] = [];
-    if (this.canSubmit(status)) {
-      actionIds.push(BDUI_ACTION_ACCEPT_FORM);
-    }
-    if (this.canResubmitCorrections(status)) {
-      actionIds.push(BDUI_ACTION_ACCEPT_CORRECTIONS);
-    }
-    if (this.canCancel(status)) {
-      actionIds.push(BDUI_ACTION_CANCEL_FORM);
-    }
-    return actionIds;
+    return this.lifecycleResolver.resolveActionIds(BDUI_ROLE_USER, status);
   }
 
-  /**
-   * Draft / creating — user may send the form for verification.
-   */
   canSubmit(status: FormPaymentStatus | string): boolean {
-    return status === FormPaymentStatus.DRAFT || status === FormPaymentStatus.CREATING;
+    return this.resolveActionIds(status).includes('accept_form');
   }
 
-  /**
-   * Returned for corrections — user may resubmit.
-   */
   canResubmitCorrections(status: FormPaymentStatus | string): boolean {
-    return status === FormPaymentStatus.FORM_WAITING_CORRECTIONS;
+    return this.resolveActionIds(status).includes('accept_corrections');
   }
 
-  /**
-   * User may cancel while the form is still editable or awaiting first review.
-   */
   canCancel(status: FormPaymentStatus | string): boolean {
-    return (
-      status === FormPaymentStatus.DRAFT ||
-      status === FormPaymentStatus.CREATING ||
-      status === FormPaymentStatus.FORM_WAITING_CORRECTIONS ||
-      status === FormPaymentStatus.ORGANIZATION_WAITING_VERIFICATION ||
-      status === FormPaymentStatus.FORM_WAITING_VERIFICATION
-    );
+    return this.resolveActionIds(status).includes('cancel_form');
   }
 }

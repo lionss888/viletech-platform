@@ -1,8 +1,17 @@
-import type { AuthResponse, BduiHttpMethod } from '../types/bdui';
+import type { AuthResponse, BduiHttpMethod, BduiVedRoleId } from '../types/bdui';
 
 const API_BASE = '/api/1.0';
 const ACCESS_TOKEN_KEY = 'bdui_access_token';
 const REFRESH_TOKEN_KEY = 'bdui_refresh_token';
+const ROLE_KEY = 'bdui_role';
+
+export const BDUI_ROLES: readonly BduiVedRoleId[] = [
+  'user',
+  'internal_compliance_officer',
+  'compliance_officer',
+  'manager',
+  'provider',
+] as const;
 
 export function getAccessToken(): string | null {
   return localStorage.getItem(ACCESS_TOKEN_KEY);
@@ -10,6 +19,18 @@ export function getAccessToken(): string | null {
 
 export function getRefreshToken(): string | null {
   return localStorage.getItem(REFRESH_TOKEN_KEY);
+}
+
+export function getBduiRole(): BduiVedRoleId {
+  const stored = localStorage.getItem(ROLE_KEY);
+  if (stored && (BDUI_ROLES as readonly string[]).includes(stored)) {
+    return stored as BduiVedRoleId;
+  }
+  return 'user';
+}
+
+export function setBduiRole(role: BduiVedRoleId): void {
+  localStorage.setItem(ROLE_KEY, role);
 }
 
 export function saveAuthTokens(auth: AuthResponse): void {
@@ -96,6 +117,49 @@ export async function apiRequest<T>(path: string, options: RequestOptions = {}):
   }
   if (response.status === 204) {
     return undefined as T;
+  }
+  return (await response.json()) as T;
+}
+
+type UploadOptions = {
+  path: string;
+  file: File;
+  fieldName?: string;
+  pathParams?: Record<string, string>;
+};
+
+/**
+ * Uploads a multipart file to the API (e.g. file-store PDF upload).
+ */
+export async function apiUploadFile<T>(options: UploadOptions): Promise<T> {
+  const resolvedPath = replacePathParams(options.path, options.pathParams ?? {});
+  const headers: Record<string, string> = {};
+  const token = getAccessToken();
+  if (token) {
+    headers.Authorization = `Bearer ${token}`;
+  }
+  const formData = new FormData();
+  formData.append(options.fieldName ?? 'file', options.file);
+  const execute = async (): Promise<Response> =>
+    fetch(`${API_BASE}${resolvedPath}`, {
+      method: 'POST',
+      headers,
+      body: formData,
+    });
+  let response = await execute();
+  if (response.status === 401) {
+    const refreshed = await refreshAccessToken();
+    if (refreshed) {
+      const nextToken = getAccessToken();
+      if (nextToken) {
+        headers.Authorization = `Bearer ${nextToken}`;
+      }
+      response = await execute();
+    }
+  }
+  if (!response.ok) {
+    const text = await response.text();
+    throw new Error(text || `HTTP ${response.status}`);
   }
   return (await response.json()) as T;
 }

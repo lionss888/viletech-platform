@@ -6,6 +6,7 @@ import { FormWidget } from './widgets/FormWidget';
 import { LoginFormWidget } from './widgets/LoginFormWidget';
 import { StatusBadgeWidget } from './widgets/StatusBadgeWidget';
 import { TextWidget } from './widgets/TextWidget';
+import { WizardWidget } from './widgets/WizardWidget';
 
 type SchemaRendererProps = {
   screen: BduiScreen;
@@ -41,7 +42,11 @@ export function SchemaRenderer(props: SchemaRendererProps): JSX.Element {
             case 'login_form': {
               const action = findAction(props.screen, widget.submitAction);
               if (!action) {
-                return <p key={widget.id} className="bdui-error">Action missing: {widget.submitAction}</p>;
+                return (
+                  <p key={widget.id} className="bdui-error">
+                    Action missing: {widget.submitAction}
+                  </p>
+                );
               }
               return (
                 <LoginFormWidget
@@ -56,7 +61,11 @@ export function SchemaRenderer(props: SchemaRendererProps): JSX.Element {
             case 'form': {
               const action = findAction(props.screen, widget.submitAction);
               if (!action) {
-                return <p key={widget.id} className="bdui-error">Action missing: {widget.submitAction}</p>;
+                return (
+                  <p key={widget.id} className="bdui-error">
+                    Action missing: {widget.submitAction}
+                  </p>
+                );
               }
               return (
                 <FormWidget
@@ -69,6 +78,15 @@ export function SchemaRenderer(props: SchemaRendererProps): JSX.Element {
                 />
               );
             }
+            case 'wizard':
+              return (
+                <WizardWidget
+                  key={widget.id}
+                  widget={widget}
+                  actions={props.screen.actions}
+                  onCompleted={(formId) => props.onNavigate('forms.detail', { formId })}
+                />
+              );
             case 'data_table':
               return (
                 <DataTableWidget
@@ -111,8 +129,8 @@ export function SchemaRenderer(props: SchemaRendererProps): JSX.Element {
                   key={widget.id}
                   actionIds={widget.actions}
                   actions={props.screen.actions}
-                  onAction={async (action) => {
-                    await props.onRunAction(action);
+                  onAction={async (action, body) => {
+                    await props.onRunAction(action, body);
                   }}
                 />
               );

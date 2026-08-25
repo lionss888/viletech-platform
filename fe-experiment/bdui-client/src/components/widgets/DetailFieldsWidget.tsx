@@ -9,7 +9,14 @@ type DetailFieldsWidgetProps = {
 };
 
 function readValue(data: Record<string, unknown>, key: string): string {
-  const value = data[key];
+  const value = key.includes('.')
+    ? key.split('.').reduce<unknown>((current, part) => {
+        if (current && typeof current === 'object') {
+          return (current as Record<string, unknown>)[part];
+        }
+        return undefined;
+      }, data)
+    : data[key];
   if (value === null || value === undefined) {
     return '—';
   }
