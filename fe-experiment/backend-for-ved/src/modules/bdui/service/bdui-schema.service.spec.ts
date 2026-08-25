@@ -163,7 +163,8 @@ describe('BduiSchemaService', () => {
     const actualScreen = service.getScreen(BDUI_ROLE_PROVIDER, 'forms.list');
     const table = actualScreen.widgets.find((widget) => widget.type === 'data_table');
     if (table?.type === 'data_table') {
-      expect(table.dataSource.path).toBe('/admin/provider/form-payment');
+      expect(table.dataSource.path).toContain('/admin/provider/form-payment');
+      expect(table.dataSource.path).toContain('payment_processing');
     }
   });
 

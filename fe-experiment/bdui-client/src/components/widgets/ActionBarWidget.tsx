@@ -40,6 +40,18 @@ export function ActionBarWidget(props: ActionBarWidgetProps): JSX.Element {
         }
         body = { ...(body ?? {}), provider };
       }
+      if (action.requiresTxHash) {
+        const hash = window.prompt('Transaction hash:', '')?.trim();
+        if (!hash) {
+          setErrorMessage('Нужен tx hash');
+          return;
+        }
+        const chain = window.prompt('Chain (ETH/TRON/…):', 'ETH')?.trim() || 'ETH';
+        body = {
+          ...(body ?? {}),
+          addTransactions: [{ hash, chain }],
+        };
+      }
       await props.onAction(action, body);
     } catch (error) {
       setErrorMessage(error instanceof Error ? error.message : 'Action failed');

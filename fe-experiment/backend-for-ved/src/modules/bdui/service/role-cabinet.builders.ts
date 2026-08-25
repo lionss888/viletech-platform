@@ -29,7 +29,8 @@ const LIST_PATHS: Record<BduiVedRoleId, string> = {
     '/admin/compliance-officer/form-payment?statuses=form_waiting_verification&statuses=form_verification',
   [BDUI_ROLE_MANAGER]:
     '/admin/manager/form-payment?statuses=form_accepted&statuses=signing_order&statuses=signing_order_waiting_verification&statuses=signing_order_verification&statuses=signing_order_accepted&statuses=payment_received&statuses=payment_processing&statuses=manager_checking',
-  [BDUI_ROLE_PROVIDER]: '/admin/provider/form-payment',
+  [BDUI_ROLE_PROVIDER]:
+    '/admin/provider/form-payment?statuses=signing_order_accepted&statuses=payment_received&statuses=payment_processing',
 };
 
 const DETAIL_PATHS: Record<BduiVedRoleId, string> = {
@@ -85,6 +86,9 @@ export class RoleCabinetBuilders {
     if (role === BDUI_ROLE_MANAGER) {
       return this.buildManagerListScreen();
     }
+    if (role === BDUI_ROLE_PROVIDER) {
+      return this.buildProviderListScreen();
+    }
     return {
       id: `${role}.forms.list`,
       role,
@@ -119,6 +123,9 @@ export class RoleCabinetBuilders {
     }
     if (role === BDUI_ROLE_MANAGER) {
       return this.buildManagerDetailScreen(status);
+    }
+    if (role === BDUI_ROLE_PROVIDER) {
+      return this.buildProviderDetailScreen(status);
     }
     const actions = this.lifecycleResolver.resolveActions(role, status);
     const actionIds = actions.map((item) => item.id);
@@ -442,6 +449,108 @@ export class RoleCabinetBuilders {
       role: BDUI_ROLE_MANAGER,
       page: 'forms.detail',
       title: 'Заявка — Manager',
+      version: BDUI_SCHEMA_VERSION,
+      widgets,
+      actions,
+    };
+  }
+
+  private buildProviderListScreen(): BduiScreen {
+    return {
+      id: `${BDUI_ROLE_PROVIDER}.forms.list`,
+      role: BDUI_ROLE_PROVIDER,
+      page: 'forms.list',
+      title: 'Исполнение — Provider',
+      version: BDUI_SCHEMA_VERSION,
+      widgets: [
+        {
+          type: 'text',
+          id: 'list_intro',
+          content:
+            'Только ваши заявки. Данные клиента ограничены: реквизиты платежа, суммы, поручение/доказательства — без ПДн account.',
+        },
+        {
+          type: 'data_table',
+          id: 'prov_queue',
+          dataSource: { method: 'GET', path: LIST_PATHS[BDUI_ROLE_PROVIDER] },
+          columns: [
+            { key: '_id', label: 'ID' },
+            { key: 'status', label: 'Статус' },
+            { key: 'direction', label: 'Направление' },
+            { key: 'platformPaymentCondition', label: 'Условие' },
+            { key: 'amount', label: 'Сумма' },
+            { key: 'counterparty.name', label: 'Контрагент' },
+          ],
+          rowNavigateTo: 'forms.detail',
+          rowIdField: '_id',
+        },
+      ],
+      actions: [],
+    };
+  }
+
+  private buildProviderDetailScreen(status?: FormPaymentStatus | string): BduiScreen {
+    const actions = this.lifecycleResolver.resolveActions(BDUI_ROLE_PROVIDER, status);
+    const actionIds = actions.map((item) => item.id);
+    const detailPath = DETAIL_PATHS[BDUI_ROLE_PROVIDER];
+    const widgets: BduiWidget[] = [
+      {
+        type: 'status_badge',
+        id: 'form_status',
+        field: 'status',
+        dataSource: { method: 'GET', path: detailPath },
+      },
+      {
+        type: 'detail_fields',
+        id: 'form_fields',
+        dataSource: { method: 'GET', path: detailPath },
+        fields: [
+          { key: '_id', label: 'ID' },
+          { key: 'status', label: 'Статус' },
+          { key: 'direction', label: 'Направление' },
+          { key: 'amount', label: 'Сумма' },
+          { key: 'totals.coverAmount', label: 'Покрытие' },
+          { key: 'platformPaymentCondition', label: 'Условие оплаты' },
+          { key: 'counterparty.name', label: 'Контрагент' },
+          { key: 'counterparty.bankName', label: 'Банк' },
+          { key: 'counterparty.accountNumber', label: 'Счёт' },
+          { key: 'counterparty.swiftCode', label: 'SWIFT' },
+          { key: 'organization.name', label: 'Орг. (имя)' },
+          { key: 'organization.inn', label: 'ИНН' },
+          { key: 'docs.paymentOrder', label: 'Поручение' },
+          { key: 'rejectText', label: 'Комментарий' },
+        ],
+      },
+      {
+        type: 'text',
+        id: 'prov_pii_note',
+        content: 'Ответ API без client account / manager / email-phone организации (узкий Provider DTO).',
+      },
+    ];
+    if (
+      status === FormPaymentStatus.PAYMENT_RECEIVED ||
+      status === FormPaymentStatus.SIGNING_ORDER_ACCEPTED
+    ) {
+      widgets.push({
+        type: 'text',
+        id: 'prov_hint_start',
+        content: 'Начните исполнение или верните заявку менеджеру с комментарием.',
+      });
+    }
+    if (status === FormPaymentStatus.PAYMENT_PROCESSING) {
+      widgets.push({
+        type: 'text',
+        id: 'prov_hint_execute',
+        content:
+          'Прикрепите подтверждение (файл stub или tx hash), затем «Исполнить платёж» → payment_sent. Либо верните менеджеру.',
+      });
+    }
+    widgets.push({ type: 'action_bar', id: 'form_actions', actions: actionIds });
+    return {
+      id: `${BDUI_ROLE_PROVIDER}.forms.detail`,
+      role: BDUI_ROLE_PROVIDER,
+      page: 'forms.detail',
+      title: 'Исполнение платежа — Provider',
       version: BDUI_SCHEMA_VERSION,
       widgets,
       actions,

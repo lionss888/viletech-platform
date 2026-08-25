@@ -55,6 +55,7 @@ export type BduiAction = {
   staticBody?: Record<string, unknown>;
   requiresProviderId?: boolean;
   injectSigningOrderDate?: boolean;
+  requiresTxHash?: boolean;
 };
 
 export type BduiWizardStep = {

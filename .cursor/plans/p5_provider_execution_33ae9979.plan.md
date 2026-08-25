@@ -4,13 +4,13 @@ overview: "BDUI Provider: исполнение платежа по своим з
 todos:
   - id: p5-dto
     content: Narrow Provider DTO + tests against PII leak
-    status: pending
+    status: completed
   - id: p5-screens
     content: BDUI Provider screens + payment actions
-    status: pending
+    status: completed
   - id: p5-qa
     content: "QA gate: execute path + return-to-manager"
-    status: pending
+    status: completed
 isProject: false
 ---
 

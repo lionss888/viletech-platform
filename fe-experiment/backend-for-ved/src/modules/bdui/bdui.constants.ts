@@ -74,4 +74,6 @@ export const BDUI_SEED_AGENT_ID = '6a8dbd020000000000000001';
 /** Provider */
 export const BDUI_ACTION_PROV_PAYMENT_START = 'prov_payment_start';
 export const BDUI_ACTION_PROV_PAYMENT_RETURN = 'prov_payment_return';
+export const BDUI_ACTION_PROV_ATTACH_PROOF = 'prov_attach_proof';
+export const BDUI_ACTION_PROV_ATTACH_HASH = 'prov_attach_hash';
 export const BDUI_ACTION_PROV_PAYMENT_SENT = 'prov_payment_sent';

@@ -1,12 +1,10 @@
 import { Body, Controller, Get, Inject, Param, Patch, Put, Query, Req, StreamableFile } from '@nestjs/common';
 import { ApiCookieAuth, ApiTags } from '@nestjs/swagger';
-import { paginateHasNextPlainToClass, plainModelToClass, queryPaginateParser } from 'lib/utils/helpers/entity.helper';
+import { plainModelToClass, queryPaginateParser } from 'lib/utils/helpers/entity.helper';
 import { IdFieldDto } from 'lib/dto/id-field.dto';
 import { IPaginateHasNextResult } from 'lib/interfaces/paginate.interface';
 import { CountFieldDto } from 'lib/dto/count-field.dto';
 import { ICountField } from 'lib/interfaces/count-field.interface';
-import { FormPaymentDto, FormPaymentWithAgentProviderDto } from '../../../../lib/dto/models/form-payment.dto';
-import { IFormPayment } from '../../../../lib/interfaces/models/form-payment.interface';
 import { FormPaymentAdminPaginateDto, FormPaymentQueryDto } from '../../dto/form-payment.query.dto';
 import { IFormPaymentService } from '../../service/form-payment.service.interface';
 import { Request } from 'express';
@@ -22,6 +20,11 @@ import { formPaymentPopulate } from '../../form-payment.constants';
 import { IGenerateDocsService } from '../../service/additional/generate-docs.service.interface';
 import { ReqContext } from '../../../../lib/decorators/req-context.decorator';
 import { FeatureContext } from '../../../../lib/classes/feature-context.class';
+import {
+  FormPaymentProviderViewDto,
+  toFormPaymentProviderView,
+  toFormPaymentProviderViewPage,
+} from '../../dto/form-payment-provider.view.dto';
 
 @ApiCookieAuth()
 @ApiTags('provider form payment')
@@ -33,22 +36,15 @@ export class FormPaymentProviderController {
   ) {}
 
   @Get()
-  @ProviderMethod({ hasNextPaginate: FormPaymentDto })
+  @ProviderMethod({ hasNextPaginate: FormPaymentProviderViewDto })
   async findWithPaginate(
     @Req() req: Request,
     @Query() dto: FormPaymentAdminPaginateDto,
-  ): Promise<IPaginateHasNextResult<IFormPayment>> {
+  ): Promise<IPaginateHasNextResult<FormPaymentProviderViewDto>> {
     const { paginate, model } = queryPaginateParser(dto, FormPaymentQueryDto);
     const result = await this.service.find({ provider: req.account._id, ...model }, paginate);
-    return paginateHasNextPlainToClass(FormPaymentDto, result);
+    return toFormPaymentProviderViewPage(result);
   }
-
-  // @Post()
-  // @RootMethod({ response: { status: 201, type: FormPaymentDto } })
-  // async createAdmin(@Body() dto: AccountCreateAdminDto): Promise<IFormPayment> {
-  //   const account = await this.service.createAdminByRoot(dto);
-  //   return plainModelToClass(FormPaymentDto, account);
-  // }
 
   @Get('count')
   @ProviderMethod({ response: { status: 200, type: CountFieldDto } })
@@ -91,40 +87,36 @@ export class FormPaymentProviderController {
   }
 
   @Get(':_id')
-  @ProviderMethod({ response: { status: 200, type: FormPaymentWithAgentProviderDto } })
-  async getAccount(@Req() req: Request, @Param() dto: IdFieldDto): Promise<IFormPayment> {
+  @ProviderMethod({ response: { status: 200, type: FormPaymentProviderViewDto } })
+  async getAccount(@Req() req: Request, @Param() dto: IdFieldDto): Promise<FormPaymentProviderViewDto> {
     const model = await this.service.findOneOrException(
       { provider: req.account._id, ...dto },
       {
         include: formPaymentPopulate.toInclude(),
       },
     );
-    return plainModelToClass(FormPaymentWithAgentProviderDto, model);
+    return toFormPaymentProviderView(model);
   }
 
   @Patch(':_id')
-  @ProviderMethod({ response: { status: 200, type: FormPaymentDto } })
+  @ProviderMethod({ response: { status: 200, type: FormPaymentProviderViewDto } })
   async patchById(
     @ReqContext() ctx: FeatureContext,
     @Req() req: Request,
     @Param() dto: IdFieldDto,
     @Body() updateDto: FormPaymentProviderUpdateDto,
-  ): Promise<IFormPayment> {
+  ): Promise<FormPaymentProviderViewDto> {
     const model = await this.service.updateByAdmins(ctx, { account: req.account._id, ...dto }, updateDto);
-    return plainModelToClass(FormPaymentDto, model);
+    return toFormPaymentProviderView(model);
   }
 
-  /*
-  роуты платежей
-  */
-
   @Put(':_id/payment/received')
-  @ProviderMethod({ response: { status: 200, type: FormPaymentDto } })
+  @ProviderMethod({ response: { status: 200, type: FormPaymentProviderViewDto } })
   async paymentReceived(
     @ReqContext() ctx: FeatureContext,
     @Req() req: Request,
     @Param() dto: IdFieldDto,
-  ): Promise<IFormPayment> {
+  ): Promise<FormPaymentProviderViewDto> {
     const model = await this.service.updateByAdmins(
       ctx,
       { account: req.account._id, ...dto },
@@ -132,16 +124,16 @@ export class FormPaymentProviderController {
         status: FormPaymentStatus.PAYMENT_RECEIVED,
       },
     );
-    return plainModelToClass(FormPaymentDto, model);
+    return toFormPaymentProviderView(model);
   }
 
   @Put(':_id/payment/start')
-  @ProviderMethod({ response: { status: 200, type: FormPaymentDto } })
+  @ProviderMethod({ response: { status: 200, type: FormPaymentProviderViewDto } })
   async paymentStart(
     @ReqContext() ctx: FeatureContext,
     @Req() req: Request,
     @Param() dto: IdFieldDto,
-  ): Promise<IFormPayment> {
+  ): Promise<FormPaymentProviderViewDto> {
     const model = await this.service.updateByAdmins(
       ctx,
       { account: req.account._id, ...dto },
@@ -149,17 +141,17 @@ export class FormPaymentProviderController {
         status: FormPaymentStatus.PAYMENT_PROCESSING,
       },
     );
-    return plainModelToClass(FormPaymentDto, model);
+    return toFormPaymentProviderView(model);
   }
 
   @Put(':_id/payment/stop')
-  @ProviderMethod({ response: { status: 200, type: FormPaymentDto } })
+  @ProviderMethod({ response: { status: 200, type: FormPaymentProviderViewDto } })
   async paymentStop(
     @ReqContext() ctx: FeatureContext,
     @Req() req: Request,
     @Param() dto: IdFieldDto,
     @Body() { platformPaymentCondition }: FormPaymentUpdateWithPlatformPaymentConditionAndDirection,
-  ): Promise<IFormPayment> {
+  ): Promise<FormPaymentProviderViewDto> {
     const model = await this.service.updateByAdmins(
       ctx,
       { account: req.account._id, ...dto },
@@ -170,33 +162,26 @@ export class FormPaymentProviderController {
             : FormPaymentStatus.PAYMENT_RECEIVED,
       },
     );
-    return plainModelToClass(FormPaymentDto, model);
+    return toFormPaymentProviderView(model);
   }
 
   @Put(':_id/payment/sent')
-  @ProviderMethod({ response: { status: 200, type: FormPaymentDto } })
+  @ProviderMethod({ response: { status: 200, type: FormPaymentProviderViewDto } })
   async paymentSent(
     @ReqContext() ctx: FeatureContext,
     @Req() req: Request,
     @Param() dto: IdFieldDto,
-  ): Promise<IFormPayment> {
+  ): Promise<FormPaymentProviderViewDto> {
     const formPayment = await this.service.findOneOrException(
       { provider: req.account._id, ...dto },
       {
         include: formPaymentPopulate.toInclude(),
       },
     );
-
-    // Получаем сумму экспортных сделок (в копейках)
     const exportAmount = formPayment.linkedExportFormsTotalAmount || 0;
-    // Получаем сумму импортной сделки (в копейках)
     const importAmount = formPayment.totals?.amount || 0;
-
-    // Если сумма экспортных превышает сумму импортной, переходим в статус PAYMENT_SENT_TREASURER
-    // Иначе переходим в статус PAYMENT_SENT
     const newStatus =
       exportAmount > importAmount ? FormPaymentStatus.PAYMENT_SENT_TREASURER : FormPaymentStatus.PAYMENT_SENT;
-
     const model = await this.service.updateByAdmins(
       ctx,
       { provider: req.account._id, ...dto },
@@ -205,18 +190,18 @@ export class FormPaymentProviderController {
         status: newStatus,
       },
     );
-    return plainModelToClass(FormPaymentDto, model);
+    return toFormPaymentProviderView(model);
   }
 
   @Put(':_id/payment/cancel')
-  @ProviderMethod({ response: { status: 200, type: FormPaymentDto } })
+  @ProviderMethod({ response: { status: 200, type: FormPaymentProviderViewDto } })
   async paymentReject(
     @ReqContext() ctx: FeatureContext,
     @Req() req: Request,
     @Param() dto: IdFieldDto,
     @Body()
     { text, platformPaymentCondition }: TextFieldDto & FormPaymentUpdateWithPlatformPaymentConditionAndDirection,
-  ): Promise<IFormPayment> {
+  ): Promise<FormPaymentProviderViewDto> {
     const model = await this.service.updateByAdmins(
       ctx,
       { account: req.account._id, ...dto },
@@ -229,39 +214,35 @@ export class FormPaymentProviderController {
         isPaymentCancel: true,
       },
     );
-    return plainModelToClass(FormPaymentDto, model);
+    return toFormPaymentProviderView(model);
   }
 
   @Put(':_id/make-important')
-  @ProviderMethod({ response: { status: 200, type: FormPaymentDto } })
+  @ProviderMethod({ response: { status: 200, type: FormPaymentProviderViewDto } })
   async makeImportant(@ReqContext() ctx: FeatureContext, @Param() dto: IdFieldDto) {
     const model = await this.service.updateByAdmins(ctx, dto, {
       isImportant: true,
     });
-    return plainModelToClass(FormPaymentDto, model);
+    return toFormPaymentProviderView(model);
   }
 
   @Put(':_id/make-unimportant')
-  @ProviderMethod({ response: { status: 200, type: FormPaymentDto } })
+  @ProviderMethod({ response: { status: 200, type: FormPaymentProviderViewDto } })
   async makeUnimportant(@ReqContext() ctx: FeatureContext, @Param() dto: IdFieldDto) {
     const model = await this.service.updateByAdmins(ctx, dto, {
       isImportant: false,
     });
-    return plainModelToClass(FormPaymentDto, model);
+    return toFormPaymentProviderView(model);
   }
 
-  /*
-  роуты вернуть менеджеру
-  */
-
   @Put(':_id/form/manager')
-  @ProviderMethod({ response: { status: 200, type: FormPaymentDto } })
+  @ProviderMethod({ response: { status: 200, type: FormPaymentProviderViewDto } })
   async formReject(
     @ReqContext() ctx: FeatureContext,
     @Req() req: Request,
     @Param() dto: IdFieldDto,
     @Body() { text }: TextFieldDto,
-  ): Promise<IFormPayment> {
+  ): Promise<FormPaymentProviderViewDto> {
     const model = await this.service.updateByAdmins(
       ctx,
       { account: req.account._id, ...dto },
@@ -270,6 +251,6 @@ export class FormPaymentProviderController {
         rejectText: text,
       },
     );
-    return plainModelToClass(FormPaymentDto, model);
+    return toFormPaymentProviderView(model);
   }
 }

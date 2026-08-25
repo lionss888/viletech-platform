@@ -57,6 +57,8 @@ export type BduiAction = {
   requiresProviderId?: boolean;
   /** Inject signingOrderCreateDate (ISO) into body for stub order attach. */
   injectSigningOrderDate?: boolean;
+  /** Prompt for crypto tx hash → PATCH { addTransactions: [{ hash, chain }] }. */
+  requiresTxHash?: boolean;
 };
 
 export type BduiLoginFormWidget = {

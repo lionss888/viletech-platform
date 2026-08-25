@@ -16,6 +16,9 @@ import {
   BDUI_ACTION_MGR_ORDER_REJECT,
   BDUI_ACTION_MGR_PAYMENT_RECEIVED,
   BDUI_ACTION_MGR_PAYMENT_START,
+  BDUI_ACTION_PROV_ATTACH_PROOF,
+  BDUI_ACTION_PROV_PAYMENT_RETURN,
+  BDUI_ACTION_PROV_PAYMENT_SENT,
   BDUI_ACTION_PROV_PAYMENT_START,
   BDUI_ROLE_EXTERNAL_CO,
   BDUI_ROLE_INTERNAL_CO,
@@ -190,5 +193,39 @@ describe('RoleCabinetBuilders Internal CO', () => {
     );
     expect(providerActions).not.toContain(BDUI_ACTION_MGR_ORDER_GENERATE);
     expect(providerActions).not.toContain(BDUI_ACTION_MGR_PAYMENT_START);
+  });
+
+  it('builds Provider queue filtered to execution statuses', () => {
+    const screen = builders.buildFormsListScreen(BDUI_ROLE_PROVIDER);
+    expect(screen.title).toContain('Provider');
+    const table = screen.widgets.find((widget) => widget.type === 'data_table');
+    expect(table).toBeDefined();
+    if (table?.type === 'data_table') {
+      expect(table.dataSource.path).toContain('/admin/provider/form-payment');
+      expect(table.dataSource.path).toContain('payment_processing');
+    }
+  });
+
+  it('builds Provider detail execute actions for payment_processing', () => {
+    const screen = builders.buildFormsDetailScreen(
+      BDUI_ROLE_PROVIDER,
+      FormPaymentStatus.PAYMENT_PROCESSING,
+    );
+    const ids = screen.actions.map((action) => action.id);
+    expect(ids).toEqual(
+      expect.arrayContaining([
+        BDUI_ACTION_PROV_ATTACH_PROOF,
+        BDUI_ACTION_PROV_PAYMENT_SENT,
+        BDUI_ACTION_PROV_PAYMENT_RETURN,
+      ]),
+    );
+    const ret = screen.actions.find((action) => action.id === BDUI_ACTION_PROV_PAYMENT_RETURN);
+    expect(ret?.requiresTextReason).toBe(true);
+  });
+
+  it('exposes no Provider execute CTA on manager_checking', () => {
+    const actions = resolver.resolveActionIds(BDUI_ROLE_PROVIDER, FormPaymentStatus.MANAGER_CHECKING);
+    expect(actions).toEqual([]);
+    expect(actions).not.toContain(BDUI_ACTION_PROV_PAYMENT_SENT);
   });
 });

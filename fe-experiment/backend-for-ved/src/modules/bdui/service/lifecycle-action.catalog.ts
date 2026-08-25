@@ -29,6 +29,8 @@ import {
   BDUI_ACTION_MGR_REPORT_SIGNING,
   BDUI_ACTION_MGR_SHIPMENT_ACCEPT,
   BDUI_SEED_STUB_FILE_ID,
+  BDUI_ACTION_PROV_ATTACH_HASH,
+  BDUI_ACTION_PROV_ATTACH_PROOF,
   BDUI_ACTION_PROV_PAYMENT_RETURN,
   BDUI_ACTION_PROV_PAYMENT_SENT,
   BDUI_ACTION_PROV_PAYMENT_START,
@@ -305,12 +307,36 @@ const CATALOG: Record<string, CatalogEntry> = {
     'PUT',
     '/admin/provider/form-payment/{formId}/payment/start',
   ),
-  [BDUI_ACTION_PROV_PAYMENT_RETURN]: action(
-    BDUI_ACTION_PROV_PAYMENT_RETURN,
-    'Вернуть менеджеру',
-    'PUT',
-    '/admin/provider/form-payment/{formId}/form/manager',
-  ),
+  [BDUI_ACTION_PROV_ATTACH_PROOF]: {
+    ...action(
+      BDUI_ACTION_PROV_ATTACH_PROOF,
+      'Прикрепить подтверждение (stub)',
+      'PATCH',
+      '/admin/provider/form-payment/{formId}',
+    ),
+    staticBody: {
+      addPayments: [BDUI_SEED_STUB_FILE_ID],
+    },
+  },
+  [BDUI_ACTION_PROV_ATTACH_HASH]: {
+    ...action(
+      BDUI_ACTION_PROV_ATTACH_HASH,
+      'Добавить tx hash',
+      'PATCH',
+      '/admin/provider/form-payment/{formId}',
+    ),
+    requiresTxHash: true,
+  },
+  [BDUI_ACTION_PROV_PAYMENT_RETURN]: {
+    ...action(
+      BDUI_ACTION_PROV_PAYMENT_RETURN,
+      'Вернуть менеджеру',
+      'PUT',
+      '/admin/provider/form-payment/{formId}/form/manager',
+    ),
+    bodyFrom: 'form',
+    requiresTextReason: true,
+  },
   [BDUI_ACTION_PROV_PAYMENT_SENT]: action(
     BDUI_ACTION_PROV_PAYMENT_SENT,
     'Исполнить платёж',

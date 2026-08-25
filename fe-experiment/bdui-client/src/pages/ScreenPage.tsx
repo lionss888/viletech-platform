@@ -155,7 +155,7 @@ export function ScreenPage(props: ScreenPageProps): JSX.Element {
     let requestBody: Record<string, unknown> | undefined =
       action.bodyFrom === 'form'
         ? body
-        : action.requiresTextReason || action.requiresProviderId
+        : action.requiresTextReason || action.requiresProviderId || action.requiresTxHash
           ? body
           : undefined;
     if (action.staticBody) {

@@ -13,6 +13,8 @@ import {
   BDUI_ACTION_MGR_ORDER_START,
   BDUI_ACTION_MGR_PAYMENT_RECEIVED,
   BDUI_ACTION_MGR_PAYMENT_START,
+  BDUI_ACTION_PROV_ATTACH_PROOF,
+  BDUI_ACTION_PROV_PAYMENT_RETURN,
   BDUI_ACTION_PROV_PAYMENT_START,
   BDUI_ACTION_PROV_PAYMENT_SENT,
   BDUI_ROLE_EXTERNAL_CO,
@@ -129,6 +131,20 @@ describe('resolveLifecycleActionIds', () => {
     it('allows start on payment_received', () => {
       expect(resolveLifecycleActionIds(BDUI_ROLE_PROVIDER, FormPaymentStatus.PAYMENT_RECEIVED)).toContain(
         BDUI_ACTION_PROV_PAYMENT_START,
+      );
+    });
+
+    it('allows execute and proof attach on payment_processing', () => {
+      const actualIds = resolveLifecycleActionIds(
+        BDUI_ROLE_PROVIDER,
+        FormPaymentStatus.PAYMENT_PROCESSING,
+      );
+      expect(actualIds).toEqual(
+        expect.arrayContaining([
+          BDUI_ACTION_PROV_ATTACH_PROOF,
+          BDUI_ACTION_PROV_PAYMENT_SENT,
+          BDUI_ACTION_PROV_PAYMENT_RETURN,
+        ]),
       );
     });
 

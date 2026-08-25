@@ -43,7 +43,7 @@ Pages (staff): `login`, `forms.list`, `forms.detail`. User also: `forms.create`.
 2. [x] P2 Internal CO approve org
 3. [x] P3 External CO accept form
 4. [x] P4 Manager order + assign provider / payment start
-5. [ ] P5 Provider execute payment
+5. [x] P5 Provider execute payment
 6. [ ] P6 User close docs + Manager COMPLETED
 
 ## Quality gate P1
@@ -80,6 +80,14 @@ Pages (staff): `login`, `forms.list`, `forms.detail`. User also: `forms.create`.
 - [x] Order reject → `signing_order_waiting_corrections`; User CTA `upload_order`
 - [x] Provider schema на `form_accepted`: без Manager CTA
 - [x] `order/generate` wired (S3 may 500 locally → stub attach fallback)
+
+## Quality gate P5
+
+- [x] Unit/contract: `FormPaymentProviderViewDto` deny-list (no `account`/`manager`/org email-phone) — 63 tests with BDUI
+- [x] Unit: Provider matrix only on payment_* / signing_order_accepted; empty on `manager_checking`
+- [x] Manual: attach proof → `payment/sent` → `payment_sent`
+- [x] Return → `manager_checking`; Manager CTA `mgr_payment_start`; Provider execute запрещён
+- [x] Чужая заявка другого provider → 404
 
 ## Branches (P7)
 
