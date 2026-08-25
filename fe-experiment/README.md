@@ -11,8 +11,8 @@ fe-experiment/
   start-local.sh     # compose + .env + seed
   backend-for-ved/   # Nest API + src/modules/bdui
   bdui-client/       # Vite + React schema renderer
-  LIFECYCLE.md       # чеклисты P0–P7 и E1–E7
-  NOTES.md           # gaps / StageHash / MinIO
+  LIFECYCLE.md       # чеклисты P0–P7 и E1–E9
+  NOTES.md           # gaps / StageHash / MinIO / seed dirs
 ```
 
 ## Быстрый старт (≤15 мин)
@@ -57,7 +57,20 @@ MinIO console (опционально): http://localhost:9001 (`minioadmin` / `m
 | manager@bdui.local | BduiLifecycle2024! | manager |
 | provider@bdui.local | BduiLifecycle2024! | provider |
 
-Организация User: `ООО BDUI Тест` (первая сделка → ICO).
+Организация User: `ООО BDUI Тест` (первая сделка → ICO) + `ООО BDUI Экспорт` (approved, СПб).
+
+### Seed-справочники (E10)
+
+| Сущность | Кол-во | Примечание |
+|----------|--------|------------|
+| Валюты (`currencies`) | 5 | rub, usd, eur, cny, usdt — wizard `GET /currency` |
+| Организации User | 2 | Москва + СПб, `legalAddress` в select |
+| Контрагенты User | 2 | foreign CN + RU, approved, bank geo |
+| HS codes | 2 | 0101210000, 8471300000 |
+
+Fixed lifecycle ids (`BDUI_SEED_*`) не меняются. E10 ids: org `…400002`, counterparty `…800001` / `…800002`.
+
+Проверка: `node scripts/smoke-bdui-seed-directories.js` (Nest up + seed).
 
 ## UI
 

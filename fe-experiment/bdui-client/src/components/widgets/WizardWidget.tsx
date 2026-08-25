@@ -12,11 +12,22 @@ type OrganizationOption = {
   _id: string;
   name?: string;
   inn?: string;
+  legalAddress?: string;
 };
 
 type PaginatedOrgs = {
   docs?: OrganizationOption[];
   items?: OrganizationOption[];
+};
+
+type CurrencyRow = {
+  symbol?: string;
+  active?: boolean;
+};
+
+type PaginatedCurrencies = {
+  docs?: CurrencyRow[];
+  items?: CurrencyRow[];
 };
 
 type FormPaymentResponse = {
@@ -96,6 +107,7 @@ export function WizardWidget(props: WizardWidgetProps): JSX.Element {
   );
   const [files, setFiles] = useState<Record<string, File | null>>({});
   const [organizations, setOrganizations] = useState<OrganizationOption[]>([]);
+  const [currencyOptions, setCurrencyOptions] = useState<Array<{ value: string; label: string }>>([]);
   const [isBusy, setIsBusy] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const currentStep = widget.steps[stepIndex];
@@ -127,6 +139,51 @@ export function WizardWidget(props: WizardWidgetProps): JSX.Element {
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps -- load orgs once per data source
   }, [widget.organizationsDataSource.method, widget.organizationsDataSource.path]);
+
+  useEffect(() => {
+    if (!widget.currenciesDataSource) {
+      return;
+    }
+    let cancelled = false;
+    async function loadCurrencies(): Promise<void> {
+      try {
+        const data = await apiRequest<PaginatedCurrencies | CurrencyRow[]>(
+          widget.currenciesDataSource!.path,
+          { method: widget.currenciesDataSource!.method },
+        );
+        if (cancelled) {
+          return;
+        }
+        const list = Array.isArray(data) ? data : data.docs ?? data.items ?? [];
+        const symbols = new Set<string>();
+        for (const row of list) {
+          if (row.symbol && row.active !== false) {
+            symbols.add(row.symbol.toLowerCase());
+          }
+        }
+        const options = [...symbols]
+          .sort()
+          .map((symbol) => ({ value: symbol, label: symbol.toUpperCase() }));
+        setCurrencyOptions(options);
+      } catch {
+        /* fallback to field.options if any */
+      }
+    }
+    void loadCurrencies();
+    return () => {
+      cancelled = true;
+    };
+  }, [widget.currenciesDataSource?.method, widget.currenciesDataSource?.path]);
+
+  function resolveSelectOptions(field: BduiField): Array<{ value: string; label: string }> {
+    if (
+      (field.name === 'currencyClient' || field.name === 'currencyCounterparty') &&
+      currencyOptions.length > 0
+    ) {
+      return currencyOptions;
+    }
+    return field.options ?? [];
+  }
 
   function updateValue(name: string, value: string): void {
     setValues((previous) => ({ ...previous, [name]: value }));
@@ -342,6 +399,7 @@ export function WizardWidget(props: WizardWidgetProps): JSX.Element {
               <option key={org._id} value={org._id}>
                 {org.name ?? org._id}
                 {org.inn ? ` · ИНН ${org.inn}` : ''}
+                {org.legalAddress ? ` · ${org.legalAddress}` : ''}
               </option>
             ))}
           </select>
@@ -360,7 +418,7 @@ export function WizardWidget(props: WizardWidgetProps): JSX.Element {
             onChange={(event) => updateValue(field.name, event.target.value)}
           >
             <option value="">—</option>
-            {(field.options ?? []).map((option) => (
+            {(resolveSelectOptions(field) ?? []).map((option) => (
               <option key={option.value} value={option.value}>
                 {option.label}
               </option>

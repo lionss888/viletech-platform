@@ -191,3 +191,11 @@ Pages (staff): `login`, `forms.list`, `forms.detail`. User also: `forms.create`.
 - [x] Empty list: первый шаг (User — «Новая заявка»; staff — контекст очереди)
 - [x] Hints: PDF 15 Мб / application/pdf (wizard + action_bar); поля сделки на create/detail
 - [x] Unit: E9 hints + sort config в User/role builders
+
+### Quality gate E10 — Seed directories
+
+- [x] Seed: ≥2 active currencies, ≥2 orgs (legalAddress), ≥2 counterparties (country/bank geo), 2 HS codes
+- [x] Wizard: `currenciesDataSource` + org select с адресом; без нового CRUD UI
+- [x] Idempotent fixed ids (E10 range отдельно от `BDUI_SEED_*`)
+- [x] `node scripts/smoke-bdui-seed-directories.js`; login 5 ролей не сломан (`smoke-bdui-login.js`)
+- [x] Provider seed без ПДн клиента в counterparty (только бизнес-имена/реквизиты)

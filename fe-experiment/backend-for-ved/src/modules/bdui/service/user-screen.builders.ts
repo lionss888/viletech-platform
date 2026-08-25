@@ -133,6 +133,7 @@ export class UserScreenBuilders {
           hsCodesAction: BDUI_ACTION_SET_HS_CODES,
           submitAction: BDUI_ACTION_ACCEPT_FORM,
           organizationsDataSource: { method: 'GET', path: '/organization' },
+          currenciesDataSource: { method: 'GET', path: '/currency' },
           steps: [
             {
               id: 'documents',
@@ -211,12 +212,7 @@ export class UserScreenBuilders {
                   fieldType: 'select',
                   required: true,
                   defaultValue: AllCurrencies.RUB,
-                  options: [
-                    { value: AllCurrencies.RUB, label: 'RUB' },
-                    { value: AllCurrencies.USD, label: 'USD' },
-                    { value: AllCurrencies.CNY, label: 'CNY' },
-                    { value: AllCurrencies.USDT, label: 'USDT' },
-                  ],
+                  hint: 'Список из seed-курсов (GET /currency): rub, usd, eur, cny…',
                 },
                 {
                   name: 'currencyCounterparty',
@@ -224,12 +220,7 @@ export class UserScreenBuilders {
                   fieldType: 'select',
                   required: true,
                   defaultValue: AllCurrencies.USD,
-                  options: [
-                    { value: AllCurrencies.USD, label: 'USD' },
-                    { value: AllCurrencies.CNY, label: 'CNY' },
-                    { value: AllCurrencies.RUB, label: 'RUB' },
-                    { value: AllCurrencies.USDT, label: 'USDT' },
-                  ],
+                  hint: 'Валюта расчёта с иностранным контрагентом — из справочника курсов.',
                 },
                 {
                   name: 'amount',
@@ -269,13 +260,15 @@ export class UserScreenBuilders {
             {
               id: 'organization',
               title: 'Организация',
-              description: 'Выберите организацию плательщика. Для seed: ООО BDUI Тест.',
+              description:
+                'Выберите организацию плательщика. Seed: «ООО BDUI Тест» (Москва, ICO) и «ООО BDUI Экспорт» (СПб, approved).',
               fields: [
                 {
                   name: 'organization',
                   label: 'Организация',
                   fieldType: 'organization_select',
                   required: true,
+                  hint: 'В списке — название, ИНН и юридический адрес из seed.',
                 },
               ],
             },

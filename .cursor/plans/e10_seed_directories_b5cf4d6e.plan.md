@@ -4,13 +4,13 @@ overview: "Расширить seed справочников для локаль�
 todos:
   - id: e10-seed-data
     content: "Расширить seed: валюты, компании/контрагенты, адреса/гео"
-    status: pending
+    status: completed
   - id: e10-wizard-wire
     content: Проверить выбор справочников в wizard/schema без новых API
-    status: pending
+    status: completed
   - id: e10-qa
     content: QA gate E10; README/LIFECYCLE seed table
-    status: pending
+    status: completed
 isProject: false
 ---
 

@@ -100,4 +100,21 @@ describe('UserScreenBuilders', () => {
     expect(screen.widgets.some((widget) => widget.id === 'deal_fields_hint')).toBe(true);
     expect(screen.widgets.some((widget) => widget.id === 'draft_hint')).toBe(true);
   });
+
+  it('E10: create wizard loads currencies and orgs from API refs', () => {
+    const create = builders.buildFormsCreateScreen();
+    const wizard = create.widgets.find((widget) => widget.type === 'wizard');
+    expect(wizard?.type).toBe('wizard');
+    if (wizard?.type !== 'wizard') {
+      return;
+    }
+    expect(wizard.organizationsDataSource.path).toBe('/organization');
+    expect(wizard.currenciesDataSource?.path).toBe('/currency');
+    const deal = wizard.steps.find((step) => step.id === 'deal');
+    const currencyClient = deal?.fields.find((field) => field.name === 'currencyClient');
+    expect(currencyClient?.options).toBeUndefined();
+    expect(currencyClient?.hint).toMatch(/currency/i);
+    const orgStep = wizard.steps.find((step) => step.id === 'organization');
+    expect(orgStep?.description).toMatch(/BDUI Экспорт/);
+  });
 });

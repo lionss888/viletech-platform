@@ -130,6 +130,8 @@ export type BduiWizardWidget = {
   hsCodesAction: string;
   submitAction: string;
   organizationsDataSource: BduiApiRef;
+  /** Active currencies for deal step selects (GET /currency). */
+  currenciesDataSource?: BduiApiRef;
 };
 
 export type BduiStatusBadgeWidget = {

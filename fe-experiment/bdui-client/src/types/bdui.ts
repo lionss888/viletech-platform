@@ -93,6 +93,7 @@ export type BduiWizardWidget = {
   hsCodesAction: string;
   submitAction: string;
   organizationsDataSource: BduiApiRef;
+  currenciesDataSource?: BduiApiRef;
 };
 
 export type BduiWidget =

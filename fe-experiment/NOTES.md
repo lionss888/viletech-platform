@@ -21,8 +21,22 @@
 | E7 local object storage | MinIO `:9000`, bucket `fea360`; `scripts/smoke-bdui-upload.js` |
 | E8 field fidelity | list/detail: `totals.amount`, `currency.client`; refresh after CTA |
 | E9 operator UX | nav «К списку»; table sort; PDF/deal hints; empty list copy |
+| E10 seed directories | currencies, 2 orgs, 2 counterparties, HS×2; wizard API refs |
 
 Open UI: http://localhost:5173
+
+## Seed directories (E10)
+
+Re-seed: `cd backend-for-ved && node scripts/seed-bdui-lifecycle.js` (idempotent).
+
+| Collection | Seed keys | Wizard / API |
+|------------|-----------|--------------|
+| `currencies` | symbol+source (rub/usd/eur/cny/usdt) | `GET /currency` → deal step selects |
+| `organizations` | `6a8dbd04…001`, `…002` | `GET /organization` → org step |
+| `counterparties` | `6a8dbd08…001` (CN), `…002` (RU) | `GET /counterparty/list` (API; wizard без CRUD) |
+| `hs-codes` | 0101210000, 8471300000 | wizard HS PATCH |
+
+Smoke: `node scripts/smoke-bdui-seed-directories.js`.
 
 ## Form DTO display map (E8)
 
