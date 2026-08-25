@@ -1,0 +1,28 @@
+{
+  "collection": "@nestjs/schematics",
+  "monorepo": true,
+  "root": ".",
+  "entryFile": "main",
+  "sourceRoot": "src",
+  "compilerOptions": {
+    "tsConfigPath": "tsconfig.json",
+    "assets": [
+      "./modules/mail/i18n/**/*",
+      "./modules/mail/templates/**/*",
+      "./modules/form-payment/templates/**/*",
+      "./modules/treasurer-task/templates/**/*",
+      "./modules/telegram/i18n/**/*"
+    ]
+  },
+  "projects": {
+    "fea.back": {
+      "type": "application",
+      "root": ".",
+      "entryFile": "main",
+      "sourceRoot": "src",
+      "compilerOptions": {
+        "tsConfigPath": "tsconfig.json"
+      }
+    }
+  }
+}

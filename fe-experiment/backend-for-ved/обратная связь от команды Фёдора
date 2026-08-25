@@ -1,0 +1,117 @@
+Оценка реализации задачи «Подписание через ЭДО (Контур.Диадок)» в проекте fea-stage
+Контекст: проект передан заказчиком, в репозитории присутствует модуль VF-2 “интеграция с Диадоком”, а также отчёт “готовности”. Ниже — техническая оценка качества реализации и полноты требований по фактическому коду.
+
+Краткий вывод
+В текущем виде это не production-ready интеграция, а набор заготовок/скелетов, который:
+• содержит P0-баги, из-за которых базовый сценарий “отправить документ контрагенту на подписание” выглядит неработоспособным;• не покрывает ключевые пункты постановки (“XML”, “3 дня”, “выбор способа подписи” как инвариант бизнес-процесса);• имеет серьёзные риски безопасности (webhook без аутентификации);• заявляет наличие unit-тестов, но фактически в проекте Jest настроен так, что тесты из src/** не запускаются;• повсеместно использует any/as any и “эвристики” вместо строгих контрактов, что критично в интеграции с внешним провайдером.
+
+1) Сопоставление с исходной постановкой (покрытие требований)
+1.1. Выбор способа подписи «Вручную» / «Через ЭДО»
+В постановке: это должен быть явный выбор клиента и ветвление процесса.
+В коде: есть отдельные endpoints “sign via diadoc”, но нет системного инварианта “у заявки выбран ЭДО” (нет поля на уровне заявки, нет единого статуса/режима, который влияет на доступность действий).
+• Для договора есть signatureType?: 'manual' | 'diadoc' (src/modules/contract/service/contract.schema.ts:49), но для FormPayment такого общего выбора нет.• В FormPaymentService.signPaymentOrderViaDiadoc просто выполняется отправка и перевод в FormPaymentStatus.SIGNING_ORDER (src/modules/form-payment/service/form-payment.service.ts:8685, src/modules/form-payment/service/form-payment.service.ts:8768) — это не “выбор способа подписи” как бизнес-механизм, а разовая команда.
+1.2. «Система генерирует XML и отправляет его в Диадок»
+В постановке: явно указано XML.
+В коде: никакой генерации XML не найдено; отправляется “неформализованный” документ как base64-контент.
+• TypeNamedId: 'Nonformalized' (src/modules/diadoc/service/diadoc.service.ts:228)• Сам запрос собирается через requestBody: any (src/modules/diadoc/service/diadoc.service.ts:221)
+1.3. «Отображать статус “На подписании (в ЭДО)”»
+В постановке: отдельный видимый статус.
+В коде:
+• Для поручения просто ставится обычный статус SIGNING_ORDER (src/modules/form-payment/service/form-payment.service.ts:8768).• Для отчёта статус вообще “не меняем” (src/modules/form-payment/service/form-payment.service.ts:8881–src/modules/form-payment/service/form-payment.service.ts:8890).• Для договора статус ContractStatus меняется только при webhook/поллинге на ACCEPTED/REJECTED (src/modules/diadoc/service/diadoc-webhook-processor.service.ts:385–src/modules/diadoc/service/diadoc-webhook-processor.service.ts:444), промежуточного статуса “отправлено на подпись в ЭДО” как инварианта нет.
+1.4. «Если контрагент не подписал за 3 дня → вернуть/уведомить»
+В коде: такой логики нет.
+• Нет полей наподобие diadocSentAt / signatureDeadlineAt.• Нет cron/job, который отслеживает “>3 дней” и делает переход/уведомления.
+1.5. «Автоматически прикреплять подписанный PDF к заявке»
+Есть попытка реализовать: при статусе SIGNED скачать “подписанный документ” и сохранить в FileService, затем прикрепить к сущности.
+Однако тут есть серьёзные вопросы к корректности:
+• “подписанный PDF” берётся через GetEntityContent, но выбор сущности (entityId) делается эвристически (см. раздел про эвристики ниже), и нигде не гарантируется, что скачивается именно print form / signed PDF, а не исходное вложение.– getSignedDocument() (src/modules/diadoc/service/diadoc.service.ts:559–src/modules/diadoc/service/diadoc.service.ts:616)– getDocumentInfo() выбирает EntityId первого попавшегося attachment (src/modules/diadoc/service/diadoc.service.ts:534–src/modules/diadoc/service/diadoc.service.ts:552)
+
+2) P0-проблемы реализации (почему “скорее всего не работает” даже базовый флоу)
+2.1. Получатель (recipientBoxId) вычисляется, но не используется
+Это ключевой блокер.
+• sendForSigning() вычисляет recipientBoxId, валидирует, логирует… но в запросе никак не применяет (src/modules/diadoc/service/diadoc.service.ts:388–src/modules/diadoc/service/diadoc.service.ts:417).– В теле PostMessagePatch отсутствует и ToBoxId, и любая ссылка на recipientBoxId (src/modules/diadoc/service/diadoc.service.ts:405–src/modules/diadoc/service/diadoc.service.ts:410).– По факту recipientBoxId используется только в логах (src/modules/diadoc/service/diadoc.service.ts:432–src/modules/diadoc/service/diadoc.service.ts:438).
+Параллельно с этим:
+• uploadDocument() может отправить получателю (есть ToBoxId, src/modules/diadoc/service/diadoc.service.ts:235–src/modules/diadoc/service/diadoc.service.ts:237), но…• бизнес-методы не передают recipientBoxId в uploadDocument():– FormPaymentService.signPaymentOrderViaDiadoc (src/modules/form-payment/service/form-payment.service.ts:8750–src/modules/form-payment/service/form-payment.service.ts:8754)– ContractService.signContractViaDiadoc (src/modules/contract/service/contract.service.ts:284–src/modules/contract/service/contract.service.ts:288)
+То есть на уровне кода получается: “получателя нашли, но ни при загрузке, ни при патче его не указали”.
+2.2. Fallback-поллинг статусов использует updatedAt, а в схемах — updateDate
+Это второй ключевой блокер: “cron fallback” в отчётах заявлен, но выглядит поломанным.
+• DiadocStatusCheckerService фильтрует и сортирует по updatedAt (src/modules/diadoc/service/diadoc-status-checker.service.ts:145–src/modules/diadoc/service/diadoc-status-checker.service.ts:148, аналогично для отчётов/договоров :186–:193, :229–:235).• При этом в схемах Mongoose timestamps переименованы:– FormPayment: updatedAt: 'updateDate' (src/modules/form-payment/service/form-payment.schema.ts:482–src/modules/form-payment/service/form-payment.schema.ts:486)– Contract: updatedAt: 'updateDate' (src/modules/contract/service/contract.schema.ts:10–src/modules/contract/service/contract.schema.ts:14)
+В таких условиях запрос по updatedAt может либо не работать как ожидается, либо вести себя непредсказуемо (в зависимости от реальной Mongo-схемы/данных). В любом случае это не похоже на “готово к прод”.
+2.3. Cron использует process.env, а не конфиг приложения
+В src/config.ts есть diadoc.statusCheckInterval (src/config.ts:181–src/config.ts:183), но @Cron() читает напрямую env:
+• @Cron(process.env.DIADOC_STATUS_CHECK_INTERVAL || '*/5 * * * *') (src/modules/diadoc/service/diadoc-status-checker.service.ts:69)
+Это расхождение: вы можете “настроить через ConfigService”, но реально расписание берётся не из него.
+
+3) Безопасность: webhook без аутентификации/подписи
+POST /diadoc/webhook принимает payload, на его основе ищет документ и выполняет side-effects (скачивание файлов, обновление статусов) — без проверки источника.
+• DiadocController.handleWebhook (src/modules/diadoc/web/diadoc.controller.ts:60–src/modules/diadoc/web/diadoc.controller.ts:109)
+Нет ни:
+• проверки заголовка/секрета,• подписи,• allowlist IP,• replay-protection,• rate limiting на webhook-endpoint (в коде не видно).
+Это означает: любой, кто может достучаться до endpoint, потенциально может отправить status: signed и инициировать цепочку “скачать документ”/“прикрепить”/“поменять статус”.
+Для продакшена это критично.
+
+4) “Эвристики” вместо контрактов (почему статус/подпись могут определяться неверно)
+Под “эвристиками” здесь я имею в виду не «плохую практику вообще», а конкретный класс решений: логика “на авось”, когда система не опирается на один документированный источник данных/контракт провайдера, а:
+• пытается “угадать” статус по косвенным полям;• использует цепочки fallback-полей (A || B || C);• принимает “вольные” значения статусов (в т.ч. Severity или локализованные слова);• выбирает “нужную” сущность документа по слишком широкому предикату (первый попавшийся Attachment), без проверки, что это именно печатная форма/подписанный PDF;• не валидирует вход/выход внешнего API (всё any), поэтому ошибки становятся “тихими”.
+Такая логика может “работать на демо”, но ломается на реальных вариациях payload (другой тип документа, несколько вложений в одном сообщении, другой Docflow, входящий/исходящий поток, разные статусы и т.д.) и приводит к самым опасным сбоям: “показали SIGNED, хотя не подписано”, “прикрепили не тот файл”, “не обновили статус”.
+4.1. Определение статуса по Severity
+getDocumentStatus() извлекает статус так:
+• PrimaryStatus.Severity → documentEntity?.Status → response.data?.Status (src/modules/diadoc/service/diadoc.service.ts:489–src/modules/diadoc/service/diadoc.service.ts:492)
+Затем mapStatus() маппит:
+• success -> SIGNED• warning -> WAITING_FOR_RECIPIENT_SIGNATURE• info -> SENT
+Это очень рискованная эвристика, потому что Severity в Диадоке — это уровень критичности статуса, а не “статус подписи”.
+Что говорит документация Диадока:
+• DocflowStatusSeverity — enum уровней критичности: Info / Success / Warning / Error (см. https://developer.kontur.ru/doc/diadoc-api/proto/obsolete/DocflowStatusSeverity.html).• DocflowStatusModel.Severity описан как “уровень критичность статуса”, а StatusText — “основной текст статуса” (см. https://developer.kontur.ru/doc/diadoc-api/proto/obsolete/DocflowStatusModel.html).
+То есть даже если в конкретном кейсе Severity иногда “коррелирует” с этапом подписания, это не гарантия корректности: Severity=Warning может относиться к любым предупреждениям в докфлоу (например, “не приложена доверенность”), при том что подпись уже может быть поставлена.
+Отдельно показательно, что в примере ответа GetMessage одновременно присутствуют:
+• RecipientResponseStatus: "WaitingForRecipientSignature" (это уже похоже на статус этапа подписания),• DocflowStatus.PrimaryStatus.Severity: "Warning" и StatusText: "Ожидается подпись контрагента" (см. https://developer.kontur.ru/doc/diadoc-api/http/GetMessage.html).
+Т.е. RecipientResponseStatus выглядит более близким к “статусу подписи”, а Severity — к уровню критичности/индикатору состояния, который не следует напрямую маппить в доменные статусы.
+Минимум, что должно быть для production-grade: чётко выбрать один источник “истины” из API Диадока (например, BilateralDocumentStatus / DocflowStatus), строго описать контракт и покрыть тестами реальные payloads.
+Как выглядит в коде:
+• Источник статуса берётся из нескольких мест, включая Severity:– src/modules/diadoc/service/diadoc.service.ts:493• Затем часть значений Severity (“success/warning/info”) маппится на бизнес-статусы:– src/modules/diadoc/service/diadoc.service.ts:1018
+Это и есть эвристика: вместо “взять документированный enum статуса” система принимает “уровень” и трактует его как статус подписи.
+4.2. Путаница messageId vs entityId vs documentId
+В коде используется терминология, которая провоцирует ошибки:
+• uploadDocument() возвращает messageId и одновременно кладёт его в documentId “для обратной совместимости” (src/modules/diadoc/service/diadoc.service.ts:280–src/modules/diadoc/service/diadoc.service.ts:284).• getDocumentInfo() возвращает documentId, который может быть EntityId вложения или messageId (src/modules/diadoc/service/diadoc.service.ts:545–src/modules/diadoc/service/diadoc.service.ts:552).
+Это не просто “косметика”: такие смешения приводят к тому, что разные методы начинают принимать/хранить разные идентификаторы под одинаковыми названиями.
+4.3. “Подписанный PDF” скачивается как GetEntityContent для attachment
+getSignedDocument() берёт entityId из getDocumentInfo() и делает GET /V4/GetEntityContent (src/modules/diadoc/service/diadoc.service.ts:559–src/modules/diadoc/service/diadoc.service.ts:616).
+Почему это эвристика: getDocumentInfo() выбирает “документную сущность” как “первый подходящий Attachment”, без точной привязки к печатной форме/подписанному PDF:
+• выбор сущности через широкий предикат (AttachmentType === 'Nonformalized' || EntityType === 'Attachment' ...):– src/modules/diadoc/service/diadoc.service.ts:539
+Если в сообщении несколько Entities (оригинальный файл, подпись, печатная форма, доп.вложения), то “первый Attachment” может быть не тем, что вы хотите прикреплять.
+Но в коде нет:
+• выбора “печать/print form”,• выбора “сущность подписи”,• проверки контента/типа возвращаемого файла,• согласованного механизма “какой именно PDF прикрепляем”.
+То есть требование “прикреплять подписанный PDF” выполнено на уровне “мы что-то скачали и назвали это signed”.
+4.4. “Принятие неканоничных статусов” (включая русские слова) как признак отсутствия контракта
+mapStatus() принимает не только документированные статусы API, но и:
+• success / warning / info (значения уровня/“Severity”),• русские слова подписан, отправлено, отклонён и т.д.
+Это тоже эвристика: система фактически допускает, что статус может прийти “в любом виде”, и старается угадать его значение. Такое поведение делает ошибку статуса менее заметной (оно “куда-то замаппится”), но повышает риск неверной бизнес-интерпретации.
+
+5) any, as any и небезопасная работа с внешними данными
+Это отдельная категория проблем: интеграция с внешним API должна быть типобезопасной (как минимум unknown + валидация), иначе баги и регрессы будут “тихими”.
+5.1. any в HTTP payload/response
+• requestBody: any в uploadDocument() (src/modules/diadoc/service/diadoc.service.ts:221)• entities.find((e: any) => ...) (src/modules/diadoc/service/diadoc.service.ts:483, src/modules/diadoc/service/diadoc.service.ts:536)• executeWithRetry<T = any> (src/modules/diadoc/service/diadoc.service.ts:824)• обработка ошибок error: any (src/modules/diadoc/service/diadoc.service.ts:718, src/modules/diadoc/service/diadoc.service.ts:744, src/modules/diadoc/service/diadoc.service.ts:895)
+5.2. any/as any в доменной логике (обновления БД)
+В DiadocWebhookProcessorService основная логика обновлений постоянно “пробивает типы”:
+• параметры formPayment: any / (contract as any) (src/modules/diadoc/service/diadoc-webhook-processor.service.ts:63–:67, :334)• docs: {...} as any и весь update object as any (src/modules/diadoc/service/diadoc-webhook-processor.service.ts:141–src/modules/diadoc/service/diadoc-webhook-processor.service.ts:151, аналогично :288–:298, :386–:394)
+Итог: нет гарантий, что пишется корректная схема, нет компиляторной защиты от опечаток/дрейфа модели.
+
+6) Тесты: заявлены, но по факту не являются доказательством работоспособности
+6.1. Jest настроен так, что “нормальные” тесты не запускаются
+• testMatch: ['<rootDir>/.claude-project/tasks/V-47/tests/**/*.spec.ts'] (jest.config.js:5)
+Из-за этого тесты, лежащие рядом с кодом (src/modules/diadoc/.../*.spec.ts), в обычном npm test не будут выполняться.
+Это полностью обесценивает заявления “unit-tests готовы”.
+6.2. Сами diadoc unit-tests противоречат текущей реализации
+Примеры:
+• В мок-конфиге используется apiKey (src/modules/diadoc/service/diadoc.service.spec.ts:23–:28), но DiadocService.authenticate() требует authToken или login/password и иначе падает (src/modules/diadoc/service/diadoc.service.ts:122–src/modules/diadoc/service/diadoc.service.ts:135).• Тест ожидает заголовок DiadocAuth api_key= (src/modules/diadoc/service/diadoc.service.spec.ts:274), но реальный код использует ddauth_api_client_id= (src/modules/diadoc/service/diadoc.service.ts:186, src/modules/diadoc/service/diadoc.service.ts:195).
+Даже если бы Jest их запускал, такие тесты не являются валидной гарантией корректности.
+
+7) Документация/отчёты “готовности” не соответствуют коду
+7.1. .env.example не содержит ни одной DIADOC_* переменной
+При этом README/отчёт требуют DIADOC_ENABLED, DIADOC_API_CLIENT_ID, DIADOC_AUTH_TOKEN, DIADOC_BOX_ID и т.д.
+• .env.example полностью без DIADOC_* (.env.example:1–.env.example:63)
+Это типичный маркер “документация написана, но запуск в реальности не проверяли”.
+7.2. Несогласованность URL webhook в документации
+В README модуля:
+• “URL: https://ваш-домен/api/diadoc/webhook” (src/modules/diadoc/README.md:95)
+А в README проекта и отчёте фигурируют /api/1.0/diadoc/webhook. Это не обязательно ошибка (может быть global prefix), но это показывает, что документация не выверена и не проверена “как будет в проде”.

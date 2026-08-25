@@ -1,0 +1,144 @@
+# workflow:
+#   rules:
+#     - if: $CI_COMMIT_BRANCH == "dev"
+#     - if: $CI_COMMIT_BRANCH == "stage"
+#     - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
+
+stages:
+  - build
+  - deploy
+
+variables:
+  IMAGE_NAME: ${CI_REGISTRY_IMAGE}
+  IMAGE_TAG: ${CI_COMMIT_REF_SLUG}-${CI_COMMIT_SHORT_SHA}
+
+build:
+  stage: build
+  image: docker:latest
+  services:
+    - docker:dind
+  variables:
+    DOCKER_HOST: tcp://docker:2376
+    DOCKER_TLS_CERTDIR: '/certs'
+    DOCKER_TLS_VERIFY: 1
+    DOCKER_CERT_PATH: '$DOCKER_TLS_CERTDIR/client'
+    DOCKERFILE: Dockerfile
+    IMAGE_NAME: ${CI_REGISTRY_IMAGE}
+  before_script:
+    - echo "$CI_REGISTRY_PASSWORD" | docker login $CI_REGISTRY -u $CI_REGISTRY_USER --password-stdin
+  script:
+    - DOCKER_BUILDKIT=1 docker build -f ${DOCKERFILE} -t "${IMAGE_NAME}:${IMAGE_TAG}" .
+    - docker push "${IMAGE_NAME}:${IMAGE_TAG}"
+  rules:
+    - if: $CI_COMMIT_BRANCH == "dev"
+    - if: $CI_COMMIT_BRANCH == "stage"
+    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
+    - if: $CI_COMMIT_BRANCH
+      when: manual
+
+.deploy:
+  stage: deploy
+  image: registry.gitlab.com/sandbox6902635/deploy:latest
+  variables:
+    ENVIRONMENT: dev
+    APPLICATION: fea
+    REVISION: ${CI_COMMIT_SHA}
+    IMAGE: ${IMAGE_TAG}
+    DEPLOY_REF: master
+    DEPLOY_PROJECT_ID: 62463788
+    DEPLOY_TOKEN: ${DEPLOY_PROJECT_TOKEN}
+    FILE_PATH: environment
+  script:
+    - |
+      curl --silent --header "PRIVATE-TOKEN: $DEPLOY_TOKEN" "${CI_API_V4_URL}/projects/${DEPLOY_PROJECT_ID}/repository/files/${FILE_PATH}%2F${ENVIRONMENT}%2Eyaml/raw?ref=$DEPLOY_REF" > $ENVIRONMENT.yaml
+      cat ${ENVIRONMENT}.yaml
+      yq eval "(.\"$APPLICATION\".revision) = \"$REVISION\"" -i $ENVIRONMENT.yaml
+      yq eval "(.\"$APPLICATION\".imageTag) = \"$IMAGE\"" -i $ENVIRONMENT.yaml
+      COMMIT_MESSAGE="Updated $ENVIRONMENT: set $APPLICATION ver. $IMAGE"
+      echo -n "{\"branch\": \"$DEPLOY_REF\", \"author_name\": \"$GITLAB_USER_NAME\", \"author_email\": \"$GITLAB_USER_EMAIL\", \"encoding\": \"base64\", \"content\": \"" >commit_file.yaml
+      base64 -w 0 $ENVIRONMENT.yaml >>commit_file.yaml
+      echo -n "\", \"commit_message\": \"$COMMIT_MESSAGE\"}" >>commit_file.yaml
+      response=$(curl --silent -o response.txt -w "%{http_code}" --request PUT --header "PRIVATE-TOKEN: $DEPLOY_TOKEN" \
+      --header "Content-Type: application/json" \
+      --data-binary "@commit_file.yaml" \
+      "${CI_API_V4_URL}/projects/${DEPLOY_PROJECT_ID}/repository/files/${FILE_PATH}%2F${ENVIRONMENT}%2Eyaml?ref=${DEPLOY_REF}")
+      if [ $response != "200" ]; then
+          echo "Server returned: "
+          cat response.txt
+          echo
+          echo "Error commiting to deploy repo!"
+          exit 1
+      else
+          echo "Changes commited"
+          exit 0
+      fi
+
+deploy[test1]:
+  extends: .deploy
+  variables:
+    ENVIRONMENT: test1
+  rules:
+    - if: $CI_COMMIT_BRANCH
+      when: manual
+
+deploy[test2]:
+  extends: .deploy
+  variables:
+    ENVIRONMENT: test2
+  rules:
+    - if: $CI_COMMIT_BRANCH
+      when: manual
+
+deploy[test3]:
+  extends: .deploy
+  variables:
+    ENVIRONMENT: test3
+  rules:
+    - if: $CI_COMMIT_BRANCH
+      when: manual
+
+deploy[test4]:
+  extends: .deploy
+  variables:
+    ENVIRONMENT: test4
+  rules:
+    - if: $CI_COMMIT_BRANCH
+      when: manual
+
+deploy[test4]:
+  extends: .deploy
+  variables:
+    ENVIRONMENT: test4
+  rules:
+    - if : $CI_COMMIT_BRANCH
+      when: manual
+
+deploy [dev]:
+  extends: .deploy
+  variables:
+    ENVIRONMENT: dev
+  rules:
+    - if: $CI_COMMIT_BRANCH == "dev"
+
+deploy [release]:
+  extends: .deploy
+  variables:
+    ENVIRONMENT: release
+  rules:
+    # Для веток с названием начинающимся с release
+    - if: $CI_COMMIT_BRANCH =~ /^release/
+
+deploy [stage]:
+  extends: .deploy
+  variables:
+    ENVIRONMENT: stage
+  rules:
+    - if: $CI_COMMIT_BRANCH == "stage"
+      when: manual
+
+deploy [prod]:
+  extends: .deploy
+  variables:
+    ENVIRONMENT: prod
+  rules:
+    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH

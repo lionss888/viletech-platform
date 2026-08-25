@@ -1,0 +1,4 @@
+source: https://github.com/lionss888/vd-audit/tree/bea428b1f79063b8a5cc09a8c12a8dd982cb00ac/fea-stage-vf2
+commit: bea428b1f79063b8a5cc09a8c12a8dd982cb00ac
+path: fea-stage-vf2
+downloaded: 2026-08-24

@@ -1,0 +1,5 @@
+{
+  "form": "Событие\n<b>{event}</b>\nID сделки\n<b>{uid}</b>\nДата создания\n<b>{createDate}</b>\nНаправление\n<b>{direction}</b>\nСумма к оплате\n<b>{amount}</b> {currencyAmount} \nСумма к получению\n<b>{coverAmount}</b> {currencyCoverAmount}\nАгентское вознаграждение\n<b>{feePercent}%</b>\nРазмер комиссии\n<b>{feeAmount}</b> {currencyFeeAmount}\nКурс сделки\n<b>{rate}</b> {currencyRate}\n----------------------------------\nНаименование компании:\n<b>{organizationName}</b>\n",
+  "formPaymentSent": "Событие\n<b>{event}</b>\nID сделки\n<b>{uid}</b>\nДата создания\n<b>{createDate}</b>\nНаправление\n<b>{direction}</b>\nАгентское вознаграждение\n<b>{feeReward}</b>\nОрганизация провайдера\n<b>{providerOrganizationName}</b>\nСумма к оплате\n<b>{amount}</b> {currencyAmount}\n----------------------------------\nНаименование компании:\n<b>{organizationName}</b>\n",
+  "comment": "Событие\n<b>{event}</b>\nID сделки\n<b>{uid}</b>\nДата комментария:\n<b>{createDate}(msk)</b>\nОт:\n<b>{accountName}</b>\nТекст комментария:\n<b>{text}</>"
+}

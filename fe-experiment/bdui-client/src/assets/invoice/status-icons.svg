@@ -1,0 +1,15 @@
+<svg viewBox="0 0 46 46" fill="none" xmlns="http://www.w3.org/2000/svg" x="0" y="0"><g id="Status Icons">
+<g id="Wi-Fi Network">
+<g id="Wifi">
+<path id="Vector_5" d="M0.667,18l7.333,7.3333l7.333,-7.3333c-4.053,-4.0534 -10.613,-4.0534 -14.666,0z" fill="currentColor"/>
+</g>
+<g id="Cellular signal">
+<path id="Vector_6" d="M28.667,13.3335l-13.334,13.3333h13.334z" fill="currentColor"/>
+</g>
+</g>
+<g id="Battery">
+<g id="Battery_2">
+<path id="Base" d="M39.594,12.9165h-3.188v1.4167h-1.594c-0.586,0 -1.062,0.4757 -1.062,1.0625v10.625c0,0.5868 0.476,1.0625 1.062,1.0625h6.376c0.586,0 1.062,-0.4757 1.062,-1.0625v-10.625c0,-0.5868 -0.476,-1.0625 -1.062,-1.0625h-1.594z" fill="currentColor"/>
+</g>
+</g>
+</g></svg>

@@ -1,0 +1,132 @@
+envs:
+  MONGODB_URL: mongodb://localhost:27017/fea360
+  NATS_URL: nats://localhost:4222
+  NODE_ENV: development
+  ACCESS_TOKEN_EXPIRES_IN: 30m
+  REFRESH_TOKEN_EXPIRES_IN: 30d
+  SECRET: some_hash
+  BASE_URL: fea.local
+  USE_STATIC_CODE: false
+  STATIC_CODE: "000000"
+  S3_REGION: eu-central-1
+  BUCKET_NAME: file-store
+  S3_ENDPOINT: https://localhost/
+  AWS_ACCESS_KEY_ID: some_key
+  AWS_SECRET_ACCESS_KEY: some_secret
+  AUTH_LOGIN: mail@fea.local
+  AUTH_PASSWORD: some_password
+  AUTH_AUTH_URL: https://auth/auth
+  AUTH_ME_URL: https://auth/client/me
+  ADMIN_EMAIL: admin@fea.local
+  ADMIN_PASSWORD: some_password
+  DEFAULT_PARENT_EMAIL: admin@fea.local
+  REDIS_URL: redis://localhost:6379
+  EMAIL_INFO: info@fea.local
+  EMAIL_NOREPLAY: noreply@fea.local
+  MAILGUN_KEY: 97687a6f61754a3d2dc42264871b41d4-1b5736a5-aec4621e
+  MAILGUN_DOMAIN: mg.crypto360.kg
+  MAILGUN_EMAIL: mail@fea.local
+  MAILGUN_PASSWORD: some_password
+  OCR_AUTH_URL: https://iam.api.cloud.yandex.net/iam/v1/tokens
+  OCR_AUTH_TOKEN: some_token
+  OCR_BASE_API_URL: https://ocr.api.cloud.yandex.net/ocr/v1
+  OCR_FOLDER_ID: some_id
+  GOTENBERG_BASE_URL: http://localhost:3333
+  NODUL_IS_ACTIVE: "true"
+  NODUL_URL: https://webhook.nodul.ru/../
+
+# Если это поле не пустое, будет использоваться ConfigMap с данным именем вместо envs
+envsFrom: ""
+
+replicaCount: 1
+image:
+  repository: registry.gitlab.com/sandbox6902635/fea
+  pullPolicy: IfNotPresent
+  tag: ""
+
+imagePullSecrets: []
+nameOverride: ""
+fullnameOverride: ""
+
+serviceAccount:
+  create: true
+  automount: true
+  annotations: {}
+  name: ""
+
+podAnnotations: {}
+podLabels: {}
+
+podSecurityContext: {}
+  # fsGroup: 2000
+
+securityContext: {}
+  # capabilities:
+  #   drop:
+  #   - ALL
+  # readOnlyRootFilesystem: true
+  # runAsNonRoot: true
+  # runAsUser: 1000
+
+service:
+  type: ClusterIP
+  port: 80
+
+ingress:
+  enabled: true
+  docs:
+    - enabled: true # Эндпоинт для документации, защищенный basic auth
+      path: /api/1.0/fea360/swagger
+      auth:
+        username: user
+        password: password
+    - enabled: true
+      path: /1c/swagger
+      auth:
+        username: user
+        password: password
+  className: ""
+  annotations: {}
+    # kubernetes.io/ingress.class: nginx
+    # kubernetes.io/tls-acme: "true"
+  hosts:
+    - host: fea.local
+      paths:
+        - path: /
+          pathType: ImplementationSpecific
+  tls: []
+  #  - secretName: chart-example-tls
+  #    hosts:
+  #      - chart-example.local
+
+resources: {}
+  # limits:
+  #   cpu: 100m
+  #   memory: 128Mi
+  # requests:
+  #   cpu: 100m
+  #   memory: 128Mi
+
+livenessProbe:
+  enabled: false
+  httpGet:
+    path: /
+    port: http
+readinessProbe:
+  enabled: false
+  httpGet:
+    path: /
+    port: http
+
+autoscaling:
+  enabled: false
+  minReplicas: 1
+  maxReplicas: 100
+  targetCPUUtilizationPercentage: 80
+  # targetMemoryUtilizationPercentage: 80
+
+nodeSelector: {}
+
+tolerations: []
+
+affinity: {}

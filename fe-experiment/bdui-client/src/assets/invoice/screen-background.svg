@@ -1,0 +1,36 @@
+<svg viewBox="0.0000 0.0000 360.0000 800.0000" fill="none" xmlns="http://www.w3.org/2000/svg" x="0" y="0"><defs><mask id="mask0_731_3706" style="mask-type:luminance" maskUnits="userSpaceOnUse" x="0" y="0" width="360" height="800">
+<g id="clip0_251_2898">
+<path id="Vector" d="M360 0H0V800H360V0Z" fill="white"/>
+</g>
+</mask><filter id="filter0_f_731_3706" x="-334" y="-26" width="697" height="707.18" filterUnits="userSpaceOnUse" color-interpolation-filters="sRGB">
+<feFlood flood-opacity="0" result="BackgroundImageFix"/>
+<feBlend mode="normal" in="SourceGraphic" in2="BackgroundImageFix" result="shape"/>
+<feGaussianBlur stdDeviation="75" result="effect1_foregroundBlur_731_3706"/>
+</filter><filter id="filter1_f_731_3706" x="-221" y="-307" width="652" height="637" filterUnits="userSpaceOnUse" color-interpolation-filters="sRGB">
+<feFlood flood-opacity="0" result="BackgroundImageFix"/>
+<feBlend mode="normal" in="SourceGraphic" in2="BackgroundImageFix" result="shape"/>
+<feGaussianBlur stdDeviation="100" result="effect1_foregroundBlur_731_3706"/>
+</filter><filter id="filter2_f_731_3706" x="38" y="216" width="644" height="652.82" filterUnits="userSpaceOnUse" color-interpolation-filters="sRGB">
+<feFlood flood-opacity="0" result="BackgroundImageFix"/>
+<feBlend mode="normal" in="SourceGraphic" in2="BackgroundImageFix" result="shape"/>
+<feGaussianBlur stdDeviation="75" result="effect1_foregroundBlur_731_3706"/>
+</filter></defs><g id="Clip path group">
+<mask id="mask0_731_3706" style="mask-type:luminance" maskUnits="userSpaceOnUse" x="0" y="0" width="360" height="800">
+<g id="clip0_251_2898">
+<path id="Vector" d="M360 0H0V800H360V0Z" fill="white"/>
+</g>
+</mask>
+<g mask="url(#mask0_731_3706)">
+<g id="Group">
+<g id="Group_2" filter="url(#filter0_f_731_3706)">
+<path id="Vector_2" d="M14.5 531.179C124.129 531.179 213 440.029 213 327.59C213 215.15 124.129 124 14.5 124C-95.1285 124 -184 215.15 -184 327.59C-184 440.029 -95.1285 531.179 14.5 531.179Z" fill="#FCF2E1" fill-opacity="0.4"/>
+</g>
+<g id="Group_3" filter="url(#filter1_f_731_3706)">
+<path id="Vector_3" d="M105 130C174.588 130 231 76.9457 231 11.5C231 -53.9457 174.588 -107 105 -107C35.4121 -107 -21 -53.9457 -21 11.5C-21 76.9457 35.4121 130 105 130Z" fill="#DAFFF9" fill-opacity="0.3"/>
+</g>
+<g id="Group_4" filter="url(#filter2_f_731_3706)">
+<path id="Vector_4" d="M360 718.821C454.993 718.821 532 639.839 532 542.41C532 444.982 454.993 366 360 366C265.007 366 188 444.982 188 542.41C188 639.839 265.007 718.821 360 718.821Z" fill="#D5CAFF" fill-opacity="0.4"/>
+</g>
+</g>
+</g>
+</g></svg>

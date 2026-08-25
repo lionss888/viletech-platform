@@ -1,0 +1,44 @@
+version: "2"
+
+volumes:
+  redis_data:
+  mongo_data:
+
+services:
+  redis:
+    image: redis:latest
+    container_name: redis_compose
+    restart: unless-stopped
+    ports:
+      - "6380:6379"  # Внешний порт 6380, внутренний 6379
+    command: [ "redis-server", "--appendonly", "yes" ]
+    volumes:
+      - redis_data:/data
+
+  mongodb:
+    image: mongo:latest
+    container_name: mongodb_compose
+    restart: unless-stopped
+    ports:
+      - "27017:27017"
+    environment:
+      MONGO_INITDB_DATABASE: fea360
+    volumes:
+      - mongo_data:/data/db
+    command: mongod --noauth
+
+  nats:
+    image: nats:latest
+    container_name: nats_compose
+    restart: unless-stopped
+    ports:
+      - "4222:4222"
+      - "8222:8222"
+      - "6222:6222"
+
+  gotenberg:
+    image: gotenberg/gotenberg:latest
+    container_name: gotenberg_compose
+    restart: unless-stopped
+    ports:
+      - "3333:3000"

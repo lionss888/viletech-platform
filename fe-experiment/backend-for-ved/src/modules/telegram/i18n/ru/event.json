@@ -1,0 +1,19 @@
+{
+  "organizationWaitingVerification": "Заявка поступила на проверку.",
+  "userAcceptedForm": "Заявка поступила на рассмотрение.",
+  "orderAccept": "Платежное поручение подтверждено.",
+  "formAccepted": "Заявка принята.",
+  "orderSignUploaded": "Поручение принципала загружено.",
+  "managerChecking": "Заявка ждет уточнений, причина: {rejectText}.",
+  "managerRejectForm": "Заявка ждет уточнений, причина: {rejectText}.",
+  "paymentReceived": "Платеж получен.",
+  "paymentSent": "Платеж отправлен.",
+  "reportSignUploaded": "Отчет загружен, проверьте отчет.",
+  "paymentRejected": "Платеж отклонен.",
+  "acceptContract": "Договор подтвержден",
+  "expiresPaidDate": "Истекает дата исполения платежа.",
+  "formPaymentExternalCommentCreated": "Новый внешний комментарий к заявке.",
+  "formPaymentInternalCommentCreated": "Новый внутренний комментарий к заявке.",
+  "formPaymentInternalCommentCreatedManager": "Новый внутренний комментарий к заявке.",
+  "formPaymentInternalCommentCreatedProvider": "Новый внутренний комментарий к заявке."
+}

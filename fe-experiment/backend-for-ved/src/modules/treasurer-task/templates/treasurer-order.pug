@@ -1,0 +1,133 @@
+html
+    head
+        title Payment Order
+        style.
+            body {
+                font-family: Arial, sans-serif;
+            }
+
+            #main {
+                width: 800px;
+
+                .title {
+                    text-align: center;
+                }
+
+                #table {
+                    width: 800px;
+                    border-collapse: collapse;
+                    margin-bottom: 50px;
+                    margin-top: 20px;
+
+                    th, td {
+                        border: 1px solid;
+                        padding: 5px 3px;
+                    }
+                }
+            }
+    body
+        #main
+            p.title Платежное Поручение Казначея № #{orderNumber} от #{orderDate}
+            p
+                | #{clientOrganizationBusinessForm ? clientOrganizationBusinessForm + ' ' : ''}#{clientOrganizationName},
+                | именуемое в дальнейшем &quot;Принципал&quot;,
+                | поручает #{agentOrganizationName}, именуемое в дальнейшем &quot;Агент&quot;, в
+                | соответствии с условиями Агентского договора № #{agentContractNumber} от #{agentContractDate}, 
+                | дает Поручение на выплату денежных средств со следующими условиями:
+            table#table
+                tr
+                    td № п/п
+                    td(colspan="2" align='center') Детали Поручения
+                tr
+                    td 1
+                    td Наименование Бенефициара
+                    td #{counterpartyName}
+                tr
+                    td 2
+                    td Контракт (и (или) иной документ) (№, дата)
+                    td invoice #{invoiceNumber} date #{invoiceDate}
+                tr
+                    td 3
+                    td Сумма возврата (в валюте контрагента)
+                    td #{refundCurrencyIcon} #{refundAmount}
+                tr
+                    td 4
+                    td Валюта возврата
+                    td #{refundCurrency}
+                tr
+                    td 5
+                    td Сумма возврата в рублях
+                    td #{clientCurrencyIcon} #{refundAmountInRubles}
+                tr
+                    td 6
+                    td Курс обмена
+                    td #{exchangeRate}
+                tr
+                    td 7
+                    td Дата оплаты провайдером
+                    td #{paymentByProviderDate}
+                tr
+                    td 8
+                    td Банк Бенефициара
+                    td #{bankName}
+                tr
+                    td 9
+                    td SWIFT
+                    td #{swiftCode}
+                tr
+                    td 10
+                    td Счет Бенефициара
+                    td #{accountNumber}
+                tr
+                    td 11
+                    td Назначение платежа
+                    td Возврат средств по экспортной сделке № #{orderNumber}
+
+                if commissionPercent || commissionAmountInRubles
+                    tr
+                        td 12
+                        td(colspan="2") Комиссия
+                    if commissionPercent
+                        tr
+                            td 12.1
+                            td Размер комиссии в процентах
+                            td #{commissionPercent}%
+                    if commissionAmountInRubles
+                        tr
+                            td 12.2
+                            td Сумма комиссии в рублях
+                            td #{clientCurrencyIcon} #{commissionAmountInRubles}
+
+                if additionalCommissionCurrency && additionalCommissionAmount
+                    tr
+                        td 13
+                        td(colspan="2") Дополнительная комиссия
+                    tr
+                        td 13.1
+                        td Валюта дополнительной комиссии
+                        td #{additionalCommissionCurrency}
+                    tr
+                        td 13.2
+                        td Размер дополнительной комиссии
+                        td #{additionalCommissionAmount}
+                    if additionalCommissionExchangeRate
+                        tr
+                            td 13.3
+                            td Курс дополнительной комиссии
+                            td #{additionalCommissionExchangeRate}
+                    if additionalCommissionAmountInRubles
+                        tr
+                            td 13.4
+                            td Сумма дополнительной комиссии в рублях
+                            td #{clientCurrencyIcon} #{additionalCommissionAmountInRubles}
+
+                tr
+                    td 14
+                    td Сумма к выплате после вычета всех комиссий
+                    td #{clientCurrencyIcon} #{refundAmountInRublesAfterCommission}
+
+            p Принципал:
+            p ___________________/
+            p #{clientSignerName}
+            p #{clientOrganizationBusinessForm} #{clientOrganizationName}
+

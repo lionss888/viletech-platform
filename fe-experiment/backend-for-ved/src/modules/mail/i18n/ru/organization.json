@@ -1,0 +1,19 @@
+{
+  "organizationSubaccountInvite": {
+    "subject": "Приглашение от {organizationName}",
+    "text": "{organizationName} приглашает вас стать субаккаунтом для удобного управления приложением ВЭД.\n\nНазвание субаккаунта: {subaccountName}\nУбедитесь, что вы уже зарегистрированы в приложении!\n\nПосле принятия приглашения вы сможете:\nПросматривать и создавать заявки от имени основного аккаунта.\nОтслеживать операции в рамках выделенных вам прав.\n\nЕсли вы не ожидали это приглашение, проигнорируйте данное письмо.",
+    "linkText": "Перейти в личный кабинет"
+  },
+  "rejectOrganizationSubaccountInvite": {
+    "subject": "Пользователь {subaccountEmail} отклонил приглашение",
+    "text": "Приглашение в организацию {organizationName} было отклонено пользователем {subaccountEmail}"
+  },
+  "acceptOrganizationSubaccountInvite": {
+    "subject": "Пользователь {subaccountEmail} принял приглашение",
+    "text": "Приглашение в организацию {organizationName} было подтверждено пользователем {subaccountEmail}"
+  },
+  "deleteOrganizationSubaccount": {
+    "subject": "Вас удалили из организации",
+    "text": "Ваш субаккаунт {subaccountEmail} удален из организации {organizationName}"
+  }
+}

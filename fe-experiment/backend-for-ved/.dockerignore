@@ -1,0 +1,9 @@
+package-lock.json
+node_modules
+Dockerfile
+.dockerignore
+**/.git
+.gitlab-ci.*
+.git
+submodules
+.chart
