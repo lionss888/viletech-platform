@@ -31,6 +31,7 @@ export const BDUI_ACTION_ACCEPT_CORRECTIONS = 'accept_corrections';
 export const BDUI_ACTION_CANCEL_FORM = 'cancel_form';
 export const BDUI_ACTION_UPLOAD_CONTRACT = 'upload_contract';
 export const BDUI_ACTION_UPLOAD_ORDER = 'upload_order';
+export const BDUI_ACTION_UPLOAD_ORDER_ADVANCE = 'upload_order_advance';
 export const BDUI_ACTION_UPLOAD_PAYMENTS = 'upload_payments';
 export const BDUI_ACTION_UPLOAD_REPORT = 'upload_report';
 export const BDUI_ACTION_UPLOAD_SHIPMENT = 'upload_shipment';
@@ -51,6 +52,8 @@ export const BDUI_ACTION_ECO_REJECT = 'eco_form_reject';
 export const BDUI_ACTION_ECO_CANCEL = 'eco_cancel';
 
 /** Manager */
+export const BDUI_ACTION_MGR_CONTRACT_ATTACH = 'mgr_contract_attach';
+export const BDUI_ACTION_MGR_FORM_REJECT = 'mgr_form_reject';
 export const BDUI_ACTION_MGR_ORDER_GENERATE = 'mgr_order_generate';
 export const BDUI_ACTION_MGR_ORDER_ATTACH = 'mgr_order_attach';
 export const BDUI_ACTION_MGR_ORDER_SIGNING = 'mgr_order_signing';
@@ -58,22 +61,33 @@ export const BDUI_ACTION_MGR_ORDER_START = 'mgr_order_start';
 export const BDUI_ACTION_MGR_ORDER_STOP = 'mgr_order_stop';
 export const BDUI_ACTION_MGR_ORDER_ACCEPT = 'mgr_order_accept';
 export const BDUI_ACTION_MGR_ORDER_REJECT = 'mgr_order_reject';
+export const BDUI_ACTION_MGR_ORDER_ADVANCE_SIGNING = 'mgr_order_advance_signing';
+export const BDUI_ACTION_MGR_ORDER_ADVANCE_START = 'mgr_order_advance_start';
+export const BDUI_ACTION_MGR_ORDER_ADVANCE_ACCEPT = 'mgr_order_advance_accept';
+export const BDUI_ACTION_MGR_ORDER_ADVANCE_REJECT = 'mgr_order_advance_reject';
 export const BDUI_ACTION_MGR_ASSIGN_PROVIDER = 'mgr_assign_provider';
 export const BDUI_ACTION_MGR_PAYMENT_RECEIVED = 'mgr_payment_received';
 export const BDUI_ACTION_MGR_PAYMENT_START = 'mgr_payment_start';
-  export const BDUI_ACTION_MGR_REPORT_SIGNING = 'mgr_report_signing';
-  export const BDUI_ACTION_MGR_REPORT_START = 'mgr_report_start';
-  export const BDUI_ACTION_MGR_REPORT_STOP = 'mgr_report_stop';
-  export const BDUI_ACTION_MGR_REPORT_ACCEPT = 'mgr_report_accept';
-  export const BDUI_ACTION_MGR_SHIPMENT_START = 'mgr_shipment_start';
-  export const BDUI_ACTION_MGR_SHIPMENT_STOP = 'mgr_shipment_stop';
-  export const BDUI_ACTION_MGR_SHIPMENT_ACCEPT = 'mgr_shipment_accept';
-  export const BDUI_ACTION_MGR_COMPLETED = 'mgr_completed';
-  export const BDUI_ACTION_MGR_CANCEL = 'mgr_cancel';
+export const BDUI_ACTION_MGR_REPORT_SIGNING = 'mgr_report_signing';
+export const BDUI_ACTION_MGR_REPORT_START = 'mgr_report_start';
+export const BDUI_ACTION_MGR_REPORT_STOP = 'mgr_report_stop';
+export const BDUI_ACTION_MGR_REPORT_ACCEPT = 'mgr_report_accept';
+export const BDUI_ACTION_MGR_REPORT_REJECT = 'mgr_report_reject';
+export const BDUI_ACTION_MGR_SHIPMENT_START = 'mgr_shipment_start';
+export const BDUI_ACTION_MGR_SHIPMENT_STOP = 'mgr_shipment_stop';
+export const BDUI_ACTION_MGR_SHIPMENT_ACCEPT = 'mgr_shipment_accept';
+export const BDUI_ACTION_MGR_SHIPMENT_REJECT = 'mgr_shipment_reject';
+export const BDUI_ACTION_MGR_COMPLETED = 'mgr_completed';
+export const BDUI_ACTION_MGR_CANCEL = 'mgr_cancel';
 
-/** Fixed ids from scripts/seed-bdui-lifecycle.js (agent/contract/stub file). */
+/** Fixed ids from scripts/seed-bdui-lifecycle.js (preferred on clean DB).
+ * Existing DBs may keep older account/org ObjectIds — mgr_contract_attach staticBody
+ * then needs matching ids (see NOTES.md). Fresh seed uses these values. */
 export const BDUI_SEED_STUB_FILE_ID = '6a8dbd010000000000000001';
 export const BDUI_SEED_AGENT_ID = '6a8dbd020000000000000001';
+export const BDUI_SEED_ORG_ID = '6a8dbd040000000000000001';
+export const BDUI_SEED_USER_ACCOUNT_ID = '6a8dbd050000000000000001';
+export const BDUI_SEED_MANAGER_STUB_FILE_ID = '6a8dbd060000000000000001';
 
 /** Provider */
 export const BDUI_ACTION_PROV_PAYMENT_START = 'prov_payment_start';

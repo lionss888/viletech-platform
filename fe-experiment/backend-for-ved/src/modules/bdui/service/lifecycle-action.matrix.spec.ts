@@ -8,13 +8,18 @@ import {
   BDUI_ACTION_ICO_ACCEPT,
   BDUI_ACTION_ICO_START,
   BDUI_ACTION_MGR_ASSIGN_PROVIDER,
+  BDUI_ACTION_MGR_CANCEL,
   BDUI_ACTION_MGR_COMPLETED,
+  BDUI_ACTION_MGR_CONTRACT_ATTACH,
+  BDUI_ACTION_MGR_FORM_REJECT,
+  BDUI_ACTION_MGR_ORDER_ADVANCE_SIGNING,
   BDUI_ACTION_MGR_ORDER_GENERATE,
   BDUI_ACTION_MGR_ORDER_REJECT,
   BDUI_ACTION_MGR_ORDER_START,
   BDUI_ACTION_MGR_PAYMENT_RECEIVED,
   BDUI_ACTION_MGR_PAYMENT_START,
   BDUI_ACTION_MGR_REPORT_ACCEPT,
+  BDUI_ACTION_MGR_REPORT_REJECT,
   BDUI_ACTION_MGR_REPORT_SIGNING,
   BDUI_ACTION_MGR_REPORT_START,
   BDUI_ACTION_MGR_SHIPMENT_ACCEPT,
@@ -24,6 +29,7 @@ import {
   BDUI_ACTION_PROV_PAYMENT_START,
   BDUI_ACTION_PROV_PAYMENT_SENT,
   BDUI_ACTION_UPLOAD_ORDER,
+  BDUI_ACTION_UPLOAD_ORDER_ADVANCE,
   BDUI_ACTION_UPLOAD_PAYMENTS,
   BDUI_ACTION_UPLOAD_REPORT,
   BDUI_ACTION_UPLOAD_SHIPMENT,
@@ -57,6 +63,12 @@ describe('resolveLifecycleActionIds', () => {
       ]);
     });
 
+    it('allows upload_order_advance on advance_signing_order', () => {
+      expect(resolveLifecycleActionIds(BDUI_ROLE_USER, FormPaymentStatus.ADVANCE_SIGNING_ORDER)).toEqual([
+        BDUI_ACTION_UPLOAD_ORDER_ADVANCE,
+      ]);
+    });
+
     it('allows upload_payments on signing_order_accepted', () => {
       expect(resolveLifecycleActionIds(BDUI_ROLE_USER, FormPaymentStatus.SIGNING_ORDER_ACCEPTED)).toEqual([
         BDUI_ACTION_UPLOAD_PAYMENTS,
@@ -75,8 +87,13 @@ describe('resolveLifecycleActionIds', () => {
       ]);
     });
 
-    it('returns empty for completed', () => {
+    it('returns empty for completed and canceled statuses', () => {
       expect(resolveLifecycleActionIds(BDUI_ROLE_USER, FormPaymentStatus.COMPLETED)).toEqual([]);
+      expect(resolveLifecycleActionIds(BDUI_ROLE_USER, FormPaymentStatus.CANCELED_BY_USER)).toEqual([]);
+      expect(resolveLifecycleActionIds(BDUI_ROLE_USER, FormPaymentStatus.CANCELED_BY_COMPLIANCE_OFFICER)).toEqual(
+        [],
+      );
+      expect(resolveLifecycleActionIds(BDUI_ROLE_USER, FormPaymentStatus.CANCELED_BY_MANAGER)).toEqual([]);
     });
   });
 
@@ -116,12 +133,31 @@ describe('resolveLifecycleActionIds', () => {
         resolveLifecycleActionIds(BDUI_ROLE_EXTERNAL_CO, FormPaymentStatus.FORM_VERIFICATION),
       ).toContain(BDUI_ACTION_ECO_ACCEPT);
     });
+
+    it('returns empty on canceled_by_compliance_officer', () => {
+      expect(
+        resolveLifecycleActionIds(BDUI_ROLE_EXTERNAL_CO, FormPaymentStatus.CANCELED_BY_COMPLIANCE_OFFICER),
+      ).toEqual([]);
+    });
   });
 
   describe('Manager', () => {
     it('allows order generate on form_accepted', () => {
       expect(resolveLifecycleActionIds(BDUI_ROLE_MANAGER, FormPaymentStatus.FORM_ACCEPTED)).toContain(
         BDUI_ACTION_MGR_ORDER_GENERATE,
+      );
+    });
+
+    it('allows form reject and cancel on form_accepted', () => {
+      const actualIds = resolveLifecycleActionIds(BDUI_ROLE_MANAGER, FormPaymentStatus.FORM_ACCEPTED);
+      expect(actualIds).toEqual(
+        expect.arrayContaining([BDUI_ACTION_MGR_FORM_REJECT, BDUI_ACTION_MGR_CANCEL]),
+      );
+    });
+
+    it('allows contract attach on contract_waiting', () => {
+      expect(resolveLifecycleActionIds(BDUI_ROLE_MANAGER, FormPaymentStatus.CONTRACT_WAITING)).toContain(
+        BDUI_ACTION_MGR_CONTRACT_ATTACH,
       );
     });
 
@@ -154,10 +190,21 @@ describe('resolveLifecycleActionIds', () => {
       ).toEqual([BDUI_ACTION_MGR_ORDER_START]);
     });
 
-    it('allows report signing on payment_sent', () => {
-      expect(resolveLifecycleActionIds(BDUI_ROLE_MANAGER, FormPaymentStatus.PAYMENT_SENT)).toEqual([
+    it('allows report and advance-order actions on payment_sent', () => {
+      const actualIds = resolveLifecycleActionIds(BDUI_ROLE_MANAGER, FormPaymentStatus.PAYMENT_SENT);
+      expect(actualIds).toEqual(
+        expect.arrayContaining([
+          BDUI_ACTION_MGR_REPORT_SIGNING,
+          BDUI_ACTION_MGR_ORDER_ADVANCE_SIGNING,
+          BDUI_ACTION_MGR_PAYMENT_RECEIVED,
+        ]),
+      );
+    });
+
+    it('allows report signing on payment_received for postpay', () => {
+      expect(resolveLifecycleActionIds(BDUI_ROLE_MANAGER, FormPaymentStatus.PAYMENT_RECEIVED)).toContain(
         BDUI_ACTION_MGR_REPORT_SIGNING,
-      ]);
+      );
     });
 
     it('allows report start on report_waiting_verification', () => {
@@ -166,10 +213,11 @@ describe('resolveLifecycleActionIds', () => {
       ).toEqual([BDUI_ACTION_MGR_REPORT_START]);
     });
 
-    it('allows report accept on report_verification', () => {
-      expect(
-        resolveLifecycleActionIds(BDUI_ROLE_MANAGER, FormPaymentStatus.REPORT_VERIFICATION),
-      ).toContain(BDUI_ACTION_MGR_REPORT_ACCEPT);
+    it('allows report accept and reject on report_verification', () => {
+      const actualIds = resolveLifecycleActionIds(BDUI_ROLE_MANAGER, FormPaymentStatus.REPORT_VERIFICATION);
+      expect(actualIds).toEqual(
+        expect.arrayContaining([BDUI_ACTION_MGR_REPORT_ACCEPT, BDUI_ACTION_MGR_REPORT_REJECT]),
+      );
     });
 
     it('allows shipment start on shipment_waiting_verification', () => {

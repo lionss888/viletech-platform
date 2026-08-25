@@ -16,7 +16,13 @@ import {
   BDUI_ACTION_MGR_ASSIGN_PROVIDER,
   BDUI_ACTION_MGR_CANCEL,
   BDUI_ACTION_MGR_COMPLETED,
+  BDUI_ACTION_MGR_CONTRACT_ATTACH,
+  BDUI_ACTION_MGR_FORM_REJECT,
   BDUI_ACTION_MGR_ORDER_ACCEPT,
+  BDUI_ACTION_MGR_ORDER_ADVANCE_ACCEPT,
+  BDUI_ACTION_MGR_ORDER_ADVANCE_REJECT,
+  BDUI_ACTION_MGR_ORDER_ADVANCE_SIGNING,
+  BDUI_ACTION_MGR_ORDER_ADVANCE_START,
   BDUI_ACTION_MGR_ORDER_ATTACH,
   BDUI_ACTION_MGR_ORDER_GENERATE,
   BDUI_ACTION_MGR_ORDER_REJECT,
@@ -26,13 +32,14 @@ import {
   BDUI_ACTION_MGR_PAYMENT_RECEIVED,
   BDUI_ACTION_MGR_PAYMENT_START,
   BDUI_ACTION_MGR_REPORT_ACCEPT,
+  BDUI_ACTION_MGR_REPORT_REJECT,
   BDUI_ACTION_MGR_REPORT_SIGNING,
   BDUI_ACTION_MGR_REPORT_START,
   BDUI_ACTION_MGR_REPORT_STOP,
   BDUI_ACTION_MGR_SHIPMENT_ACCEPT,
+  BDUI_ACTION_MGR_SHIPMENT_REJECT,
   BDUI_ACTION_MGR_SHIPMENT_START,
   BDUI_ACTION_MGR_SHIPMENT_STOP,
-  BDUI_SEED_STUB_FILE_ID,
   BDUI_ACTION_PROV_ATTACH_HASH,
   BDUI_ACTION_PROV_ATTACH_PROOF,
   BDUI_ACTION_PROV_PAYMENT_RETURN,
@@ -40,9 +47,15 @@ import {
   BDUI_ACTION_PROV_PAYMENT_START,
   BDUI_ACTION_UPLOAD_CONTRACT,
   BDUI_ACTION_UPLOAD_ORDER,
+  BDUI_ACTION_UPLOAD_ORDER_ADVANCE,
   BDUI_ACTION_UPLOAD_PAYMENTS,
   BDUI_ACTION_UPLOAD_REPORT,
   BDUI_ACTION_UPLOAD_SHIPMENT,
+  BDUI_SEED_AGENT_ID,
+  BDUI_SEED_MANAGER_STUB_FILE_ID,
+  BDUI_SEED_ORG_ID,
+  BDUI_SEED_STUB_FILE_ID,
+  BDUI_SEED_USER_ACCOUNT_ID,
 } from '../bdui.constants';
 
 type CatalogEntry = Omit<BduiAction, 'id'> & { id: string };
@@ -70,13 +83,17 @@ const CATALOG: Record<string, CatalogEntry> = {
     'PUT',
     '/form-payment/{formId}/form/accept-corrections',
   ),
-  [BDUI_ACTION_CANCEL_FORM]: action(
-    BDUI_ACTION_CANCEL_FORM,
-    'Отменить заявку',
-    'PUT',
-    '/form-payment/{formId}/cancel',
-    'forms.list',
-  ),
+  [BDUI_ACTION_CANCEL_FORM]: {
+    ...action(
+      BDUI_ACTION_CANCEL_FORM,
+      'Отменить заявку',
+      'PUT',
+      '/form-payment/{formId}/cancel',
+      'forms.list',
+    ),
+    bodyFrom: 'form',
+    requiresTextReason: true,
+  },
   [BDUI_ACTION_UPLOAD_CONTRACT]: action(
     BDUI_ACTION_UPLOAD_CONTRACT,
     'Загрузить договор',
@@ -89,6 +106,17 @@ const CATALOG: Record<string, CatalogEntry> = {
       'Загрузить поручение',
       'PUT',
       '/form-payment/{formId}/order',
+    ),
+    staticBody: {
+      paymentOrderSigned: BDUI_SEED_STUB_FILE_ID,
+    },
+  },
+  [BDUI_ACTION_UPLOAD_ORDER_ADVANCE]: {
+    ...action(
+      BDUI_ACTION_UPLOAD_ORDER_ADVANCE,
+      'Загрузить доп. поручение',
+      'PUT',
+      '/form-payment/{formId}/order-advance',
     ),
     staticBody: {
       paymentOrderSigned: BDUI_SEED_STUB_FILE_ID,
@@ -208,6 +236,32 @@ const CATALOG: Record<string, CatalogEntry> = {
     bodyFrom: 'form',
     requiresTextReason: true,
   },
+  [BDUI_ACTION_MGR_CONTRACT_ATTACH]: {
+    ...action(
+      BDUI_ACTION_MGR_CONTRACT_ATTACH,
+      'Прикрепить договор (manager stub)',
+      'POST',
+      '/admin/contract',
+    ),
+    staticBody: {
+      agent: BDUI_SEED_AGENT_ID,
+      organization: BDUI_SEED_ORG_ID,
+      account: BDUI_SEED_USER_ACCOUNT_ID,
+      file: BDUI_SEED_MANAGER_STUB_FILE_ID,
+      number: 'BDUI-MGR-MANUAL-001',
+      date: '2026-01-15T00:00:00.000Z',
+    },
+  },
+  [BDUI_ACTION_MGR_FORM_REJECT]: {
+    ...action(
+      BDUI_ACTION_MGR_FORM_REJECT,
+      'Вернуть заявку на уточнение',
+      'PUT',
+      '/admin/manager/form-payment/{formId}/form/reject',
+    ),
+    bodyFrom: 'form',
+    requiresTextReason: true,
+  },
   [BDUI_ACTION_MGR_ORDER_GENERATE]: {
     ...action(
       BDUI_ACTION_MGR_ORDER_GENERATE,
@@ -268,6 +322,34 @@ const CATALOG: Record<string, CatalogEntry> = {
     bodyFrom: 'form',
     requiresTextReason: true,
   },
+  [BDUI_ACTION_MGR_ORDER_ADVANCE_SIGNING]: action(
+    BDUI_ACTION_MGR_ORDER_ADVANCE_SIGNING,
+    'Отправить доп. поручение на подпись',
+    'PUT',
+    '/admin/manager/form-payment/{formId}/order-advance/signing',
+  ),
+  [BDUI_ACTION_MGR_ORDER_ADVANCE_START]: action(
+    BDUI_ACTION_MGR_ORDER_ADVANCE_START,
+    'Начать проверку доп. поручения',
+    'PUT',
+    '/admin/manager/form-payment/{formId}/order-advance/start',
+  ),
+  [BDUI_ACTION_MGR_ORDER_ADVANCE_ACCEPT]: action(
+    BDUI_ACTION_MGR_ORDER_ADVANCE_ACCEPT,
+    'Подтвердить доп. поручение',
+    'PUT',
+    '/admin/manager/form-payment/{formId}/order-advance/accept',
+  ),
+  [BDUI_ACTION_MGR_ORDER_ADVANCE_REJECT]: {
+    ...action(
+      BDUI_ACTION_MGR_ORDER_ADVANCE_REJECT,
+      'Вернуть доп. поручение',
+      'PUT',
+      '/admin/manager/form-payment/{formId}/order-advance/reject',
+    ),
+    bodyFrom: 'form',
+    requiresTextReason: true,
+  },
   [BDUI_ACTION_MGR_ASSIGN_PROVIDER]: {
     ...action(
       BDUI_ACTION_MGR_ASSIGN_PROVIDER,
@@ -313,6 +395,16 @@ const CATALOG: Record<string, CatalogEntry> = {
     'PUT',
     '/admin/manager/form-payment/{formId}/report/accept',
   ),
+  [BDUI_ACTION_MGR_REPORT_REJECT]: {
+    ...action(
+      BDUI_ACTION_MGR_REPORT_REJECT,
+      'Вернуть отчёт',
+      'PUT',
+      '/admin/manager/form-payment/{formId}/report/reject',
+    ),
+    bodyFrom: 'form',
+    requiresTextReason: true,
+  },
   [BDUI_ACTION_MGR_SHIPMENT_START]: action(
     BDUI_ACTION_MGR_SHIPMENT_START,
     'Начать проверку отгрузки',
@@ -331,6 +423,16 @@ const CATALOG: Record<string, CatalogEntry> = {
     'PUT',
     '/admin/manager/form-payment/{formId}/shipment/accept',
   ),
+  [BDUI_ACTION_MGR_SHIPMENT_REJECT]: {
+    ...action(
+      BDUI_ACTION_MGR_SHIPMENT_REJECT,
+      'Вернуть отгрузку',
+      'PUT',
+      '/admin/manager/form-payment/{formId}/shipment/reject',
+    ),
+    bodyFrom: 'form',
+    requiresTextReason: true,
+  },
   [BDUI_ACTION_MGR_COMPLETED]: action(
     BDUI_ACTION_MGR_COMPLETED,
     'Завершить заявку',

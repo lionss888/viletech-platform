@@ -28,7 +28,7 @@ const LIST_PATHS: Record<BduiVedRoleId, string> = {
   [BDUI_ROLE_EXTERNAL_CO]:
     '/admin/compliance-officer/form-payment?statuses=form_waiting_verification&statuses=form_verification',
   [BDUI_ROLE_MANAGER]:
-    '/admin/manager/form-payment?statuses=form_accepted&statuses=signing_order&statuses=signing_order_waiting_verification&statuses=signing_order_verification&statuses=signing_order_accepted&statuses=payment_received&statuses=payment_processing&statuses=manager_checking&statuses=payment_sent&statuses=report_waiting&statuses=report_waiting_verification&statuses=report_verification&statuses=shipment_waiting&statuses=shipment_waiting_verification&statuses=shipment_verification',
+    '/admin/manager/form-payment?statuses=form_accepted&statuses=signing_order&statuses=signing_order_waiting_verification&statuses=signing_order_verification&statuses=signing_order_accepted&statuses=payment_received&statuses=payment_processing&statuses=manager_checking&statuses=payment_sent&statuses=report_waiting&statuses=report_waiting_verification&statuses=report_verification&statuses=shipment_waiting&statuses=shipment_waiting_verification&statuses=shipment_verification&statuses=contract_waiting&statuses=contract_waiting_correction&statuses=advance_signing_order&statuses=advance_signing_order_waiting_verification&statuses=advance_signing_order_verification&statuses=advance_signing_order_accepted',
   [BDUI_ROLE_PROVIDER]:
     '/admin/provider/form-payment?statuses=signing_order_accepted&statuses=payment_received&statuses=payment_processing',
 };
@@ -475,7 +475,34 @@ export class RoleCabinetBuilders {
       widgets.push({
         type: 'text',
         id: 'mgr_hint_shipment_review',
-        content: 'Подтвердите отгрузку или завершите заявку → COMPLETED.',
+        content: 'Подтвердите отгрузку или завершите заявку → COMPLETED. Reject возвращает клиенту closing docs.',
+      });
+    }
+    if (status === FormPaymentStatus.CONTRACT_WAITING) {
+      widgets.push({
+        type: 'text',
+        id: 'mgr_hint_contract',
+        content:
+          'Нет подтверждённого договора: прикрепите вручную (POST /admin/contract, auto-accept) или дождитесь клиента.',
+      });
+    }
+    if (
+      status === FormPaymentStatus.ADVANCE_SIGNING_ORDER ||
+      status === FormPaymentStatus.ADVANCE_SIGNING_ORDER_WAITING_VERIFICATION ||
+      status === FormPaymentStatus.ADVANCE_SIGNING_ORDER_VERIFICATION
+    ) {
+      widgets.push({
+        type: 'text',
+        id: 'mgr_hint_advance_order',
+        content: 'Постоплата: доп. поручение — start/accept (или reject → User upload_order_advance).',
+      });
+    }
+    if (status === FormPaymentStatus.PAYMENT_RECEIVED) {
+      widgets.push({
+        type: 'text',
+        id: 'mgr_hint_postpay_report',
+        content:
+          'Постоплата: после оплаты клиента можно отправить отчёт (report/signing). Аванс: чаще передача Provider.',
       });
     }
     widgets.push({ type: 'action_bar', id: 'form_actions', actions: actionIds });

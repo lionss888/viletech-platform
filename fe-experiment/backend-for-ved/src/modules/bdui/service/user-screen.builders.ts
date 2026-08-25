@@ -328,6 +328,11 @@ export class UserScreenBuilders {
       status === FormPaymentStatus.FORM_ACCEPTED ||
       status === FormPaymentStatus.CANCELED_BY_INTERNAL_COMPLIANCE_OFFICER;
     const isCanceledByEco = status === FormPaymentStatus.CANCELED_BY_COMPLIANCE_OFFICER;
+    const isCanceledByUser = status === FormPaymentStatus.CANCELED_BY_USER;
+    const isCanceledByManager = status === FormPaymentStatus.CANCELED_BY_MANAGER;
+    const isCanceledByIco = status === FormPaymentStatus.CANCELED_BY_INTERNAL_COMPLIANCE_OFFICER;
+    const isTerminalCanceled =
+      isCanceledByEco || isCanceledByUser || isCanceledByManager || isCanceledByIco;
     const widgets: BduiScreen['widgets'] = [
       {
         type: 'status_badge',
@@ -422,6 +427,16 @@ export class UserScreenBuilders {
         content: 'Аванс: приложите документы отгрузки (stub) и отправьте на проверку менеджеру.',
       });
     }
+    if (
+      status === FormPaymentStatus.ADVANCE_SIGNING_ORDER ||
+      status === FormPaymentStatus.ADVANCE_SIGNING_ORDER_WAITING_CORRECTIONS
+    ) {
+      widgets.push({
+        type: 'text',
+        id: 'advance_order_hint',
+        content: 'Постоплата: загрузите подписанное дополнительное поручение (stub).',
+      });
+    }
     if (status === FormPaymentStatus.COMPLETED) {
       widgets.push({
         type: 'text',
@@ -435,6 +450,34 @@ export class UserScreenBuilders {
         id: 'eco_canceled_hint',
         content:
           'Заявка отклонена External CO. Повторная отправка на проверку недоступна; создайте новую заявку при необходимости.',
+      });
+    }
+    if (isCanceledByUser) {
+      widgets.push({
+        type: 'text',
+        id: 'user_canceled_hint',
+        content: 'Вы отменили заявку. Дальнейшие изменения недоступны.',
+      });
+    }
+    if (isCanceledByManager) {
+      widgets.push({
+        type: 'text',
+        id: 'manager_canceled_hint',
+        content: 'Заявка отменена менеджером. Дальнейшие изменения недоступны.',
+      });
+    }
+    if (isCanceledByIco) {
+      widgets.push({
+        type: 'text',
+        id: 'ico_canceled_hint',
+        content: 'Заявка отменена Internal CO. Дальнейшие изменения недоступны.',
+      });
+    }
+    if (isTerminalCanceled) {
+      widgets.push({
+        type: 'text',
+        id: 'terminal_canceled_hint',
+        content: 'Терминальный статус отмены: mutate CTA скрыты.',
       });
     }
     widgets.push({

@@ -4,13 +4,13 @@ overview: "Ветки после happy-path: corrections loop, cancel по ро�
 todos:
   - id: p7-corrections-cancel
     content: Corrections + cancel branches in matrix/UI
-    status: pending
+    status: completed
   - id: p7-postpay
     content: Postpay StageHash path checklist + BDUI actions
-    status: pending
+    status: completed
   - id: p7-qa
     content: "QA gate: branches + regression happy-path"
-    status: pending
+    status: completed
 isProject: false
 ---
 

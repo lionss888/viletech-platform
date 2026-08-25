@@ -18,9 +18,19 @@ const PASSWORD = process.env.BDUI_LIFECYCLE_PASSWORD || 'BduiLifecycle2024!';
 const STUB_FILE_ID = new mongoose.Types.ObjectId('6a8dbd010000000000000001');
 const AGENT_ID = new mongoose.Types.ObjectId('6a8dbd020000000000000001');
 const CONTRACT_ID = new mongoose.Types.ObjectId('6a8dbd030000000000000001');
+const ORG_ID = new mongoose.Types.ObjectId('6a8dbd040000000000000001');
+const USER_ACCOUNT_ID = new mongoose.Types.ObjectId('6a8dbd050000000000000001');
+const MANAGER_STUB_FILE_ID = new mongoose.Types.ObjectId('6a8dbd060000000000000001');
 
 const ACCOUNTS = [
-  { email: 'user@bdui.local', fullName: 'BDUI User', roles: ['user'], password: process.env.BDUI_USER_PASSWORD || 'BduiUser2024!' },
+  {
+    email: 'user@bdui.local',
+    fullName: 'BDUI User',
+    roles: ['user'],
+    password: process.env.BDUI_USER_PASSWORD || 'BduiUser2024!',
+    _id: USER_ACCOUNT_ID,
+    enablePostpay: true,
+  },
   { email: 'ico@bdui.local', fullName: 'BDUI Internal CO', roles: ['internal_compliance_officer'] },
   { email: 'eco@bdui.local', fullName: 'BDUI External CO', roles: ['compliance_officer'] },
   { email: 'manager@bdui.local', fullName: 'BDUI Manager', roles: ['manager'] },
@@ -152,14 +162,19 @@ const Contract = mongoose.model('BduiLifecycleContract', contractSchema, 'contra
 async function upsertAccount(spec) {
   const password = spec.password || PASSWORD;
   let account = await Account.findOne({ email: spec.email });
+  if (!account && spec._id) {
+    account = await Account.findById(spec._id);
+  }
   if (!account) {
     account = new Account({
+      ...(spec._id ? { _id: spec._id } : {}),
       email: spec.email,
       fullName: spec.fullName,
       roles: spec.roles,
       confirmed: true,
       active: true,
       phone: '+79990000000',
+      enablePostpay: Boolean(spec.enablePostpay),
     });
   } else {
     account.fullName = spec.fullName;
@@ -167,6 +182,9 @@ async function upsertAccount(spec) {
     account.confirmed = true;
     account.active = true;
     account.blocked = false;
+    if (typeof spec.enablePostpay === 'boolean') {
+      account.enablePostpay = spec.enablePostpay;
+    }
   }
   account.setPassword(password);
   await account.save();
@@ -175,9 +193,13 @@ async function upsertAccount(spec) {
 
 async function upsertOrganization(userAccountId) {
   const inn = '7707083893';
-  let organization = await Organization.findOne({ inn, account: userAccountId });
+  let organization = await Organization.findById(ORG_ID);
+  if (!organization) {
+    organization = await Organization.findOne({ inn, account: userAccountId });
+  }
   if (!organization) {
     organization = new Organization({
+      _id: ORG_ID,
       name: 'ООО BDUI Тест',
       inn,
       email: 'org@bdui.local',
@@ -191,6 +213,9 @@ async function upsertOrganization(userAccountId) {
       isActive: true,
     });
   } else {
+    organization.account = userAccountId;
+    organization.name = 'ООО BDUI Тест';
+    organization.inn = inn;
     if (organization.status !== 'approved') {
       organization.status = 'not_approved';
     }
@@ -223,22 +248,22 @@ async function upsertHsCode() {
   return hsCode;
 }
 
-async function upsertStubFile(userAccountId) {
-  let file = await File.findById(STUB_FILE_ID);
+async function upsertStubFile(fileId, ownerAccountId, originalName) {
+  let file = await File.findById(fileId);
   if (!file) {
     file = new File({
-      _id: STUB_FILE_ID,
-      account: userAccountId,
-      originalName: 'bdui-stub-order.pdf',
+      _id: fileId,
+      account: ownerAccountId,
+      originalName,
       mimeType: 'application/pdf',
       size: 128,
       private: true,
       salt: crypto.randomBytes(16).toString('hex'),
-      path: `bdui/stub/${STUB_FILE_ID}`,
+      path: `bdui/stub/${fileId}`,
     });
   } else {
-    file.account = userAccountId;
-    file.originalName = 'bdui-stub-order.pdf';
+    file.account = ownerAccountId;
+    file.originalName = originalName;
     file.mimeType = 'application/pdf';
     file.private = true;
   }
@@ -309,10 +334,16 @@ async function main() {
     results.push({ email: account.email, roles: account.roles, password, id: account._id.toString() });
   }
   const user = await Account.findOne({ email: 'user@bdui.local' });
+  const manager = await Account.findOne({ email: 'manager@bdui.local' });
   const provider = await Account.findOne({ email: 'provider@bdui.local' });
   const organization = await upsertOrganization(user._id);
   const hsCode = await upsertHsCode();
-  const stubFile = await upsertStubFile(user._id);
+  const stubFile = await upsertStubFile(STUB_FILE_ID, user._id, 'bdui-stub-order.pdf');
+  const managerStub = await upsertStubFile(
+    MANAGER_STUB_FILE_ID,
+    manager._id,
+    'bdui-manager-stub-contract.pdf',
+  );
   const agent = await upsertAgent();
   const contract = await upsertContract(user._id, organization._id, agent._id, stubFile._id);
   console.log('\nBDUI lifecycle seed ready:\n');
@@ -320,8 +351,10 @@ async function main() {
     console.log(`  ${row.email} / ${row.password}  roles=${row.roles.join(',')}  id=${row.id}`);
   }
   console.log(`\n  Organization: ${organization.name} inn=${organization.inn} status=${organization.status} id=${organization._id}`);
+  console.log(`  User enablePostpay: ${user.enablePostpay}`);
   console.log(`  HS code: ${hsCode.code} active=${hsCode.active} loyalty=${hsCode.loyalty}`);
-  console.log(`  Stub file: ${stubFile._id}`);
+  console.log(`  Stub file (user): ${stubFile._id}`);
+  console.log(`  Stub file (manager): ${managerStub._id}`);
   console.log(`  Agent: ${agent.organizationName} id=${agent._id}`);
   console.log(`  Contract: ${contract.number} status=${contract.status} id=${contract._id}`);
   console.log(`  Provider account id (for mgr_assign_provider): ${provider._id}`);

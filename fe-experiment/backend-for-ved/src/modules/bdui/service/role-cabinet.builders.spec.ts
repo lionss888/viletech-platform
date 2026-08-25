@@ -12,12 +12,15 @@ import {
   BDUI_ACTION_ECO_STOP,
   BDUI_ACTION_MGR_ASSIGN_PROVIDER,
   BDUI_ACTION_MGR_COMPLETED,
+  BDUI_ACTION_MGR_CONTRACT_ATTACH,
+  BDUI_ACTION_MGR_ORDER_ADVANCE_SIGNING,
   BDUI_ACTION_MGR_ORDER_ATTACH,
   BDUI_ACTION_MGR_ORDER_GENERATE,
   BDUI_ACTION_MGR_ORDER_REJECT,
   BDUI_ACTION_MGR_PAYMENT_RECEIVED,
   BDUI_ACTION_MGR_PAYMENT_START,
   BDUI_ACTION_MGR_REPORT_ACCEPT,
+  BDUI_ACTION_MGR_REPORT_REJECT,
   BDUI_ACTION_MGR_REPORT_SIGNING,
   BDUI_ACTION_MGR_REPORT_START,
   BDUI_ACTION_MGR_SHIPMENT_ACCEPT,
@@ -205,7 +208,9 @@ describe('RoleCabinetBuilders Internal CO', () => {
       BDUI_ROLE_MANAGER,
       FormPaymentStatus.PAYMENT_SENT,
     );
-    expect(paymentSent.actions.map((action) => action.id)).toEqual([BDUI_ACTION_MGR_REPORT_SIGNING]);
+    expect(paymentSent.actions.map((action) => action.id)).toEqual(
+      expect.arrayContaining([BDUI_ACTION_MGR_REPORT_SIGNING, BDUI_ACTION_MGR_ORDER_ADVANCE_SIGNING]),
+    );
     expect(paymentSent.widgets.some((widget) => widget.id === 'mgr_hint_report_signing')).toBe(true);
     const reportWaiting = builders.buildFormsDetailScreen(
       BDUI_ROLE_MANAGER,
@@ -216,7 +221,9 @@ describe('RoleCabinetBuilders Internal CO', () => {
       BDUI_ROLE_MANAGER,
       FormPaymentStatus.REPORT_VERIFICATION,
     );
-    expect(reportReview.actions.map((action) => action.id)).toContain(BDUI_ACTION_MGR_REPORT_ACCEPT);
+    expect(reportReview.actions.map((action) => action.id)).toEqual(
+      expect.arrayContaining([BDUI_ACTION_MGR_REPORT_ACCEPT, BDUI_ACTION_MGR_REPORT_REJECT]),
+    );
     const shipmentWaiting = builders.buildFormsDetailScreen(
       BDUI_ROLE_MANAGER,
       FormPaymentStatus.SHIPMENT_WAITING_VERIFICATION,
@@ -230,6 +237,15 @@ describe('RoleCabinetBuilders Internal CO', () => {
     expect(shipmentIds).toEqual(
       expect.arrayContaining([BDUI_ACTION_MGR_SHIPMENT_ACCEPT, BDUI_ACTION_MGR_COMPLETED]),
     );
+  });
+
+  it('exposes Manager contract attach on contract_waiting', () => {
+    const screen = builders.buildFormsDetailScreen(
+      BDUI_ROLE_MANAGER,
+      FormPaymentStatus.CONTRACT_WAITING,
+    );
+    expect(screen.actions.map((action) => action.id)).toContain(BDUI_ACTION_MGR_CONTRACT_ATTACH);
+    expect(screen.widgets.some((widget) => widget.id === 'mgr_hint_contract')).toBe(true);
   });
 
   it('exposes no Manager mutate CTA on completed', () => {
@@ -297,5 +313,12 @@ describe('RoleCabinetBuilders Internal CO', () => {
     const completedScreen = userBuilders.buildFormsDetailScreen(FormPaymentStatus.COMPLETED);
     expect(completedScreen.actions).toEqual([]);
     expect(completedScreen.widgets.some((widget) => widget.id === 'completed_hint')).toBe(true);
+    const canceledScreen = userBuilders.buildFormsDetailScreen(FormPaymentStatus.CANCELED_BY_USER);
+    expect(canceledScreen.actions).toEqual([]);
+    expect(canceledScreen.widgets.some((widget) => widget.id === 'user_canceled_hint')).toBe(true);
+    const cancelAction = userBuilders
+      .buildFormsDetailScreen(FormPaymentStatus.DRAFT)
+      .actions.find((action) => action.id === 'cancel_form');
+    expect(cancelAction?.requiresTextReason).toBe(true);
   });
 });

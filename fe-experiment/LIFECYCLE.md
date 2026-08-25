@@ -99,6 +99,15 @@ Pages (staff): `login`, `forms.list`, `forms.detail`. User also: `forms.create`.
 
 ## Branches (P7)
 
-- [ ] Corrections ECO↔User
-- [ ] Cancel (User / ECO)
-- [ ] Postpay path
+- [x] Corrections ECO↔User
+- [x] Cancel (User / ECO)
+- [x] Postpay path
+
+## Quality gate P7
+
+- [x] Unit: corrections/cancel/postpay statuses + empty CTAs on canceled/COMPLETED — BDUI tests 76 passed
+- [x] Manual: ECO reject → `form_waiting_corrections` → User `accept-corrections` → `form_waiting_verification`
+- [x] Manual: User cancel + ECO cancel → terminal status, schema without mutate CTA
+- [x] Manual/docs: postpay StageHash checklist + BDUI actions (`NOTES.md`); advance-order cycle OK; full COMPLETED needs `direction=import` (blocker documented if missing)
+- [x] Регрессия: advance happy-path actions still resolve (matrix + schemas)
+- [x] Самопроверка StageHash advance vs postpay зафиксирована в `NOTES.md`
