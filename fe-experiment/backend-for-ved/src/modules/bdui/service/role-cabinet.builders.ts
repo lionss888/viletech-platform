@@ -27,7 +27,8 @@ const LIST_PATHS: Record<BduiVedRoleId, string> = {
     '/admin/internal-compliance-officer/form-payment?statuses=organization_waiting_verification&statuses=organization_verification',
   [BDUI_ROLE_EXTERNAL_CO]:
     '/admin/compliance-officer/form-payment?statuses=form_waiting_verification&statuses=form_verification',
-  [BDUI_ROLE_MANAGER]: '/admin/manager/form-payment',
+  [BDUI_ROLE_MANAGER]:
+    '/admin/manager/form-payment?statuses=form_accepted&statuses=signing_order&statuses=signing_order_waiting_verification&statuses=signing_order_verification&statuses=signing_order_accepted&statuses=payment_received&statuses=payment_processing&statuses=manager_checking',
   [BDUI_ROLE_PROVIDER]: '/admin/provider/form-payment',
 };
 
@@ -81,6 +82,9 @@ export class RoleCabinetBuilders {
     if (role === BDUI_ROLE_EXTERNAL_CO) {
       return this.buildExternalCoListScreen();
     }
+    if (role === BDUI_ROLE_MANAGER) {
+      return this.buildManagerListScreen();
+    }
     return {
       id: `${role}.forms.list`,
       role,
@@ -112,6 +116,9 @@ export class RoleCabinetBuilders {
     }
     if (role === BDUI_ROLE_EXTERNAL_CO) {
       return this.buildExternalCoDetailScreen(status);
+    }
+    if (role === BDUI_ROLE_MANAGER) {
+      return this.buildManagerDetailScreen(status);
     }
     const actions = this.lifecycleResolver.resolveActions(role, status);
     const actionIds = actions.map((item) => item.id);
@@ -319,6 +326,122 @@ export class RoleCabinetBuilders {
       role: BDUI_ROLE_EXTERNAL_CO,
       page: 'forms.detail',
       title: 'Проверка заявки — External CO',
+      version: BDUI_SCHEMA_VERSION,
+      widgets,
+      actions,
+    };
+  }
+
+  private buildManagerListScreen(): BduiScreen {
+    return {
+      id: `${BDUI_ROLE_MANAGER}.forms.list`,
+      role: BDUI_ROLE_MANAGER,
+      page: 'forms.list',
+      title: 'Активные — Manager',
+      version: BDUI_SCHEMA_VERSION,
+      widgets: [
+        {
+          type: 'text',
+          id: 'list_intro',
+          content:
+            'Happy-path import+аванс: form_accepted → поручение → оплата → передача Provider. Список отфильтрован по активным статусам менеджера.',
+        },
+        {
+          type: 'data_table',
+          id: 'mgr_queue',
+          dataSource: { method: 'GET', path: LIST_PATHS[BDUI_ROLE_MANAGER] },
+          columns: [
+            { key: '_id', label: 'ID' },
+            { key: 'status', label: 'Статус' },
+            { key: 'direction', label: 'Направление' },
+            { key: 'platformPaymentCondition', label: 'Условие оплаты' },
+            { key: 'organization.name', label: 'Организация' },
+            { key: 'amount', label: 'Сумма' },
+            { key: 'provider', label: 'Provider' },
+          ],
+          rowNavigateTo: 'forms.detail',
+          rowIdField: '_id',
+        },
+      ],
+      actions: [],
+    };
+  }
+
+  private buildManagerDetailScreen(status?: FormPaymentStatus | string): BduiScreen {
+    const actions = this.lifecycleResolver.resolveActions(BDUI_ROLE_MANAGER, status);
+    const actionIds = actions.map((item) => item.id);
+    const detailPath = DETAIL_PATHS[BDUI_ROLE_MANAGER];
+    const widgets: BduiWidget[] = [
+      {
+        type: 'status_badge',
+        id: 'form_status',
+        field: 'status',
+        dataSource: { method: 'GET', path: detailPath },
+      },
+      {
+        type: 'detail_fields',
+        id: 'form_fields',
+        dataSource: { method: 'GET', path: detailPath },
+        fields: [
+          { key: '_id', label: 'ID' },
+          { key: 'status', label: 'Статус' },
+          { key: 'direction', label: 'Направление' },
+          { key: 'amount', label: 'Сумма' },
+          { key: 'platformPaymentCondition', label: 'Условие оплаты' },
+          { key: 'organization.name', label: 'Организация' },
+          { key: 'organization.inn', label: 'ИНН' },
+          { key: 'provider', label: 'Provider' },
+          { key: 'agent', label: 'Agent' },
+          { key: 'rejectText', label: 'Комментарий' },
+        ],
+      },
+    ];
+    if (status === FormPaymentStatus.FORM_ACCEPTED) {
+      widgets.push({
+        type: 'text',
+        id: 'mgr_hint_order',
+        content:
+          'Стандартный агентский path: сформируйте или прикрепите поручение → отправьте на подпись клиенту. Назначьте Provider до передачи в исполнение.',
+      });
+    }
+    if (status === FormPaymentStatus.SIGNING_ORDER) {
+      widgets.push({
+        type: 'text',
+        id: 'mgr_hint_waiting_user_sign',
+        content: 'Поручение у клиента на подписи. User видит CTA «Загрузить поручение».',
+      });
+    }
+    if (status === FormPaymentStatus.SIGNING_ORDER_WAITING_VERIFICATION) {
+      widgets.push({
+        type: 'text',
+        id: 'mgr_hint_order_start',
+        content: 'Клиент загрузил подписанное поручение. Начните проверку, затем подтвердите или верните.',
+      });
+    }
+    if (status === FormPaymentStatus.SIGNING_ORDER_VERIFICATION) {
+      widgets.push({
+        type: 'text',
+        id: 'mgr_hint_order_review',
+        content: 'Проверка поручения: подтвердите или верните на доработку с комментарием.',
+      });
+    }
+    if (
+      status === FormPaymentStatus.SIGNING_ORDER_ACCEPTED ||
+      status === FormPaymentStatus.PAYMENT_RECEIVED
+    ) {
+      widgets.push({
+        type: 'text',
+        id: 'mgr_hint_payment',
+        content:
+          'Назначьте Provider (если ещё нет), зафиксируйте оплату клиента и передайте на исполнение → payment_processing.',
+      });
+    }
+    widgets.push({ type: 'action_bar', id: 'form_actions', actions: actionIds });
+    return {
+      id: `${BDUI_ROLE_MANAGER}.forms.detail`,
+      role: BDUI_ROLE_MANAGER,
+      page: 'forms.detail',
+      title: 'Заявка — Manager',
       version: BDUI_SCHEMA_VERSION,
       widgets,
       actions,

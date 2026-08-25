@@ -385,6 +385,16 @@ export class UserScreenBuilders {
           'Заявка возвращена на уточнение. Исправьте данные и отправьте повторно (accept-corrections).',
       });
     }
+    if (
+      status === FormPaymentStatus.SIGNING_ORDER ||
+      status === FormPaymentStatus.SIGNING_ORDER_WAITING_CORRECTIONS
+    ) {
+      widgets.push({
+        type: 'text',
+        id: 'signing_order_hint',
+        content: 'Менеджер отправил поручение на подпись. Загрузите подписанный файл поручения.',
+      });
+    }
     if (isCanceledByEco) {
       widgets.push({
         type: 'text',

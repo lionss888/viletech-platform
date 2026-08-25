@@ -4,13 +4,13 @@ overview: "BDUI Manager на happy-path import+аванс: после FORM_ACCEP
 todos:
   - id: p4-screens
     content: BDUI Manager list/detail schemas for happy-path statuses
-    status: pending
+    status: completed
   - id: p4-actions
     content: Wire order + provider assign + payment-received actions
-    status: pending
+    status: completed
   - id: p4-qa
     content: "QA gate: unit + manual to provider-ready state"
-    status: pending
+    status: completed
 isProject: false
 ---
 

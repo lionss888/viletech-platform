@@ -10,10 +10,17 @@ import {
   BDUI_ACTION_ECO_REJECT,
   BDUI_ACTION_ECO_START,
   BDUI_ACTION_ECO_STOP,
+  BDUI_ACTION_MGR_ASSIGN_PROVIDER,
+  BDUI_ACTION_MGR_ORDER_ATTACH,
   BDUI_ACTION_MGR_ORDER_GENERATE,
+  BDUI_ACTION_MGR_ORDER_REJECT,
+  BDUI_ACTION_MGR_PAYMENT_RECEIVED,
+  BDUI_ACTION_MGR_PAYMENT_START,
+  BDUI_ACTION_PROV_PAYMENT_START,
   BDUI_ROLE_EXTERNAL_CO,
   BDUI_ROLE_INTERNAL_CO,
   BDUI_ROLE_MANAGER,
+  BDUI_ROLE_PROVIDER,
   BDUI_ROLE_USER,
 } from '../bdui.constants';
 import { BduiLifecycleActionResolver } from './bdui-lifecycle-action.resolver';
@@ -120,5 +127,68 @@ describe('RoleCabinetBuilders Internal CO', () => {
     );
     expect(userActions).not.toContain(BDUI_ACTION_ECO_START);
     expect(userActions).not.toContain(BDUI_ACTION_ECO_ACCEPT);
+  });
+
+  it('builds Manager active list filtered to happy-path statuses', () => {
+    const screen = builders.buildFormsListScreen(BDUI_ROLE_MANAGER);
+    expect(screen.title).toContain('Manager');
+    const table = screen.widgets.find((widget) => widget.type === 'data_table');
+    expect(table).toBeDefined();
+    if (table?.type === 'data_table') {
+      expect(table.dataSource.path).toContain('/admin/manager/form-payment');
+      expect(table.dataSource.path).toContain('form_accepted');
+      expect(table.dataSource.path).toContain('signing_order_accepted');
+      expect(table.dataSource.path).toContain('payment_processing');
+    }
+  });
+
+  it('builds Manager detail actions for form_accepted', () => {
+    const screen = builders.buildFormsDetailScreen(
+      BDUI_ROLE_MANAGER,
+      FormPaymentStatus.FORM_ACCEPTED,
+    );
+    const ids = screen.actions.map((action) => action.id);
+    expect(ids).toEqual(
+      expect.arrayContaining([
+        BDUI_ACTION_MGR_ORDER_GENERATE,
+        BDUI_ACTION_MGR_ORDER_ATTACH,
+        BDUI_ACTION_MGR_ASSIGN_PROVIDER,
+      ]),
+    );
+    const generate = screen.actions.find((action) => action.id === BDUI_ACTION_MGR_ORDER_GENERATE);
+    expect(generate?.staticBody).toMatchObject({ isAdvance: false });
+    const attach = screen.actions.find((action) => action.id === BDUI_ACTION_MGR_ORDER_ATTACH);
+    expect(attach?.injectSigningOrderDate).toBe(true);
+  });
+
+  it('builds Manager payment actions and assign provider on signing_order_accepted', () => {
+    const screen = builders.buildFormsDetailScreen(
+      BDUI_ROLE_MANAGER,
+      FormPaymentStatus.SIGNING_ORDER_ACCEPTED,
+    );
+    const ids = screen.actions.map((action) => action.id);
+    expect(ids).toEqual(
+      expect.arrayContaining([
+        BDUI_ACTION_MGR_ASSIGN_PROVIDER,
+        BDUI_ACTION_MGR_PAYMENT_RECEIVED,
+        BDUI_ACTION_MGR_PAYMENT_START,
+      ]),
+    );
+    expect(ids).not.toContain(BDUI_ACTION_PROV_PAYMENT_START);
+    const rejectScreen = builders.buildFormsDetailScreen(
+      BDUI_ROLE_MANAGER,
+      FormPaymentStatus.SIGNING_ORDER_VERIFICATION,
+    );
+    const reject = rejectScreen.actions.find((action) => action.id === BDUI_ACTION_MGR_ORDER_REJECT);
+    expect(reject?.requiresTextReason).toBe(true);
+  });
+
+  it('does not expose Manager order actions on Provider for form_accepted', () => {
+    const providerActions = resolver.resolveActionIds(
+      BDUI_ROLE_PROVIDER,
+      FormPaymentStatus.FORM_ACCEPTED,
+    );
+    expect(providerActions).not.toContain(BDUI_ACTION_MGR_ORDER_GENERATE);
+    expect(providerActions).not.toContain(BDUI_ACTION_MGR_PAYMENT_START);
   });
 });

@@ -52,6 +52,9 @@ export type BduiAction = {
   navigateTo?: string;
   requiresTextReason?: boolean;
   approveOrganizationFirst?: boolean;
+  staticBody?: Record<string, unknown>;
+  requiresProviderId?: boolean;
+  injectSigningOrderDate?: boolean;
 };
 
 export type BduiWizardStep = {

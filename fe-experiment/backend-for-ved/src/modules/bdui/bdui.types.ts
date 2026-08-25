@@ -51,6 +51,12 @@ export type BduiAction = {
   requiresTextReason?: boolean;
   /** Before accept: approve embedded org via ICO organization API. */
   approveOrganizationFirst?: boolean;
+  /** Fixed JSON body merged into the request (e.g. order/generate). */
+  staticBody?: Record<string, unknown>;
+  /** Prompt for provider Account._id → PATCH { provider }. */
+  requiresProviderId?: boolean;
+  /** Inject signingOrderCreateDate (ISO) into body for stub order attach. */
+  injectSigningOrderDate?: boolean;
 };
 
 export type BduiLoginFormWidget = {

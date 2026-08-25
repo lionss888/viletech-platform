@@ -12,7 +12,7 @@ type SchemaRendererProps = {
   screen: BduiScreen;
   pathParams?: Record<string, string>;
   onNavigate: (page: string, params?: Record<string, string>) => void;
-  onRunAction: (action: BduiAction, body?: Record<string, string>) => Promise<unknown>;
+  onRunAction: (action: BduiAction, body?: Record<string, unknown>) => Promise<unknown>;
   onStatusLoaded?: (status: string) => void;
 };
 

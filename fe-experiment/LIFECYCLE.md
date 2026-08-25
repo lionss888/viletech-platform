@@ -42,7 +42,7 @@ Pages (staff): `login`, `forms.list`, `forms.detail`. User also: `forms.create`.
 1. [x] P1 User create + submit
 2. [x] P2 Internal CO approve org
 3. [x] P3 External CO accept form
-4. [ ] P4 Manager order + assign provider / payment start
+4. [x] P4 Manager order + assign provider / payment start
 5. [ ] P5 Provider execute payment
 6. [ ] P6 User close docs + Manager COMPLETED
 
@@ -70,6 +70,16 @@ Pages (staff): `login`, `forms.list`, `forms.detail`. User also: `forms.create`.
 - [x] Manual reject → `form_waiting_corrections` + `rejectText` виден User; schema `accept_corrections`
 - [x] Cancel → `canceled_by_compliance_officer`; User re-submit запрещён; hint `eco_canceled_hint`
 - [x] Идемпотентность: повторный accept → domain 400 (`Can not transit status from form_accepted`)
+
+## Quality gate P4
+
+- [x] Unit: Manager list/detail + matrix chain form_accepted → signing_order_* → payment_* — BDUI tests 51+ passed
+- [x] Seed: Agent + accepted Contract + stub file; Provider account id printed
+- [x] Manual: attach/signing → User upload_order CTA → order start/accept → assign provider → payment received/start → `payment_processing`
+- [x] Provider queue видит заявку после assign
+- [x] Order reject → `signing_order_waiting_corrections`; User CTA `upload_order`
+- [x] Provider schema на `form_accepted`: без Manager CTA
+- [x] `order/generate` wired (S3 may 500 locally → stub attach fallback)
 
 ## Branches (P7)
 

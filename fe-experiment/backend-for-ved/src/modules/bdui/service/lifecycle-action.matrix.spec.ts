@@ -7,7 +7,12 @@ import {
   BDUI_ACTION_ECO_START,
   BDUI_ACTION_ICO_ACCEPT,
   BDUI_ACTION_ICO_START,
+  BDUI_ACTION_MGR_ASSIGN_PROVIDER,
   BDUI_ACTION_MGR_ORDER_GENERATE,
+  BDUI_ACTION_MGR_ORDER_REJECT,
+  BDUI_ACTION_MGR_ORDER_START,
+  BDUI_ACTION_MGR_PAYMENT_RECEIVED,
+  BDUI_ACTION_MGR_PAYMENT_START,
   BDUI_ACTION_PROV_PAYMENT_START,
   BDUI_ACTION_PROV_PAYMENT_SENT,
   BDUI_ROLE_EXTERNAL_CO,
@@ -82,6 +87,35 @@ describe('resolveLifecycleActionIds', () => {
       expect(resolveLifecycleActionIds(BDUI_ROLE_MANAGER, FormPaymentStatus.FORM_ACCEPTED)).toContain(
         BDUI_ACTION_MGR_ORDER_GENERATE,
       );
+    });
+
+    it('allows assign provider and payment start on signing_order_accepted', () => {
+      const actualIds = resolveLifecycleActionIds(
+        BDUI_ROLE_MANAGER,
+        FormPaymentStatus.SIGNING_ORDER_ACCEPTED,
+      );
+      expect(actualIds).toEqual(
+        expect.arrayContaining([
+          BDUI_ACTION_MGR_ASSIGN_PROVIDER,
+          BDUI_ACTION_MGR_PAYMENT_RECEIVED,
+          BDUI_ACTION_MGR_PAYMENT_START,
+        ]),
+      );
+    });
+
+    it('allows order reject on signing_order_verification', () => {
+      expect(
+        resolveLifecycleActionIds(BDUI_ROLE_MANAGER, FormPaymentStatus.SIGNING_ORDER_VERIFICATION),
+      ).toContain(BDUI_ACTION_MGR_ORDER_REJECT);
+    });
+
+    it('allows order start on signing_order_waiting_verification', () => {
+      expect(
+        resolveLifecycleActionIds(
+          BDUI_ROLE_MANAGER,
+          FormPaymentStatus.SIGNING_ORDER_WAITING_VERIFICATION,
+        ),
+      ).toEqual([BDUI_ACTION_MGR_ORDER_START]);
     });
 
     it('does not allow ECO accept on form_accepted', () => {

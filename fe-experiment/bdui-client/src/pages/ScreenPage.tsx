@@ -146,18 +146,27 @@ export function ScreenPage(props: ScreenPageProps): JSX.Element {
 
   async function handleRunAction(
     action: BduiAction,
-    body?: Record<string, string>,
+    body?: Record<string, unknown>,
   ): Promise<unknown> {
     const isLogin = action.id === 'login';
     if (action.approveOrganizationFirst) {
       await approveOrganizationIfNeeded(action);
     }
-    const requestBody =
+    let requestBody: Record<string, unknown> | undefined =
       action.bodyFrom === 'form'
         ? body
-        : action.requiresTextReason
+        : action.requiresTextReason || action.requiresProviderId
           ? body
           : undefined;
+    if (action.staticBody) {
+      requestBody = { ...action.staticBody, ...(requestBody ?? {}) };
+    }
+    if (action.injectSigningOrderDate) {
+      requestBody = {
+        ...(requestBody ?? {}),
+        signingOrderCreateDate: new Date().toISOString(),
+      };
+    }
     const response = await apiRequest<unknown>(action.path, {
       method: action.method,
       body: requestBody,
