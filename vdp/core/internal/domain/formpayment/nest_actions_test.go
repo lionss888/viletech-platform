@@ -17,7 +17,7 @@ func TestNestActionMapCoversStatusPaths(t *testing.T) {
 		"manager|order-advance/revoke", "manager|order-advance/signing",
 		"manager|payment/received", "manager|payment/start", "manager|payment/stop", "manager|payment/sent",
 		"manager|payment/return-to-sent", "manager|payment/cancel",
-		"manager|shipment/start", "manager|shipment/stop", "manager|shipment/accept", "manager|shipment/reject",
+		"manager|shipment/waiting", "manager|shipment/start", "manager|shipment/stop", "manager|shipment/accept", "manager|shipment/reject",
 		"manager|report/start", "manager|report/stop", "manager|report/accept", "manager|report/reject", "manager|report/revoke",
 		"manager|report/signing", "manager|report",
 		"manager|refund/init", "manager|refund/start", "manager|refund/stop", "manager|refund/sent", "manager|refund/cancel",

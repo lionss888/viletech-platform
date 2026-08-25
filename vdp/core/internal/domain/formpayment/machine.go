@@ -33,6 +33,13 @@ func Apply(cmd Command) (Form, error) {
 	if err := guardPaymentMethod(cmd.Form, cmd.Action); err != nil {
 		return Form{}, err
 	}
+	// §4 invariant: no final CANCELED_* while client funds are held unrefunded.
+	if isCancelStatus(target) && cmd.Form.HasUnrefundedFunds() {
+		return Form{}, apperrors.New(
+			apperrors.ErrCodeConflict,
+			"cannot finalize cancel while funds are unrefunded; initiate refund first",
+		)
+	}
 	if !IsAllowedTransition(cmd.Form.Status, target, cmd.Form.Direction, EffectiveRateOnProvider(cmd.Form)) {
 		if !isCancelStatus(target) {
 			return Form{}, apperrors.New(
@@ -44,6 +51,12 @@ func Apply(cmd Command) (Form, error) {
 	next := cmd.Form
 	next.PrevStatus = cmd.Form.Status
 	next.Status = target
+	switch target {
+	case StatusPaymentReceived, StatusPaymentSent, StatusPaymentProcessing, StatusPaymentSentTreasurer:
+		next.MarkFundsReceived()
+	case StatusPaymentRefundSent:
+		next.MarkFundsRefunded("")
+	}
 	return next, nil
 }
 

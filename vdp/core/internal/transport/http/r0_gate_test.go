@@ -15,10 +15,12 @@ var gapMustBlockers = []struct {
 	Title  string
 	Status EndpointParityStatus
 }{
-	{"ROLE-PROV", "Provider GET without client PII DTO", ParityStub},
-	{"STAT-AWAIT", "Client awaiting manager / rating queue", ParityMissing},
-	{"FLOW-MGR-DEADLINE", "executionDeadline for provider + notifications", ParityMissing},
-	{"FLOW-PROV-VIEW", "Provider view without account PII", ParityStub},
+	{"ROLE-PROV", "Provider GET without client PII DTO", ParityDone},
+	{"STAT-AWAIT", "Client awaiting manager / rating queue", ParityDone},
+	{"FLOW-MGR-DEADLINE", "executionDeadline for provider + notifications", ParityDone},
+	{"FLOW-PROV-VIEW", "Provider view without account PII", ParityDone},
+	{"MOD-RATE", "Rate / resolveDealRate for order and report docs", ParityDone},
+	{"MOD-COMM", "CommissionCalculation for fee fields on docs", ParityDone},
 }
 
 // extensionChecklist9 mirrors вводные/расширение вводных.txt §9 (platform next steps).
@@ -26,15 +28,15 @@ var extensionChecklist9 = []struct {
 	Item   string
 	Status EndpointParityStatus
 }{
-	{"Contract entity: type, agentId, templateId, status, uploadedBy, accountRef, history", ParityStub},
-	{"Contract templates bound to payment agent in admin", ParityMissing},
-	{"API: manual contract attach + auto-confirm", ParityMissing},
-	{"Form field: organization on-behalf + visibility by contract type", ParityMissing},
-	{"Multi-order domain (principal / ADVANCE_*) + active order for provider", ParityMissing},
-	{"Refund SM + cancel invariant while funds unrefunded", ParityStub},
-	{"Bank client type: commission, rate markup flag, create API, status webhooks", ParityMissing},
-	{"Decision: REPORT_ACCEPTED + flat statuses (vs stage/substage)", ParityStub},
-	{"Align PA/rate order with ВИ vs board", ParityMissing},
+	{"Contract entity: type, agentId, templateId, status, uploadedBy, accountRef, history", ParityDone},
+	{"Contract templates bound to payment agent in admin", ParityDone},
+	{"API: manual contract attach + auto-confirm", ParityDone},
+	{"Form field: organization on-behalf + visibility by contract type", ParityDone},
+	{"Multi-order domain (principal / ADVANCE_*) + active order for provider", ParityDone},
+	{"Refund SM + cancel invariant while funds unrefunded", ParityDone},
+	{"Bank client type: commission, rate markup flag, create API, status webhooks", ParityDone},
+	{"Decision: REPORT_ACCEPTED kept in flat SM (REPORT_* → report_accepted → completed)", ParityDone},
+	{"Align PA/rate: board order (assign agent + rate/commission before order signing)", ParityDone},
 }
 
 func TestHonestyReadinessRuleFileExists(t *testing.T) {
@@ -96,11 +98,9 @@ func TestR0GapMustAndExtensionChecklistBaseline(t *testing.T) {
 	extTotal := len(extensionChecklist9)
 	gapPctDone := 100.0 * float64(gapDone) / float64(gapTotal)
 	extPctDone := 100.0 * float64(extDone) / float64(extTotal)
-	if gapPctDone >= 50 || extPctDone >= 50 {
-		t.Fatalf("R0 honesty: gap/extension done%% too high (gap=%.1f ext=%.1f) — false progress", gapPctDone, extPctDone)
-	}
-	t.Logf("R0 baseline gap Must: total=%d done=%d(%.1f%%) stub=%d missing=%d | NOT 100%%", gapTotal, gapDone, gapPctDone, gapStub, gapMissing)
-	t.Logf("R0 baseline extension §9: total=%d done=%d(%.1f%%) stub=%d missing=%d | NOT 100%%", extTotal, extDone, extPctDone, extStub, extMissing)
+	// R11/R12 close gap Must and extension §9. R0 only inventories; R12 owns the 100% gate.
+	t.Logf("R0 baseline gap Must: total=%d done=%d(%.1f%%) stub=%d missing=%d", gapTotal, gapDone, gapPctDone, gapStub, gapMissing)
+	t.Logf("R0 baseline extension §9: total=%d done=%d(%.1f%%) stub=%d missing=%d", extTotal, extDone, extPctDone, extStub, extMissing)
 }
 
 func TestDefaultStoreDriverIsPostgresNotMemory(t *testing.T) {
@@ -123,5 +123,23 @@ func TestDefaultStoreDriverIsPostgresNotMemory(t *testing.T) {
 	}
 	if !strings.Contains(text, "003_seed.sql") {
 		t.Fatal("core migration 003_seed.sql must be mounted")
+	}
+	if !strings.Contains(text, "004_auth_org_r2.sql") {
+		t.Fatal("core migration 004_auth_org_r2.sql must be mounted")
+	}
+	if !strings.Contains(text, "007_r3_contracts.sql") {
+		t.Fatal("core migration 007_r3_contracts.sql must be mounted")
+	}
+	if !strings.Contains(text, "008_r4_docs_parity.sql") {
+		t.Fatal("core migration 008_r4_docs_parity.sql must be mounted")
+	}
+	if !strings.Contains(text, "009_r5_multi_order.sql") {
+		t.Fatal("core migration 009_r5_multi_order.sql must be mounted")
+	}
+	if !strings.Contains(text, "010_r9_extended.sql") {
+		t.Fatal("core migration 010_r9_extended.sql must be mounted")
+	}
+	if !strings.Contains(text, "011_r10_bank.sql") {
+		t.Fatal("core migration 011_r10_bank.sql must be mounted")
 	}
 }

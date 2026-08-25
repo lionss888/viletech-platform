@@ -4,16 +4,16 @@ overview: Liquidity, VirtualAccount, TreasurerTask, Socket/SSE, Mail, Agent, HsC
 todos:
   - id: r9-liq-va
     content: Liquidity + VirtualAccount
-    status: pending
+    status: completed
   - id: r9-treasurer
     content: TreasurerTask + leftover treasurer APIs
-    status: pending
+    status: completed
   - id: r9-sse-mail
     content: SSE events + Mail notify wiring
-    status: pending
+    status: completed
   - id: r9-agent-hs
     content: Agent + HsCode + tests
-    status: pending
+    status: completed
 isProject: false
 ---
 

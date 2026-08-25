@@ -1,19 +1,19 @@
 ---
 name: R5 Multi Order
-overview: Несколько поручений на заявку (основное + ADVANCE_*) и активное поручение для провайдера — расширение §3.
+overview: RESET ready for re-run. Несколько поручений на заявку (основное + ADVANCE_*) и активное поручение для провайдера — расширение §3.
 todos:
   - id: r5-entity
     content: Order entity + activeOrderId
-    status: pending
+    status: completed
   - id: r5-advance-api
     content: ADVANCE_* manager/user APIs
-    status: pending
+    status: completed
   - id: r5-shipment
     content: SHIPMENT_* API wiring
-    status: pending
+    status: completed
   - id: r5-tests
     content: Multi-order + provider active tests
-    status: pending
+    status: completed
 isProject: false
 ---
 

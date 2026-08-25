@@ -11,7 +11,6 @@ import (
 	"github.com/viletech/vdp/core/internal/outbox"
 	"github.com/viletech/vdp/core/internal/repository"
 	"github.com/viletech/vdp/core/pkg/logger"
-	apperrors "github.com/viletech/vdp/core/pkg/errors"
 	"github.com/viletech/vdp/shared/events"
 )
 
@@ -21,10 +20,16 @@ type FormPaymentService struct {
 	store repository.Store
 	box   outbox.Store
 	newID IDFunc
+	bus   *FormEventBus
 }
 
 func NewFormPaymentService(store repository.Store, box outbox.Store, newID IDFunc) *FormPaymentService {
 	return &FormPaymentService{store: store, box: box, newID: newID}
+}
+
+func (s *FormPaymentService) WithEventBus(bus *FormEventBus) *FormPaymentService {
+	s.bus = bus
+	return s
 }
 
 type CreateInput struct {
@@ -53,6 +58,7 @@ func (s *FormPaymentService) Create(ctx context.Context, principal authz.Princip
 		AccountID:      principal.AccountID,
 		OrganizationID: principal.OrganizationID,
 		Status:         formpayment.StatusCreating,
+		Channel:        formpayment.ChannelUI,
 		Direction:      input.Direction,
 		Kind:           input.Kind,
 		InvoiceAmount:  input.InvoiceAmount,
@@ -70,6 +76,10 @@ func (s *FormPaymentService) Create(ctx context.Context, principal authz.Princip
 	}
 	ctx = logger.WithFormPaymentID(ctx, form.ID)
 	logger.FromContext(ctx, nil).Info("form created")
+	if input.NoDocuments {
+		// Explicit API contract: skip OCR; form stays CREATING until recognize_complete / manual draft.
+		return form, nil
+	}
 	if err := s.enqueue(ctx, form, events.TypeOCRRequested, map[string]any{"status": string(form.Status)}); err != nil {
 		return formpayment.Form{}, err
 	}
@@ -81,6 +91,7 @@ func (s *FormPaymentService) Transition(ctx context.Context, principal authz.Pri
 	if err != nil {
 		return formpayment.Form{}, err
 	}
+	form.UnpackDocsJSON()
 	ctx = logger.WithFormPaymentID(ctx, form.ID)
 	if err := authz.CanAccessForm(principal, form); err != nil {
 		return formpayment.Form{}, err
@@ -98,8 +109,20 @@ func (s *FormPaymentService) Transition(ctx context.Context, principal authz.Pri
 	if err != nil {
 		return formpayment.Form{}, err
 	}
+	next.PackDocsJSON()
 	if err := s.store.SaveForm(ctx, next); err != nil {
 		return formpayment.Form{}, err
+	}
+	if err := s.syncOrdersAfterTransition(ctx, form, next, action); err != nil {
+		return formpayment.Form{}, err
+	}
+	if err := s.syncRefundAfterTransition(ctx, form, next, action, principal.AccountID); err != nil {
+		return formpayment.Form{}, err
+	}
+	// reload after order/refund sync
+	if updated, err := s.store.FormByID(ctx, next.ID); err == nil {
+		next = updated
+		next.UnpackDocsJSON()
 	}
 	history := formpayment.ComplianceHistoryEntry{
 		ID:            s.newID(),
@@ -125,19 +148,53 @@ func (s *FormPaymentService) Transition(ctx context.Context, principal authz.Pri
 	if err := s.enqueue(ctx, next, events.TypeTelegramNotify, payload); err != nil {
 		return formpayment.Form{}, err
 	}
+	if err := s.afterStatusChanged(ctx, form, next, action, payload); err != nil {
+		return formpayment.Form{}, err
+	}
+	s.maybeEnqueueBankWebhook(ctx, next, payload)
 	return next, nil
 }
 
+func (s *FormPaymentService) afterStatusChanged(ctx context.Context, prev, next formpayment.Form, action formpayment.Action, payload map[string]any) error {
+	if s.bus != nil {
+		s.bus.Publish(next.ID, "status_changed", payload)
+	}
+	if tpl := mailTemplateForStatus(next.Status); tpl != "" {
+		mailPayload := map[string]any{"template": tpl, "from": string(prev.Status), "to": string(next.Status)}
+		if err := s.enqueue(ctx, next, events.TypeMailNotify, mailPayload); err != nil {
+			return err
+		}
+	}
+	if action == formpayment.ActionRefundInit {
+		task := domain.TreasurerTask{
+			ID: s.newID(), FormPaymentID: next.ID, Kind: "refund", Status: "open",
+			Amount: next.InvoiceAmount, Currency: next.Currency, CreatedAt: time.Now().UTC(), UpdatedAt: time.Now().UTC(),
+		}
+		_ = s.store.SaveTreasurerTask(ctx, task)
+	}
+	return nil
+}
+
+func mailTemplateForStatus(st formpayment.Status) string {
+	switch st {
+	case formpayment.StatusFormAccepted:
+		return "form_accepted"
+	case formpayment.StatusSigningOrderAccepted:
+		return "order_accepted"
+	case formpayment.StatusPaymentSent:
+		return "payment_sent"
+	case formpayment.StatusCompleted:
+		return "completed"
+	case formpayment.StatusPaymentRefundSent:
+		return "refund_sent"
+	default:
+		return ""
+	}
+}
+
 func (s *FormPaymentService) CalculateAndSetCommission(ctx context.Context, principal authz.Principal, formID, percent string) (formpayment.Form, error) {
-	form, err := s.store.FormByID(ctx, formID)
-	if err != nil {
-		return formpayment.Form{}, err
-	}
-	commission, err := CalculateCommission(form.InvoiceAmount, percent, form.Currency)
-	if err != nil {
-		return formpayment.Form{}, apperrors.New(apperrors.ErrCodeValidation, err.Error())
-	}
-	return s.SetCommission(ctx, principal, formID, commission)
+	form, _, err := s.CalculateAndApplyCommission(ctx, principal, formID, percent)
+	return form, err
 }
 
 func (s *FormPaymentService) SetImportant(ctx context.Context, principal authz.Principal, formID string, important bool) (formpayment.Form, error) {
@@ -152,17 +209,6 @@ func (s *FormPaymentService) SetImportant(ctx context.Context, principal authz.P
 	return form, s.store.SaveForm(ctx, form)
 }
 
-func (s *FormPaymentService) RequestDocsGenerate(ctx context.Context, principal authz.Principal, formID string) error {
-	if err := authz.RequireRoles(principal, domain.RoleManager); err != nil {
-		return err
-	}
-	form, err := s.Get(ctx, principal, formID)
-	if err != nil {
-		return err
-	}
-	return s.enqueue(ctx, form, events.TypeDocsGenerate, map[string]any{"kind": "payment_order"})
-}
-
 func (s *FormPaymentService) Get(ctx context.Context, principal authz.Principal, formID string) (formpayment.Form, error) {
 	form, err := s.store.FormByID(ctx, formID)
 	if err != nil {
@@ -171,18 +217,8 @@ func (s *FormPaymentService) Get(ctx context.Context, principal authz.Principal,
 	if err := authz.CanAccessForm(principal, form); err != nil {
 		return formpayment.Form{}, err
 	}
+	form.UnpackDocsJSON()
 	return form, nil
-}
-
-func (s *FormPaymentService) GetProviderView(ctx context.Context, principal authz.Principal, formID string) (formpayment.ProviderView, error) {
-	if err := authz.RequireRoles(principal, domain.RoleProvider, domain.RoleSeniorProvider); err != nil {
-		return formpayment.ProviderView{}, err
-	}
-	form, err := s.Get(ctx, principal, formID)
-	if err != nil {
-		return formpayment.ProviderView{}, err
-	}
-	return formpayment.ProjectForProvider(form), nil
 }
 
 func (s *FormPaymentService) List(ctx context.Context, principal authz.Principal) []formpayment.Form {
@@ -196,7 +232,7 @@ func (s *FormPaymentService) List(ctx context.Context, principal authz.Principal
 }
 
 func (s *FormPaymentService) SetRate(ctx context.Context, principal authz.Principal, formID string, rate formpayment.Rate) (formpayment.Form, error) {
-	if err := authz.RequireRoles(principal, domain.RoleManager, domain.RoleTreasurer); err != nil {
+	if err := authz.RequireRoles(principal, domain.RoleManager, domain.RoleTreasurer, domain.RoleRoot, domain.RoleUser); err != nil {
 		return formpayment.Form{}, err
 	}
 	form, err := s.store.FormByID(ctx, formID)
@@ -211,7 +247,7 @@ func (s *FormPaymentService) SetRate(ctx context.Context, principal authz.Princi
 }
 
 func (s *FormPaymentService) SetCommission(ctx context.Context, principal authz.Principal, formID string, commission formpayment.Commission) (formpayment.Form, error) {
-	if err := authz.RequireRoles(principal, domain.RoleManager, domain.RoleTreasurer); err != nil {
+	if err := authz.RequireRoles(principal, domain.RoleManager, domain.RoleTreasurer, domain.RoleRoot, domain.RoleUser); err != nil {
 		return formpayment.Form{}, err
 	}
 	form, err := s.store.FormByID(ctx, formID)

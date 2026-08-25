@@ -76,6 +76,7 @@ var nestActionMap = map[string]Action{
 	"manager|payment/cancel":        ActionPaymentCancelToAccepted,
 
 	// manager shipment
+	"manager|shipment/waiting": ActionShipmentWaiting,
 	"manager|shipment/start":  ActionShipmentStart,
 	"manager|shipment/stop":   ActionShipmentStop,
 	"manager|shipment/accept": ActionShipmentAccept,

@@ -1,4 +1,4 @@
-.PHONY: deps test build db-setup db-migrate run-hub run-core run smoke stop compose-up compose-down compose-ps
+.PHONY: deps test build db-setup db-migrate run-hub run-core run smoke stop compose-up compose-down compose-ps compose-e2e
 
 CORE_DIR := core
 HUB_DIR := hub
@@ -38,6 +38,14 @@ db-migrate:
 	PGPASSWORD=vdp_core psql -h localhost -U vdp_core -d vdp_core -v ON_ERROR_STOP=1 -f $(CORE_DIR)/migrations/001_core.sql
 	PGPASSWORD=vdp_core psql -h localhost -U vdp_core -d vdp_core -v ON_ERROR_STOP=1 -f $(CORE_DIR)/migrations/002_extended.sql
 	PGPASSWORD=vdp_core psql -h localhost -U vdp_core -d vdp_core -v ON_ERROR_STOP=1 -f $(CORE_DIR)/migrations/003_seed.sql
+	PGPASSWORD=vdp_core psql -h localhost -U vdp_core -d vdp_core -v ON_ERROR_STOP=1 -f $(CORE_DIR)/migrations/004_auth_org_r2.sql
+	PGPASSWORD=vdp_core psql -h localhost -U vdp_core -d vdp_core -v ON_ERROR_STOP=1 -f $(CORE_DIR)/migrations/005_r4_docs_domain.sql
+	PGPASSWORD=vdp_core psql -h localhost -U vdp_core -d vdp_core -v ON_ERROR_STOP=1 -f $(CORE_DIR)/migrations/006_r6_rate_docs.sql
+	PGPASSWORD=vdp_core psql -h localhost -U vdp_core -d vdp_core -v ON_ERROR_STOP=1 -f $(CORE_DIR)/migrations/007_r3_contracts.sql
+	PGPASSWORD=vdp_core psql -h localhost -U vdp_core -d vdp_core -v ON_ERROR_STOP=1 -f $(CORE_DIR)/migrations/008_r4_docs_parity.sql
+	PGPASSWORD=vdp_core psql -h localhost -U vdp_core -d vdp_core -v ON_ERROR_STOP=1 -f $(CORE_DIR)/migrations/009_r5_multi_order.sql
+	PGPASSWORD=vdp_core psql -h localhost -U vdp_core -d vdp_core -v ON_ERROR_STOP=1 -f $(CORE_DIR)/migrations/010_r9_extended.sql
+	PGPASSWORD=vdp_core psql -h localhost -U vdp_core -d vdp_core -v ON_ERROR_STOP=1 -f $(CORE_DIR)/migrations/011_r10_bank.sql
 	PGPASSWORD=vdp_hub psql -h localhost -U vdp_hub -d vdp_hub -v ON_ERROR_STOP=1 -f $(HUB_DIR)/migrations/001_hub.sql
 	PGPASSWORD=vdp_hub psql -h localhost -U vdp_hub -d vdp_hub -v ON_ERROR_STOP=1 -f $(HUB_DIR)/migrations/002_hub.sql
 
@@ -82,3 +90,7 @@ smoke:
 	@curl -sf -X POST http://127.0.0.1:8080/api/v1/auth/login \
 		-H 'Content-Type: application/json' \
 		-d '{"email":"user@vdp.local","password":"user"}' | grep -q token && echo "login ok"
+
+compose-e2e: compose-up
+	@chmod +x scripts/compose-e2e.sh
+	@./scripts/compose-e2e.sh

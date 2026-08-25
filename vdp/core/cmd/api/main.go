@@ -38,9 +38,11 @@ func main() {
 	orgs := service.NewOrganizationService(store)
 	catalog := service.NewCatalogService(store, box, newID)
 	auth := service.NewAuthService(store, cfg.JWTSecret, cfg.JWTExpirationHours)
-	publisher := service.NewHubPublisher(box, cfg.HubURL, cfg.HubSharedSecret, time.Duration(cfg.GatewayTimeoutSec)*time.Second)
+	accounts := service.NewAccountService(store)
+	publisher := service.NewHubPublisher(box, cfg.HubURL, cfg.HubSharedSecret, time.Duration(cfg.GatewayTimeoutSec)*time.Second).
+		WithDocsHandler(service.NewDocsAttachAdapter(forms))
 	go pollOutbox(ctx, publisher, log)
-	server := httpapi.NewServer(cfg, auth, forms, orgs, catalog, publisher)
+	server := httpapi.NewServer(cfg, auth, accounts, forms, orgs, catalog, publisher)
 	addr := cfg.Host + ":" + cfg.Port
 	log.Info("vdp-core listening", "addr", addr, "store_driver", storeDriver())
 	if err := http.ListenAndServe(addr, server.Handler()); err != nil {

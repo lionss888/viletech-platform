@@ -1,19 +1,19 @@
 ---
 name: R6 Rate Docs Gen
-overview: Rate, Commission, payment-order generation, Excel template import — Nest money/docs path.
+overview: RESET ready for re-run. Rate, Commission, payment-order generation, Excel template import — Nest money/docs path.
 todos:
   - id: r6-calc
     content: Full rate/commission domain
-    status: pending
+    status: completed
   - id: r6-pog
     content: Async payment-order generation
-    status: pending
+    status: completed
   - id: r6-excel
     content: Template Excel import
-    status: pending
+    status: completed
   - id: r6-tests
     content: Calc + outbox docs tests
-    status: pending
+    status: completed
 isProject: false
 ---
 

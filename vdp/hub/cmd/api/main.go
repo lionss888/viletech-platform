@@ -38,9 +38,9 @@ func main() {
 	timeout := time.Duration(cfg.ExternalTimeout) * time.Millisecond
 	plugins := registry.New()
 	_ = plugins.Register(telegram.New(timeout, cfg.MaxRetries, log))
-	_ = plugins.Register(onec.New(timeout, cfg.MaxRetries, log))
-	_ = plugins.Register(diadoc.New(timeout, cfg.MaxRetries, log))
-	_ = plugins.Register(ocr.New(timeout, cfg.MaxRetries, log))
+	_ = plugins.Register(onec.New(timeout, cfg.MaxRetries, log).WithCore(cfg.CoreURL, cfg.SharedSecret))
+	_ = plugins.Register(diadoc.New(timeout, cfg.MaxRetries, log).WithCore(cfg.CoreURL, cfg.SharedSecret))
+	_ = plugins.Register(ocr.New(timeout, cfg.MaxRetries, log).WithCore(cfg.CoreURL, cfg.SharedSecret))
 	_ = plugins.Register(partner.New(timeout, cfg.MaxRetries, log))
 	_ = plugins.Register(docs.New(timeout, cfg.MaxRetries, log))
 	_ = plugins.Register(mail.New(timeout, cfg.MaxRetries, log))

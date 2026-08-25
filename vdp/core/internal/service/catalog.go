@@ -14,6 +14,7 @@ import (
 	"github.com/viletech/vdp/core/internal/domain/formpayment"
 	"github.com/viletech/vdp/core/internal/outbox"
 	"github.com/viletech/vdp/core/internal/repository"
+	"github.com/viletech/vdp/core/internal/storage"
 	apperrors "github.com/viletech/vdp/core/pkg/errors"
 	"github.com/viletech/vdp/shared/events"
 )
@@ -22,19 +23,11 @@ type CatalogService struct {
 	store repository.Store
 	box   outbox.Store
 	newID IDFunc
+	blobs storage.BlobStore
 }
 
 func NewCatalogService(store repository.Store, box outbox.Store, newID IDFunc) *CatalogService {
-	return &CatalogService{store: store, box: box, newID: newID}
-}
-
-func (s *CatalogService) CreateContract(ctx context.Context, principal authz.Principal, orgID string) (domain.Contract, error) {
-	c := domain.Contract{ID: s.newID(), OrganizationID: orgID, Status: "draft", CreatedAt: time.Now().UTC()}
-	return c, s.store.SaveContract(ctx, c)
-}
-
-func (s *CatalogService) ListContracts(ctx context.Context) ([]domain.Contract, error) {
-	return s.store.ListContracts(ctx)
+	return &CatalogService{store: store, box: box, newID: newID, blobs: storage.NewMemoryBlobStore()}
 }
 
 func (s *CatalogService) SaveCounterparty(ctx context.Context, c domain.Counterparty) (domain.Counterparty, error) {
@@ -135,6 +128,10 @@ func (s *CatalogService) ListTreasurerTasks(ctx context.Context) ([]domain.Treas
 	return s.store.ListTreasurerTasks(ctx)
 }
 
+func (s *CatalogService) GetTreasurerTask(ctx context.Context, id string) (domain.TreasurerTask, error) {
+	return s.store.TreasurerTaskByID(ctx, id)
+}
+
 func (s *CatalogService) RequestUnblock(ctx context.Context, principal authz.Principal, orgID string) (domain.UnblockRequest, error) {
 	r := domain.UnblockRequest{ID: s.newID(), OrganizationID: orgID, RequestedBy: principal.AccountID, Status: "pending", CreatedAt: time.Now().UTC()}
 	return r, s.store.SaveUnblockRequest(ctx, r)
@@ -174,12 +171,17 @@ func (s *CatalogService) ResolveUnblock(ctx context.Context, principal authz.Pri
 		if err := s.store.SaveOrganization(ctx, org); err != nil {
 			return domain.UnblockRequest{}, err
 		}
+		if acct, err := s.store.AccountByID(ctx, org.AccountID); err == nil {
+			acct.Blocked = false
+			_ = s.store.SaveAccount(ctx, acct)
+		}
 	} else {
 		found.Status = "rejected"
 	}
 	return found, s.store.SaveUnblockRequest(ctx, found)
 }
 
+// EnqueueDocsGenerate is a thin alias kept for catalog callers; canonical path is FormPaymentService.RequestPaymentOrderGeneration.
 func (s *CatalogService) EnqueueDocsGenerate(ctx context.Context, formID string) error {
 	if s.box == nil {
 		return nil
@@ -187,7 +189,7 @@ func (s *CatalogService) EnqueueDocsGenerate(ctx context.Context, formID string)
 	return s.box.Enqueue(ctx, outbox.Event{
 		ID: s.newID(), AggregateID: formID, AggregateType: events.AggregateFormPayment,
 		EventType: events.TypeDocsGenerate, FormPaymentID: formID,
-		Payload: map[string]any{"kind": "payment_order"}, Status: "pending", MaxRetries: 3, CreatedAt: time.Now().UTC(),
+		Payload: map[string]any{"kind": "payment_order", "via": "catalog"}, Status: "pending", MaxRetries: 3, CreatedAt: time.Now().UTC(),
 	})
 }
 

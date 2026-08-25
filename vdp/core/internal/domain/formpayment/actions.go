@@ -243,7 +243,16 @@ func TargetStatus(form Form, action Action, orgApproved bool) (Status, error) {
 	case ActionRefundSent:
 		return StatusPaymentRefundSent, nil
 	case ActionRefundCancel:
-		return StatusSigningOrderAccepted, nil
+		switch form.PrevStatus {
+		case StatusAdvanceSigningOrderAccepted:
+			return StatusAdvanceSigningOrderAccepted, nil
+		case StatusSigningOrderAccepted:
+			return StatusSigningOrderAccepted, nil
+		case StatusPaymentRefundWaiting, StatusPaymentRefundProcessing, StatusPaymentRefundSent, "":
+			return StatusSigningOrderAccepted, nil
+		default:
+			return form.PrevStatus, nil
+		}
 	case ActionComplete, ActionTreasurerComplete:
 		return StatusCompleted, nil
 	case ActionTreasurerConfirm:
@@ -271,7 +280,12 @@ func cancelStatusFor(from, target Status) (Status, error) {
 		StatusSigningOrderVerification, StatusAdvanceSigningOrder, StatusManagerChecking,
 		StatusReportWaiting, StatusReportWaitingVerification, StatusReportVerification,
 		StatusSigningOrderWaitingVerification, StatusAdvanceSigningOrderWaitingVerification,
-		StatusAdvanceSigningOrderWaitingCorrections, StatusAdvanceSigningOrderVerification:
+		StatusAdvanceSigningOrderWaitingCorrections, StatusAdvanceSigningOrderVerification,
+		// Funds-held statuses: TargetStatus allows cancel; Apply enforces refund invariant.
+		StatusSigningOrderAccepted, StatusAdvanceSigningOrderAccepted,
+		StatusPaymentReceived, StatusPaymentProcessing, StatusPaymentSent, StatusPaymentSentTreasurer,
+		StatusPaymentRefundWaiting, StatusPaymentRefundProcessing, StatusPaymentRefundSent,
+		StatusCompleted:
 		return target, nil
 	default:
 		return "", apperrors.New(apperrors.ErrCodeConflict, "cancel is not allowed from current status")
@@ -282,6 +296,8 @@ func CanSeeForm(role domain.Role, accountID string, form Form) bool {
 	switch role {
 	case domain.RoleUser:
 		return form.AccountID == accountID
+	case domain.RoleBank:
+		return form.Channel == ChannelBank && form.AccountID == accountID
 	case domain.RoleProvider, domain.RoleSeniorProvider:
 		return form.ProviderID == accountID
 	case domain.RoleManager, domain.RoleTreasurer, domain.RoleRoot,

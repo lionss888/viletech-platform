@@ -4,13 +4,13 @@ overview: Закрыть все Must/Should из gap-analysis-backend.md, что
 todos:
   - id: r11-audit
     content: Audit gap IDs vs vdp
-    status: pending
+    status: completed
   - id: r11-fix
     content: Implement residual Must/Should
-    status: pending
+    status: completed
   - id: r11-test
     content: TestGapChecklistComplete green
-    status: pending
+    status: completed
 isProject: false
 ---
 

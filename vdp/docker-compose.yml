@@ -13,6 +13,14 @@ services:
       - ./core/migrations/001_core.sql:/docker-entrypoint-initdb.d/001_core.sql:ro
       - ./core/migrations/002_extended.sql:/docker-entrypoint-initdb.d/002_extended.sql:ro
       - ./core/migrations/003_seed.sql:/docker-entrypoint-initdb.d/003_seed.sql:ro
+      - ./core/migrations/004_auth_org_r2.sql:/docker-entrypoint-initdb.d/004_auth_org_r2.sql:ro
+      - ./core/migrations/005_r4_docs_domain.sql:/docker-entrypoint-initdb.d/005_r4_docs_domain.sql:ro
+      - ./core/migrations/006_r6_rate_docs.sql:/docker-entrypoint-initdb.d/006_r6_rate_docs.sql:ro
+      - ./core/migrations/007_r3_contracts.sql:/docker-entrypoint-initdb.d/007_r3_contracts.sql:ro
+      - ./core/migrations/008_r4_docs_parity.sql:/docker-entrypoint-initdb.d/008_r4_docs_parity.sql:ro
+      - ./core/migrations/009_r5_multi_order.sql:/docker-entrypoint-initdb.d/009_r5_multi_order.sql:ro
+      - ./core/migrations/010_r9_extended.sql:/docker-entrypoint-initdb.d/010_r9_extended.sql:ro
+      - ./core/migrations/011_r10_bank.sql:/docker-entrypoint-initdb.d/011_r10_bank.sql:ro
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U vdp_core -d vdp_core"]
       interval: 3s

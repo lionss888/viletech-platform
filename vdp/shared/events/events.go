@@ -12,6 +12,7 @@ const (
 	TypeDocsGenerate             = "docs.generate"
 	TypeMailNotify               = "mail.notify"
 	TypeSocketPush               = "socket.push"
+	TypeBankWebhook              = "bank.webhook"
 )
 
 // Envelope is the business-level contract between core and hub.

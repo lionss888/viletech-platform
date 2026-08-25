@@ -90,6 +90,10 @@ func newStack(t *testing.T) (http.Handler, string, *inboxProbe) {
 		probe.items = append(probe.items, body)
 		probe.mu.Unlock()
 		w.WriteHeader(http.StatusAccepted)
+		if bytes.Contains(body, []byte(`"docs.generate"`)) || bytes.Contains(body, []byte(`docs.generate`)) {
+			_, _ = w.Write([]byte(`{"status":"success","storage_key":"docs/hub/payment_order.pdf","mime":"application/pdf"}`))
+			return
+		}
 		_, _ = w.Write([]byte(`{"status":"accepted","channel":"telegram"}`))
 	}))
 	t.Cleanup(hub.Close)
@@ -108,8 +112,10 @@ func newStack(t *testing.T) (http.Handler, string, *inboxProbe) {
 	})
 	cfg := &config.Config{JWTSecret: "test-jwt", JWTExpirationHours: 1, HubSharedSecret: secret, HubURL: hub.URL, RateLimitPerMinute: 1000, GatewayTimeoutSec: 2}
 	auth := service.NewAuthService(store, cfg.JWTSecret, cfg.JWTExpirationHours)
-	publisher := service.NewHubPublisher(box, hub.URL, secret, 2*time.Second)
-	return httpapi.NewServer(cfg, auth, forms, orgs, catalog, publisher).Handler(), secret, probe
+	accounts := service.NewAccountService(store)
+	publisher := service.NewHubPublisher(box, hub.URL, secret, 2*time.Second).
+		WithDocsHandler(service.NewDocsAttachAdapter(forms))
+	return httpapi.NewServer(cfg, auth, accounts, forms, orgs, catalog, publisher).Handler(), secret, probe
 }
 
 func login(t *testing.T, h http.Handler, email, password string) string {
@@ -117,7 +123,7 @@ func login(t *testing.T, h http.Handler, email, password string) string {
 	body, _ := json.Marshal(map[string]string{"email": email, "password": password})
 	res := httptest.NewRecorder()
 	h.ServeHTTP(res, httptest.NewRequest(http.MethodPost, "/api/v1/auth/login", bytes.NewReader(body)))
-	if res.Code != http.StatusOK {
+	if res.Code != http.StatusOK && res.Code != http.StatusCreated {
 		t.Fatalf("login %s: %d %s", email, res.Code, res.Body.String())
 	}
 	var payload map[string]any

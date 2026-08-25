@@ -4,16 +4,16 @@ overview: Auth/Account/Org по Nest + статусы клиента из ВИ; 
 todos:
   - id: r2-auth
     content: Auth full Nest flows
-    status: pending
+    status: completed
   - id: r2-account
     content: Account role controllers
-    status: pending
+    status: completed
   - id: r2-org
     content: Organization ICO/Senior + statuses ВИ
-    status: pending
+    status: completed
   - id: r2-tests
     content: Postgres + tests RBAC
-    status: pending
+    status: completed
 isProject: false
 ---
 

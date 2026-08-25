@@ -1,19 +1,19 @@
 ---
 name: R8 Hub Real
-overview: "Hub adapters Telegram/Diadoc/OCR/1C/Partner: контрактные тесты без stub-only; callbacks только в core SM."
+overview: "RESET ready for re-run. Hub adapters Telegram/Diadoc/OCR/1C/Partner: контрактные тесты без stub-only; callbacks только в core SM."
 todos:
   - id: r8-tg-diadoc
     content: Telegram+Diadoc contract adapters
-    status: pending
+    status: completed
   - id: r8-ocr-1c
     content: OCR+1C idempotent adapters
-    status: pending
+    status: completed
   - id: r8-callback
     content: Core hub callback Transition only
-    status: pending
+    status: completed
   - id: r8-tests
     content: Failure/idempotency tests
-    status: pending
+    status: completed
 isProject: false
 ---
 

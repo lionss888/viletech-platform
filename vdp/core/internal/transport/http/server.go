@@ -15,23 +15,27 @@ import (
 	"github.com/viletech/vdp/core/internal/domain"
 	"github.com/viletech/vdp/core/internal/service"
 	"github.com/viletech/vdp/core/pkg/config"
-	"github.com/viletech/vdp/core/pkg/logger"
 	apperrors "github.com/viletech/vdp/core/pkg/errors"
+	"github.com/viletech/vdp/core/pkg/logger"
 )
 
 type Server struct {
 	cfg      *config.Config
 	auth     *service.AuthService
+	accounts *service.AccountService
 	forms    *service.FormPaymentService
 	orgs     *service.OrganizationService
 	catalog  *service.CatalogService
 	publish  *service.HubPublisher
+	events   *service.FormEventBus
 	mux      *http.ServeMux
 	limiters sync.Map
 }
 
-func NewServer(cfg *config.Config, auth *service.AuthService, forms *service.FormPaymentService, orgs *service.OrganizationService, catalog *service.CatalogService, publish *service.HubPublisher) *Server {
-	srv := &Server{cfg: cfg, auth: auth, forms: forms, orgs: orgs, catalog: catalog, publish: publish, mux: http.NewServeMux()}
+func NewServer(cfg *config.Config, auth *service.AuthService, accounts *service.AccountService, forms *service.FormPaymentService, orgs *service.OrganizationService, catalog *service.CatalogService, publish *service.HubPublisher) *Server {
+	bus := service.NewFormEventBus()
+	forms.WithEventBus(bus)
+	srv := &Server{cfg: cfg, auth: auth, accounts: accounts, forms: forms, orgs: orgs, catalog: catalog, publish: publish, events: bus, mux: http.NewServeMux()}
 	srv.routes()
 	srv.registerExtendedRoutes()
 	return srv
@@ -73,16 +77,12 @@ func (s *Server) handleLogin(w http.ResponseWriter, r *http.Request) {
 		writeError(w, apperrors.ErrInvalidInput)
 		return
 	}
-	token, principal, err := s.auth.Login(r.Context(), body.Email, body.Password)
+	session, err := s.auth.Login(r.Context(), body.Email, body.Password)
 	if err != nil {
 		writeError(w, err)
 		return
 	}
-	writeJSON(w, http.StatusOK, map[string]any{
-		"token":      token,
-		"account_id": principal.AccountID,
-		"role":       principal.Role,
-	})
+	writeJSON(w, http.StatusCreated, session)
 }
 
 func (s *Server) handleCreateForm(w http.ResponseWriter, r *http.Request, principal authz.Principal) {

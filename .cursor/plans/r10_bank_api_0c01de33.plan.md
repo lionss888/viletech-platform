@@ -4,16 +4,16 @@ overview: "Канал Bank §5 расширения: тип клиента Bank,
 todos:
   - id: r10-type
     content: ClientType Bank + admin settings
-    status: pending
+    status: completed
   - id: r10-api
     content: Idempotent bank forms API
-    status: pending
+    status: completed
   - id: r10-webhooks
     content: Webhooks status/sign
-    status: pending
+    status: completed
   - id: r10-tests
     content: Autoskip + RBAC tests
-    status: pending
+    status: completed
 isProject: false
 ---
 

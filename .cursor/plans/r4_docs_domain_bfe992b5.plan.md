@@ -1,19 +1,19 @@
 ---
 name: R4 Docs Domain
-overview: Counterparty, Comment, File, ComplianceHistory + связка с form/contract по Nest.
+overview: RESET ready for re-run. Counterparty, Comment, File, ComplianceHistory + связка с form/contract по Nest.
 todos:
   - id: r4-counterparty
     content: Counterparty Nest API
-    status: pending
+    status: completed
   - id: r4-comment-file
     content: Comment + File store APIs
-    status: pending
+    status: completed
   - id: r4-compliance
     content: ComplianceHistory list/API
-    status: pending
+    status: completed
   - id: r4-tests
     content: RBAC + attach tests
-    status: pending
+    status: completed
 isProject: false
 ---
 

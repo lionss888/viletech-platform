@@ -54,7 +54,6 @@ var transitionsImportForm = map[Status][]Status{
 		StatusCanceledByUser,
 		StatusSigningOrderWaitingVerification,
 	},
-	StatusContractWaitingCorrection: {StatusCanceledByManager},
 	StatusAdvanceSigningOrder: {
 		StatusCanceledByManager,
 		StatusCanceledByUser,
@@ -77,10 +76,10 @@ var transitionsImportForm = map[Status][]Status{
 		StatusCanceledByUser,
 	},
 	StatusShipmentWaiting: {
-		StatusSigningOrderAccepted,
-		StatusPaymentRefundWaiting,
+		StatusShipmentWaitingVerification,
+		StatusCanceledByManager,
+		StatusCanceledByUser,
 	},
-	StatusContractWaiting: {StatusCanceledByManager},
 	StatusOrganizationWaitingVerification: {
 		StatusOrganizationVerification,
 		StatusCanceledByUser,
@@ -107,7 +106,31 @@ var transitionsImportForm = map[Status][]Status{
 	},
 	StatusFormAccepted: {
 		StatusSigningOrder,
+		StatusContractWaiting,
+		StatusContractVerification,
+		StatusContractWaitingCorrection,
 		StatusFormWaitingCorrections,
+		StatusCanceledByManager,
+		StatusCanceledByUser,
+	},
+	StatusContractWaiting: {
+		StatusSigningOrder,
+		StatusContractVerification,
+		StatusContractWaitingCorrection,
+		StatusCanceledByManager,
+		StatusCanceledByUser,
+	},
+	StatusContractVerification: {
+		StatusSigningOrder,
+		StatusContractWaitingCorrection,
+		StatusFormWaitingCorrections,
+		StatusCanceledByManager,
+		StatusCanceledByUser,
+	},
+	StatusContractWaitingCorrection: {
+		StatusContractWaiting,
+		StatusContractVerification,
+		StatusSigningOrder,
 		StatusCanceledByManager,
 		StatusCanceledByUser,
 	},
@@ -127,6 +150,8 @@ var transitionsImportForm = map[Status][]Status{
 		StatusSigningOrderWaitingCorrections,
 		StatusFormWaitingCorrections,
 		StatusCanceledByManager,
+		StatusAdvanceSigningOrder,
+		StatusShipmentWaiting,
 		StatusManagerChecking,
 	},
 	StatusPaymentRefundWaiting: {
@@ -143,8 +168,7 @@ var transitionsImportForm = map[Status][]Status{
 		StatusAdvanceSigningOrderAccepted,
 	},
 	// Nest checkTransit: import advance may go PAYMENT_SENT → REPORT_WAITING without postpay overlay.
-	StatusPaymentSent: {StatusManagerChecking, StatusReportWaiting, StatusReportAccepted},
-	StatusContractVerification: {StatusFormWaitingCorrections},
+	StatusPaymentSent: {StatusManagerChecking, StatusReportWaiting, StatusReportAccepted, StatusShipmentWaiting, StatusAdvanceSigningOrder, StatusPaymentRefundWaiting},
 	StatusReportWaitingVerification: {
 		StatusReportVerification,
 		StatusReportAccepted,
@@ -185,6 +209,7 @@ var transitionsImportForm = map[Status][]Status{
 		StatusCanceledByManager,
 		StatusCanceledByUser,
 		StatusPaymentProcessing,
+		StatusPaymentRefundWaiting,
 	},
 	StatusShipmentWaitingVerification: {
 		StatusShipmentVerification,
@@ -205,6 +230,7 @@ var transitionsImportForm = map[Status][]Status{
 		StatusReportWaiting,
 		StatusReportAccepted,
 		StatusAdvanceSigningOrder,
+		StatusPaymentRefundWaiting,
 	},
 	StatusPaymentProcessing: {
 		StatusPaymentReceived,
@@ -212,11 +238,14 @@ var transitionsImportForm = map[Status][]Status{
 		StatusPaymentSent,
 		StatusPaymentSentTreasurer,
 		StatusSigningOrderAccepted,
+		StatusPaymentRefundWaiting,
 	},
 	StatusAdvanceSigningOrderAccepted: {
 		StatusPaymentReceived,
 		StatusPaymentProcessing,
 		StatusManagerChecking,
+		StatusShipmentWaiting,
+		StatusPaymentRefundWaiting,
 	},
 	StatusPaymentSentTreasurer: {StatusSigningOrderTreasurer},
 	StatusSigningOrderTreasurer: {

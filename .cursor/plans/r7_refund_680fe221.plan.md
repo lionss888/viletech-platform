@@ -1,19 +1,19 @@
 ---
 name: R7 Refund
-overview: "Возврат ДС клиенту §4 расширения: REFUND_* SM + инвариант не финализировать CANCELED при невозвращённых средствах."
+overview: "RESET ready for re-run. Возврат ДС клиенту §4 расширения: REFUND_* SM + инвариант не финализировать CANCELED при невозвращённых средствах."
 todos:
   - id: r7-api
     content: REFUND_* actions + API
-    status: pending
+    status: completed
   - id: r7-invariant
     content: Invariant block CANCELED with unrefunded funds
-    status: pending
+    status: completed
   - id: r7-audit
     content: Refund audit + file attach
-    status: pending
+    status: completed
   - id: r7-tests
     content: Refund unit/smoke tests
-    status: pending
+    status: completed
 isProject: false
 ---
 

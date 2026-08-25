@@ -24,6 +24,9 @@ type Form struct {
 	PrevStatus             Status     `json:"prev_status,omitempty"`
 	Direction              Direction  `json:"direction"`
 	Kind                   Kind       `json:"kind"`
+	Channel                string     `json:"channel,omitempty"` // ui|bank
+	CorrelationID          string     `json:"correlation_id,omitempty"`
+	IdempotencyKey         string     `json:"idempotency_key,omitempty"`
 	PaymentMethod          string     `json:"payment_method,omitempty"`
 	PlatformPostpayMode    string     `json:"platform_postpay_mode,omitempty"`
 	SignMethod             string     `json:"sign_method,omitempty"`
@@ -38,13 +41,32 @@ type Form struct {
 	ContractDate           string     `json:"contract_date,omitempty"`
 	InvoiceJSON            string     `json:"invoice_json,omitempty"`
 	DocsJSON               string     `json:"docs_json,omitempty"`
-	Rate                   Rate       `json:"rate"`
-	Commission             Commission `json:"commission"`
-	InvoiceAmount          string     `json:"invoice_amount,omitempty"`
-	Currency               string     `json:"currency,omitempty"`
-	CreatedAt              time.Time  `json:"created_at"`
-	UpdatedAt              time.Time  `json:"updated_at"`
+	POGStatus              string     `json:"pog_status,omitempty"` // idle|pending|success|failed
+	POGFileID              string     `json:"pog_file_id,omitempty"`
+	POGAttempts            int        `json:"pog_attempts,omitempty"`
+	POGKind                string     `json:"pog_kind,omitempty"` // payment_order|agent_report|import_order|export_order
+	// Refund / funds-held (§4) — also packed into DocsJSON.
+	FundsHeld             bool   `json:"funds_held,omitempty"`
+	FundsRefunded         bool   `json:"funds_refunded,omitempty"`
+	FundsReceivedAmount   string `json:"funds_received_amount,omitempty"`
+	FundsReceivedCurrency string `json:"funds_received_currency,omitempty"`
+	RefundAmount          string `json:"refund_amount,omitempty"`
+	RefundCurrency        string `json:"refund_currency,omitempty"`
+	RefundFileID          string `json:"refund_file_id,omitempty"`
+	RefundInitiatedBy     string `json:"refund_initiated_by,omitempty"`
+	RefundConfirmedBy     string `json:"refund_confirmed_by,omitempty"`
+	Rate                  Rate       `json:"rate"`
+	Commission            Commission `json:"commission"`
+	InvoiceAmount         string     `json:"invoice_amount,omitempty"`
+	Currency              string     `json:"currency,omitempty"`
+	CreatedAt             time.Time  `json:"created_at"`
+	UpdatedAt             time.Time  `json:"updated_at"`
 }
+
+const (
+	ChannelUI   = "ui"
+	ChannelBank = "bank"
+)
 
 type Rate struct {
 	Value    string `json:"value"`

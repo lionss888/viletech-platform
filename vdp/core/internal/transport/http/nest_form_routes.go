@@ -236,6 +236,24 @@ func (s *Server) handleNestFormPUT(w http.ResponseWriter, r *http.Request, princ
 
 func (s *Server) handleNestFormPOST(w http.ResponseWriter, r *http.Request, principal authz.Principal, nestRole, id, path string) {
 	switch {
+	case path == "contract/attach":
+		if nestRole != "manager" && nestRole != "admin" {
+			writeError(w, apperrors.New(apperrors.ErrCodeForbidden, "manager only"))
+			return
+		}
+		var body struct {
+			Type       domain.ContractType `json:"type"`
+			FileID     string              `json:"file_id"`
+			Number     string              `json:"number"`
+			AccountRef string              `json:"account_ref"`
+		}
+		_ = json.NewDecoder(r.Body).Decode(&body)
+		form, c, err := s.forms.ManualAttachContract(r.Context(), principal, id, body.Type, body.FileID, body.Number, body.AccountRef)
+		if err != nil {
+			writeError(w, err)
+			return
+		}
+		writeJSON(w, http.StatusOK, map[string]any{"form": form, "contract": c})
 	case path == "copy":
 		form, err := s.forms.CopyForm(r.Context(), principal, id)
 		if err != nil {
@@ -340,7 +358,13 @@ func (s *Server) handleNestFormGETPath(w http.ResponseWriter, r *http.Request, p
 	case "hs-codes":
 		writeJSON(w, http.StatusOK, decodeJSONArray(form.InvoiceJSON))
 	case "suggested-providers":
-		writeJSON(w, http.StatusOK, []any{})
+		dir := string(form.Direction)
+		offers, err := s.catalog.SuggestedLiquidity(r.Context(), dir, form.Currency)
+		if err != nil {
+			writeError(w, err)
+			return
+		}
+		writeJSON(w, http.StatusOK, offers)
 	case "sign-method":
 		writeJSON(w, http.StatusOK, map[string]string{"sign_method": form.SignMethod})
 	case "payment-order/diadoc-status", "report/diadoc-status":
@@ -442,6 +466,25 @@ func (s *Server) handleNestImport(w http.ResponseWriter, r *http.Request, princi
 	var raw json.RawMessage
 	if err := json.NewDecoder(r.Body).Decode(&raw); err != nil {
 		writeError(w, apperrors.New(apperrors.ErrCodeValidation, "invalid import body"))
+		return
+	}
+	var withTpl struct {
+		TemplateID string `json:"template_id"`
+		CSV        string `json:"csv"`
+		Content    string `json:"content"`
+		FileID     string `json:"fileId"`
+	}
+	if err := json.Unmarshal(raw, &withTpl); err == nil && withTpl.TemplateID != "" {
+		payload := []byte(withTpl.CSV)
+		if len(payload) == 0 {
+			payload = []byte(withTpl.Content)
+		}
+		forms, err := s.forms.ImportExcelWithTemplate(r.Context(), principal, withTpl.TemplateID, payload)
+		if err != nil {
+			writeError(w, err)
+			return
+		}
+		writeJSON(w, http.StatusCreated, forms)
 		return
 	}
 	var rows []service.CreateInput

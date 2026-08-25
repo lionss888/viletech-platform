@@ -4,16 +4,16 @@ overview: "Договоры §1–2 расширения: 3 типа, шабло
 todos:
   - id: r3-model
     content: Contract entity + migrations + statuses
-    status: pending
+    status: completed
   - id: r3-templates
     content: Templates per payment agent
-    status: pending
+    status: completed
   - id: r3-manual
     content: Manager manual attach + auto-confirm
-    status: pending
+    status: completed
   - id: r3-onbehalf
     content: On-behalf org field + tests
-    status: pending
+    status: completed
 isProject: false
 ---
 

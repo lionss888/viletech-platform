@@ -37,11 +37,16 @@ func (s *FormPaymentService) ApplyNestMeta(ctx context.Context, principal authz.
 		return s.SetImportant(ctx, principal, formID, true)
 	case formpayment.MetaImportantOff:
 		return s.SetImportant(ctx, principal, formID, false)
-	case formpayment.MetaOrderGenerate, formpayment.MetaReportGenerate:
-		if err := s.RequestDocsGenerate(ctx, principal, formID); err != nil {
+	case formpayment.MetaOrderGenerate:
+		if err := s.RequestPaymentOrderGeneration(ctx, principal, formID, pogKindForDirection(form.Direction)); err != nil {
 			return formpayment.Form{}, err
 		}
-		return form, nil
+		return s.GetUnpacked(ctx, principal, formID)
+	case formpayment.MetaReportGenerate:
+		if err := s.RequestPaymentOrderGeneration(ctx, principal, formID, "agent_report"); err != nil {
+			return formpayment.Form{}, err
+		}
+		return s.GetUnpacked(ctx, principal, formID)
 	case formpayment.MetaReportDiadoc:
 		return s.Transition(ctx, principal, formID, formpayment.ActionReportDiadoc)
 	case formpayment.MetaOrderDiadoc:

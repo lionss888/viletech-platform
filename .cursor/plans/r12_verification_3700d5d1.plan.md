@@ -4,13 +4,13 @@ overview: "Финальный gate: compose E2E User→Provider, полная м
 todos:
   - id: r12-e2e
     content: Compose E2E User→Provider path
-    status: pending
+    status: completed
   - id: r12-matrix
     content: Matrix zero missing in-scope
-    status: pending
+    status: completed
   - id: r12-checklist
     content: Extension §9 + rules smoke tests
-    status: pending
+    status: completed
 isProject: false
 ---
 
