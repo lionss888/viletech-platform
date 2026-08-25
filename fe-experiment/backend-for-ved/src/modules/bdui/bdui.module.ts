@@ -3,6 +3,7 @@ import { BduiLifecycleActionResolver } from './service/bdui-lifecycle-action.res
 import { BduiSchemaService } from './service/bdui-schema.service';
 import { BduiUserActionResolver } from './service/bdui-user-action.resolver';
 import { RoleCabinetBuilders } from './service/role-cabinet.builders';
+import { RootCabinetBuilders } from './service/root-cabinet.builders';
 import { UserScreenBuilders } from './service/user-screen.builders';
 import { BduiController } from './web/bdui.controller';
 
@@ -12,6 +13,7 @@ import { BduiController } from './web/bdui.controller';
     BduiSchemaService,
     UserScreenBuilders,
     RoleCabinetBuilders,
+    RootCabinetBuilders,
     BduiLifecycleActionResolver,
     BduiUserActionResolver,
   ],

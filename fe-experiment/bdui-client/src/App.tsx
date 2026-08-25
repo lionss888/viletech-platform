@@ -1,5 +1,5 @@
 import { Navigate, Route, Routes, useLocation } from 'react-router-dom';
-import { getAccessToken } from './api/client';
+import { getAccessToken, getBduiRole } from './api/client';
 import { InvoiceContractPage } from './pages/InvoiceContractPage';
 import { ScreenPage } from './pages/ScreenPage';
 
@@ -8,6 +8,16 @@ function RequireAuth(props: { children: JSX.Element }): JSX.Element {
     return <Navigate to="/login" replace />;
   }
   return props.children;
+}
+
+function DefaultHome(): JSX.Element {
+  if (!getAccessToken()) {
+    return <Navigate to="/login" replace />;
+  }
+  if (getBduiRole() === 'root') {
+    return <Navigate to="/users" replace />;
+  }
+  return <Navigate to="/forms" replace />;
 }
 
 export function App(): JSX.Element {
@@ -19,6 +29,46 @@ export function App(): JSX.Element {
       <Routes>
         <Route path="/invoice" element={<InvoiceContractPage />} />
         <Route path="/login" element={<ScreenPage page="login" />} />
+        <Route
+          path="/users"
+          element={
+            <RequireAuth>
+              <ScreenPage page="users.list" />
+            </RequireAuth>
+          }
+        />
+        <Route
+          path="/users/new"
+          element={
+            <RequireAuth>
+              <ScreenPage page="users.create" />
+            </RequireAuth>
+          }
+        />
+        <Route
+          path="/users/:userId"
+          element={
+            <RequireAuth>
+              <ScreenPage page="users.detail" />
+            </RequireAuth>
+          }
+        />
+        <Route
+          path="/directories"
+          element={
+            <RequireAuth>
+              <ScreenPage page="directories.list" />
+            </RequireAuth>
+          }
+        />
+        <Route
+          path="/directories/:orgId"
+          element={
+            <RequireAuth>
+              <ScreenPage page="directories.detail" />
+            </RequireAuth>
+          }
+        />
         <Route
           path="/forms"
           element={
@@ -43,7 +93,7 @@ export function App(): JSX.Element {
             </RequireAuth>
           }
         />
-        <Route path="*" element={<Navigate to={getAccessToken() ? '/forms' : '/login'} replace />} />
+        <Route path="*" element={<DefaultHome />} />
       </Routes>
     </div>
   );

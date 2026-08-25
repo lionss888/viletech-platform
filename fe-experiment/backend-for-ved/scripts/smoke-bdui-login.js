@@ -16,6 +16,12 @@ const ACCOUNTS = [
   { email: 'eco@bdui.local', password: PASSWORD, role: 'compliance_officer' },
   { email: 'manager@bdui.local', password: PASSWORD, role: 'manager' },
   { email: 'provider@bdui.local', password: PASSWORD, role: 'provider' },
+  {
+    email: 'root@bdui.local',
+    password: process.env.BDUI_ROOT_PASSWORD || PASSWORD,
+    role: 'root',
+    listPage: 'users.list',
+  },
 ];
 
 async function request(path, options = {}) {
@@ -56,11 +62,12 @@ async function main() {
       failed += 1;
       continue;
     }
-    const listSchema = await request(`/bdui/schema/${account.role}/forms.list`, {
+    const listPage = account.listPage || 'forms.list';
+    const listSchema = await request(`/bdui/schema/${account.role}/${listPage}`, {
       token: login.json.accessToken,
     });
     if (listSchema.status !== 200) {
-      console.error(`FAIL ${account.role} forms.list schema → ${listSchema.status}`);
+      console.error(`FAIL ${account.role} ${listPage} schema → ${listSchema.status}`);
       failed += 1;
       continue;
     }

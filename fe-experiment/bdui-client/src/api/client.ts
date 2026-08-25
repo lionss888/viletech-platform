@@ -11,6 +11,7 @@ export const BDUI_ROLES: readonly BduiVedRoleId[] = [
   'compliance_officer',
   'manager',
   'provider',
+  'root',
 ] as const;
 
 export function getAccessToken(): string | null {

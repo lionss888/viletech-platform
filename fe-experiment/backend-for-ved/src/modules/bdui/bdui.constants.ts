@@ -6,6 +6,7 @@ export const BDUI_VED_ROLES = [
   'compliance_officer',
   'manager',
   'provider',
+  'root',
 ] as const;
 
 export type BduiVedRoleId = (typeof BDUI_VED_ROLES)[number];
@@ -15,6 +16,13 @@ export const BDUI_ROLE_INTERNAL_CO = 'internal_compliance_officer' as const;
 export const BDUI_ROLE_EXTERNAL_CO = 'compliance_officer' as const;
 export const BDUI_ROLE_MANAGER = 'manager' as const;
 export const BDUI_ROLE_PROVIDER = 'provider' as const;
+export const BDUI_ROLE_ROOT = 'root' as const;
+
+/** Root / SuperAdmin */
+export const BDUI_ACTION_ROOT_CREATE_USER = 'root_create_user';
+export const BDUI_ACTION_ROOT_BLOCK_USER = 'root_block_user';
+export const BDUI_ACTION_ROOT_UNBLOCK_USER = 'root_unblock_user';
+export const BDUI_ACTION_ROOT_CANCEL_FORM = 'root_cancel_form';
 
 /** Shared */
 export const BDUI_ACTION_LOGIN = 'login';
@@ -91,6 +99,7 @@ export const BDUI_SEED_ORG_ID = '6a8dbd040000000000000001';
 export const BDUI_SEED_USER_ACCOUNT_ID = '6a8dbd050000000000000001';
 export const BDUI_SEED_MANAGER_STUB_FILE_ID = '6a8dbd060000000000000001';
 export const BDUI_SEED_PROVIDER_ACCOUNT_ID = '6a8dbd070000000000000001';
+export const BDUI_SEED_ROOT_ACCOUNT_ID = '6a8dbd090000000000000001';
 
 /** Shared PDF upload endpoint for lifecycle file CTAs. */
 export const BDUI_FILE_UPLOAD_PDF_PATH = '/file-store/upload/pdf';

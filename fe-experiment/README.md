@@ -44,6 +44,7 @@ cd fe-experiment/backend-for-ved
 node scripts/smoke-bdui-login.js
 node scripts/smoke-bdui-upload.js
 node scripts/smoke-bdui-inline-directories.js
+node scripts/smoke-bdui-root.js
 ```
 
 MinIO console (опционально): http://localhost:9001 (`minioadmin` / `minioadmin`), bucket `fea360`.
@@ -57,6 +58,7 @@ MinIO console (опционально): http://localhost:9001 (`minioadmin` / `m
 | eco@bdui.local | BduiLifecycle2024! | compliance_officer |
 | manager@bdui.local | BduiLifecycle2024! | manager |
 | provider@bdui.local | BduiLifecycle2024! | provider |
+| root@bdui.local | BduiLifecycle2024! | root |
 
 Организация User: `ООО BDUI Тест` (первая сделка → ICO) + `ООО BDUI Экспорт` (approved, СПб).
 
@@ -78,6 +80,12 @@ Fixed lifecycle ids (`BDUI_SEED_*`) не меняются. E10 ids: org `…4000
 Wizard и черновик detail: добавление организации / foreign counterparty «по месту» через существующие `POST /organization` и `POST /counterparty/create`; после create — запись в select/list options. Provider не создаёт org через User site API.
 
 Проверка: `node scripts/smoke-bdui-inline-directories.js`.
+
+### SuperAdmin root (E12)
+
+Роль `root` в BDUI (не новая доменная роль): пользователи, справочник организаций, admin-заявки. Seed: `root@bdui.local`.
+
+Проверка: `node scripts/smoke-bdui-root.js`.
 
 ## UI
 

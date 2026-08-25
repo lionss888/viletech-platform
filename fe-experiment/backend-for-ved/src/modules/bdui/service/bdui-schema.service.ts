@@ -1,12 +1,23 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { FormPaymentStatus } from 'lib/enums/models/form-payment.enums';
-import { BDUI_ROLE_USER, BDUI_VED_ROLES, BduiVedRoleId } from '../bdui.constants';
-import { BduiCabinetPage, BduiScreen, BduiUserPage } from '../bdui.types';
+import { BDUI_ROLE_ROOT, BDUI_ROLE_USER, BDUI_VED_ROLES, BduiVedRoleId } from '../bdui.constants';
+import { BduiCabinetPage, BduiRootPage, BduiScreen, BduiUserPage } from '../bdui.types';
 import { RoleCabinetBuilders } from './role-cabinet.builders';
+import { RootCabinetBuilders } from './root-cabinet.builders';
 import { UserScreenBuilders } from './user-screen.builders';
 
 const USER_PAGES: readonly BduiUserPage[] = ['login', 'forms.list', 'forms.create', 'forms.detail'];
 const CABINET_PAGES: readonly BduiCabinetPage[] = ['login', 'forms.list', 'forms.detail'];
+const ROOT_PAGES: readonly BduiRootPage[] = [
+  'login',
+  'users.list',
+  'users.create',
+  'users.detail',
+  'directories.list',
+  'directories.detail',
+  'forms.list',
+  'forms.detail',
+];
 
 /**
  * Serves BDUI screen schemas for all ВИ roles.
@@ -16,6 +27,7 @@ export class BduiSchemaService {
   constructor(
     private readonly userScreenBuilders: UserScreenBuilders,
     private readonly roleCabinetBuilders: RoleCabinetBuilders,
+    private readonly rootCabinetBuilders: RootCabinetBuilders,
   ) {}
 
   /**
@@ -24,6 +36,9 @@ export class BduiSchemaService {
   getScreen(role: string, page: string, status?: FormPaymentStatus | string): BduiScreen {
     if (!this.isVedRole(role)) {
       throw new NotFoundException(`BDUI role not found: ${role}`);
+    }
+    if (role === BDUI_ROLE_ROOT) {
+      return this.getRootScreen(page);
     }
     if (role === BDUI_ROLE_USER) {
       return this.getUserScreen(page, status);
@@ -49,6 +64,32 @@ export class BduiSchemaService {
         return this.userScreenBuilders.buildFormsDetailScreen(status);
       default:
         throw new NotFoundException(`BDUI page not found: ${page}`);
+    }
+  }
+
+  private getRootScreen(page: string): BduiScreen {
+    if (!this.isRootPage(page)) {
+      throw new NotFoundException(`BDUI page not found for root: ${page}`);
+    }
+    switch (page) {
+      case 'login':
+        return this.rootCabinetBuilders.buildLoginScreen();
+      case 'users.list':
+        return this.rootCabinetBuilders.buildUsersListScreen();
+      case 'users.create':
+        return this.rootCabinetBuilders.buildUsersCreateScreen();
+      case 'users.detail':
+        return this.rootCabinetBuilders.buildUsersDetailScreen();
+      case 'directories.list':
+        return this.rootCabinetBuilders.buildDirectoriesListScreen();
+      case 'directories.detail':
+        return this.rootCabinetBuilders.buildDirectoriesDetailScreen();
+      case 'forms.list':
+        return this.rootCabinetBuilders.buildFormsListScreen();
+      case 'forms.detail':
+        return this.rootCabinetBuilders.buildFormsDetailScreen();
+      default:
+        throw new NotFoundException(`BDUI page not found for root: ${page}`);
     }
   }
 
@@ -82,5 +123,9 @@ export class BduiSchemaService {
 
   private isCabinetPage(page: string): page is BduiCabinetPage {
     return (CABINET_PAGES as readonly string[]).includes(page);
+  }
+
+  private isRootPage(page: string): page is BduiRootPage {
+    return (ROOT_PAGES as readonly string[]).includes(page);
   }
 }

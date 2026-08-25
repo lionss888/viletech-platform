@@ -208,3 +208,12 @@ Pages (staff): `login`, `forms.list`, `forms.detail`. User also: `forms.create`.
 - [x] AuthZ: Provider `POST /organization` → 403/401 (не User site)
 - [x] Unit: E11 inline actions + widgets в `user-screen.builders.spec.ts`
 - [x] `node scripts/smoke-bdui-inline-directories.js`
+
+### Quality gate E12 — SuperAdmin (root)
+
+- [x] Seed `root@bdui.local` (`AccountRole.ROOT`, id `6a8dbd09…001`)
+- [x] BDUI role `root`: `users.list/create/detail`, `directories.list/detail` (organizations), `forms.list/detail` admin
+- [x] API: `POST/PATCH /admin/account`, `GET/PATCH /admin/manager/organization`, `GET /admin/form-payment`, `PUT …/cancel`
+- [x] User schema без root CTA; User `GET /admin/account` → 403
+- [x] Unit: `root-cabinet.builders.spec.ts`, E12 in `bdui-schema.service.spec.ts`
+- [x] `node scripts/smoke-bdui-root.js`; login smoke includes root → `users.list`

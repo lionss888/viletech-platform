@@ -4,13 +4,13 @@ overview: "BDUI-кабинет роли root (SuperAdmin): пользовате�
 todos:
   - id: e12-seed-root
     content: Seed root account + BDUI role id root
-    status: in_progress
+    status: completed
   - id: e12-screens
     content: "BDUI screens: users, directories, forms admin CTA на существующих API"
-    status: pending
+    status: completed
   - id: e12-qa
     content: QA gate E12 AuthZ isolation + LIFECYCLE
-    status: pending
+    status: completed
 isProject: false
 ---
 

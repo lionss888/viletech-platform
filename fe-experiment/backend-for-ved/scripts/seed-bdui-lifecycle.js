@@ -27,6 +27,7 @@ const PROVIDER_ACCOUNT_ID = new mongoose.Types.ObjectId('6a8dbd07000000000000000
 const ORG_ID_2 = new mongoose.Types.ObjectId('6a8dbd040000000000000002');
 const COUNTERPARTY_FOREIGN_ID = new mongoose.Types.ObjectId('6a8dbd080000000000000001');
 const COUNTERPARTY_RU_ID = new mongoose.Types.ObjectId('6a8dbd080000000000000002');
+const ROOT_ACCOUNT_ID = new mongoose.Types.ObjectId('6a8dbd090000000000000001');
 
 const ACCOUNTS = [
   {
@@ -45,6 +46,13 @@ const ACCOUNTS = [
     fullName: 'BDUI Provider',
     roles: ['provider'],
     _id: PROVIDER_ACCOUNT_ID,
+  },
+  {
+    email: 'root@bdui.local',
+    fullName: 'BDUI Root',
+    roles: ['root'],
+    password: process.env.BDUI_ROOT_PASSWORD || process.env.BDUI_LIFECYCLE_PASSWORD || 'BduiLifecycle2024!',
+    _id: ROOT_ACCOUNT_ID,
   },
 ];
 

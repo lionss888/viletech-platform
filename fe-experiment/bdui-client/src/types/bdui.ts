@@ -5,7 +5,8 @@ export type BduiVedRoleId =
   | 'internal_compliance_officer'
   | 'compliance_officer'
   | 'manager'
-  | 'provider';
+  | 'provider'
+  | 'root';
 
 export type BduiApiRef = {
   method: BduiHttpMethod;

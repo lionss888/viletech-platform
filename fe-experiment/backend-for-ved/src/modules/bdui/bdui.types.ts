@@ -215,3 +215,13 @@ export type BduiScreen = {
 export type BduiUserPage = 'login' | 'forms.list' | 'forms.create' | 'forms.detail';
 
 export type BduiCabinetPage = 'login' | 'forms.list' | 'forms.detail';
+
+export type BduiRootPage =
+  | 'login'
+  | 'users.list'
+  | 'users.create'
+  | 'users.detail'
+  | 'directories.list'
+  | 'directories.detail'
+  | 'forms.list'
+  | 'forms.detail';

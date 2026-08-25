@@ -16,12 +16,14 @@ import {
   BDUI_ROLE_INTERNAL_CO,
   BDUI_ROLE_MANAGER,
   BDUI_ROLE_PROVIDER,
+  BDUI_ROLE_ROOT,
   BDUI_SCHEMA_VERSION,
 } from '../bdui.constants';
 import { BduiLifecycleActionResolver } from './bdui-lifecycle-action.resolver';
 import { BduiSchemaService } from './bdui-schema.service';
 import { BduiUserActionResolver } from './bdui-user-action.resolver';
 import { RoleCabinetBuilders } from './role-cabinet.builders';
+import { RootCabinetBuilders } from './root-cabinet.builders';
 import { UserScreenBuilders } from './user-screen.builders';
 
 describe('BduiSchemaService', () => {
@@ -32,7 +34,8 @@ describe('BduiSchemaService', () => {
     const userActionResolver = new BduiUserActionResolver(lifecycleResolver);
     const userBuilders = new UserScreenBuilders(userActionResolver);
     const cabinetBuilders = new RoleCabinetBuilders(lifecycleResolver);
-    service = new BduiSchemaService(userBuilders, cabinetBuilders);
+    const rootBuilders = new RootCabinetBuilders();
+    service = new BduiSchemaService(userBuilders, cabinetBuilders, rootBuilders);
   });
 
   it('builds login screen with login action', () => {
@@ -184,5 +187,22 @@ describe('BduiSchemaService', () => {
 
   it('throws for unknown role', () => {
     expect(() => service.getScreen('treasurer', 'login')).toThrow(NotFoundException);
+  });
+
+  it('E12: builds root users.list and forms admin detail', () => {
+    const users = service.getScreen(BDUI_ROLE_ROOT, 'users.list');
+    expect(users.page).toBe('users.list');
+    const userTable = users.widgets.find((widget) => widget.type === 'data_table');
+    if (userTable?.type === 'data_table') {
+      expect(userTable.dataSource.path).toContain('/admin/account');
+    }
+    const forms = service.getScreen(BDUI_ROLE_ROOT, 'forms.detail');
+    expect(forms.actions.map((action) => action.id)).toContain('root_cancel_form');
+  });
+
+  it('E12: user schema has no root admin actions', () => {
+    const userDetail = service.getUserScreen('forms.detail', FormPaymentStatus.DRAFT);
+    expect(userDetail.actions.map((action) => action.id)).not.toContain('root_cancel_form');
+    expect(userDetail.actions.map((action) => action.id)).not.toContain('root_create_user');
   });
 });

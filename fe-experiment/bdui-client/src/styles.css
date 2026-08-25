@@ -284,6 +284,12 @@ body {
   font-size: 1.05rem;
 }
 
+.bdui-root-nav {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+}
+
 .bdui-breadcrumb {
   display: flex;
   flex-wrap: wrap;

@@ -171,6 +171,17 @@ export function SchemaRenderer(props: SchemaRendererProps): JSX.Element {
             ))}
         </div>
       ) : null}
+      {props.screen.page === 'users.list' ? (
+        <div className="bdui-action-bar">
+          {props.screen.actions
+            .filter((action) => action.navigateTo === 'users.create')
+            .map((action) => (
+              <button key={action.id} type="button" onClick={() => props.onNavigate('users.create')}>
+                {action.label}
+              </button>
+            ))}
+        </div>
+      ) : null}
     </section>
   );
 }

@@ -19,6 +19,7 @@ const ROLE_TITLES: Record<BduiVedRoleId, string> = {
   [BDUI_ROLE_EXTERNAL_CO]: 'External CO',
   [BDUI_ROLE_MANAGER]: 'Менеджер',
   [BDUI_ROLE_PROVIDER]: 'Провайдер',
+  root: 'Root',
 };
 
 const LIST_PATHS: Record<BduiVedRoleId, string> = {
@@ -31,6 +32,7 @@ const LIST_PATHS: Record<BduiVedRoleId, string> = {
     '/admin/manager/form-payment?statuses=form_accepted&statuses=signing_order&statuses=signing_order_waiting_verification&statuses=signing_order_verification&statuses=signing_order_accepted&statuses=payment_received&statuses=payment_processing&statuses=manager_checking&statuses=payment_sent&statuses=report_waiting&statuses=report_waiting_verification&statuses=report_verification&statuses=shipment_waiting&statuses=shipment_waiting_verification&statuses=shipment_verification&statuses=contract_waiting&statuses=contract_waiting_correction&statuses=advance_signing_order&statuses=advance_signing_order_waiting_verification&statuses=advance_signing_order_verification&statuses=advance_signing_order_accepted',
   [BDUI_ROLE_PROVIDER]:
     '/admin/provider/form-payment?statuses=signing_order_accepted&statuses=payment_received&statuses=payment_processing',
+  root: '/admin/form-payment',
 };
 
 const DETAIL_PATHS: Record<BduiVedRoleId, string> = {
@@ -39,6 +41,7 @@ const DETAIL_PATHS: Record<BduiVedRoleId, string> = {
   [BDUI_ROLE_EXTERNAL_CO]: '/admin/compliance-officer/form-payment/{formId}',
   [BDUI_ROLE_MANAGER]: '/admin/manager/form-payment/{formId}',
   [BDUI_ROLE_PROVIDER]: '/admin/provider/form-payment/{formId}',
+  root: '/admin/form-payment/{formId}',
 };
 
 /**

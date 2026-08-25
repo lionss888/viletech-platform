@@ -192,6 +192,7 @@ const ROLE_MATRICES: Record<BduiVedRoleId, Record<string, readonly string[]>> = 
   [BDUI_ROLE_EXTERNAL_CO]: EXTERNAL_CO_MATRIX,
   [BDUI_ROLE_MANAGER]: MANAGER_MATRIX,
   [BDUI_ROLE_PROVIDER]: PROVIDER_MATRIX,
+  root: {},
 };
 
 /**

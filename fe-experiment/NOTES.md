@@ -23,6 +23,7 @@
 | E9 operator UX | nav «К списку»; table sort; PDF/deal hints; empty list copy |
 | E10 seed directories | currencies, 2 orgs, 2 counterparties, HS×2; wizard API refs |
 | E11 inline directories | org/counterparty inline create in wizard + draft detail; AuthZ on API |
+| E12 SuperAdmin (root) | users / directories (org) / forms admin in BDUI; `root@bdui.local` |
 
 Open UI: http://localhost:5173
 
@@ -50,6 +51,18 @@ Smoke: `node scripts/smoke-bdui-seed-directories.js`.
 Schema: `BduiAction.requiresFormFields`, `inlineCreateKind`, `BduiWizardWidget.inlineCreates`, widget `inline_directory`.
 
 Smoke: `node scripts/smoke-bdui-inline-directories.js` (User create + Provider deny on org).
+
+## SuperAdmin root (E12)
+
+| Surface | API |
+|---------|-----|
+| Users list/detail | `GET/PATCH /admin/account`, `POST` create |
+| Directories (orgs) | `GET/PATCH /admin/manager/organization/{orgId}` |
+| Forms admin | `GET /admin/form-payment`, `PUT …/manager/…/cancel` |
+
+Login: `root@bdui.local` (password = `BDUI_LIFECYCLE_PASSWORD` or `BDUI_ROOT_PASSWORD`). Client routes: `/users`, `/directories`, `/forms`.
+
+Smoke: `node scripts/smoke-bdui-root.js`.
 
 ## Form DTO display map (E8)
 

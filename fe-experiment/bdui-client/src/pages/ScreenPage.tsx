@@ -18,6 +18,11 @@ type ScreenPageProps = {
 
 const PAGE_ROUTES: Record<string, (params?: Record<string, string>) => string> = {
   login: () => '/login',
+  'users.list': () => '/users',
+  'users.create': () => '/users/new',
+  'users.detail': (params) => `/users/${params?.userId ?? ''}`,
+  'directories.list': () => '/directories',
+  'directories.detail': (params) => `/directories/${params?.orgId ?? ''}`,
   'forms.list': () => '/forms',
   'forms.create': () => '/forms/new',
   'forms.detail': (params) => `/forms/${params?.formId ?? ''}`,
@@ -29,6 +34,7 @@ const ROLE_LABELS: Record<BduiVedRoleId, string> = {
   compliance_officer: 'External CO',
   manager: 'Manager',
   provider: 'Provider',
+  root: 'Root',
 };
 
 const DETAIL_PATHS: Record<BduiVedRoleId, string> = {
@@ -37,7 +43,14 @@ const DETAIL_PATHS: Record<BduiVedRoleId, string> = {
   compliance_officer: '/admin/compliance-officer/form-payment/{formId}',
   manager: '/admin/manager/form-payment/{formId}',
   provider: '/admin/provider/form-payment/{formId}',
+  root: '/admin/form-payment/{formId}',
 };
+
+const ROOT_NAV: Array<{ page: string; label: string }> = [
+  { page: 'users.list', label: 'Пользователи' },
+  { page: 'directories.list', label: 'Справочники' },
+  { page: 'forms.list', label: 'Заявки' },
+];
 
 type FormOrganization = {
   _id?: string;
@@ -51,12 +64,38 @@ type FormPaymentDetail = {
   organization?: FormOrganization | string;
 };
 
+function buildRequestBody(action: BduiAction, body?: Record<string, unknown>): Record<string, unknown> | undefined {
+  let requestBody: Record<string, unknown> | undefined =
+    action.bodyFrom === 'form'
+      ? body
+      : action.requiresTextReason ||
+          action.requiresProviderId ||
+          action.requiresTxHash ||
+          action.requiresFileUpload ||
+          action.requiresContractMeta
+        ? body
+        : undefined;
+  if (action.staticBody) {
+    requestBody = { ...action.staticBody, ...(requestBody ?? {}) };
+  }
+  if (action.id === 'root_create_user' && body?.roles !== undefined) {
+    requestBody = { ...(requestBody ?? body ?? {}), roles: [String(body.roles)] };
+  }
+  if (action.injectSigningOrderDate) {
+    requestBody = {
+      ...(requestBody ?? {}),
+      signingOrderCreateDate: new Date().toISOString(),
+    };
+  }
+  return requestBody;
+}
+
 /**
  * Loads a BDUI schema for the active role and runs mapped REST actions.
  */
 export function ScreenPage(props: ScreenPageProps): JSX.Element {
   const navigate = useNavigate();
-  const routeParams = useParams<{ id?: string }>();
+  const routeParams = useParams<{ id?: string; userId?: string; orgId?: string }>();
   const formId = routeParams.id;
   const [role, setRole] = useState<BduiVedRoleId>(() => getBduiRole());
   const [screen, setScreen] = useState<BduiScreen | null>(null);
@@ -64,11 +103,17 @@ export function ScreenPage(props: ScreenPageProps): JSX.Element {
   const [dataRefreshKey, setDataRefreshKey] = useState(0);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const pathParams = useMemo((): Record<string, string> => {
-    if (!formId) {
-      return {};
+    if (props.page === 'users.detail' && routeParams.userId) {
+      return { userId: routeParams.userId };
     }
-    return { formId };
-  }, [formId]);
+    if (props.page === 'directories.detail' && routeParams.orgId) {
+      return { orgId: routeParams.orgId };
+    }
+    if (formId) {
+      return { formId };
+    }
+    return {};
+  }, [formId, props.page, routeParams.orgId, routeParams.userId]);
 
   useEffect(() => {
     let cancelled = false;
@@ -97,7 +142,7 @@ export function ScreenPage(props: ScreenPageProps): JSX.Element {
     return () => {
       cancelled = true;
     };
-  }, [navigate, props.page, formId, role]);
+  }, [navigate, props.page, formId, routeParams.userId, routeParams.orgId, role]);
 
   const handleStatusLoaded = useCallback(
     async (nextStatus: string): Promise<void> => {
@@ -146,6 +191,31 @@ export function ScreenPage(props: ScreenPageProps): JSX.Element {
     }
   }
 
+  async function refreshDetailAfterAction(action: BduiAction): Promise<void> {
+    if (props.page === 'users.detail' && pathParams.userId) {
+      setDataRefreshKey((previous) => previous + 1);
+      return;
+    }
+    if (props.page === 'directories.detail' && pathParams.orgId) {
+      setDataRefreshKey((previous) => previous + 1);
+      return;
+    }
+    if (props.page === 'forms.detail' && formId) {
+      const detailPath = DETAIL_PATHS[role].replace('{formId}', formId);
+      const refreshed = await apiRequest<FormPaymentDetail>(detailPath, { method: 'GET' });
+      if (refreshed.status && role !== 'root') {
+        setDetailStatus(refreshed.status);
+        const loaded = await fetchScreen(props.page, refreshed.status, role);
+        setScreen(loaded);
+      } else {
+        setDataRefreshKey((previous) => previous + 1);
+      }
+      if (action.navigateTo === 'forms.list') {
+        handleNavigate('forms.list');
+      }
+    }
+  }
+
   async function handleRunAction(
     action: BduiAction,
     body?: Record<string, unknown>,
@@ -154,25 +224,7 @@ export function ScreenPage(props: ScreenPageProps): JSX.Element {
     if (action.approveOrganizationFirst) {
       await approveOrganizationIfNeeded(action);
     }
-    let requestBody: Record<string, unknown> | undefined =
-      action.bodyFrom === 'form'
-        ? body
-        : action.requiresTextReason ||
-            action.requiresProviderId ||
-            action.requiresTxHash ||
-            action.requiresFileUpload ||
-            action.requiresContractMeta
-          ? body
-          : undefined;
-    if (action.staticBody) {
-      requestBody = { ...action.staticBody, ...(requestBody ?? {}) };
-    }
-    if (action.injectSigningOrderDate) {
-      requestBody = {
-        ...(requestBody ?? {}),
-        signingOrderCreateDate: new Date().toISOString(),
-      };
-    }
+    const requestBody = buildRequestBody(action, body);
     const response = await apiRequest<unknown>(action.path, {
       method: action.method,
       body: requestBody,
@@ -193,18 +245,19 @@ export function ScreenPage(props: ScreenPageProps): JSX.Element {
         return response;
       }
     }
-    if (props.page === 'forms.detail' && formId) {
-      const detailPath = DETAIL_PATHS[role].replace('{formId}', formId);
-      const refreshed = await apiRequest<FormPaymentDetail>(detailPath, { method: 'GET' });
-      if (refreshed.status) {
-        setDetailStatus(refreshed.status);
-        const loaded = await fetchScreen(props.page, refreshed.status, role);
-        setScreen(loaded);
+    if (action.navigateTo === 'users.detail') {
+      const created = response as { _id?: string };
+      if (created._id) {
+        navigate(`/users/${created._id}`);
+        return response;
       }
-      setDataRefreshKey((previous) => previous + 1);
-      if (action.navigateTo === 'forms.list') {
-        handleNavigate('forms.list');
-      }
+    }
+    if (
+      props.page === 'forms.detail' ||
+      props.page === 'users.detail' ||
+      props.page === 'directories.detail'
+    ) {
+      await refreshDetailAfterAction(action);
       return response;
     }
     if (action.navigateTo) {
@@ -212,6 +265,14 @@ export function ScreenPage(props: ScreenPageProps): JSX.Element {
     }
     return response;
   }
+
+  const showFormsBreadcrumb =
+    props.page === 'forms.create' || (props.page === 'forms.detail' && role !== 'root');
+  const showRootBreadcrumb =
+    role === 'root' &&
+    (props.page.startsWith('users.') ||
+      props.page.startsWith('directories.') ||
+      props.page.startsWith('forms.'));
 
   if (errorMessage) {
     return <p className="bdui-error">{errorMessage}</p>;
@@ -240,6 +301,24 @@ export function ScreenPage(props: ScreenPageProps): JSX.Element {
       ) : (
         <div className="bdui-role-picker" role="group" aria-label="Сессия BDUI">
           <span className="bdui-muted">Роль: {ROLE_LABELS[role]}</span>
+          {role === 'root' ? (
+            <nav className="bdui-root-nav" aria-label="Root разделы">
+              {ROOT_NAV.map((item) => (
+                <button
+                  key={item.page}
+                  type="button"
+                  className={
+                    props.page.startsWith(item.page.split('.')[0])
+                      ? 'bdui-role-picker__btn bdui-role-picker__btn--active'
+                      : 'bdui-role-picker__btn'
+                  }
+                  onClick={() => handleNavigate(item.page)}
+                >
+                  {item.label}
+                </button>
+              ))}
+            </nav>
+          ) : null}
           <button
             type="button"
             className="bdui-role-picker__btn"
@@ -252,7 +331,7 @@ export function ScreenPage(props: ScreenPageProps): JSX.Element {
           </button>
         </div>
       )}
-      {(props.page === 'forms.create' || props.page === 'forms.detail') && (
+      {showFormsBreadcrumb && (
         <nav className="bdui-breadcrumb" aria-label="Навигация по заявкам">
           <button
             type="button"
@@ -273,10 +352,21 @@ export function ScreenPage(props: ScreenPageProps): JSX.Element {
           </span>
         </nav>
       )}
+      {showRootBreadcrumb && props.page !== 'users.list' && props.page !== 'directories.list' && props.page !== 'forms.list' && (
+        <nav className="bdui-breadcrumb" aria-label="Root навигация">
+          <button
+            type="button"
+            className="bdui-breadcrumb__link"
+            onClick={() => handleNavigate(`${props.page.split('.')[0]}.list`)}
+          >
+            ← К списку
+          </button>
+        </nav>
+      )}
       <SchemaRenderer
         screen={screen}
         pathParams={pathParams}
-        dataRefreshKey={`${formId ?? ''}:${detailStatus ?? ''}:${dataRefreshKey}`}
+        dataRefreshKey={`${formId ?? ''}:${pathParams.userId ?? ''}:${pathParams.orgId ?? ''}:${detailStatus ?? ''}:${dataRefreshKey}`}
         onNavigate={handleNavigate}
         onRunAction={handleRunAction}
         onDirectoryLinked={() => setDataRefreshKey((previous) => previous + 1)}
