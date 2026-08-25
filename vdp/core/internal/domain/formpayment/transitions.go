@@ -1,0 +1,314 @@
+package formpayment
+
+func clone(src map[Status][]Status) map[Status][]Status {
+	out := make(map[Status][]Status, len(src))
+	for k, v := range src {
+		cp := make([]Status, len(v))
+		copy(cp, v)
+		out[k] = cp
+	}
+	return out
+}
+
+func merge(base map[Status][]Status, overlay map[Status][]Status) map[Status][]Status {
+	out := clone(base)
+	for from, extras := range overlay {
+		seen := map[Status]struct{}{}
+		merged := append([]Status{}, out[from]...)
+		for _, s := range merged {
+			seen[s] = struct{}{}
+		}
+		for _, s := range extras {
+			if _, ok := seen[s]; !ok {
+				merged = append(merged, s)
+				seen[s] = struct{}{}
+			}
+		}
+		out[from] = merged
+	}
+	return out
+}
+
+var transitionsImportForm = map[Status][]Status{
+	StatusCreating: {StatusDraft},
+	StatusDraft: {
+		StatusCanceledByComplianceOfficer,
+		StatusCanceledByUser,
+		StatusOrganizationWaitingVerification,
+		StatusFormWaitingVerification,
+	},
+	StatusFormWaitingCorrections: {
+		StatusCanceledByManager,
+		StatusCanceledByUser,
+		StatusFormWaitingVerification,
+		StatusFormAccepted,
+	},
+	StatusSigningOrder: {
+		StatusCanceledByManager,
+		StatusCanceledByUser,
+		StatusSigningOrderWaitingVerification,
+		StatusFormAccepted,
+	},
+	StatusSigningOrderWaitingCorrections: {
+		StatusCanceledByManager,
+		StatusCanceledByUser,
+		StatusSigningOrderWaitingVerification,
+	},
+	StatusContractWaitingCorrection: {StatusCanceledByManager},
+	StatusAdvanceSigningOrder: {
+		StatusCanceledByManager,
+		StatusCanceledByUser,
+		StatusAdvanceSigningOrderWaitingVerification,
+		StatusPaymentReceived,
+		StatusPaymentSent,
+	},
+	StatusAdvanceSigningOrderWaitingCorrections: {
+		StatusCanceledByManager,
+		StatusCanceledByUser,
+		StatusAdvanceSigningOrderWaitingVerification,
+	},
+	StatusShipmentWaiting: {
+		StatusSigningOrderAccepted,
+		StatusPaymentRefundWaiting,
+	},
+	StatusContractWaiting: {StatusCanceledByManager},
+	StatusOrganizationWaitingVerification: {
+		StatusOrganizationVerification,
+		StatusCanceledByUser,
+		StatusCanceledByInternalComplianceOfficer,
+	},
+	StatusOrganizationVerification: {
+		StatusCanceledByUser,
+		StatusCanceledByInternalComplianceOfficer,
+		StatusFormWaitingCorrections,
+		StatusFormWaitingVerification,
+		StatusOrganizationWaitingVerification,
+	},
+	StatusFormWaitingVerification: {
+		StatusCanceledByComplianceOfficer,
+		StatusCanceledByUser,
+		StatusFormVerification,
+	},
+	StatusFormVerification: {
+		StatusCanceledByComplianceOfficer,
+		StatusCanceledByUser,
+		StatusFormAccepted,
+		StatusFormWaitingCorrections,
+		StatusFormWaitingVerification,
+	},
+	StatusFormAccepted: {
+		StatusSigningOrder,
+		StatusFormWaitingCorrections,
+		StatusCanceledByManager,
+		StatusCanceledByUser,
+	},
+	StatusSigningOrderWaitingVerification: {StatusSigningOrderVerification},
+	StatusSigningOrderVerification: {
+		StatusSigningOrderWaitingVerification,
+		StatusSigningOrderAccepted,
+		StatusSigningOrderWaitingCorrections,
+		StatusFormWaitingCorrections,
+		StatusCanceledByManager,
+		StatusCanceledByUser,
+	},
+	StatusSigningOrderAccepted: {
+		StatusPaymentReceived,
+		StatusPaymentRefundWaiting,
+		StatusPaymentProcessing,
+		StatusSigningOrderWaitingCorrections,
+		StatusFormWaitingCorrections,
+		StatusCanceledByManager,
+		StatusManagerChecking,
+	},
+	StatusPaymentRefundWaiting: {
+		StatusSigningOrderAccepted,
+		StatusAdvanceSigningOrderAccepted,
+		StatusPaymentRefundProcessing,
+	},
+	StatusPaymentRefundProcessing: {
+		StatusPaymentRefundWaiting,
+		StatusPaymentRefundSent,
+	},
+	StatusPaymentRefundSent: {
+		StatusSigningOrderAccepted,
+		StatusAdvanceSigningOrderAccepted,
+	},
+	StatusPaymentSent: {StatusManagerChecking},
+	StatusContractVerification: {StatusFormWaitingCorrections},
+	StatusReportWaitingVerification: {
+		StatusReportVerification,
+		StatusReportAccepted,
+		StatusCanceledByManager,
+		StatusCanceledByUser,
+	},
+	StatusReportWaiting: {
+		StatusPaymentSent,
+		StatusPaymentReceived,
+		StatusSigningOrderAccepted,
+		StatusAdvanceSigningOrderAccepted,
+		StatusReportAccepted,
+		StatusReportWaitingDiadoc,
+	},
+	StatusReportWaitingDiadoc: {
+		StatusReportWaitingVerification,
+		StatusReportWaitingCorrections,
+		StatusReportWaiting,
+		StatusCanceledByManager,
+		StatusCanceledByUser,
+	},
+	StatusReportVerification: {
+		StatusReportWaitingVerification,
+		StatusReportWaitingCorrections,
+		StatusFormWaitingCorrections,
+		StatusReportAccepted,
+		StatusCanceledByManager,
+		StatusCanceledByUser,
+		StatusSigningOrderAccepted,
+		StatusAdvanceSigningOrderAccepted,
+	},
+	StatusManagerChecking: {
+		StatusCanceledByManager,
+		StatusCanceledByUser,
+		StatusPaymentProcessing,
+	},
+	StatusShipmentWaitingVerification: {
+		StatusShipmentVerification,
+		StatusSigningOrderAccepted,
+		StatusAdvanceSigningOrderAccepted,
+	},
+	StatusShipmentVerification: {
+		StatusShipmentWaitingVerification,
+		StatusShipmentWaitingCorrections,
+		StatusFormWaitingCorrections,
+		StatusCompleted,
+		StatusSigningOrderAccepted,
+		StatusAdvanceSigningOrderAccepted,
+	},
+	StatusPaymentReceived: {
+		StatusPaymentProcessing,
+		StatusManagerChecking,
+		StatusReportWaiting,
+		StatusReportAccepted,
+		StatusAdvanceSigningOrder,
+	},
+	StatusPaymentProcessing: {
+		StatusPaymentReceived,
+		StatusManagerChecking,
+		StatusPaymentSent,
+		StatusPaymentSentTreasurer,
+		StatusSigningOrderAccepted,
+	},
+	StatusAdvanceSigningOrderAccepted: {
+		StatusPaymentReceived,
+		StatusPaymentProcessing,
+		StatusManagerChecking,
+	},
+	StatusPaymentSentTreasurer: {StatusSigningOrderTreasurer},
+	StatusSigningOrderTreasurer: {
+		StatusSigningOrderVerificationTreasurer,
+		StatusPaymentSentTreasurer,
+	},
+	StatusSigningOrderVerificationTreasurer: {
+		StatusPaymentSent,
+		StatusOrderWaitingCorrectionTreasurer,
+	},
+	StatusOrderWaitingCorrectionTreasurer: {
+		StatusSigningOrderTreasurer,
+		StatusSigningOrderVerificationTreasurer,
+	},
+}
+
+var transitionsImportFormRateOnProviderPostpay = map[Status][]Status{
+	StatusPaymentSent: {
+		StatusAdvanceSigningOrder,
+		StatusAdvanceSigningOrderWaitingVerification,
+		StatusAdvanceSigningOrderVerification,
+		StatusAdvanceSigningOrderWaitingCorrections,
+		StatusAdvanceSigningOrderAccepted,
+		StatusPaymentReceived,
+	},
+}
+
+var transitionsExportForm = map[Status][]Status{
+	StatusAdvanceSigningOrderWaitingVerification: {StatusAdvanceSigningOrderVerification},
+	StatusAdvanceSigningOrderVerification: {
+		StatusAdvanceSigningOrderWaitingVerification,
+		StatusAdvanceSigningOrderAccepted,
+		StatusAdvanceSigningOrderWaitingCorrections,
+		StatusFormWaitingCorrections,
+		StatusCanceledByManager,
+		StatusCanceledByUser,
+	},
+	StatusAdvanceSigningOrderAccepted: {
+		StatusPaymentProcessing,
+		StatusPaymentReceived,
+		StatusFormWaitingCorrections,
+		StatusPaymentRefundWaiting,
+		StatusAdvanceSigningOrderWaitingCorrections,
+		StatusCanceledByManager,
+	},
+	StatusPaymentProcessing: {StatusPaymentSent, StatusPaymentSentTreasurer},
+	StatusPaymentReceived: {
+		StatusAdvanceSigningOrder,
+		StatusPaymentProcessing,
+		StatusReportAccepted,
+	},
+	StatusPaymentSent: {
+		StatusReportWaiting,
+		StatusReportAccepted,
+		StatusManagerChecking,
+		StatusPaymentReceived,
+		StatusSigningOrderAccepted,
+		StatusAdvanceSigningOrderAccepted,
+		StatusPaymentRefundWaiting,
+		StatusAdvanceSigningOrder,
+		StatusAdvanceSigningOrderWaitingVerification,
+		StatusAdvanceSigningOrderVerification,
+		StatusAdvanceSigningOrderWaitingCorrections,
+		StatusSigningOrderWaitingVerification,
+	},
+	StatusManagerChecking: {
+		StatusCanceledByManager,
+		StatusCanceledByUser,
+		StatusSigningOrderWaitingCorrections,
+		StatusSigningOrderVerification,
+		StatusPaymentReceived,
+		StatusFormWaitingCorrections,
+		StatusSigningOrderAccepted,
+		StatusAdvanceSigningOrderAccepted,
+	},
+	StatusSigningOrderAccepted: {StatusManagerChecking, StatusPaymentReceived},
+	StatusPaymentSentTreasurer: {StatusSigningOrderTreasurer},
+	StatusSigningOrderTreasurer: {
+		StatusSigningOrderVerificationTreasurer,
+		StatusPaymentSentTreasurer,
+	},
+	StatusSigningOrderVerificationTreasurer: {
+		StatusPaymentSent,
+		StatusOrderWaitingCorrectionTreasurer,
+	},
+	StatusOrderWaitingCorrectionTreasurer: {
+		StatusSigningOrderTreasurer,
+		StatusSigningOrderVerificationTreasurer,
+	},
+}
+
+func AllowedTargets(from Status, direction Direction, rateOnProvider bool) []Status {
+	table := clone(transitionsImportForm)
+	if direction == DirectionExport {
+		table = merge(table, transitionsExportForm)
+	}
+	if rateOnProvider {
+		table = merge(table, transitionsImportFormRateOnProviderPostpay)
+	}
+	return table[from]
+}
+
+func IsAllowedTransition(from, to Status, direction Direction, rateOnProvider bool) bool {
+	for _, candidate := range AllowedTargets(from, direction, rateOnProvider) {
+		if candidate == to {
+			return true
+		}
+	}
+	return false
+}
