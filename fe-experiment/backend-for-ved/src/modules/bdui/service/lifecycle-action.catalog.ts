@@ -156,19 +156,27 @@ const CATALOG: Record<string, CatalogEntry> = {
     'PUT',
     '/admin/compliance-officer/form-payment/{formId}/form/accept',
   ),
-  [BDUI_ACTION_ECO_REJECT]: action(
-    BDUI_ACTION_ECO_REJECT,
-    'Вернуть на доработку',
-    'PUT',
-    '/admin/compliance-officer/form-payment/{formId}/form/reject',
-  ),
-  [BDUI_ACTION_ECO_CANCEL]: action(
-    BDUI_ACTION_ECO_CANCEL,
-    'Отклонить заявку',
-    'PUT',
-    '/admin/compliance-officer/form-payment/{formId}/cancel',
-    'forms.list',
-  ),
+  [BDUI_ACTION_ECO_REJECT]: {
+    ...action(
+      BDUI_ACTION_ECO_REJECT,
+      'Вернуть на доработку',
+      'PUT',
+      '/admin/compliance-officer/form-payment/{formId}/form/reject',
+    ),
+    bodyFrom: 'form',
+    requiresTextReason: true,
+  },
+  [BDUI_ACTION_ECO_CANCEL]: {
+    ...action(
+      BDUI_ACTION_ECO_CANCEL,
+      'Отклонить заявку',
+      'PUT',
+      '/admin/compliance-officer/form-payment/{formId}/cancel',
+      'forms.list',
+    ),
+    bodyFrom: 'form',
+    requiresTextReason: true,
+  },
   [BDUI_ACTION_MGR_ORDER_GENERATE]: action(
     BDUI_ACTION_MGR_ORDER_GENERATE,
     'Сформировать поручение',

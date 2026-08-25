@@ -4,13 +4,13 @@ overview: "BDUI External Compliance Officer: проверка заявки FORM_
 todos:
   - id: p3-screens
     content: BDUI ECO queue/detail + comment on reject
-    status: pending
+    status: completed
   - id: p3-actions
     content: Wire form start/accept/reject/cancel
-    status: pending
+    status: completed
   - id: p3-qa
     content: "QA gate: accept path + one corrections round-trip smoke"
-    status: pending
+    status: completed
 isProject: false
 ---
 

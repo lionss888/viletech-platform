@@ -5,7 +5,13 @@ import {
   BDUI_ACTION_ICO_REJECT,
   BDUI_ACTION_ICO_START,
   BDUI_ACTION_ICO_STOP,
+  BDUI_ACTION_ECO_ACCEPT,
+  BDUI_ACTION_ECO_CANCEL,
+  BDUI_ACTION_ECO_REJECT,
+  BDUI_ACTION_ECO_START,
+  BDUI_ACTION_ECO_STOP,
   BDUI_ACTION_MGR_ORDER_GENERATE,
+  BDUI_ROLE_EXTERNAL_CO,
   BDUI_ROLE_INTERNAL_CO,
   BDUI_ROLE_MANAGER,
   BDUI_ROLE_USER,
@@ -75,5 +81,44 @@ describe('RoleCabinetBuilders Internal CO', () => {
     expect(userActions).not.toContain(BDUI_ACTION_ICO_START);
     expect(managerActions).not.toContain(BDUI_ACTION_ICO_START);
     expect(managerActions).not.toContain(BDUI_ACTION_MGR_ORDER_GENERATE);
+  });
+
+  it('builds ECO queue filtered to form verification statuses', () => {
+    const screen = builders.buildFormsListScreen(BDUI_ROLE_EXTERNAL_CO);
+    expect(screen.title).toContain('External CO');
+    const table = screen.widgets.find((widget) => widget.type === 'data_table');
+    expect(table).toBeDefined();
+    if (table?.type === 'data_table') {
+      expect(table.dataSource.path).toContain('/admin/compliance-officer/form-payment');
+      expect(table.dataSource.path).toContain('form_waiting_verification');
+      expect(table.dataSource.path).toContain('form_verification');
+    }
+  });
+
+  it('builds ECO detail actions for form verification', () => {
+    const screen = builders.buildFormsDetailScreen(
+      BDUI_ROLE_EXTERNAL_CO,
+      FormPaymentStatus.FORM_VERIFICATION,
+    );
+    const ids = screen.actions.map((action) => action.id);
+    expect(ids).toEqual(
+      expect.arrayContaining([
+        BDUI_ACTION_ECO_ACCEPT,
+        BDUI_ACTION_ECO_REJECT,
+        BDUI_ACTION_ECO_STOP,
+        BDUI_ACTION_ECO_CANCEL,
+      ]),
+    );
+    const reject = screen.actions.find((action) => action.id === BDUI_ACTION_ECO_REJECT);
+    expect(reject?.requiresTextReason).toBe(true);
+  });
+
+  it('does not expose ECO actions on User for form waiting', () => {
+    const userActions = resolver.resolveActionIds(
+      BDUI_ROLE_USER,
+      FormPaymentStatus.FORM_WAITING_VERIFICATION,
+    );
+    expect(userActions).not.toContain(BDUI_ACTION_ECO_START);
+    expect(userActions).not.toContain(BDUI_ACTION_ECO_ACCEPT);
   });
 });

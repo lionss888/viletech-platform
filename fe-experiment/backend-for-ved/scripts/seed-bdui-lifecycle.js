@@ -78,6 +78,22 @@ const organizationSchema = new mongoose.Schema(
 const Account = mongoose.model('BduiLifecycleAccount', accountSchema, 'accounts');
 const Organization = mongoose.model('BduiLifecycleOrganization', organizationSchema, 'organizations');
 
+const hsCodeSchema = new mongoose.Schema(
+  {
+    code: { type: String, required: true, unique: true },
+    description: { type: String, required: true },
+    chapter: { type: String },
+    section: { type: String },
+    type: { type: String },
+    loyalty: { type: String, required: true },
+    active: { type: Boolean, default: true },
+    createDate: { type: Date, default: Date.now },
+    updateDate: { type: Date, default: Date.now },
+  },
+  { collection: 'hs-codes' },
+);
+const HsCode = mongoose.model('BduiLifecycleHsCode', hsCodeSchema, 'hs-codes');
+
 async function upsertAccount(spec) {
   const password = spec.password || PASSWORD;
   let account = await Account.findOne({ email: spec.email });
@@ -128,6 +144,28 @@ async function upsertOrganization(userAccountId) {
   return organization;
 }
 
+async function upsertHsCode() {
+  const code = '0101210000';
+  let hsCode = await HsCode.findOne({ code });
+  if (!hsCode) {
+    hsCode = new HsCode({
+      code,
+      description: 'BDUI seed HS code (live horses)',
+      chapter: '01',
+      section: '0101',
+      type: 'good',
+      loyalty: 'ok',
+      active: true,
+    });
+  } else {
+    hsCode.active = true;
+    hsCode.loyalty = 'ok';
+    hsCode.description = hsCode.description || 'BDUI seed HS code';
+  }
+  await hsCode.save();
+  return hsCode;
+}
+
 async function main() {
   await mongoose.connect(MONGODB_URL);
   console.log('Connected:', MONGODB_URL);
@@ -138,11 +176,13 @@ async function main() {
   }
   const user = await Account.findOne({ email: 'user@bdui.local' });
   const organization = await upsertOrganization(user._id);
+  const hsCode = await upsertHsCode();
   console.log('\nBDUI lifecycle seed ready:\n');
   for (const row of results) {
     console.log(`  ${row.email} / ${row.password}  roles=${row.roles.join(',')}`);
   }
   console.log(`\n  Organization: ${organization.name} inn=${organization.inn} status=${organization.status} id=${organization._id}`);
+  console.log(`  HS code: ${hsCode.code} active=${hsCode.active} loyalty=${hsCode.loyalty}`);
   await mongoose.disconnect();
 }
 

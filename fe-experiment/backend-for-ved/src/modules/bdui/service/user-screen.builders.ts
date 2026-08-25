@@ -327,6 +327,7 @@ export class UserScreenBuilders {
       status === FormPaymentStatus.FORM_VERIFICATION ||
       status === FormPaymentStatus.FORM_ACCEPTED ||
       status === FormPaymentStatus.CANCELED_BY_INTERNAL_COMPLIANCE_OFFICER;
+    const isCanceledByEco = status === FormPaymentStatus.CANCELED_BY_COMPLIANCE_OFFICER;
     const widgets: BduiScreen['widgets'] = [
       {
         type: 'status_badge',
@@ -382,6 +383,14 @@ export class UserScreenBuilders {
         id: 'corrections_hint',
         content:
           'Заявка возвращена на уточнение. Исправьте данные и отправьте повторно (accept-corrections).',
+      });
+    }
+    if (isCanceledByEco) {
+      widgets.push({
+        type: 'text',
+        id: 'eco_canceled_hint',
+        content:
+          'Заявка отклонена External CO. Повторная отправка на проверку недоступна; создайте новую заявку при необходимости.',
       });
     }
     widgets.push({

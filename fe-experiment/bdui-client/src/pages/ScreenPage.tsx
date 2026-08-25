@@ -31,6 +31,14 @@ const ROLE_LABELS: Record<BduiVedRoleId, string> = {
   provider: 'Provider',
 };
 
+const DETAIL_PATHS: Record<BduiVedRoleId, string> = {
+  user: '/form-payment/{formId}',
+  internal_compliance_officer: '/admin/internal-compliance-officer/form-payment/{formId}',
+  compliance_officer: '/admin/compliance-officer/form-payment/{formId}',
+  manager: '/admin/manager/form-payment/{formId}',
+  provider: '/admin/provider/form-payment/{formId}',
+};
+
 type FormOrganization = {
   _id?: string;
   refOrganizationId?: string;
@@ -119,10 +127,7 @@ export function ScreenPage(props: ScreenPageProps): JSX.Element {
     if (!action.approveOrganizationFirst || !formId) {
       return;
     }
-    const detailPath =
-      role === 'internal_compliance_officer'
-        ? `/admin/internal-compliance-officer/form-payment/${formId}`
-        : `/form-payment/${formId}`;
+    const detailPath = DETAIL_PATHS.internal_compliance_officer.replace('{formId}', formId);
     const form = await apiRequest<FormPaymentDetail>(detailPath, { method: 'GET' });
     const organization = form.organization;
     if (!organization || typeof organization === 'string') {
@@ -174,12 +179,8 @@ export function ScreenPage(props: ScreenPageProps): JSX.Element {
       }
     }
     if (props.page === 'forms.detail' && formId) {
-      const refreshed = await apiRequest<FormPaymentDetail>(
-        role === 'internal_compliance_officer'
-          ? `/admin/internal-compliance-officer/form-payment/${formId}`
-          : `/form-payment/${formId}`,
-        { method: 'GET' },
-      );
+      const detailPath = DETAIL_PATHS[role].replace('{formId}', formId);
+      const refreshed = await apiRequest<FormPaymentDetail>(detailPath, { method: 'GET' });
       if (refreshed.status) {
         setDetailStatus(refreshed.status);
         const loaded = await fetchScreen(props.page, refreshed.status, role);

@@ -41,7 +41,7 @@ Pages (staff): `login`, `forms.list`, `forms.detail`. User also: `forms.create`.
 
 1. [x] P1 User create + submit
 2. [x] P2 Internal CO approve org
-3. [ ] P3 External CO accept form
+3. [x] P3 External CO accept form
 4. [ ] P4 Manager order + assign provider / payment start
 5. [ ] P5 Provider execute payment
 6. [ ] P6 User close docs + Manager COMPLETED
@@ -61,6 +61,15 @@ Pages (staff): `login`, `forms.list`, `forms.detail`. User also: `forms.create`.
 - [x] Return: ICO reject → `form_waiting_corrections`; User schema показывает `accept_corrections`
 - [x] User schema: `org_lock_review` / `org_lock_decided` после решения ICO
 - [x] Manager schema на org-waiting: пустой action_bar (нет ICO CTA)
+
+## Quality gate P3
+
+- [x] Unit: ECO queue/detail + isolation (User без ECO CTA) — BDUI tests 45 passed
+- [x] Seed: active HS code `0101210000` (loyalty `ok`) for ECO accept validation
+- [x] Manual happy-path: ECO start → accept → `form_accepted`
+- [x] Manual reject → `form_waiting_corrections` + `rejectText` виден User; schema `accept_corrections`
+- [x] Cancel → `canceled_by_compliance_officer`; User re-submit запрещён; hint `eco_canceled_hint`
+- [x] Идемпотентность: повторный accept → domain 400 (`Can not transit status from form_accepted`)
 
 ## Branches (P7)
 
