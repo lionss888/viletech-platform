@@ -4,25 +4,25 @@ overview: "План шага 1: полная сверка NestJS-заготов�
 todos:
   - id: roles-authz
     content: Матрица всех AccountRole (вводные + TREASURER/SENIOR_PROVIDER/REPORTER/ROOT/ONE_C) ↔ guards и зоны видимости
-    status: pending
+    status: completed
   - id: client-statuses
     content: Маппинг статусов клиента/организации и пробелы (разблокировка, рейтинг)
-    status: pending
+    status: completed
   - id: state-machine
     content: Наложение флоу шагов 1–8 и ролевых флоу на FormPaymentStatus/transitions (включая treasurer/refund/shipment)
-    status: pending
+    status: completed
   - id: role-endpoints
     content: Сверка действий ICO/ECO/Manager/Provider/User + Treasurer/Senior Provider/1C с контроллерами
-    status: pending
+    status: completed
   - id: documents-fields
     content: Сверка 6 типов документов и полей с schema/docx + Diadoc
-    status: pending
+    status: completed
   - id: extended-modules
     content: Полный разбор Telegram, Liquidity, VirtualAccount, Recognition, Rate, Commission, Payment/1C, TreasurerTask
-    status: pending
+    status: completed
   - id: write-artifact
-    content: Зафиксировать итог в vdp/gap-analysis-backend.md со сводкой Must/Should/As-is по всем модулям
-    status: pending
+    content: Зафиксировать итог в заметки/gap-analysis-backend.md со сводкой Must/Should/As-is по всем модулям
+    status: completed
 isProject: false
 ---
 
@@ -34,7 +34,7 @@ isProject: false
 
 Источник требований: [`вводные/вводные от ви.txt`](вводные/вводные%20от%20ви.txt)  
 Источник кода: [`кастомные модули для адаптации и переиспользования/backend-for-ved`](кастомные%20модули%20для%20адаптации%20и%20переиспользования/backend-for-ved)  
-Артефакт результата: [`vdp/gap-analysis-backend.md`](vdp/gap-analysis-backend.md) (единственный документ п.1; код в `vdp/core` не пишем).
+Артефакт результата: [`заметки/gap-analysis-backend.md`](заметки/gap-analysis-backend.md) (единственный документ п.1; код в `vdp/core` не пишем).
 
 ## Границы анализа
 
@@ -133,7 +133,7 @@ flowchart LR
 
 ## Критерий готовности п.1
 
-П.1 закрыт, когда есть [`vdp/gap-analysis-backend.md`](vdp/gap-analysis-backend.md) с матрицей по **ядру и расширенному контуру**, и ты подтверждаешь сводку — после этого планируем п.2.
+П.1 закрыт: артефакт [`заметки/gap-analysis-backend.md`](заметки/gap-analysis-backend.md) готов; после подтверждения сводки — планируем п.2.
 
 ## Вне scope п.1
 
