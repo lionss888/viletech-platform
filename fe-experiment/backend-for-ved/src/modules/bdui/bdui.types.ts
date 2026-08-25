@@ -98,6 +98,50 @@ export type BduiWizardInlineCreate = {
   panelTitle: string;
 };
 
+export type BduiBulkEligibility = {
+  /** Dot-path field on list row (e.g. status, blocked). */
+  field: string;
+  /** Row eligible when field value is in this set. */
+  in?: unknown[];
+  /** Row eligible when field value is not in this set. */
+  notIn?: unknown[];
+};
+
+export type BduiBulkActionSpec = {
+  /** References BduiScreen.actions[].id */
+  actionId: string;
+  label: string;
+  /** Path param replaced per row (formId, userId, …). */
+  pathParam: string;
+  eligibility?: BduiBulkEligibility;
+  requiresConfirmation?: boolean;
+  confirmMessage?: string;
+};
+
+export type BduiTableFilterOption = {
+  value: string;
+  label: string;
+};
+
+/** List filter (E14): client-side by default. */
+export type BduiTableFilter = {
+  id: string;
+  field: string;
+  label: string;
+  options: BduiTableFilterOption[];
+  mode?: 'client' | 'server';
+  queryParam?: string;
+};
+
+/** Inline row CTA from lifecycle matrix (E14). */
+export type BduiRowActionSpec = {
+  actionId: string;
+  label?: string;
+  pathParam: string;
+  eligibility?: BduiBulkEligibility;
+  requiresConfirmation?: boolean;
+};
+
 export type BduiLoginFormWidget = {
   type: 'login_form';
   id: string;
@@ -117,6 +161,17 @@ export type BduiDataTableWidget = {
   sortableKeys?: string[];
   /** Empty list guidance instead of generic «Нет заявок». */
   emptyMessage?: string;
+  /** Multi-select + bulk action bar (E13). */
+  selectable?: boolean;
+  bulkActions?: BduiBulkActionSpec[];
+  bulkMaxSelection?: number;
+  /** Query param name for rowNavigateTo (formId, userId, orgId). */
+  rowNavigateParam?: string;
+  /** Client-side filters (E14). */
+  filters?: BduiTableFilter[];
+  /** Row-level CTA from matrix (E14). */
+  rowActions?: BduiRowActionSpec[];
+  rowActionColumnLabel?: string;
 };
 
 export type BduiFormWidget = {

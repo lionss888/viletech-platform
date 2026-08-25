@@ -10,8 +10,9 @@ import {
   BDUI_SCHEMA_VERSION,
   BduiVedRoleId,
 } from '../bdui.constants';
-import { BduiColumn, BduiScreen, BduiWidget } from '../bdui.types';
+import { BduiColumn, BduiDataTableWidget, BduiScreen, BduiWidget } from '../bdui.types';
 import { BduiLifecycleActionResolver } from './bdui-lifecycle-action.resolver';
+import { enrichFormListTable } from './list-table.helpers';
 
 const ROLE_TITLES: Record<BduiVedRoleId, string> = {
   [BDUI_ROLE_USER]: 'Клиент',
@@ -92,6 +93,18 @@ export class RoleCabinetBuilders {
     if (role === BDUI_ROLE_PROVIDER) {
       return this.buildProviderListScreen();
     }
+    const baseTable: BduiDataTableWidget = {
+      type: 'data_table',
+      id: 'forms_table',
+      dataSource: { method: 'GET', path: LIST_PATHS[role] },
+      columns: this.defaultListColumns(),
+      rowNavigateTo: 'forms.detail',
+      rowIdField: '_id',
+      defaultSort: { key: 'updateDate', direction: 'desc' },
+      sortableKeys: ['status', 'updateDate', 'totals.amount'],
+      emptyMessage: 'Список пуст.',
+    };
+    const { table, listActions } = enrichFormListTable(baseTable, role);
     return {
       id: `${role}.forms.list`,
       role,
@@ -104,19 +117,9 @@ export class RoleCabinetBuilders {
           id: 'list_intro',
           content: `Список заявок — ${ROLE_TITLES[role]}`,
         },
-        {
-          type: 'data_table',
-          id: 'forms_table',
-          dataSource: { method: 'GET', path: LIST_PATHS[role] },
-          columns: this.defaultListColumns(),
-          rowNavigateTo: 'forms.detail',
-          rowIdField: '_id',
-          defaultSort: { key: 'updateDate', direction: 'desc' },
-          sortableKeys: ['status', 'updateDate', 'totals.amount'],
-          emptyMessage: 'Список пуст.',
-        },
+        table,
       ],
-      actions: [],
+      actions: listActions,
     };
   }
 
@@ -162,6 +165,26 @@ export class RoleCabinetBuilders {
   }
 
   private buildInternalCoListScreen(): BduiScreen {
+    const baseTable: BduiDataTableWidget = {
+      type: 'data_table',
+      id: 'ico_queue',
+      dataSource: { method: 'GET', path: LIST_PATHS[BDUI_ROLE_INTERNAL_CO] },
+      columns: [
+        { key: '_id', label: 'ID' },
+        { key: 'status', label: 'Статус' },
+        { key: 'direction', label: 'Направление' },
+        { key: 'organization.name', label: 'Организация' },
+        { key: 'organization.inn', label: 'ИНН' },
+        { key: 'totals.amount', label: 'Сумма', format: 'money_minor' },
+        { key: 'updateDate', label: 'Обновлена' },
+      ],
+      rowNavigateTo: 'forms.detail',
+      rowIdField: '_id',
+      defaultSort: { key: 'updateDate', direction: 'desc' },
+      sortableKeys: ['status', 'updateDate', 'totals.amount'],
+      emptyMessage: 'Очередь пуста — нет заявок на первичную проверку организации.',
+    };
+    const { table, listActions } = enrichFormListTable(baseTable, BDUI_ROLE_INTERNAL_CO);
     return {
       id: `${BDUI_ROLE_INTERNAL_CO}.forms.list`,
       role: BDUI_ROLE_INTERNAL_CO,
@@ -173,29 +196,11 @@ export class RoleCabinetBuilders {
           type: 'text',
           id: 'list_intro',
           content:
-            'Очередь первой проверки РФ-организации: waiting → verification. Примите в работу, затем подтвердите / верните / отмените.',
+            'Фильтр по статусу; «Начать проверку» на строке без входа в карточку. Полный набор CTA — в detail.',
         },
-        {
-          type: 'data_table',
-          id: 'ico_queue',
-          dataSource: { method: 'GET', path: LIST_PATHS[BDUI_ROLE_INTERNAL_CO] },
-          columns: [
-            { key: '_id', label: 'ID' },
-            { key: 'status', label: 'Статус' },
-            { key: 'direction', label: 'Направление' },
-            { key: 'organization.name', label: 'Организация' },
-            { key: 'organization.inn', label: 'ИНН' },
-            { key: 'totals.amount', label: 'Сумма', format: 'money_minor' },
-            { key: 'updateDate', label: 'Обновлена' },
-          ],
-          rowNavigateTo: 'forms.detail',
-          rowIdField: '_id',
-          defaultSort: { key: 'updateDate', direction: 'desc' },
-          sortableKeys: ['status', 'updateDate', 'totals.amount'],
-          emptyMessage: 'Очередь пуста — нет заявок на первичную проверку организации.',
-        },
+        table,
       ],
-      actions: [],
+      actions: listActions,
     };
   }
 
@@ -254,6 +259,27 @@ export class RoleCabinetBuilders {
   }
 
   private buildExternalCoListScreen(): BduiScreen {
+    const baseTable: BduiDataTableWidget = {
+      type: 'data_table',
+      id: 'eco_queue',
+      dataSource: { method: 'GET', path: LIST_PATHS[BDUI_ROLE_EXTERNAL_CO] },
+      columns: [
+        { key: '_id', label: 'ID' },
+        { key: 'status', label: 'Статус' },
+        { key: 'direction', label: 'Направление' },
+        { key: 'platformPaymentCondition', label: 'Условие оплаты' },
+        { key: 'organization.name', label: 'Организация' },
+        { key: 'counterparty.name', label: 'Контрагент' },
+        { key: 'totals.amount', label: 'Сумма', format: 'money_minor' },
+        { key: 'updateDate', label: 'Обновлена' },
+      ],
+      rowNavigateTo: 'forms.detail',
+      rowIdField: '_id',
+      defaultSort: { key: 'status', direction: 'asc' },
+      sortableKeys: ['status', 'updateDate', 'totals.amount'],
+      emptyMessage: 'Очередь пуста — нет заявок на проверку документов и условий сделки.',
+    };
+    const { table, listActions } = enrichFormListTable(baseTable, BDUI_ROLE_EXTERNAL_CO);
     return {
       id: `${BDUI_ROLE_EXTERNAL_CO}.forms.list`,
       role: BDUI_ROLE_EXTERNAL_CO,
@@ -265,29 +291,11 @@ export class RoleCabinetBuilders {
           type: 'text',
           id: 'list_intro',
           content:
-            'Очередь проверки заявки (документы и условия сделки): waiting → verification. Одобрите, верните на доработку или отмените.',
+            'Фильтр по статусу; «Начать проверку» на строке. Одобрение / возврат — в карточке заявки.',
         },
-        {
-          type: 'data_table',
-          id: 'eco_queue',
-          dataSource: { method: 'GET', path: LIST_PATHS[BDUI_ROLE_EXTERNAL_CO] },
-          columns: [
-            { key: '_id', label: 'ID' },
-            { key: 'status', label: 'Статус' },
-            { key: 'direction', label: 'Направление' },
-            { key: 'platformPaymentCondition', label: 'Условие оплаты' },
-            { key: 'organization.name', label: 'Организация' },
-            { key: 'totals.amount', label: 'Сумма', format: 'money_minor' },
-            { key: 'updateDate', label: 'Обновлена' },
-          ],
-          rowNavigateTo: 'forms.detail',
-          rowIdField: '_id',
-          defaultSort: { key: 'status', direction: 'asc' },
-          sortableKeys: ['status', 'updateDate', 'totals.amount'],
-          emptyMessage: 'Очередь пуста — нет заявок на проверку документов и условий сделки.',
-        },
+        table,
       ],
-      actions: [],
+      actions: listActions,
     };
   }
 
@@ -354,6 +362,28 @@ export class RoleCabinetBuilders {
   }
 
   private buildManagerListScreen(): BduiScreen {
+    const baseTable: BduiDataTableWidget = {
+      type: 'data_table',
+      id: 'mgr_queue',
+      dataSource: { method: 'GET', path: LIST_PATHS[BDUI_ROLE_MANAGER] },
+      columns: [
+        { key: '_id', label: 'ID' },
+        { key: 'status', label: 'Статус' },
+        { key: 'direction', label: 'Направление' },
+        { key: 'platformPaymentCondition', label: 'Условие оплаты' },
+        { key: 'organization.name', label: 'Организация' },
+        { key: 'counterparty.name', label: 'Контрагент' },
+        { key: 'totals.amount', label: 'Сумма', format: 'money_minor' },
+        { key: 'provider', label: 'Provider' },
+        { key: 'updateDate', label: 'Обновлена' },
+      ],
+      rowNavigateTo: 'forms.detail',
+      rowIdField: '_id',
+      defaultSort: { key: 'updateDate', direction: 'desc' },
+      sortableKeys: ['status', 'updateDate', 'totals.amount'],
+      emptyMessage: 'Активных заявок нет — дождитесь form_accepted или проверьте фильтр API.',
+    };
+    const { table, listActions } = enrichFormListTable(baseTable, BDUI_ROLE_MANAGER);
     return {
       id: `${BDUI_ROLE_MANAGER}.forms.list`,
       role: BDUI_ROLE_MANAGER,
@@ -365,30 +395,11 @@ export class RoleCabinetBuilders {
           type: 'text',
           id: 'list_intro',
           content:
-            'Happy-path import+аванс: form_accepted → поручение → оплата → Provider → отчёт → отгрузка → COMPLETED. Список включает closing-статусы.',
+            'Фильтр по статусу; быстрый старт проверки поручения на строке. Полный happy-path — в карточке.',
         },
-        {
-          type: 'data_table',
-          id: 'mgr_queue',
-          dataSource: { method: 'GET', path: LIST_PATHS[BDUI_ROLE_MANAGER] },
-          columns: [
-            { key: '_id', label: 'ID' },
-            { key: 'status', label: 'Статус' },
-            { key: 'direction', label: 'Направление' },
-            { key: 'platformPaymentCondition', label: 'Условие оплаты' },
-            { key: 'organization.name', label: 'Организация' },
-            { key: 'totals.amount', label: 'Сумма', format: 'money_minor' },
-            { key: 'provider', label: 'Provider' },
-            { key: 'updateDate', label: 'Обновлена' },
-          ],
-          rowNavigateTo: 'forms.detail',
-          rowIdField: '_id',
-          defaultSort: { key: 'updateDate', direction: 'desc' },
-          sortableKeys: ['status', 'updateDate', 'totals.amount'],
-          emptyMessage: 'Активных заявок нет — дождитесь form_accepted или проверьте фильтр API.',
-        },
+        table,
       ],
-      actions: [],
+      actions: listActions,
     };
   }
 
@@ -540,6 +551,26 @@ export class RoleCabinetBuilders {
   }
 
   private buildProviderListScreen(): BduiScreen {
+    const baseTable: BduiDataTableWidget = {
+      type: 'data_table',
+      id: 'prov_queue',
+      dataSource: { method: 'GET', path: LIST_PATHS[BDUI_ROLE_PROVIDER] },
+      columns: [
+        { key: '_id', label: 'ID' },
+        { key: 'status', label: 'Статус' },
+        { key: 'direction', label: 'Направление' },
+        { key: 'platformPaymentCondition', label: 'Условие' },
+        { key: 'totals.amount', label: 'Сумма', format: 'money_minor' },
+        { key: 'counterparty.name', label: 'Контрагент' },
+        { key: 'updateDate', label: 'Обновлена' },
+      ],
+      rowNavigateTo: 'forms.detail',
+      rowIdField: '_id',
+      defaultSort: { key: 'updateDate', direction: 'desc' },
+      sortableKeys: ['status', 'updateDate', 'totals.amount'],
+      emptyMessage: 'Нет заявок в работе — дождитесь назначения от Manager.',
+    };
+    const { table, listActions } = enrichFormListTable(baseTable, BDUI_ROLE_PROVIDER);
     return {
       id: `${BDUI_ROLE_PROVIDER}.forms.list`,
       role: BDUI_ROLE_PROVIDER,
@@ -551,29 +582,11 @@ export class RoleCabinetBuilders {
           type: 'text',
           id: 'list_intro',
           content:
-            'Только ваши заявки. Данные клиента ограничены: реквизиты платежа, суммы, поручение/доказательства — без ПДн account.',
+            'Узкий набор полей (без ПДн клиента): сумма, контрагент, статус. «Начать исполнение» — на строке.',
         },
-        {
-          type: 'data_table',
-          id: 'prov_queue',
-          dataSource: { method: 'GET', path: LIST_PATHS[BDUI_ROLE_PROVIDER] },
-          columns: [
-            { key: '_id', label: 'ID' },
-            { key: 'status', label: 'Статус' },
-            { key: 'direction', label: 'Направление' },
-            { key: 'platformPaymentCondition', label: 'Условие' },
-            { key: 'totals.amount', label: 'Сумма', format: 'money_minor' },
-            { key: 'counterparty.name', label: 'Контрагент' },
-            { key: 'updateDate', label: 'Обновлена' },
-          ],
-          rowNavigateTo: 'forms.detail',
-          rowIdField: '_id',
-          defaultSort: { key: 'updateDate', direction: 'desc' },
-          sortableKeys: ['status', 'updateDate', 'totals.amount'],
-          emptyMessage: 'Нет заявок в работе — дождитесь назначения от Manager.',
-        },
+        table,
       ],
-      actions: [],
+      actions: listActions,
     };
   }
 

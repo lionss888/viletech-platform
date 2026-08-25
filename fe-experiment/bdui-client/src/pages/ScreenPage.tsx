@@ -10,7 +10,9 @@ import {
 } from '../api/client';
 import { fetchScreen } from '../api/schema';
 import { SchemaRenderer } from '../components/SchemaRenderer';
-import type { AuthResponse, BduiAction, BduiScreen, BduiVedRoleId } from '../types/bdui';
+import type { AuthResponse, BduiAction, BduiBulkActionSpec, BduiRowActionSpec, BduiScreen, BduiVedRoleId } from '../types/bdui';
+import { partitionBulkRows } from '../utils/bulk-eligibility';
+import { runBulkActionSequential } from '../utils/bulk-runner';
 
 type ScreenPageProps = {
   page: string;
@@ -216,6 +218,95 @@ export function ScreenPage(props: ScreenPageProps): JSX.Element {
     }
   }
 
+  async function handleBulkAction(
+    spec: BduiBulkActionSpec,
+    action: BduiAction,
+    rows: Record<string, unknown>[],
+    selectedIds: string[],
+    idField: string,
+    maxSelection: number,
+  ): Promise<string | null> {
+    const { eligible, ineligible } = partitionBulkRows(rows, selectedIds, idField, spec.eligibility);
+    if (eligible.length === 0) {
+      return `Нет подходящих строк${ineligible.length > 0 ? ` (${ineligible.length} пропущено по статусу/состоянию)` : ''}.`;
+    }
+    const capped = eligible.slice(0, maxSelection);
+    const skippedByLimit = eligible.length - capped.length;
+    let confirmText = (spec.confirmMessage ?? `${spec.label}?`).replace(
+      '{eligible}',
+      String(capped.length),
+    );
+    if (ineligible.length > 0) {
+      confirmText += `\n\nПропущено (не подходят): ${ineligible.length}`;
+    }
+    if (skippedByLimit > 0) {
+      confirmText += `\n\nЛимит пакета ${maxSelection}: ещё ${skippedByLimit} не будут обработаны.`;
+    }
+    if (spec.requiresConfirmation !== false) {
+      if (!window.confirm(confirmText)) {
+        return null;
+      }
+    }
+    let body: Record<string, unknown> | undefined;
+    if (action.requiresTextReason) {
+      const text = window.prompt('Комментарий для всех выбранных:', '')?.trim();
+      if (!text) {
+        throw new Error('Нужен комментарий для этого действия');
+      }
+      body = { text };
+    }
+    const summary = await runBulkActionSequential({
+      action,
+      pathParam: spec.pathParam,
+      rowIds: capped.map((row) => String(row[idField])),
+      body,
+      maxCount: maxSelection,
+    });
+    let message = `Готово: ${summary.succeeded.length}`;
+    if (summary.failed.length > 0) {
+      message += `; ошибки: ${summary.failed.length}`;
+      for (const failure of summary.failed.slice(0, 3)) {
+        message += `\n• …${failure.id.slice(-6)}: ${failure.error}`;
+      }
+    }
+    if (ineligible.length > 0) {
+      message += `; пропущено: ${ineligible.length}`;
+    }
+    setDataRefreshKey((previous) => previous + 1);
+    return message;
+  }
+
+  async function handleRowAction(
+    spec: BduiRowActionSpec,
+    action: BduiAction,
+    _row: Record<string, unknown>,
+    rowId: string,
+  ): Promise<string | null> {
+    const actionLabel = spec.label ?? action.label;
+    if (spec.requiresConfirmation !== false) {
+      if (!window.confirm(`${actionLabel} для …${rowId.slice(-6)}?`)) {
+        return null;
+      }
+    }
+    let body: Record<string, unknown> | undefined;
+    if (action.requiresTextReason) {
+      const text = window.prompt('Комментарий:', '')?.trim();
+      if (!text) {
+        throw new Error('Нужен комментарий для этого действия');
+      }
+      body = { text };
+    }
+    const rowPathParams = { ...pathParams, [spec.pathParam]: rowId };
+    await apiRequest<unknown>(action.path, {
+      method: action.method,
+      body: buildRequestBody(action, body),
+      auth: true,
+      pathParams: rowPathParams,
+    });
+    setDataRefreshKey((previous) => previous + 1);
+    return `${actionLabel}: выполнено`;
+  }
+
   async function handleRunAction(
     action: BduiAction,
     body?: Record<string, unknown>,
@@ -370,6 +461,8 @@ export function ScreenPage(props: ScreenPageProps): JSX.Element {
         onNavigate={handleNavigate}
         onRunAction={handleRunAction}
         onDirectoryLinked={() => setDataRefreshKey((previous) => previous + 1)}
+        onBulkAction={handleBulkAction}
+        onRowAction={handleRowAction}
         onStatusLoaded={(nextStatus) => {
           void handleStatusLoaded(nextStatus);
         }}

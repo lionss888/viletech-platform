@@ -6,7 +6,7 @@ import { formatFieldDisplay } from '../../utils/field-display';
 type DetailFieldsWidgetProps = {
   dataSource: BduiApiRef;
   fields: BduiColumn[];
-  formId: string;
+  pathParams: Record<string, string>;
   /** Bump to reload after CTA / status change. */
   refreshKey?: string;
 };
@@ -14,12 +14,13 @@ type DetailFieldsWidgetProps = {
 export function DetailFieldsWidget(props: DetailFieldsWidgetProps): JSX.Element {
   const [data, setData] = useState<Record<string, unknown> | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const pathKey = JSON.stringify(props.pathParams);
 
   useEffect(() => {
     let cancelled = false;
     async function loadDetail(): Promise<void> {
       try {
-        const path = replacePathParams(props.dataSource.path, { formId: props.formId });
+        const path = replacePathParams(props.dataSource.path, props.pathParams);
         const response = await apiRequest<Record<string, unknown>>(path, {
           method: props.dataSource.method,
         });
@@ -33,14 +34,15 @@ export function DetailFieldsWidget(props: DetailFieldsWidgetProps): JSX.Element 
         }
       }
     }
-    if (!props.formId) {
+    const hasParam = Object.values(props.pathParams).some((value) => value.length > 0);
+    if (!hasParam) {
       return;
     }
     void loadDetail();
     return () => {
       cancelled = true;
     };
-  }, [props.dataSource.method, props.dataSource.path, props.formId, props.refreshKey]);
+  }, [props.dataSource.method, props.dataSource.path, pathKey, props.refreshKey, props.pathParams]);
 
   if (errorMessage) {
     return <p className="bdui-error">{errorMessage}</p>;

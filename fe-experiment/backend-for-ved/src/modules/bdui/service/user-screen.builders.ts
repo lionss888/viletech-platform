@@ -22,7 +22,8 @@ import {
   BDUI_ROLE_USER,
   BDUI_SCHEMA_VERSION,
 } from '../bdui.constants';
-import { BduiField, BduiScreen } from '../bdui.types';
+import { BduiDataTableWidget, BduiField, BduiScreen } from '../bdui.types';
+import { enrichFormListTable } from './list-table.helpers';
 import { OrganizationBusinessFormType } from 'lib/enums/models/organization.enums';
 import { BduiUserActionResolver } from './bdui-user-action.resolver';
 import { getCatalogActions } from './lifecycle-action.catalog';
@@ -141,6 +142,28 @@ export class UserScreenBuilders {
   }
 
   buildFormsListScreen(): BduiScreen {
+    const baseTable: BduiDataTableWidget = {
+      type: 'data_table',
+      id: 'forms_table',
+      dataSource: { method: 'GET', path: '/form-payment' },
+      columns: [
+        { key: '_id', label: 'ID' },
+        { key: 'status', label: 'Статус' },
+        { key: 'direction', label: 'Направление' },
+        { key: 'platformPaymentCondition', label: 'Оплата' },
+        { key: 'organization.name', label: 'Организация' },
+        { key: 'counterparty.name', label: 'Контрагент' },
+        { key: 'totals.amount', label: 'Сумма', format: 'money_minor' },
+        { key: 'createdAt', label: 'Создана' },
+      ],
+      rowNavigateTo: 'forms.detail',
+      rowIdField: '_id',
+      defaultSort: { key: 'createdAt', direction: 'desc' },
+      sortableKeys: ['status', 'createdAt', 'totals.amount'],
+      emptyMessage:
+        'Пока нет заявок. Нажмите «Новая заявка» ниже — wizard проведёт через документы, условия сделки и организацию.',
+    };
+    const { table, listActions } = enrichFormListTable(baseTable, BDUI_ROLE_USER);
     return {
       id: 'user.forms.list',
       role: BDUI_ROLE_USER,
@@ -152,28 +175,9 @@ export class UserScreenBuilders {
           type: 'text',
           id: 'list_intro',
           content:
-            'Ваши заявки: откройте карточку для статуса и CTA. Новая заявка — кнопка ниже. Смена роли — «Выйти» и login с другим picker.',
+            'Фильтр по статусу и быстрые действия на строке. Откройте карточку для полного набора CTA. Новая заявка — кнопка ниже.',
         },
-        {
-          type: 'data_table',
-          id: 'forms_table',
-          dataSource: { method: 'GET', path: '/form-payment' },
-          columns: [
-            { key: '_id', label: 'ID' },
-            { key: 'status', label: 'Статус' },
-            { key: 'direction', label: 'Направление' },
-            { key: 'platformPaymentCondition', label: 'Оплата' },
-            { key: 'organization.name', label: 'Организация' },
-            { key: 'totals.amount', label: 'Сумма', format: 'money_minor' },
-            { key: 'createdAt', label: 'Создана' },
-          ],
-          rowNavigateTo: 'forms.detail',
-          rowIdField: '_id',
-          defaultSort: { key: 'createdAt', direction: 'desc' },
-          sortableKeys: ['status', 'createdAt', 'totals.amount'],
-          emptyMessage:
-            'Пока нет заявок. Нажмите «Новая заявка» ниже — wizard проведёт через документы, условия сделки и организацию.',
-        },
+        table,
       ],
       actions: [
         {
@@ -184,6 +188,7 @@ export class UserScreenBuilders {
           bodyFrom: 'none',
           navigateTo: 'forms.create',
         },
+        ...listActions,
       ],
     };
   }

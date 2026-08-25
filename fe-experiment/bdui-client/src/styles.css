@@ -284,6 +284,71 @@ body {
   font-size: 1.05rem;
 }
 
+.bdui-bulk-bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 0.75rem;
+  padding: 0.65rem 0.75rem;
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  background: var(--surface, #fafafa);
+}
+
+.bdui-bulk-bar__clear {
+  margin-left: auto;
+}
+
+.bdui-bulk-feedback {
+  margin: 0 0 0.75rem;
+  white-space: pre-wrap;
+}
+
+.bdui-table-filters {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 0.75rem 1rem;
+  margin-bottom: 0.75rem;
+}
+
+.bdui-table-filter {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  font-size: 0.88rem;
+}
+
+.bdui-table-filter__label {
+  color: var(--muted, #666);
+}
+
+.bdui-table-filter select {
+  min-width: 10rem;
+  padding: 0.35rem 0.5rem;
+}
+
+.bdui-table-filter__count {
+  align-self: center;
+  font-size: 0.85rem;
+}
+
+.bdui-table-row-action-col {
+  width: 1%;
+  white-space: nowrap;
+}
+
+.bdui-row-action-btn {
+  font-size: 0.85rem;
+  padding: 0.25rem 0.5rem;
+}
+
+.bdui-table-select-col {
+  width: 2.25rem;
+  text-align: center;
+}
+
 .bdui-root-nav {
   display: flex;
   flex-wrap: wrap;

@@ -1,4 +1,4 @@
-import type { BduiAction, BduiScreen } from '../types/bdui';
+import type { BduiAction, BduiBulkActionSpec, BduiRowActionSpec, BduiScreen } from '../types/bdui';
 import { ActionBarWidget } from './widgets/ActionBarWidget';
 import { DataTableWidget } from './widgets/DataTableWidget';
 import { DetailFieldsWidget } from './widgets/DetailFieldsWidget';
@@ -19,6 +19,20 @@ type SchemaRendererProps = {
   dataRefreshKey?: string;
   /** Bump parent refresh after inline directory link on detail. */
   onDirectoryLinked?: () => void;
+  onBulkAction?: (
+    spec: BduiBulkActionSpec,
+    action: BduiAction,
+    rows: Record<string, unknown>[],
+    selectedIds: string[],
+    idField: string,
+    maxSelection: number,
+  ) => Promise<string | null>;
+  onRowAction?: (
+    spec: BduiRowActionSpec,
+    action: BduiAction,
+    row: Record<string, unknown>,
+    rowId: string,
+  ) => Promise<string | null>;
 };
 
 function findAction(screen: BduiScreen, actionId: string): BduiAction | undefined {
@@ -103,12 +117,21 @@ export function SchemaRenderer(props: SchemaRendererProps): JSX.Element {
                   defaultSort={widget.defaultSort}
                   sortableKeys={widget.sortableKeys}
                   emptyMessage={widget.emptyMessage}
+                  selectable={widget.selectable}
+                  bulkActions={widget.bulkActions}
+                  bulkMaxSelection={widget.bulkMaxSelection}
+                  filters={widget.filters}
+                  rowActions={widget.rowActions}
+                  rowActionColumnLabel={widget.rowActionColumnLabel}
+                  actions={props.screen.actions}
+                  onBulkAction={props.onBulkAction}
+                  onRowAction={props.onRowAction}
                   onRowClick={
                     widget.rowNavigateTo
-                      ? (rowId) =>
-                          props.onNavigate(widget.rowNavigateTo!, {
-                            formId: rowId,
-                          })
+                      ? (rowId) => {
+                          const param = widget.rowNavigateParam ?? 'formId';
+                          props.onNavigate(widget.rowNavigateTo!, { [param]: rowId });
+                        }
                       : undefined
                   }
                 />
@@ -130,7 +153,7 @@ export function SchemaRenderer(props: SchemaRendererProps): JSX.Element {
                   key={widget.id}
                   dataSource={widget.dataSource}
                   fields={widget.fields}
-                  formId={pathParams.formId ?? ''}
+                  pathParams={pathParams}
                   refreshKey={props.dataRefreshKey}
                 />
               );

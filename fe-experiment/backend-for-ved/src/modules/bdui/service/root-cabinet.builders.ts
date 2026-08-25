@@ -6,10 +6,20 @@ import {
   BDUI_ACTION_ROOT_CANCEL_FORM,
   BDUI_ACTION_ROOT_CREATE_USER,
   BDUI_ACTION_ROOT_UNBLOCK_USER,
+  BDUI_BULK_MAX_SELECTION,
   BDUI_ROLE_ROOT,
   BDUI_SCHEMA_VERSION,
 } from '../bdui.constants';
 import { BduiScreen } from '../bdui.types';
+
+const FORM_BULK_CANCEL_INELIGIBLE_STATUSES = [
+  'completed',
+  'canceled',
+  'canceled_by_user',
+  'canceled_by_manager',
+  'canceled_by_compliance_officer',
+  'canceled_by_internal_compliance_officer',
+] as const;
 
 const ACCOUNT_ROLE_OPTIONS = [
   { value: AccountRole.USER, label: 'User' },
@@ -81,6 +91,27 @@ export class RootCabinetBuilders {
           ],
           rowNavigateTo: 'users.detail',
           rowIdField: '_id',
+          rowNavigateParam: 'userId',
+          selectable: true,
+          bulkMaxSelection: BDUI_BULK_MAX_SELECTION,
+          bulkActions: [
+            {
+              actionId: BDUI_ACTION_ROOT_BLOCK_USER,
+              label: 'Заблокировать выбранных',
+              pathParam: 'userId',
+              eligibility: { field: 'blocked', notIn: [true] },
+              requiresConfirmation: true,
+              confirmMessage: 'Заблокировать {eligible} пользователей?',
+            },
+            {
+              actionId: BDUI_ACTION_ROOT_UNBLOCK_USER,
+              label: 'Разблокировать выбранных',
+              pathParam: 'userId',
+              eligibility: { field: 'blocked', in: [true] },
+              requiresConfirmation: true,
+              confirmMessage: 'Разблокировать {eligible} пользователей?',
+            },
+          ],
           defaultSort: { key: 'createDate', direction: 'desc' },
           sortableKeys: ['email', 'createDate', 'blocked'],
           emptyMessage: 'Нет пользователей — создайте первого через «Новый пользователь».',
@@ -94,6 +125,22 @@ export class RootCabinetBuilders {
           path: '/bdui/schema/root/users.create',
           bodyFrom: 'none',
           navigateTo: 'users.create',
+        },
+        {
+          id: BDUI_ACTION_ROOT_BLOCK_USER,
+          label: 'Заблокировать',
+          method: 'PATCH',
+          path: '/admin/account/{userId}',
+          bodyFrom: 'form',
+          staticBody: { blocked: true },
+        },
+        {
+          id: BDUI_ACTION_ROOT_UNBLOCK_USER,
+          label: 'Разблокировать',
+          method: 'PATCH',
+          path: '/admin/account/{userId}',
+          bodyFrom: 'form',
+          staticBody: { blocked: false },
         },
       ],
     };
@@ -305,12 +352,37 @@ export class RootCabinetBuilders {
           ],
           rowNavigateTo: 'forms.detail',
           rowIdField: '_id',
+          rowNavigateParam: 'formId',
+          selectable: true,
+          bulkMaxSelection: BDUI_BULK_MAX_SELECTION,
+          bulkActions: [
+            {
+              actionId: BDUI_ACTION_ROOT_CANCEL_FORM,
+              label: 'Отменить выбранные',
+              pathParam: 'formId',
+              eligibility: {
+                field: 'status',
+                notIn: [...FORM_BULK_CANCEL_INELIGIBLE_STATUSES],
+              },
+              requiresConfirmation: true,
+              confirmMessage: 'Отменить {eligible} заявок? Необратимо для активных статусов.',
+            },
+          ],
           defaultSort: { key: 'updateDate', direction: 'desc' },
           sortableKeys: ['status', 'updateDate', 'totals.amount'],
           emptyMessage: 'Нет заявок.',
         },
       ],
-      actions: [],
+      actions: [
+        {
+          id: BDUI_ACTION_ROOT_CANCEL_FORM,
+          label: 'Отменить (manager cancel)',
+          method: 'PUT',
+          path: '/admin/manager/form-payment/{formId}/cancel',
+          bodyFrom: 'form',
+          requiresTextReason: true,
+        },
+      ],
     };
   }
 

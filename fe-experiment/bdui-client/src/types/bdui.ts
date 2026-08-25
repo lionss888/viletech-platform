@@ -59,6 +59,43 @@ export type BduiFileUploadSpec = {
   accept?: string;
 };
 
+export type BduiBulkEligibility = {
+  field: string;
+  in?: unknown[];
+  notIn?: unknown[];
+};
+
+export type BduiBulkActionSpec = {
+  actionId: string;
+  label: string;
+  pathParam: string;
+  eligibility?: BduiBulkEligibility;
+  requiresConfirmation?: boolean;
+  confirmMessage?: string;
+};
+
+export type BduiTableFilterOption = {
+  value: string;
+  label: string;
+};
+
+export type BduiTableFilter = {
+  id: string;
+  field: string;
+  label: string;
+  options: BduiTableFilterOption[];
+  mode?: 'client' | 'server';
+  queryParam?: string;
+};
+
+export type BduiRowActionSpec = {
+  actionId: string;
+  label?: string;
+  pathParam: string;
+  eligibility?: BduiBulkEligibility;
+  requiresConfirmation?: boolean;
+};
+
 export type BduiAction = {
   id: string;
   label: string;
@@ -119,9 +156,16 @@ export type BduiWidget =
       columns: BduiColumn[];
       rowNavigateTo?: string;
       rowIdField?: string;
+      rowNavigateParam?: string;
       defaultSort?: { key: string; direction: BduiTableSortDirection };
       sortableKeys?: string[];
       emptyMessage?: string;
+      selectable?: boolean;
+      bulkActions?: BduiBulkActionSpec[];
+      bulkMaxSelection?: number;
+      filters?: BduiTableFilter[];
+      rowActions?: BduiRowActionSpec[];
+      rowActionColumnLabel?: string;
     }
   | { type: 'form'; id: string; fields: BduiField[]; submitAction: string }
   | BduiWizardWidget

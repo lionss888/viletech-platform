@@ -4,13 +4,13 @@ overview: "Управление заявками на экране списка:
 todos:
   - id: e14-filters-columns
     content: List filters + columns status/amount/counterparty в schema
-    status: pending
+    status: completed
   - id: e14-row-actions
     content: Row-level CTA из matrix в DataTable
-    status: pending
+    status: completed
   - id: e14-qa
     content: QA gate E14; LIFECYCLE final notes E7–E14
-    status: pending
+    status: completed
 isProject: false
 ---
 

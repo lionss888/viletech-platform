@@ -4,13 +4,13 @@ overview: Пакетные действия над несколькими сущ
 todos:
   - id: e13-select-ui
     content: Multi-select + bulk bar в DataTable
-    status: pending
+    status: completed
   - id: e13-actions
     content: Bulk CTA на API (batch или sequential idempotent)
-    status: pending
+    status: completed
   - id: e13-qa
     content: QA gate E13; LIFECYCLE
-    status: pending
+    status: completed
 isProject: false
 ---
 

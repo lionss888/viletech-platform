@@ -69,4 +69,27 @@ describe('RootCabinetBuilders', () => {
     expect(cancel?.path).toBe('/admin/manager/form-payment/{formId}/cancel');
     expect(cancel?.requiresTextReason).toBe(true);
   });
+
+  it('E13: users and forms list expose bulk select with max limit', () => {
+    const users = builders.buildUsersListScreen();
+    const usersTable = users.widgets.find((widget) => widget.type === 'data_table');
+    expect(usersTable?.type).toBe('data_table');
+    if (usersTable?.type !== 'data_table') {
+      return;
+    }
+    expect(usersTable.selectable).toBe(true);
+    expect(usersTable.bulkMaxSelection).toBe(20);
+    expect(usersTable.bulkActions?.length).toBe(2);
+    expect(usersTable.bulkActions?.[0]?.actionId).toBe(BDUI_ACTION_ROOT_BLOCK_USER);
+
+    const forms = builders.buildFormsListScreen();
+    const formsTable = forms.widgets.find((widget) => widget.type === 'data_table');
+    expect(formsTable?.type).toBe('data_table');
+    if (formsTable?.type !== 'data_table') {
+      return;
+    }
+    expect(formsTable.selectable).toBe(true);
+    expect(formsTable.bulkActions?.[0]?.actionId).toBe(BDUI_ACTION_ROOT_CANCEL_FORM);
+    expect(formsTable.bulkActions?.[0]?.eligibility?.notIn).toContain('completed');
+  });
 });

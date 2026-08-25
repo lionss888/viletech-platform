@@ -217,3 +217,34 @@ Pages (staff): `login`, `forms.list`, `forms.detail`. User also: `forms.create`.
 - [x] User schema без root CTA; User `GET /admin/account` → 403
 - [x] Unit: `root-cabinet.builders.spec.ts`, E12 in `bdui-schema.service.spec.ts`
 - [x] `node scripts/smoke-bdui-root.js`; login smoke includes root → `users.list`
+
+### Quality gate E13 — Bulk actions
+
+- [x] `DataTableWidget`: multi-select, bulk bar, лимит `BDUI_BULK_MAX_SELECTION` (20)
+- [x] Root `users.list`: bulk block/unblock → sequential `PATCH /admin/account/{userId}` + eligibility `blocked`
+- [x] Root `forms.list`: bulk cancel → sequential `PUT …/cancel` + exclude terminal statuses
+- [x] Confirm dialog + partial success message; User list без bulk CTA
+- [x] Unit: E13 в `root-cabinet.builders.spec.ts`, `bdui-schema.service.spec.ts`
+- [x] `node scripts/smoke-bdui-bulk.js`
+
+### Quality gate E14 — List management
+
+- [x] Schema: status filter + columns id/status/amount/counterparty(org) на forms.list (User + staff)
+- [x] Row-level CTA из matrix: User submit, ICO/ECO start, Manager order start, Provider payment start
+- [x] Client: filter UI + inline row action (stopPropagation, refresh list, confirm)
+- [x] Provider list без ПДн (нет organization.inn / client account)
+- [x] Unit: `list-table.helpers.spec.ts`, E14 в user/role builders specs
+- [x] `node scripts/smoke-bdui-list-management.js`
+
+## E7–E14 summary
+
+| Epic | Deliverable |
+|------|-------------|
+| E7 | MinIO upload + file id in Mongo |
+| E8 | Amount/status DTO mapping + refresh after CTA |
+| E9 | Breadcrumb, sort, empty states, hints |
+| E10 | Seed directories + wizard selects |
+| E11 | Inline org/counterparty create |
+| E12 | Root SuperAdmin cabinet |
+| E13 | Bulk block/cancel (root) |
+| E14 | List filters + row actions |

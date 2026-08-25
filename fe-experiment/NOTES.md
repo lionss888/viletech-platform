@@ -64,6 +64,31 @@ Login: `root@bdui.local` (password = `BDUI_LIFECYCLE_PASSWORD` or `BDUI_ROOT_PAS
 
 Smoke: `node scripts/smoke-bdui-root.js`.
 
+## Bulk actions (E13)
+
+| List | Bulk actions | API |
+|------|--------------|-----|
+| Root users | block / unblock selected | sequential `PATCH /admin/account/{userId}` |
+| Root forms | cancel selected (eligible status) | sequential `PUT …/manager/…/cancel` + comment |
+
+Max 20 rows per batch; confirm dialog; ineligible rows skipped with count in feedback. User role lists have no bulk bar.
+
+Smoke: `node scripts/smoke-bdui-bulk.js`.
+
+## List management (E14)
+
+| Role | Filter | Row CTA (matrix) |
+|------|--------|------------------|
+| User | status (client) | accept_form on draft/creating |
+| Internal CO | org queue statuses | ico_form_start |
+| External CO | form queue statuses | eco_form_start |
+| Manager | active statuses | mgr_order_start |
+| Provider | execution statuses | prov_payment_start |
+
+Columns: id, status, amount (`totals.amount`), org/counterparty where role allows. Row click → detail сохранён; row CTA — `stopPropagation`.
+
+Smoke: `node scripts/smoke-bdui-list-management.js`.
+
 ## Form DTO display map (E8)
 
 Site/manager GET form-payment does **not** expose top-level `amount` / `currencyClient` for UI:

@@ -169,4 +169,17 @@ describe('UserScreenBuilders', () => {
       expect.arrayContaining([BDUI_ACTION_CREATE_COUNTERPARTY, BDUI_ACTION_CREATE_ORGANIZATION]),
     );
   });
+
+  it('E14: user list has status filter, counterparty column, and row submit action', () => {
+    const list = builders.buildFormsListScreen();
+    const table = list.widgets.find((widget) => widget.type === 'data_table');
+    expect(table?.type).toBe('data_table');
+    if (table?.type !== 'data_table') {
+      return;
+    }
+    expect(table.filters?.some((filter) => filter.field === 'status')).toBe(true);
+    expect(table.columns.some((column) => column.key === 'counterparty.name')).toBe(true);
+    expect(table.rowActions?.some((item) => item.actionId === BDUI_ACTION_ACCEPT_FORM)).toBe(true);
+    expect(list.actions.some((action) => action.id === BDUI_ACTION_ACCEPT_FORM)).toBe(true);
+  });
 });

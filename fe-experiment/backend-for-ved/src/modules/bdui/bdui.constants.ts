@@ -1,5 +1,7 @@
 export const BDUI_SCHEMA_VERSION = 1;
 
+export const BDUI_ACTION_LOGIN = 'login';
+
 export const BDUI_VED_ROLES = [
   'user',
   'internal_compliance_officer',
@@ -24,8 +26,8 @@ export const BDUI_ACTION_ROOT_BLOCK_USER = 'root_block_user';
 export const BDUI_ACTION_ROOT_UNBLOCK_USER = 'root_unblock_user';
 export const BDUI_ACTION_ROOT_CANCEL_FORM = 'root_cancel_form';
 
-/** Shared */
-export const BDUI_ACTION_LOGIN = 'login';
+/** Max rows per bulk operation (client + schema default). */
+export const BDUI_BULK_MAX_SELECTION = 20;
 export const BDUI_ACTION_GO_CREATE = 'go_create';
 
 /** User */

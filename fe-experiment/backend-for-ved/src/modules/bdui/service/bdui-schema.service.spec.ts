@@ -205,4 +205,19 @@ describe('BduiSchemaService', () => {
     expect(userDetail.actions.map((action) => action.id)).not.toContain('root_cancel_form');
     expect(userDetail.actions.map((action) => action.id)).not.toContain('root_create_user');
   });
+
+  it('E13: user forms.list has no bulk selection; root lists do', () => {
+    const userList = service.getUserScreen('forms.list');
+    const userTable = userList.widgets.find((widget) => widget.type === 'data_table');
+    if (userTable?.type === 'data_table') {
+      expect(userTable.selectable).toBeUndefined();
+      expect(userTable.bulkActions).toBeUndefined();
+    }
+    const rootForms = service.getScreen(BDUI_ROLE_ROOT, 'forms.list');
+    const rootTable = rootForms.widgets.find((widget) => widget.type === 'data_table');
+    if (rootTable?.type === 'data_table') {
+      expect(rootTable.selectable).toBe(true);
+      expect(rootTable.bulkActions?.length).toBeGreaterThan(0);
+    }
+  });
 });

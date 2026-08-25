@@ -397,4 +397,36 @@ describe('RoleCabinetBuilders Internal CO', () => {
     expect(mgrTable.columns.some((column) => column.key === 'updateDate')).toBe(true);
     expect(mgrTable.defaultSort?.key).toBe('updateDate');
   });
+
+  it('E14: ICO/ECO/Provider lists expose filters and matrix row actions', () => {
+    const icoList = builders.buildFormsListScreen(BDUI_ROLE_INTERNAL_CO);
+    const icoTable = icoList.widgets.find((widget) => widget.type === 'data_table');
+    expect(icoTable?.type).toBe('data_table');
+    if (icoTable?.type !== 'data_table') {
+      return;
+    }
+    expect(icoTable.filters?.length).toBeGreaterThan(0);
+    expect(icoTable.rowActions?.[0]?.actionId).toBe('ico_form_start');
+    expect(icoList.actions.some((action) => action.id === 'ico_form_start')).toBe(true);
+
+    const ecoTable = builders.buildFormsListScreen(BDUI_ROLE_EXTERNAL_CO).widgets.find(
+      (widget) => widget.type === 'data_table',
+    );
+    expect(ecoTable?.type).toBe('data_table');
+    if (ecoTable?.type !== 'data_table') {
+      return;
+    }
+    expect(ecoTable.columns.some((column) => column.key === 'counterparty.name')).toBe(true);
+    expect(ecoTable.rowActions?.[0]?.actionId).toBe('eco_form_start');
+
+    const provTable = builders.buildFormsListScreen(BDUI_ROLE_PROVIDER).widgets.find(
+      (widget) => widget.type === 'data_table',
+    );
+    expect(provTable?.type).toBe('data_table');
+    if (provTable?.type !== 'data_table') {
+      return;
+    }
+    expect(provTable.columns.some((column) => column.key === 'organization.name')).toBe(false);
+    expect(provTable.rowActions?.[0]?.actionId).toBe('prov_payment_start');
+  });
 });

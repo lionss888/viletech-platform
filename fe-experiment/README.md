@@ -45,6 +45,8 @@ node scripts/smoke-bdui-login.js
 node scripts/smoke-bdui-upload.js
 node scripts/smoke-bdui-inline-directories.js
 node scripts/smoke-bdui-root.js
+node scripts/smoke-bdui-bulk.js
+node scripts/smoke-bdui-list-management.js
 ```
 
 MinIO console (опционально): http://localhost:9001 (`minioadmin` / `minioadmin`), bucket `fea360`.
@@ -86,6 +88,18 @@ Wizard и черновик detail: добавление организации /
 Роль `root` в BDUI (не новая доменная роль): пользователи, справочник организаций, admin-заявки. Seed: `root@bdui.local`.
 
 Проверка: `node scripts/smoke-bdui-root.js`.
+
+### Bulk actions (E13)
+
+Multi-select на root `users.list` / `forms.list`: block/unblock и manager cancel пакетом (до 20 строк, confirm, partial feedback). User не видит bulk CTA.
+
+Проверка: `node scripts/smoke-bdui-bulk.js`.
+
+### List management (E14)
+
+Фильтр по статусу и row-level CTA из lifecycle matrix на `forms.list` (User + staff). Provider — узкие колонки без ПДн.
+
+Проверка: `node scripts/smoke-bdui-list-management.js`.
 
 ## UI
 
