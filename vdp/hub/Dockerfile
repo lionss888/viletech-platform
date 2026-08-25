@@ -7,6 +7,7 @@ COPY hub/ ./
 RUN go build -o /vdp-hub ./cmd/api
 
 FROM alpine:3.20
+RUN apk add --no-cache ca-certificates wget
 COPY --from=build /vdp-hub /usr/local/bin/vdp-hub
 ENV STORE_DRIVER=postgres
 EXPOSE 8081

@@ -1,4 +1,4 @@
-.PHONY: deps test build db-setup db-migrate run-hub run-core run smoke stop
+.PHONY: deps test build db-setup db-migrate run-hub run-core run smoke stop compose-up compose-down compose-ps
 
 CORE_DIR := core
 HUB_DIR := hub
@@ -37,8 +37,24 @@ db-setup:
 db-migrate:
 	PGPASSWORD=vdp_core psql -h localhost -U vdp_core -d vdp_core -v ON_ERROR_STOP=1 -f $(CORE_DIR)/migrations/001_core.sql
 	PGPASSWORD=vdp_core psql -h localhost -U vdp_core -d vdp_core -v ON_ERROR_STOP=1 -f $(CORE_DIR)/migrations/002_extended.sql
+	PGPASSWORD=vdp_core psql -h localhost -U vdp_core -d vdp_core -v ON_ERROR_STOP=1 -f $(CORE_DIR)/migrations/003_seed.sql
 	PGPASSWORD=vdp_hub psql -h localhost -U vdp_hub -d vdp_hub -v ON_ERROR_STOP=1 -f $(HUB_DIR)/migrations/001_hub.sql
 	PGPASSWORD=vdp_hub psql -h localhost -U vdp_hub -d vdp_hub -v ON_ERROR_STOP=1 -f $(HUB_DIR)/migrations/002_hub.sql
+
+# Default compose path: Postgres for core+hub (not memory).
+compose-up:
+	docker compose up -d --build
+	@echo "waiting for core health..."
+	@for i in 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28 29 30; do \
+		curl -sf http://127.0.0.1:8080/api/v1/health >/dev/null && curl -sf http://127.0.0.1:8081/api/v1/health >/dev/null && echo "core+hub healthy (STORE_DRIVER=postgres)" && exit 0; \
+		sleep 2; \
+	done; echo "health timeout"; docker compose ps; exit 1
+
+compose-down:
+	docker compose down
+
+compose-ps:
+	docker compose ps
 
 run-hub: build
 	PORT=8081 STORE_DRIVER="$(STORE_DRIVER)" DATABASE_URL="$(DATABASE_URL_HUB)" HUB_SHARED_SECRET="$(HUB_SHARED_SECRET)" CORE_URL="$(CORE_URL)" ./$(HUB_BIN)

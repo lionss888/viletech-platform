@@ -1,3 +1,5 @@
+# Default store for core/hub is Postgres (STORE_DRIVER=postgres).
+# Memory driver is for unit tests only (STORE_DRIVER=memory).
 services:
   postgres-core:
     image: postgres:16-alpine
@@ -10,6 +12,13 @@ services:
     volumes:
       - ./core/migrations/001_core.sql:/docker-entrypoint-initdb.d/001_core.sql:ro
       - ./core/migrations/002_extended.sql:/docker-entrypoint-initdb.d/002_extended.sql:ro
+      - ./core/migrations/003_seed.sql:/docker-entrypoint-initdb.d/003_seed.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U vdp_core -d vdp_core"]
+      interval: 3s
+      timeout: 3s
+      retries: 20
+
   postgres-hub:
     image: postgres:16-alpine
     environment:
@@ -21,6 +30,12 @@ services:
     volumes:
       - ./hub/migrations/001_hub.sql:/docker-entrypoint-initdb.d/001_hub.sql:ro
       - ./hub/migrations/002_hub.sql:/docker-entrypoint-initdb.d/002_hub.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U vdp_hub -d vdp_hub"]
+      interval: 3s
+      timeout: 3s
+      retries: 20
+
   hub:
     build:
       context: .
@@ -34,7 +49,15 @@ services:
     ports:
       - "8081:8081"
     depends_on:
-      - postgres-hub
+      postgres-hub:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://127.0.0.1:8081/api/v1/health >/dev/null || exit 1"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+      start_period: 10s
+
   core:
     build:
       context: .
@@ -49,5 +72,13 @@ services:
     ports:
       - "8080:8080"
     depends_on:
-      - hub
-      - postgres-core
+      postgres-core:
+        condition: service_healthy
+      hub:
+        condition: service_started
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://127.0.0.1:8080/api/v1/health >/dev/null || exit 1"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+      start_period: 15s

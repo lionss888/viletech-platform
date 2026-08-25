@@ -128,59 +128,6 @@ func (s *FormPaymentService) Transition(ctx context.Context, principal authz.Pri
 	return next, nil
 }
 
-func (s *FormPaymentService) AssignDeadline(ctx context.Context, principal authz.Principal, formID string, deadline time.Time) (formpayment.Form, error) {
-	if err := authz.RequireRoles(principal, domain.RoleManager); err != nil {
-		return formpayment.Form{}, err
-	}
-	form, err := s.store.FormByID(ctx, formID)
-	if err != nil {
-		return formpayment.Form{}, err
-	}
-	form.ExecutionDeadline = &deadline
-	form.ManagerID = principal.AccountID
-	if err := s.store.SaveForm(ctx, form); err != nil {
-		return formpayment.Form{}, err
-	}
-	return form, nil
-}
-
-func (s *FormPaymentService) AssignProvider(ctx context.Context, principal authz.Principal, formID, providerID string, clientAgreed bool) (formpayment.Form, error) {
-	if err := authz.RequireRoles(principal, domain.RoleManager); err != nil {
-		return formpayment.Form{}, err
-	}
-	provider, err := s.store.AccountByID(ctx, providerID)
-	if err != nil {
-		return formpayment.Form{}, err
-	}
-	if provider.Role != domain.RoleProvider && provider.Role != domain.RoleSeniorProvider {
-		return formpayment.Form{}, apperrors.New(apperrors.ErrCodeValidation, "account is not a provider")
-	}
-	form, err := s.store.FormByID(ctx, formID)
-	if err != nil {
-		return formpayment.Form{}, err
-	}
-	form.ProviderID = providerID
-	form.ManagerID = principal.AccountID
-	form.ClientAgreedProvider = clientAgreed
-	if err := s.store.SaveForm(ctx, form); err != nil {
-		return formpayment.Form{}, err
-	}
-	return form, nil
-}
-
-func (s *FormPaymentService) SetConfirmation(ctx context.Context, principal authz.Principal, formID, fileContent, fileID string) (formpayment.Form, error) {
-	if err := authz.RequireRoles(principal, domain.RoleProvider, domain.RoleSeniorProvider); err != nil {
-		return formpayment.Form{}, err
-	}
-	form, err := s.Get(ctx, principal, formID)
-	if err != nil {
-		return formpayment.Form{}, err
-	}
-	form.ConfirmationHash = ConfirmationHashXOR(fileContent, form.Currency)
-	form.ConfirmationFileID = fileID
-	return form, s.store.SaveForm(ctx, form)
-}
-
 func (s *FormPaymentService) CalculateAndSetCommission(ctx context.Context, principal authz.Principal, formID, percent string) (formpayment.Form, error) {
 	form, err := s.store.FormByID(ctx, formID)
 	if err != nil {
@@ -191,14 +138,6 @@ func (s *FormPaymentService) CalculateAndSetCommission(ctx context.Context, prin
 		return formpayment.Form{}, apperrors.New(apperrors.ErrCodeValidation, err.Error())
 	}
 	return s.SetCommission(ctx, principal, formID, commission)
-}
-
-func (s *FormPaymentService) TransitionByNestPath(ctx context.Context, principal authz.Principal, formID, rolePrefix, pathSuffix string) (formpayment.Form, error) {
-	action, ok := formpayment.NestPathAction(rolePrefix, pathSuffix)
-	if !ok {
-		return formpayment.Form{}, apperrors.New(apperrors.ErrCodeValidation, "unknown nest path action")
-	}
-	return s.Transition(ctx, principal, formID, action)
 }
 
 func (s *FormPaymentService) SetImportant(ctx context.Context, principal authz.Principal, formID string, important bool) (formpayment.Form, error) {
@@ -222,21 +161,6 @@ func (s *FormPaymentService) RequestDocsGenerate(ctx context.Context, principal 
 		return err
 	}
 	return s.enqueue(ctx, form, events.TypeDocsGenerate, map[string]any{"kind": "payment_order"})
-}
-
-func (s *FormPaymentService) AssignAgent(ctx context.Context, principal authz.Principal, formID, agentID string) (formpayment.Form, error) {
-	if err := authz.RequireRoles(principal, domain.RoleManager); err != nil {
-		return formpayment.Form{}, err
-	}
-	form, err := s.store.FormByID(ctx, formID)
-	if err != nil {
-		return formpayment.Form{}, err
-	}
-	form.AgentID = agentID
-	if err := s.store.SaveForm(ctx, form); err != nil {
-		return formpayment.Form{}, err
-	}
-	return form, nil
 }
 
 func (s *FormPaymentService) Get(ctx context.Context, principal authz.Principal, formID string) (formpayment.Form, error) {

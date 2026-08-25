@@ -4,16 +4,16 @@ overview: Полный FormPayment state machine и ролевые API по Nest
 todos:
   - id: r1-actions
     content: Полный nestActionMap + поля form
-    status: pending
+    status: completed
   - id: r1-routes
     content: Ролевые Nest-path handlers ≥95%
-    status: pending
+    status: completed
   - id: r1-logic
     content: Разбить логику transition из Nest service
-    status: pending
+    status: completed
   - id: r1-tests
     content: Table-driven SM + smoke ICO/ECO/manager
-    status: pending
+    status: completed
 isProject: false
 ---
 

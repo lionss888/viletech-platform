@@ -67,6 +67,15 @@ var transitionsImportForm = map[Status][]Status{
 		StatusCanceledByUser,
 		StatusAdvanceSigningOrderWaitingVerification,
 	},
+	StatusAdvanceSigningOrderWaitingVerification: {StatusAdvanceSigningOrderVerification},
+	StatusAdvanceSigningOrderVerification: {
+		StatusAdvanceSigningOrderWaitingVerification,
+		StatusAdvanceSigningOrderAccepted,
+		StatusAdvanceSigningOrderWaitingCorrections,
+		StatusFormWaitingCorrections,
+		StatusCanceledByManager,
+		StatusCanceledByUser,
+	},
 	StatusShipmentWaiting: {
 		StatusSigningOrderAccepted,
 		StatusPaymentRefundWaiting,
@@ -133,7 +142,8 @@ var transitionsImportForm = map[Status][]Status{
 		StatusSigningOrderAccepted,
 		StatusAdvanceSigningOrderAccepted,
 	},
-	StatusPaymentSent: {StatusManagerChecking},
+	// Nest checkTransit: import advance may go PAYMENT_SENT → REPORT_WAITING without postpay overlay.
+	StatusPaymentSent: {StatusManagerChecking, StatusReportWaiting, StatusReportAccepted},
 	StatusContractVerification: {StatusFormWaitingCorrections},
 	StatusReportWaitingVerification: {
 		StatusReportVerification,
@@ -165,6 +175,11 @@ var transitionsImportForm = map[Status][]Status{
 		StatusCanceledByUser,
 		StatusSigningOrderAccepted,
 		StatusAdvanceSigningOrderAccepted,
+	},
+	StatusReportAccepted: {
+		StatusCompleted,
+		StatusCanceledByManager,
+		StatusCanceledByUser,
 	},
 	StatusManagerChecking: {
 		StatusCanceledByManager,
@@ -211,10 +226,21 @@ var transitionsImportForm = map[Status][]Status{
 	StatusSigningOrderVerificationTreasurer: {
 		StatusPaymentSent,
 		StatusOrderWaitingCorrectionTreasurer,
+		StatusCompleted, // corporate client Nest special-case
 	},
 	StatusOrderWaitingCorrectionTreasurer: {
 		StatusSigningOrderTreasurer,
 		StatusSigningOrderVerificationTreasurer,
+	},
+	StatusReportWaitingCorrections: {
+		StatusReportWaitingVerification,
+		StatusCanceledByManager,
+		StatusCanceledByUser,
+	},
+	StatusShipmentWaitingCorrections: {
+		StatusShipmentWaitingVerification,
+		StatusCanceledByManager,
+		StatusCanceledByUser,
 	},
 }
 
@@ -311,4 +337,12 @@ func IsAllowedTransition(from, to Status, direction Direction, rateOnProvider bo
 		}
 	}
 	return false
+}
+
+// EffectiveRateOnProvider mirrors Nest platformPostpayMode === POSTPAY_RATE_ON_PP.
+func EffectiveRateOnProvider(form Form) bool {
+	if form.RateOnProvider {
+		return true
+	}
+	return form.PlatformPostpayMode == PostpayRateOnProvider
 }

@@ -30,7 +30,10 @@ func Apply(cmd Command) (Form, error) {
 	if cmd.Form.Status == target {
 		return cmd.Form, nil
 	}
-	if !IsAllowedTransition(cmd.Form.Status, target, cmd.Form.Direction, cmd.Form.RateOnProvider) {
+	if err := guardPaymentMethod(cmd.Form, cmd.Action); err != nil {
+		return Form{}, err
+	}
+	if !IsAllowedTransition(cmd.Form.Status, target, cmd.Form.Direction, EffectiveRateOnProvider(cmd.Form)) {
 		if !isCancelStatus(target) {
 			return Form{}, apperrors.New(
 				apperrors.ErrCodeConflict,
@@ -51,4 +54,19 @@ func isCancelStatus(s Status) bool {
 	default:
 		return false
 	}
+}
+
+func guardPaymentMethod(form Form, action Action) error {
+	switch action {
+	case ActionTreasurerConfirm:
+		if form.PaymentMethod != PaymentMethodPayFromExport && form.PlatformPostpayMode == "" {
+			// Nest: treasurer confirm is for PAY_FROM_EXPORT / postpay export path.
+			// Allow when payment method unset in early MVP forms; block only explicit mismatch.
+			return nil
+		}
+		if form.PaymentMethod != "" && form.PaymentMethod != PaymentMethodPayFromExport {
+			return apperrors.New(apperrors.ErrCodeConflict, "treasurer confirm requires PAY_FROM_EXPORT")
+		}
+	}
+	return nil
 }

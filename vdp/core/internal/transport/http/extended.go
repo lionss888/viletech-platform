@@ -3,7 +3,6 @@ package httpapi
 import (
 	"encoding/json"
 	"net/http"
-	"strings"
 
 	"github.com/viletech/vdp/core/internal/authz"
 	"github.com/viletech/vdp/core/internal/domain"
@@ -12,17 +11,7 @@ import (
 )
 
 func (s *Server) registerExtendedRoutes() {
-	// Nest-parity role form actions: PUT /api/v1/{role}/form-payment/{id}/{action...}
-	for _, role := range []string{"site", "manager", "provider", "eco", "ico", "treasurer"} {
-		role := role
-		s.mux.HandleFunc("PUT /api/v1/"+role+"/form-payment/{id}/{path...}", s.withAuth(func(w http.ResponseWriter, r *http.Request, p authz.Principal) {
-			s.handleNestFormAction(w, r, p, role)
-		}))
-		s.mux.HandleFunc("GET /api/v1/"+role+"/form-payment", s.withAuth(s.handleListForms))
-		s.mux.HandleFunc("GET /api/v1/"+role+"/form-payment/{id}", s.withAuth(s.handleGetForm))
-	}
-	s.mux.HandleFunc("GET /api/v1/admin/form-payment", s.withAuth(s.handleListForms))
-	s.mux.HandleFunc("GET /api/v1/1c/form-payment", s.withAuth(s.handleListForms))
+	s.registerNestFormPaymentRoutes()
 	s.mux.HandleFunc("POST /api/v1/auth/register", s.handleRegister)
 	s.mux.HandleFunc("POST /api/v1/auth/refresh", s.handleLogin)
 	s.mux.HandleFunc("GET /api/v1/account", s.withAuth(s.handleAccountMe))
@@ -63,17 +52,6 @@ func (s *Server) registerExtendedRoutes() {
 	s.mux.HandleFunc("POST /api/v1/internal/hub/callback", s.withS2S(s.handleHubCallback))
 	s.mux.HandleFunc("POST /api/v1/forms/import", s.withAuth(s.handleExcelImport))
 	s.mux.HandleFunc("GET /api/v1/sse/forms/{id}", s.withAuth(s.handleSSE))
-}
-
-func (s *Server) handleNestFormAction(w http.ResponseWriter, r *http.Request, principal authz.Principal, role string) {
-	path := r.PathValue("path")
-	path = strings.Trim(path, "/")
-	form, err := s.forms.TransitionByNestPath(r.Context(), principal, r.PathValue("id"), role, path)
-	if err != nil {
-		writeError(w, err)
-		return
-	}
-	writeJSON(w, http.StatusOK, form)
 }
 
 func (s *Server) handleRegister(w http.ResponseWriter, r *http.Request) {

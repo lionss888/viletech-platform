@@ -7,6 +7,7 @@ COPY core/ ./
 RUN go build -o /vdp-core ./cmd/api
 
 FROM alpine:3.20
+RUN apk add --no-cache ca-certificates wget
 COPY --from=build /vdp-core /usr/local/bin/vdp-core
 ENV STORE_DRIVER=postgres
 EXPOSE 8080

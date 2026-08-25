@@ -4,16 +4,16 @@ overview: "Gate программы vdp: правило честности гот
 todos:
   - id: r0-honesty-rule
     content: Создать .cursor/rules/честность-готовности.mdc (alwaysApply)
-    status: pending
+    status: completed
   - id: r0-inventory
     content: Расширить Nest↔vdp endpoint matrix в тестах
-    status: pending
+    status: completed
   - id: r0-postgres
     content: Compose Postgres default + migrations
-    status: pending
+    status: completed
   - id: r0-gate
     content: Gate baseline % без ложного 100%
-    status: pending
+    status: completed
 isProject: false
 ---
 
