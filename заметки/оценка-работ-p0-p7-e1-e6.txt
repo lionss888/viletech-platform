@@ -1,0 +1,161 @@
+# Оценка объёма и факта времени: P0–P7 + E1–E6
+
+Дата расчёта: 2026-08-25  
+Назначение: опорный документ для последующих оценок работ (сравнение plan-scope vs wall-clock).  
+Рабочая зона: fe-experiment (BDUI / backend-for-ved + bdui-client).
+
+Источники:
+- планы: .cursor/plans/ved_lifecycle_program_*, p0–p7_*, e1_e6_* / e1–e6_*
+- чеклисты: fe-experiment/LIFECYCLE.md, NOTES.md
+- факт времени: коммиты 25.08.2026 + таймстемпы чата BDUI-эксперимента
+- оговорка: в plan-файлах явных человеко-часов не было
+
+---
+
+## 1. Что входило в scope
+
+Две последовательные программы:
+
+1) Lifecycle BDUI (P0–P7)
+   - матрица role×status→actions, seed 5 ролей ВИ
+   - User wizard → ICO → ECO → Manager → Provider → close → COMPLETED
+   - ветки: corrections, cancel, postpay
+
+2) UI readiness (E1–E6)
+   - one-click launch, реальные PDF upload
+   - happy-path и ветки только через UI
+   - кабинеты 5 ролей, документы/manager attach
+   - DoD: оператор без Swagger/curl
+
+Вне scope (не оценивать как «долг» этих планов):
+refund, Bank API, субагент/услуги, Diadoc, Admin/Superadmin, pixel-perfect Figma.
+
+---
+
+## 2. Объём работ (метрики scope)
+
+| Метрика | Значение |
+|---------|----------|
+| Уникальные этапы | 14 (P0–P7 + E1–E6) |
+| Todo в YAML (уник., без индексов) | 49 |
+| ↳ P0–P7 | 25 completed |
+| ↳ E1–E6 дочерние | 24 (в YAML на момент расчёта ещё pending; индекс E1–E6 = completed) |
+| QA-пункты в планах («Проверка стабильности…») | ~70 |
+| LIFECYCLE чекбоксы | 66 всего / 62 закрыты / 4 открыты |
+| Unit BDUI за день | 33 → 76 тестов |
+| LOC (снимок на дату расчёта) | ~3.3k modules/bdui + ~2.8k bdui-client/src |
+| Diff коммитов P-фазы (ориентир) | порядка +3.5k / −0.2k строк |
+
+Открытые пункты LIFECYCLE на момент расчёта:
+- часть P0 schema-smoke (нужен поднятый Nest)
+- ручной E4: corrections / cancel / postpay → COMPLETED в UI
+- финальный DoD E6 (5 пунктов оператором после start-local + Nest + Vite)
+
+Рассинхрон статусов: e1_e6_ui_readiness_index.plan.md — todos completed;
+дочерние e1_one_click_launch … e6_docs_manager_ui — YAML status ещё pending.
+
+---
+
+## 3. Классическая оценка (без AI, ориентир)
+
+Mid-level, один человек, тот же scope (не pixel-perfect):
+
+| Блок | Ориентир |
+|------|----------|
+| P0 каркас | 1–2 дн |
+| P1 User wizard | 1–2 дн |
+| P2 ICO | ~1 дн |
+| P3 ECO | ~1 дн |
+| P4 Manager | 1.5–2 дн |
+| P5 Provider + узкий DTO | 1–1.5 дн |
+| P6 close / COMPLETED | 1–1.5 дн |
+| P7 ветки | 1–1.5 дн |
+| E1 launch | ~0.5 дн |
+| E2 file upload UI | ~1 дн |
+| E3 happy-path UI | 0.5–1 дн |
+| E4 branches UI | 0.5–1 дн |
+| E5 кабинеты | 0.5–1 дн |
+| E6 docs + DoD | 0.5–1 дн |
+| ИТОГО | ~12–18 чел·дней |
+
+Использовать как baseline при оценке похожих эпиков BDUI / role×status.
+
+---
+
+## 4. Факт затраченного времени (wall-clock, 2026-08-25)
+
+Это календарное время сессии (чат + коммиты), не «чистые» CPU-часы агента.
+
+| Фаза | Окно (UTC+3) | Длит. |
+|------|--------------|-------|
+| Прототип User BDUI (до программы P) | 10:51–13:02 | ~2.2 ч |
+| Планы P0–P7 | 13:07–13:21 | ~0.2 ч |
+| P0–P7 реализация | 13:21–17:57 | ~4.6 ч |
+| ↳ плотный ряд P2–P6 | 15:21–17:12 | ~1.9 ч |
+| ↳ P7 | 17:13–17:57 | ~0.7 ч |
+| Анализ % + планы E1–E6 | 18:03–18:35 | ~0.5 ч |
+| E1–E6 код (по mtime артефактов) | 18:36–~18:48 | ~0.2 ч |
+| Весь BDUI-день | 10:51→18:48 | ~8.0 ч |
+
+Детализация P2–P7 (по стартам implement / коммитам):
+
+| План | Факт wall-clock |
+|------|-----------------|
+| P2 Internal CO | ~27 мин |
+| P3 External CO | ~9 мин |
+| P4 Manager | ~20 мин |
+| P5 Provider | ~30 мин |
+| P6 Close/COMPLETED | ~23 мин |
+| P7 Branches | ~44 мин |
+| P0+P1 | ~1.8–2 ч календарно (возможен простой 13:29–15:12) |
+
+Коммиты-маркеры:
+- 15:41 — планы + первые P0/P1/P2
+- 15:58 — P3
+- 16:18 — P4
+- 16:48 — P5
+- 17:12 — P6
+- 18:35 — подготовка E1–E6 (+ хвост P7)
+- E1–E6 реализация на момент расчёта в основном в working tree (не отдельный commit)
+
+---
+
+## 5. Сводка «объём ↔ факт»
+
+| Метрика | Значение |
+|---------|----------|
+| Этапов в планах | 14 |
+| Todo (уник.) | 49 |
+| Календарный день с прототипом | ~8 ч |
+| Только программы P + E | ~5.4 ч |
+| Эквивалент без AI | ~12–18 чел·дней |
+| Ускорение (грубо) | ~15–25× по календарю vs классика |
+| Остаток до 100% DoD | ручной E4 + финальный DoD E6; синхронизация YAML todo E1–E6 |
+
+---
+
+## 6. Как использовать для следующих оценок
+
+1. Брать baseline из §3 (чел·дни) на похожий кусок: «роль × статусы × CTA + schema + unit + ручной gate».
+2. Если снова agent-assisted: ожидать wall-clock порядка часов на этап P-класса, но закладывать:
+   - время на планирование и разбиение планов;
+   - ручной QA / DoD (не схлопывается в минуты кода);
+   - рассинхрон статусов plan YAML vs LIFECYCLE.
+3. Не смешивать в одну оценку: доменный API/state machine vs BDUI-обвязка vs UI polish.
+4. Для UI readiness отдельно учитывать операторский прогон (E3/E4/E6 DoD) — в факте 25.08 он частично ещё открыт.
+5. При оценке нового эпика фиксировать заранее: число ролей, число статусов/переходов, file-upload, ветки, нужен ли one-click launch.
+
+---
+
+## 7. Связанные файлы
+
+Планы:
+- .cursor/plans/ved_lifecycle_program_e74efd95.plan.md
+- .cursor/plans/p0_lifecycle_foundation_52951b31.plan.md … p7_lifecycle_branches_e1a94d38.plan.md
+- .cursor/plans/e1_e6_ui_readiness_index.plan.md
+- .cursor/plans/e1_one_click_launch.plan.md … e6_docs_manager_ui.plan.md
+- .cursor/plans/e1-e6_ui_readiness_c78fd6ef.plan.md (сводный текст E1–E6)
+
+Статус исполнения:
+- fe-experiment/LIFECYCLE.md
+- fe-experiment/NOTES.md
