@@ -51,10 +51,10 @@ import {
   BDUI_ACTION_UPLOAD_PAYMENTS,
   BDUI_ACTION_UPLOAD_REPORT,
   BDUI_ACTION_UPLOAD_SHIPMENT,
+  BDUI_FILE_UPLOAD_PDF_PATH,
   BDUI_SEED_AGENT_ID,
-  BDUI_SEED_MANAGER_STUB_FILE_ID,
   BDUI_SEED_ORG_ID,
-  BDUI_SEED_STUB_FILE_ID,
+  BDUI_SEED_PROVIDER_ACCOUNT_ID,
   BDUI_SEED_USER_ACCOUNT_ID,
 } from '../bdui.constants';
 
@@ -68,6 +68,15 @@ function action(
   navigateTo = 'forms.detail',
 ): CatalogEntry {
   return { id, label, method, path, bodyFrom: 'none', navigateTo };
+}
+
+function pdfUpload(bodyField: string, asArray = false) {
+  return {
+    uploadPath: BDUI_FILE_UPLOAD_PDF_PATH,
+    bodyField,
+    asArray,
+    accept: 'application/pdf,.pdf',
+  };
 }
 
 const CATALOG: Record<string, CatalogEntry> = {
@@ -94,12 +103,15 @@ const CATALOG: Record<string, CatalogEntry> = {
     bodyFrom: 'form',
     requiresTextReason: true,
   },
-  [BDUI_ACTION_UPLOAD_CONTRACT]: action(
-    BDUI_ACTION_UPLOAD_CONTRACT,
-    'Загрузить договор',
-    'PUT',
-    '/form-payment/{formId}/form',
-  ),
+  [BDUI_ACTION_UPLOAD_CONTRACT]: {
+    ...action(
+      BDUI_ACTION_UPLOAD_CONTRACT,
+      'Загрузить договор',
+      'PUT',
+      '/form-payment/{formId}/form',
+    ),
+    requiresFileUpload: pdfUpload('contract'),
+  },
   [BDUI_ACTION_UPLOAD_ORDER]: {
     ...action(
       BDUI_ACTION_UPLOAD_ORDER,
@@ -107,9 +119,7 @@ const CATALOG: Record<string, CatalogEntry> = {
       'PUT',
       '/form-payment/{formId}/order',
     ),
-    staticBody: {
-      paymentOrderSigned: BDUI_SEED_STUB_FILE_ID,
-    },
+    requiresFileUpload: pdfUpload('paymentOrderSigned'),
   },
   [BDUI_ACTION_UPLOAD_ORDER_ADVANCE]: {
     ...action(
@@ -118,9 +128,7 @@ const CATALOG: Record<string, CatalogEntry> = {
       'PUT',
       '/form-payment/{formId}/order-advance',
     ),
-    staticBody: {
-      paymentOrderSigned: BDUI_SEED_STUB_FILE_ID,
-    },
+    requiresFileUpload: pdfUpload('paymentOrderSigned'),
   },
   [BDUI_ACTION_UPLOAD_PAYMENTS]: {
     ...action(
@@ -129,9 +137,7 @@ const CATALOG: Record<string, CatalogEntry> = {
       'PUT',
       '/form-payment/{formId}/payments',
     ),
-    staticBody: {
-      addPayments: [BDUI_SEED_STUB_FILE_ID],
-    },
+    requiresFileUpload: pdfUpload('addPayments', true),
   },
   [BDUI_ACTION_UPLOAD_REPORT]: {
     ...action(
@@ -140,9 +146,7 @@ const CATALOG: Record<string, CatalogEntry> = {
       'PUT',
       '/form-payment/{formId}/report',
     ),
-    staticBody: {
-      reportSigned: BDUI_SEED_STUB_FILE_ID,
-    },
+    requiresFileUpload: pdfUpload('reportSigned'),
   },
   [BDUI_ACTION_UPLOAD_SHIPMENT]: {
     ...action(
@@ -151,9 +155,7 @@ const CATALOG: Record<string, CatalogEntry> = {
       'PUT',
       '/form-payment/{formId}/shipment/accept',
     ),
-    staticBody: {
-      addClosing: [BDUI_SEED_STUB_FILE_ID],
-    },
+    requiresFileUpload: pdfUpload('addClosing', true),
   },
   [BDUI_ACTION_ICO_START]: action(
     BDUI_ACTION_ICO_START,
@@ -239,7 +241,7 @@ const CATALOG: Record<string, CatalogEntry> = {
   [BDUI_ACTION_MGR_CONTRACT_ATTACH]: {
     ...action(
       BDUI_ACTION_MGR_CONTRACT_ATTACH,
-      'Прикрепить договор (manager stub)',
+      'Прикрепить договор вручную',
       'POST',
       '/admin/contract',
     ),
@@ -247,10 +249,9 @@ const CATALOG: Record<string, CatalogEntry> = {
       agent: BDUI_SEED_AGENT_ID,
       organization: BDUI_SEED_ORG_ID,
       account: BDUI_SEED_USER_ACCOUNT_ID,
-      file: BDUI_SEED_MANAGER_STUB_FILE_ID,
-      number: 'BDUI-MGR-MANUAL-001',
-      date: '2026-01-15T00:00:00.000Z',
     },
+    requiresFileUpload: pdfUpload('file'),
+    requiresContractMeta: true,
   },
   [BDUI_ACTION_MGR_FORM_REJECT]: {
     ...action(
@@ -279,13 +280,11 @@ const CATALOG: Record<string, CatalogEntry> = {
   [BDUI_ACTION_MGR_ORDER_ATTACH]: {
     ...action(
       BDUI_ACTION_MGR_ORDER_ATTACH,
-      'Прикрепить поручение (stub)',
+      'Прикрепить поручение',
       'PATCH',
       '/admin/manager/form-payment/{formId}',
     ),
-    staticBody: {
-      paymentOrder: BDUI_SEED_STUB_FILE_ID,
-    },
+    requiresFileUpload: pdfUpload('paymentOrder'),
     injectSigningOrderDate: true,
   },
   [BDUI_ACTION_MGR_ORDER_SIGNING]: action(
@@ -358,6 +357,7 @@ const CATALOG: Record<string, CatalogEntry> = {
       '/admin/manager/form-payment/{formId}',
     ),
     requiresProviderId: true,
+    defaultProviderId: BDUI_SEED_PROVIDER_ACCOUNT_ID,
   },
   [BDUI_ACTION_MGR_PAYMENT_RECEIVED]: action(
     BDUI_ACTION_MGR_PAYMENT_RECEIVED,
@@ -460,13 +460,11 @@ const CATALOG: Record<string, CatalogEntry> = {
   [BDUI_ACTION_PROV_ATTACH_PROOF]: {
     ...action(
       BDUI_ACTION_PROV_ATTACH_PROOF,
-      'Прикрепить подтверждение (stub)',
+      'Прикрепить подтверждение',
       'PATCH',
       '/admin/provider/form-payment/{formId}',
     ),
-    staticBody: {
-      addPayments: [BDUI_SEED_STUB_FILE_ID],
-    },
+    requiresFileUpload: pdfUpload('addPayments', true),
   },
   [BDUI_ACTION_PROV_ATTACH_HASH]: {
     ...action(

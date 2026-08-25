@@ -111,3 +111,59 @@ Pages (staff): `login`, `forms.list`, `forms.detail`. User also: `forms.create`.
 - [x] Manual/docs: postpay StageHash checklist + BDUI actions (`NOTES.md`); advance-order cycle OK; full COMPLETED needs `direction=import` (blocker documented if missing)
 - [x] Регрессия: advance happy-path actions still resolve (matrix + schemas)
 - [x] Самопроверка StageHash advance vs postpay зафиксирована в `NOTES.md`
+
+## UI readiness (E1–E6)
+
+Строгий DoD: запуск → lifecycle в UI → ручной тест 5 ролей → работа с заявками.
+
+### Quality gate E1 — One-click launch
+
+- [x] `./fe-experiment/start-local.sh` (compose + .env Redis 6380 + seed)
+- [x] README на 5 ролей + role picker / logout
+- [x] `node scripts/smoke-bdui-login.js` (Nest up) — 5 login + schema login/list (accepts HTTP 201)
+
+### Quality gate E2 — Real file uploads
+
+- [x] `requiresFileUpload` на User/Manager/Provider file-CTA (без seed stub id в UI-пути)
+- [x] ActionBar: file picker → `/file-store/upload/pdf` → body field
+- [x] Unit: report/shipment/contract attach без `staticBody` file stub
+
+### Operator checklist E3 — Happy-path UI (`import + аванс + товар`)
+
+| # | Роль | Действие в UI | Ожидаемый статус |
+|---|------|---------------|------------------|
+| 1 | User | `/forms/new` wizard → отправить | `organization_waiting_verification` (первая орг) |
+| 2 | ICO | start → org approve → form accept | `form_waiting_verification` |
+| 3 | ECO | start → accept | `form_accepted` |
+| 4 | Manager | order generate/attach (PDF) → signing | `signing_order` |
+| 5 | User | upload поручение (PDF) | `signing_order_waiting_verification` |
+| 6 | Manager | order start → accept → assign Provider (seed default) → payment received → payment start | `payment_processing` |
+| 7 | Provider | attach proof (PDF) → payment sent | `payment_sent` |
+| 8 | Manager | report signing | `report_waiting` |
+| 9 | User | upload report (PDF) | `report_waiting_verification` |
+| 10 | Manager | report start → accept | `shipment_waiting` |
+| 11 | User | upload shipment (PDF) | `shipment_waiting_verification` |
+| 12 | Manager | shipment start → accept / completed | `COMPLETED` |
+
+- [x] Чеклист зафиксирован; после COMPLETED mutate CTA пусты (unit)
+- [x] Provider assign default seed id `6a8dbd070000000000000001`
+- [x] `direction=import` default в wizard
+
+### Quality gate E4 — Branches UI
+
+- [x] Hints corrections / cancel / postpay (payment_received before report на постоплате)
+- [x] Matrix CTA уже с P7; UI text reason + file upload
+- [ ] Ручной: corrections / cancel / postpay → COMPLETED (оператор по чеклисту выше + NOTES StageHash)
+
+### Quality gate E5 — Role cabinets
+
+- [x] List/detail columns + reject comment + docs fields (User/Manager)
+- [x] Provider PII note + узкий field set
+- [x] Logout + role label в UI; README role picker
+
+### Quality gate E6 — Docs + final DoD
+
+- [x] `mgr_contract_attach`: file upload + number/date prompts (без seed file id)
+- [x] User/Manager hints «PDF с диска» / advance-order
+- [x] Seed Provider fixed ObjectId
+- [ ] Финальный ручной DoD 5 пунктов (оператор после `start-local` + Nest + Vite)

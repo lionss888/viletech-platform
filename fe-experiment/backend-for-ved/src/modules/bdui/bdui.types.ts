@@ -40,6 +40,15 @@ export type BduiField = {
   defaultValue?: string;
 };
 
+/** Client uploads a PDF then puts file id into the action JSON body. */
+export type BduiFileUploadSpec = {
+  uploadPath: string;
+  bodyField: string;
+  /** When true, body value is `[fileId]` (e.g. addPayments / addClosing). */
+  asArray?: boolean;
+  accept?: string;
+};
+
 export type BduiAction = {
   id: string;
   label: string;
@@ -55,10 +64,16 @@ export type BduiAction = {
   staticBody?: Record<string, unknown>;
   /** Prompt for provider Account._id → PATCH { provider }. */
   requiresProviderId?: boolean;
+  /** Prefill for requiresProviderId (seed Provider account id). */
+  defaultProviderId?: string;
   /** Inject signingOrderCreateDate (ISO) into body for stub order attach. */
   injectSigningOrderDate?: boolean;
   /** Prompt for crypto tx hash → PATCH { addTransactions: [{ hash, chain }] }. */
   requiresTxHash?: boolean;
+  /** Upload PDF(s) and map file ids into request body (UI path; no seed stub ids). */
+  requiresFileUpload?: BduiFileUploadSpec | BduiFileUploadSpec[];
+  /** Prompt for contract number + date (mgr_contract_attach). */
+  requiresContractMeta?: boolean;
 };
 
 export type BduiLoginFormWidget = {

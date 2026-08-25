@@ -36,7 +36,7 @@ import {
   BDUI_ROLE_MANAGER,
   BDUI_ROLE_PROVIDER,
   BDUI_ROLE_USER,
-  BDUI_SEED_STUB_FILE_ID,
+  BDUI_SEED_PROVIDER_ACCOUNT_ID,
 } from '../bdui.constants';
 import { BduiLifecycleActionResolver } from './bdui-lifecycle-action.resolver';
 import { RoleCabinetBuilders } from './role-cabinet.builders';
@@ -245,7 +245,20 @@ describe('RoleCabinetBuilders Internal CO', () => {
       FormPaymentStatus.CONTRACT_WAITING,
     );
     expect(screen.actions.map((action) => action.id)).toContain(BDUI_ACTION_MGR_CONTRACT_ATTACH);
+    const attach = screen.actions.find((action) => action.id === BDUI_ACTION_MGR_CONTRACT_ATTACH);
+    expect(attach?.requiresFileUpload).toMatchObject({ bodyField: 'file' });
+    expect(attach?.requiresContractMeta).toBe(true);
+    expect(attach?.staticBody).not.toHaveProperty('file');
     expect(screen.widgets.some((widget) => widget.id === 'mgr_hint_contract')).toBe(true);
+  });
+
+  it('prefills seed Provider id on assign CTA', () => {
+    const screen = builders.buildFormsDetailScreen(
+      BDUI_ROLE_MANAGER,
+      FormPaymentStatus.SIGNING_ORDER_ACCEPTED,
+    );
+    const assign = screen.actions.find((action) => action.id === BDUI_ACTION_MGR_ASSIGN_PROVIDER);
+    expect(assign?.defaultProviderId).toBe(BDUI_SEED_PROVIDER_ACCOUNT_ID);
   });
 
   it('exposes no Manager mutate CTA on completed', () => {
@@ -296,12 +309,16 @@ describe('RoleCabinetBuilders Internal CO', () => {
     expect(actions).not.toContain(BDUI_ACTION_PROV_PAYMENT_SENT);
   });
 
-  it('builds User closing detail with stub upload bodies', () => {
+  it('builds User closing detail with file upload actions', () => {
     const userBuilders = new UserScreenBuilders(new BduiUserActionResolver(resolver));
     const reportScreen = userBuilders.buildFormsDetailScreen(FormPaymentStatus.REPORT_WAITING);
     expect(reportScreen.actions.map((action) => action.id)).toEqual([BDUI_ACTION_UPLOAD_REPORT]);
     const reportAction = reportScreen.actions.find((action) => action.id === BDUI_ACTION_UPLOAD_REPORT);
-    expect(reportAction?.staticBody).toMatchObject({ reportSigned: BDUI_SEED_STUB_FILE_ID });
+    expect(reportAction?.requiresFileUpload).toMatchObject({
+      bodyField: 'reportSigned',
+      uploadPath: '/file-store/upload/pdf',
+    });
+    expect(reportAction?.staticBody).toBeUndefined();
     expect(reportScreen.widgets.some((widget) => widget.id === 'report_hint')).toBe(true);
     const shipmentScreen = userBuilders.buildFormsDetailScreen(FormPaymentStatus.SHIPMENT_WAITING);
     expect(shipmentScreen.actions.map((action) => action.id)).toEqual([BDUI_ACTION_UPLOAD_SHIPMENT]);
@@ -309,7 +326,11 @@ describe('RoleCabinetBuilders Internal CO', () => {
       (action) => action.id === BDUI_ACTION_UPLOAD_SHIPMENT,
     );
     expect(shipmentAction?.path).toContain('/shipment/accept');
-    expect(shipmentAction?.staticBody).toMatchObject({ addClosing: [BDUI_SEED_STUB_FILE_ID] });
+    expect(shipmentAction?.requiresFileUpload).toMatchObject({
+      bodyField: 'addClosing',
+      asArray: true,
+    });
+    expect(shipmentAction?.staticBody).toBeUndefined();
     const completedScreen = userBuilders.buildFormsDetailScreen(FormPaymentStatus.COMPLETED);
     expect(completedScreen.actions).toEqual([]);
     expect(completedScreen.widgets.some((widget) => widget.id === 'completed_hint')).toBe(true);

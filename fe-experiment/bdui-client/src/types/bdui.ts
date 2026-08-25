@@ -43,6 +43,13 @@ export type BduiField = {
   defaultValue?: string;
 };
 
+export type BduiFileUploadSpec = {
+  uploadPath: string;
+  bodyField: string;
+  asArray?: boolean;
+  accept?: string;
+};
+
 export type BduiAction = {
   id: string;
   label: string;
@@ -54,8 +61,11 @@ export type BduiAction = {
   approveOrganizationFirst?: boolean;
   staticBody?: Record<string, unknown>;
   requiresProviderId?: boolean;
+  defaultProviderId?: string;
   injectSigningOrderDate?: boolean;
   requiresTxHash?: boolean;
+  requiresFileUpload?: BduiFileUploadSpec | BduiFileUploadSpec[];
+  requiresContractMeta?: boolean;
 };
 
 export type BduiWizardStep = {

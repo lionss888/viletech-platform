@@ -21,6 +21,7 @@ const CONTRACT_ID = new mongoose.Types.ObjectId('6a8dbd030000000000000001');
 const ORG_ID = new mongoose.Types.ObjectId('6a8dbd040000000000000001');
 const USER_ACCOUNT_ID = new mongoose.Types.ObjectId('6a8dbd050000000000000001');
 const MANAGER_STUB_FILE_ID = new mongoose.Types.ObjectId('6a8dbd060000000000000001');
+const PROVIDER_ACCOUNT_ID = new mongoose.Types.ObjectId('6a8dbd070000000000000001');
 
 const ACCOUNTS = [
   {
@@ -34,7 +35,12 @@ const ACCOUNTS = [
   { email: 'ico@bdui.local', fullName: 'BDUI Internal CO', roles: ['internal_compliance_officer'] },
   { email: 'eco@bdui.local', fullName: 'BDUI External CO', roles: ['compliance_officer'] },
   { email: 'manager@bdui.local', fullName: 'BDUI Manager', roles: ['manager'] },
-  { email: 'provider@bdui.local', fullName: 'BDUI Provider', roles: ['provider'] },
+  {
+    email: 'provider@bdui.local',
+    fullName: 'BDUI Provider',
+    roles: ['provider'],
+    _id: PROVIDER_ACCOUNT_ID,
+  },
 ];
 
 const accountSchema = new mongoose.Schema(
@@ -162,6 +168,13 @@ const Contract = mongoose.model('BduiLifecycleContract', contractSchema, 'contra
 async function upsertAccount(spec) {
   const password = spec.password || PASSWORD;
   let account = await Account.findOne({ email: spec.email });
+  if (spec._id && account && account._id.toString() !== spec._id.toString()) {
+    console.warn(
+      `Realigning ${spec.email}: ${account._id} → ${spec._id} (delete+recreate for fixed BDUI seed id)`,
+    );
+    await Account.deleteOne({ _id: account._id });
+    account = null;
+  }
   if (!account && spec._id) {
     account = await Account.findById(spec._id);
   }
@@ -195,7 +208,14 @@ async function upsertOrganization(userAccountId) {
   const inn = '7707083893';
   let organization = await Organization.findById(ORG_ID);
   if (!organization) {
-    organization = await Organization.findOne({ inn, account: userAccountId });
+    organization = await Organization.findOne({ inn });
+  }
+  if (organization && organization._id.toString() !== ORG_ID.toString()) {
+    console.warn(
+      `Realigning org ${organization.inn}: ${organization._id} → ${ORG_ID} (delete+recreate for fixed BDUI seed id)`,
+    );
+    await Organization.deleteOne({ _id: organization._id });
+    organization = null;
   }
   if (!organization) {
     organization = new Organization({

@@ -4,22 +4,22 @@ overview: "Индекс программы UI readiness: шесть отдель
 todos:
   - id: exec-e1
     content: Выполнить план E1 — one-click launch
-    status: pending
+    status: completed
   - id: exec-e2
     content: Выполнить план E2 — real file uploads
-    status: pending
+    status: completed
   - id: exec-e3
     content: Выполнить план E3 — happy-path UI
-    status: pending
+    status: completed
   - id: exec-e4
     content: Выполнить план E4 — branches UI
-    status: pending
+    status: completed
   - id: exec-e5
     content: Выполнить план E5 — role cabinets UI
-    status: pending
+    status: completed
   - id: exec-e6
     content: Выполнить план E6 — docs manager UI + финальный DoD
-    status: pending
+    status: completed
 isProject: false
 ---
 

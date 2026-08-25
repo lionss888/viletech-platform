@@ -1,78 +1,71 @@
-# FE experiment — BDUI (роль User)
+# FE experiment — BDUI (5 ролей ВИ)
 
-Рабочая копия backend (`backend-for-ved` = fea-stage-vf2) + тонкий BDUI-слой + Vite/React-рендерер.
+Рабочая копия backend (`backend-for-ved`) + тонкий BDUI-слой + Vite/React-рендерер.
+
+Образ результата: запуск стенда → заявка по lifecycle в UI → ручной тест User / ICO / ECO / Manager / Provider.
 
 ## Структура
 
 ```
 fe-experiment/
-  backend-for-ved/   # Nest API + модуль src/modules/bdui (+ scripts/create-bdui-user.js)
+  start-local.sh     # compose + .env + seed
+  backend-for-ved/   # Nest API + src/modules/bdui
   bdui-client/       # Vite + React schema renderer
-  NOTES.md           # метрики эксперимента
+  LIFECYCLE.md       # чеклисты P0–P7 и E1–E6
+  NOTES.md           # gaps / StageHash
 ```
 
-## Критерии успеха
-
-1. Логин User → JWT → схема с бэка
-2. Список заявок (`GET /api/1.0/form-payment`)
-3. Создание заявки (`POST /api/1.0/form-payment`)
-4. Карточка: статус + CTA accept/cancel по статусу
-5. Unit-тесты builders/resolver в `backend-for-ved/src/modules/bdui/**/*.spec.ts`
-
-## Запуск
-
-### 1. Инфра
+## Быстрый старт (≤15 мин)
 
 ```bash
-cd fe-experiment/backend-for-ved
-docker compose up -d
-cp .env.example .env
+cd fe-experiment
+chmod +x start-local.sh
+./start-local.sh
 ```
 
-В `.env` выставьте (compose Redis на **6380**):
+Скрипт поднимает Mongo/Redis/NATS (compose), правит `.env` под порты compose (Redis **6380**), сидит 5 ролей.
 
-```
-REDIS_URL=redis://127.0.0.1:6380
-REDIS_QUEUE_PORT=6380
-```
-
-NATS на `4222` обязателен для JWT.
-
-### 2. Backend
+Два терминала:
 
 ```bash
-cd fe-experiment/backend-for-ved
-npm i
-npm run dev
+# A — API
+cd fe-experiment/backend-for-ved && npm run dev
 # http://localhost:30000
-# Swagger: http://localhost:30000/api/1.0/fea360/swagger
-# BDUI: GET /api/1.0/bdui/schema/user/login
-```
 
-Тесты BDUI:
-
-```bash
-npm test -- --testPathPattern=modules/bdui --no-coverage
-```
-
-### 3. Тестовые аккаунты (lifecycle)
-
-```bash
-cd fe-experiment/backend-for-ved
-node scripts/seed-bdui-lifecycle.js
-# см. fe-experiment/LIFECYCLE.md
-```
-
-### 4. Клиент
-
-```bash
-cd fe-experiment/bdui-client
-npm i
-npm run dev
+# B — UI
+cd fe-experiment/bdui-client && npm run dev
 # http://localhost:5173  (proxy /api → :30000)
 ```
 
-Сценарий: `/login` → `/forms` → `/forms/new` → `/forms/:id`.
+Smoke (когда Nest уже up):
+
+```bash
+cd fe-experiment/backend-for-ved
+node scripts/smoke-bdui-login.js
+```
+
+## Seed-аккаунты
+
+| Email | Password | Role |
+|-------|----------|------|
+| user@bdui.local | BduiUser2024! | user |
+| ico@bdui.local | BduiLifecycle2024! | internal_compliance_officer |
+| eco@bdui.local | BduiLifecycle2024! | compliance_officer |
+| manager@bdui.local | BduiLifecycle2024! | manager |
+| provider@bdui.local | BduiLifecycle2024! | provider |
+
+Организация User: `ООО BDUI Тест` (первая сделка → ICO).
+
+## UI
+
+1. Открыть http://localhost:5173/login  
+2. Выбрать роль в role picker (сверху на login)  
+3. Войти seed-аккаунтом этой роли  
+4. Список `/forms` → карточка `/forms/:id` → CTA из schema  
+5. User: создание `/forms/new` (wizard)  
+6. Смена роли: logout / снова login с другим picker  
+
+Чеклист сквозного прогона: [`LIFECYCLE.md`](LIFECYCLE.md)
 
 ## BDUI контракт
 
@@ -80,14 +73,19 @@ npm run dev
 |------|------|------------|
 | `login` | нет | форма входа |
 | `forms.list` | JWT | таблица заявок |
-| `forms.create` | JWT | упрощённое создание |
+| `forms.create` | JWT | wizard (User) |
 | `forms.detail?status=` | JWT | карточка + action_bar |
 
-Эндпоинты: `GET /api/1.0/bdui/schema/{role}/{page}`  
-Роли: `user` | `internal_compliance_officer` | `compliance_officer` | `manager` | `provider`
+`GET /api/1.0/bdui/schema/{role}/{page}`  
+Роли: `user` \| `internal_compliance_officer` \| `compliance_officer` \| `manager` \| `provider`
 
-Чеклист сквозного прогона: [`LIFECYCLE.md`](LIFECYCLE.md)
+## Тесты
 
-## Вне скоупа
+```bash
+cd fe-experiment/backend-for-ved
+npm test -- --testPathPattern=modules/bdui --no-coverage
+```
 
-Другие роли ВИ, полный wizard, Diadoc/hs-code, копирование AMG BDUI, правки исходного `кастомные модули…/backend-for-ved`.
+## Вне скоупа программы E1–E6
+
+Refund ДС, Bank API, субагент/услуги как типы договоров, Diadoc UX, Admin/Superadmin, Figma-pixel UI.

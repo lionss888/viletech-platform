@@ -63,7 +63,12 @@ export class UserScreenBuilders {
       title: 'Мои заявки',
       version: BDUI_SCHEMA_VERSION,
       widgets: [
-        { type: 'text', id: 'list_intro', content: 'Список ваших заявок на платёж' },
+        {
+          type: 'text',
+          id: 'list_intro',
+          content:
+            'Ваши заявки: откройте карточку для статуса и CTA. Новая заявка — кнопка ниже. Смена роли — «Выйти» и login с другим picker.',
+        },
         {
           type: 'data_table',
           id: 'forms_table',
@@ -72,6 +77,8 @@ export class UserScreenBuilders {
             { key: '_id', label: 'ID' },
             { key: 'status', label: 'Статус' },
             { key: 'direction', label: 'Направление' },
+            { key: 'platformPaymentCondition', label: 'Оплата' },
+            { key: 'organization.name', label: 'Организация' },
             { key: 'amount', label: 'Сумма' },
             { key: 'createdAt', label: 'Создана' },
           ],
@@ -354,6 +361,9 @@ export class UserScreenBuilders {
           { key: 'organization.name', label: 'Организация' },
           { key: 'organization.status', label: 'Статус орг.' },
           { key: 'rejectText', label: 'Комментарий проверки' },
+          { key: 'docs.paymentOrder', label: 'Поручение (файл)' },
+          { key: 'docs.paymentOrderSigned', label: 'Поручение подписанное' },
+          { key: 'docs.reportSigned', label: 'Отчёт подписанный' },
           { key: 'createdAt', label: 'Создана' },
         ],
       },
@@ -397,14 +407,15 @@ export class UserScreenBuilders {
       widgets.push({
         type: 'text',
         id: 'signing_order_hint',
-        content: 'Менеджер отправил поручение на подпись. Загрузите подписанный файл поручения (stub).',
+        content: 'Менеджер отправил поручение на подпись. Скачайте/подпишите и загрузите PDF поручения с диска.',
       });
     }
     if (status === FormPaymentStatus.SIGNING_ORDER_ACCEPTED) {
       widgets.push({
         type: 'text',
         id: 'payments_hint',
-        content: 'Поручение принято. Загрузите подтверждение оплаты клиента (stub), затем менеджер передаст заявку Provider.',
+        content:
+          'Поручение принято. Загрузите PDF подтверждения оплаты с диска, затем менеджер передаст заявку Provider.',
       });
     }
     if (
@@ -414,7 +425,7 @@ export class UserScreenBuilders {
       widgets.push({
         type: 'text',
         id: 'report_hint',
-        content: 'Загрузите подписанный отчёт агента (stub) — заявка уйдёт на проверку менеджеру.',
+        content: 'Загрузите подписанный отчёт агента (PDF с диска) — заявка уйдёт на проверку менеджеру.',
       });
     }
     if (
@@ -424,7 +435,7 @@ export class UserScreenBuilders {
       widgets.push({
         type: 'text',
         id: 'shipment_hint',
-        content: 'Аванс: приложите документы отгрузки (stub) и отправьте на проверку менеджеру.',
+        content: 'Аванс: приложите документы отгрузки (PDF с диска) и отправьте на проверку менеджеру.',
       });
     }
     if (
@@ -434,7 +445,15 @@ export class UserScreenBuilders {
       widgets.push({
         type: 'text',
         id: 'advance_order_hint',
-        content: 'Постоплата: загрузите подписанное дополнительное поручение (stub).',
+        content: 'Постоплата: загрузите подписанное дополнительное поручение (PDF с диска).',
+      });
+    }
+    if (status === FormPaymentStatus.CONTRACT_WAITING || status === FormPaymentStatus.CONTRACT_WAITING_CORRECTION) {
+      widgets.push({
+        type: 'text',
+        id: 'contract_hint',
+        content:
+          'Нужен агентский договор: загрузите подписанный PDF или дождитесь ручной загрузки менеджером.',
       });
     }
     if (status === FormPaymentStatus.COMPLETED) {

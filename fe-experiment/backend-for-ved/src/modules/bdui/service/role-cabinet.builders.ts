@@ -399,6 +399,8 @@ export class RoleCabinetBuilders {
           { key: 'organization.inn', label: 'ИНН' },
           { key: 'provider', label: 'Provider' },
           { key: 'agent', label: 'Agent' },
+          { key: 'docs.paymentOrder', label: 'Поручение' },
+          { key: 'docs.reportSigned', label: 'Отчёт подписанный' },
           { key: 'rejectText', label: 'Комментарий' },
         ],
       },
@@ -408,7 +410,7 @@ export class RoleCabinetBuilders {
         type: 'text',
         id: 'mgr_hint_order',
         content:
-          'Стандартный агентский path: сформируйте или прикрепите поручение → отправьте на подпись клиенту. Назначьте Provider до передачи в исполнение.',
+          'Happy-path: generate/attach поручение (PDF) → signing → клиент подписывает. Назначьте Provider (default seed id в prompt). Договор: «Прикрепить договор вручную» при CONTRACT_*.',
       });
     }
     if (status === FormPaymentStatus.SIGNING_ORDER) {
@@ -447,7 +449,8 @@ export class RoleCabinetBuilders {
       widgets.push({
         type: 'text',
         id: 'mgr_hint_report_signing',
-        content: 'Платёж исполнен. Отправьте отчёт клиенту на подпись → report_waiting.',
+        content:
+          'Аванс: отправьте отчёт (report/signing). Постоплата: сначала payment/received, затем report/signing (не с payment_sent).',
       });
     }
     if (status === FormPaymentStatus.REPORT_WAITING_VERIFICATION) {
@@ -483,7 +486,7 @@ export class RoleCabinetBuilders {
         type: 'text',
         id: 'mgr_hint_contract',
         content:
-          'Нет подтверждённого договора: прикрепите вручную (POST /admin/contract, auto-accept) или дождитесь клиента.',
+          'Нет подтверждённого договора: «Прикрепить договор вручную» — PDF с диска + номер/дата (auto-accept), либо дождитесь клиента.',
       });
     }
     if (
@@ -604,7 +607,7 @@ export class RoleCabinetBuilders {
         type: 'text',
         id: 'prov_hint_execute',
         content:
-          'Прикрепите подтверждение (файл stub или tx hash), затем «Исполнить платёж» → payment_sent. Либо верните менеджеру.',
+          'Прикрепите подтверждение (PDF с диска или tx hash), затем «Исполнить платёж» → payment_sent. Либо верните менеджеру.',
       });
     }
     widgets.push({ type: 'action_bar', id: 'form_actions', actions: actionIds });

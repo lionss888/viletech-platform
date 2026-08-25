@@ -155,7 +155,11 @@ export function ScreenPage(props: ScreenPageProps): JSX.Element {
     let requestBody: Record<string, unknown> | undefined =
       action.bodyFrom === 'form'
         ? body
-        : action.requiresTextReason || action.requiresProviderId || action.requiresTxHash
+        : action.requiresTextReason ||
+            action.requiresProviderId ||
+            action.requiresTxHash ||
+            action.requiresFileUpload ||
+            action.requiresContractMeta
           ? body
           : undefined;
     if (action.staticBody) {
@@ -230,7 +234,21 @@ export function ScreenPage(props: ScreenPageProps): JSX.Element {
             </button>
           ))}
         </div>
-      ) : null}
+      ) : (
+        <div className="bdui-role-picker" role="group" aria-label="Сессия BDUI">
+          <span className="bdui-muted">Роль: {ROLE_LABELS[role]}</span>
+          <button
+            type="button"
+            className="bdui-role-picker__btn"
+            onClick={() => {
+              clearAuthTokens();
+              navigate('/login');
+            }}
+          >
+            Выйти
+          </button>
+        </div>
+      )}
       <SchemaRenderer
         screen={screen}
         pathParams={pathParams}

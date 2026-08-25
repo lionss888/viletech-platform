@@ -16,6 +16,8 @@
 | P7 corrections / cancel / postpay branches | Done (see LIFECYCLE.md) |
 | Seed 5 roles + org + stubs | `scripts/seed-bdui-lifecycle.js` |
 | Checklist | [`LIFECYCLE.md`](LIFECYCLE.md) |
+| E1 start-local + smoke | `./start-local.sh`, `scripts/smoke-bdui-login.js` |
+| E2 file upload UI | `requiresFileUpload` + ActionBar picker (stubs только в seed) |
 
 Open UI: http://localhost:5173
 
@@ -42,8 +44,9 @@ Practical BDUI mapping:
 1. **Import + postpay after `payment_sent`:** `checkTransit` for import overrides `PAYMENT_SENT` to mainly `manager_checking`; special allow for `report_waiting` only when `!platformPostpayMode`. With `platformPostpayMode=legacy` (auto on postpay), `report/signing` from `payment_sent` may 400 — use `payment/received` first then report (BDUI exposes both CTAs).
 2. **`order-advance` cycle:** works from `payment_received` → `advance_signing_order` → user upload → start/accept → `advance_signing_order_accepted` → `payment/received` again if needed. From `payment_sent` on plain import (no `postpay_rate_on_pp`) may 400.
 3. **Report requires `direction=import`:** forms without direction fall into export transition merge and block `payment_received → report_waiting`. Always set direction on create/PATCH before closing path.
-4. **Manual manager contract attach:** API `POST /admin/contract` (auto ACCEPTED + CONTRACT_* → FORM_ACCEPTED). BDUI `mgr_contract_attach` needs `number`+`date`+manager-owned file; seed ids for org/user must match DB (fresh seed uses fixed ObjectIds; existing DBs may differ — override staticBody).
+4. **Manual manager contract attach:** API `POST /admin/contract` (auto ACCEPTED). BDUI `mgr_contract_attach` UI: PDF upload + number/date prompts; staticBody keeps seed agent/org/account (fresh seed fixed ObjectIds).
 5. **Refund / bank API / субагент as full types** — out of scope (separate epic per plan).
+6. **UI file path (E2+):** lifecycle CTAs use `requiresFileUpload` → `/file-store/upload/pdf`; seed stub file ids remain for seed data / offline API scripts only, not ActionBar UI.
 
 ## P7 QA results (2026-08-25)
 
@@ -66,5 +69,7 @@ Practical BDUI mapping:
 | Organization | `6a8dbd040000000000000001` |
 | User account | `6a8dbd050000000000000001` |
 | Manager stub file | `6a8dbd060000000000000001` |
+| Provider account | `6a8dbd070000000000000001` |
 
 User seed: `enablePostpay=true`.
+Provider seed id is `defaultProviderId` on Manager assign CTA.

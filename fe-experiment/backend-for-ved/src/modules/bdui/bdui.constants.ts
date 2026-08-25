@@ -88,6 +88,10 @@ export const BDUI_SEED_AGENT_ID = '6a8dbd020000000000000001';
 export const BDUI_SEED_ORG_ID = '6a8dbd040000000000000001';
 export const BDUI_SEED_USER_ACCOUNT_ID = '6a8dbd050000000000000001';
 export const BDUI_SEED_MANAGER_STUB_FILE_ID = '6a8dbd060000000000000001';
+export const BDUI_SEED_PROVIDER_ACCOUNT_ID = '6a8dbd070000000000000001';
+
+/** Shared PDF upload endpoint for lifecycle file CTAs. */
+export const BDUI_FILE_UPLOAD_PDF_PATH = '/file-store/upload/pdf';
 
 /** Provider */
 export const BDUI_ACTION_PROV_PAYMENT_START = 'prov_payment_start';
