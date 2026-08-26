@@ -6,12 +6,12 @@ import { useVed } from "@/lib/ved/store";
 export const Route = createFileRoute("/demo/start")({
   head: () => ({
     meta: [
-      { title: "Быстрый вход по роли — Viletech ВЭД" },
+      { title: "Быстрый вход по роли — ВЭД от Вилетех" },
       {
         name: "description",
         content: "Выберите роль и войдите в платформу ВЭД: клиент, комплаенс, менеджер, провайдер, администратор.",
       },
-      { property: "og:title", content: "Быстрый вход по роли — Viletech ВЭД" },
+      { property: "og:title", content: "Быстрый вход по роли — ВЭД от Вилетех" },
       { property: "og:description", content: "Выбор роли для входа в операционный контур платежей." },
     ],
   }),

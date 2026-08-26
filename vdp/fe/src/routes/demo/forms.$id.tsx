@@ -3,7 +3,10 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { DemoAppShell } from "@/components/ved/DemoAppShell";
 import { ActionPanel } from "@/components/ved/ActionPanel";
 import { StageStepper } from "@/components/ved/StageStepper";
+import { DocumentList } from "@/components/ved/DocumentViewer";
 import { DirectionTag, StatusBadge } from "@/components/ved/StatusBadge";
+import { SubjectReview } from "@/components/ved/SubjectReview";
+import { isComplianceRole, subjectState, subjectsCleared, subjectsOf } from "@/lib/ved/compliance";
 import { dateTime, money } from "@/lib/ved/format";
 import { cpById, orgById } from "@/lib/ved/mock";
 import { roleTitle } from "@/lib/ved/roles";
@@ -14,9 +17,9 @@ import { cn } from "@/lib/utils";
 export const Route = createFileRoute("/demo/forms/$id")({
   head: () => ({
     meta: [
-      { title: "Карточка платёжной заявки — Viletech ВЭД" },
+      { title: "Карточка платёжной заявки — ВЭД от Вилетех" },
       { name: "description", content: "Детали платёжной заявки ВЭД: стадии, документы, хронология событий и действия по роли." },
-      { property: "og:title", content: "Карточка платёжной заявки — Viletech ВЭД" },
+      { property: "og:title", content: "Карточка платёжной заявки — ВЭД от Вилетех" },
       { property: "og:description", content: "Стадии, документы, хронология и доступные действия по заявке." },
     ],
   }),
@@ -25,7 +28,7 @@ export const Route = createFileRoute("/demo/forms/$id")({
 
 function FormDetail() {
   const { id } = Route.useParams();
-  const { forms, session } = useVed();
+  const { forms, session, organizations, counterparties } = useVed();
   const form = forms.find((f) => f.id === id);
   const role = session?.role ?? "user";
 
@@ -34,7 +37,7 @@ function FormDetail() {
       <DemoAppShell title="Заявка не найдена">
         <div className="panel p-6 text-sm text-muted-foreground">
           Заявка удалена или сброшены тестовые данные.{" "}
-          <Link to="/demo/forms" className="font-semibold text-accent hover:underline">
+          <Link to="/demo/forms" search={{}} className="font-semibold text-accent hover:underline">
             Вернуться в реестр
           </Link>
         </div>
@@ -45,6 +48,10 @@ function FormDetail() {
   const org = orgById(form.organizationId);
   const cp = cpById(form.counterpartyId);
   const meta = statusMeta(form.status);
+  const compliance = isComplianceRole(role);
+  const subjects = subjectsOf(form, organizations, counterparties);
+  const cleared = subjectsCleared(subjects);
+  const hasBlocked = subjects.some((s) => s.status === "blocked");
 
   const facts: [string, string][] = [
     ["Направление", form.direction === "import" ? "Импорт" : "Экспорт"],
@@ -72,10 +79,11 @@ function FormDetail() {
         </div>
       </div>
 
-      {form.rejectText && (
+      {(form.rejectText || form.rejectMark) && (
         <div className="mt-4 rounded-lg bg-return-soft p-4">
-          <p className="label-caps text-return">Комментарий проверяющего</p>
-          <p className="mt-1 text-sm text-return">{form.rejectText}</p>
+          <p className="label-caps text-return">Возврат на доработку</p>
+          {form.rejectMark && <p className="mt-1 text-sm font-semibold text-return">Отметка: {form.rejectMark}</p>}
+          {form.rejectText && <p className="mt-1 text-sm text-return">{form.rejectText}</p>}
         </div>
       )}
 
@@ -112,22 +120,31 @@ function FormDetail() {
 
           <div className="panel p-4">
             <p className="label-caps">Документы ({form.documents.length})</p>
-            <ul className="mt-3 divide-y divide-border">
-              {form.documents.map((d) => (
-                <li key={d.id} className="flex items-center gap-3 py-2">
-                  <span className="rounded bg-muted px-1.5 py-0.5 font-mono text-[11px] font-semibold">{d.ext}</span>
-                  <span className="min-w-0 flex-1 truncate text-sm">{d.title}</span>
-                  <span className="font-mono text-[11px] text-muted-foreground">{d.size}</span>
-                  <span className="font-mono text-[11px] text-muted-foreground">{dateTime(d.uploadedAt)}</span>
-                </li>
-              ))}
-              {form.documents.length === 0 && <li className="py-3 text-sm text-muted-foreground">Документов пока нет</li>}
-            </ul>
+            <DocumentList documents={form.documents} />
           </div>
         </div>
 
         <div className="space-y-4">
-          <ActionPanel form={form} />
+          {compliance ? (
+            <>
+              <ActionPanel
+                form={form}
+                title="Рассмотрение заявки"
+                {...(hasBlocked
+                  ? { lockNote: "Участник сделки заблокирован — заявку нельзя согласовать." }
+                  : cleared
+                    ? {}
+                    : { note: "Участники ещё на проверке. Саму заявку можно рассмотреть отдельно." })}
+              />
+              <SubjectReview subjects={subjects} />
+            </>
+          ) : (
+            <ActionPanel form={form} />
+          )}
+
+          {!compliance && subjects.some((s) => !subjectState(s.status).ok) && (
+            <SubjectReview subjects={subjects} readOnly />
+          )}
 
           {role !== "provider" && (
             <div className="panel p-4">

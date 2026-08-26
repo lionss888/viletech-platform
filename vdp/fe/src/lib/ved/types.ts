@@ -91,6 +91,8 @@ export type PaymentForm = {
   managerName?: string | undefined;
   providerName?: string | undefined;
   rejectText?: string | undefined;
+  /** Код отметки комплаенс при возврате на доработку. */
+  rejectMark?: string | undefined;
   createdAt: string;
   updatedAt: string;
   documents: AttachedDocument[];
@@ -105,6 +107,8 @@ export type FormAction = {
   tone: ActionTone;
   /** Требуется текст причины возврата/отклонения. */
   requiresReason?: boolean | undefined;
+  /** Требуется отметка из справочника «Инструменты комплаенс». */
+  requiresMark?: boolean | undefined;
   /** Требуется загрузка документа. */
   requiresFile?: boolean | undefined;
   /** Статус, в который переходит заявка. */

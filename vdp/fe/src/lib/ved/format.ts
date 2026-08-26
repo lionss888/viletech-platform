@@ -8,13 +8,27 @@ export function shortMoney(amountMinor: number, currency: string): string {
   return `${value.toLocaleString("ru-RU", { maximumFractionDigits: 0 })} ${currency}`;
 }
 
+const TZ = "Europe/Moscow";
+
 export function dateTime(iso: string): string {
   const d = new Date(iso);
-  return d.toLocaleString("ru-RU", { day: "2-digit", month: "2-digit", year: "2-digit", hour: "2-digit", minute: "2-digit" });
+  return d.toLocaleString("ru-RU", {
+    day: "2-digit",
+    month: "2-digit",
+    year: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+    timeZone: TZ,
+  });
 }
 
 export function dateOnly(iso: string): string {
-  return new Date(iso).toLocaleDateString("ru-RU", { day: "2-digit", month: "2-digit", year: "numeric" });
+  return new Date(iso).toLocaleDateString("ru-RU", {
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
+    timeZone: TZ,
+  });
 }
 
 export function relative(iso: string): string {

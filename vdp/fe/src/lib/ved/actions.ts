@@ -54,8 +54,8 @@ const MATRIX: Record<VedRole, Record<string, FormAction[]>> = {
       { id: "ico_form_start", label: "Взять в проверку", tone: "primary", nextStatus: "organization_verification" },
     ],
     organization_verification: [
-      { id: "ico_form_accept", label: "Одобрить организацию и заявку", tone: "accent", nextStatus: "form_waiting_verification" },
-      { id: "ico_form_reject", label: "Вернуть на коррекцию", tone: "quiet", requiresReason: true, nextStatus: "form_waiting_corrections" },
+      { id: "ico_form_accept", label: "Одобрить и передать во внешний комплаенс", tone: "accent", nextStatus: "form_waiting_verification" },
+      { id: "ico_form_reject", label: "Вернуть на доработку", tone: "quiet", requiresReason: true, requiresMark: true, nextStatus: "form_waiting_corrections" },
       { id: "ico_form_stop", label: "Приостановить проверку", tone: "quiet", nextStatus: "organization_waiting_verification" },
       {
         id: "ico_cancel",
@@ -72,7 +72,7 @@ const MATRIX: Record<VedRole, Record<string, FormAction[]>> = {
     form_waiting_verification: [{ id: "eco_form_start", label: "Взять в проверку", tone: "primary", nextStatus: "form_verification" }],
     form_verification: [
       { id: "eco_form_accept", label: "Подтвердить заявку", tone: "accent", nextStatus: "form_accepted" },
-      { id: "eco_form_reject", label: "Вернуть на коррекцию", tone: "quiet", requiresReason: true, nextStatus: "form_waiting_corrections" },
+      { id: "eco_form_reject", label: "Вернуть на доработку", tone: "quiet", requiresReason: true, requiresMark: true, nextStatus: "form_waiting_corrections" },
       { id: "eco_form_stop", label: "Приостановить проверку", tone: "quiet", nextStatus: "form_waiting_verification" },
       {
         id: "eco_cancel",
@@ -149,23 +149,37 @@ const MATRIX: Record<VedRole, Record<string, FormAction[]>> = {
 /** Root видит cancel на любой активной заявке (bulk и row-level CTA). */
 const ROOT_CANCELABLE = (status: FormStatus) => !status.startsWith("canceled") && status !== "completed";
 
-export function actionsFor(role: VedRole, status: FormStatus): FormAction[] {
-  if (role === "root") {
-    return ROOT_CANCELABLE(status)
-      ? [
-          {
-            id: "root_cancel_form",
-            label: "Отменить заявку",
-            tone: "danger",
-            requiresReason: true,
-            nextStatus: "canceled_by_manager",
-            confirm: "Отменить заявку от имени администратора?",
-          },
-        ]
-      : [];
+const OPERATIONAL_ROLES: VedRole[] = ["user", "internal_compliance_officer", "compliance_officer", "manager", "provider"];
+
+/** Суперадмин управляет любой заявкой: доступны действия всех ролей на текущем статусе. */
+function rootActions(status: FormStatus): FormAction[] {
+  const seen = new Set<string>();
+  const all: FormAction[] = [];
+  OPERATIONAL_ROLES.forEach((role) => {
+    (MATRIX[role]?.[status] ?? []).forEach((action) => {
+      if (seen.has(action.id)) return;
+      seen.add(action.id);
+      all.push(action);
+    });
+  });
+  if (ROOT_CANCELABLE(status)) {
+    all.push({
+      id: "root_cancel_form",
+      label: "Отменить заявку",
+      tone: "danger",
+      requiresReason: true,
+      nextStatus: "canceled_by_manager",
+      confirm: "Отменить заявку от имени администратора?",
+    });
   }
+  return all;
+}
+
+export function actionsFor(role: VedRole, status: FormStatus): FormAction[] {
+  if (role === "root") return rootActions(status);
   return MATRIX[role]?.[status] ?? [];
 }
+
 
 /** Провайдер не видит ПДн клиента — узкий набор колонок. */
 export const PROVIDER_HIDDEN_FIELDS = ["ownerName", "organizationEmail", "organizationPhone", "managerName"];

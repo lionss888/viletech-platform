@@ -1,5 +1,5 @@
 import { Link, useNavigate, useRouterState } from "@tanstack/react-router";
-import type { ReactNode } from "react";
+import { useState, type ReactNode } from "react";
 
 import { ROLES } from "@/lib/ved/roles";
 import { useVed, visibleForms } from "@/lib/ved/store";
@@ -7,19 +7,31 @@ import { actionsFor } from "@/lib/ved/actions";
 import { cn } from "@/lib/utils";
 import type { VedRole } from "@/lib/ved/types";
 
-const NAV: { to: string; label: string; roles: VedRole[] | "all" }[] = [
+type NavItem = { to: string; label: string; roles: VedRole[] | "all" };
+
+const NAV: NavItem[] = [
   { to: "/demo/dashboard", label: "Рабочий стол", roles: "all" },
-  { to: "/demo/forms", label: "Реестр заявок", roles: "all" },
+  { to: "/demo/forms", label: "Реестр заявок", roles: ["user", "manager", "provider", "root"] },
+  { to: "/demo/forms", label: "Входящие заявки", roles: ["internal_compliance_officer", "compliance_officer"] },
+  { to: "/demo/organizations", label: "Проверка организаций", roles: ["internal_compliance_officer", "compliance_officer"] },
   { to: "/demo/forms/new", label: "Новая заявка", roles: ["user", "manager", "root"] },
-  {
-    to: "/demo/counterparties",
-    label: "Контрагенты",
-    roles: ["user", "manager", "internal_compliance_officer", "compliance_officer", "root"],
-  },
-  { to: "/demo/organizations", label: "Организации", roles: ["internal_compliance_officer", "manager", "root"] },
+  { to: "/demo/documents", label: "Документы", roles: ["user", "manager", "provider", "root"] },
+];
+
+const REFERENCES: NavItem[] = [
+  { to: "/demo/counterparties", label: "Контрагенты", roles: ["user", "manager", "root"] },
+  { to: "/demo/organizations", label: "Организации", roles: ["manager", "root"] },
+  { to: "/demo/compliance-tools", label: "Инструменты комплаенс", roles: ["root"] },
   { to: "/demo/admin", label: "Пользователи", roles: ["root"] },
+  { to: "/demo/providers", label: "Провайдеры", roles: ["manager", "root"] },
+  { to: "/demo/codes", label: "Коды ТН ВЭД", roles: ["manager", "root"] },
+  { to: "/demo/currencies", label: "Валюты", roles: ["manager", "root"] },
+  { to: "/demo/countries", label: "Страны и риски", roles: ["root"] },
   { to: "/demo/testing", label: "Проверка сценариев", roles: ["root"] },
 ];
+
+const allowed = (items: NavItem[], role: VedRole | undefined) =>
+  items.filter((item) => item.roles === "all" || (role && item.roles.includes(role)));
 
 export function DemoAppShell({ children, title, subtitle }: { children: ReactNode; title: string; subtitle?: string }) {
   const { session, signIn, signOut, forms, resetDemo } = useVed();
@@ -29,6 +41,15 @@ export function DemoAppShell({ children, title, subtitle }: { children: ReactNod
   const role = session?.role;
   const mine = visibleForms(forms, role, session?.name);
   const todo = mine.filter((f) => actionsFor(role ?? "user", f.status).length > 0).length;
+
+  const refs = allowed(REFERENCES, role);
+  const [refsOpen, setRefsOpen] = useState(() => refs.some((r) => r.to === pathname));
+
+  const linkCls = (active: boolean) =>
+    cn(
+      "rounded-md px-3 py-2 text-sm font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground",
+      active && "bg-muted text-foreground",
+    );
 
   return (
     <div className="flex min-h-screen bg-background">
@@ -46,21 +67,36 @@ export function DemoAppShell({ children, title, subtitle }: { children: ReactNod
         </Link>
 
         <nav className="mt-6 flex flex-col gap-1">
-          {NAV.filter((item) => item.roles === "all" || (role && item.roles.includes(role))).map((item) => (
-            <Link
-              key={item.to}
-              to={item.to}
-              className={cn(
-                "rounded-md px-3 py-2 text-sm font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground",
-                pathname === item.to && "bg-muted text-foreground",
-              )}
-            >
+          {allowed(NAV, role).map((item) => (
+            <Link key={item.label} to={item.to} className={linkCls(pathname === item.to)}>
               {item.label}
               {item.to === "/demo/forms" && todo > 0 && (
                 <span className="ml-2 rounded bg-accent px-1.5 py-0.5 font-mono text-[11px] text-accent-foreground">{todo}</span>
               )}
             </Link>
           ))}
+
+          {refs.length > 0 && (
+            <div className="mt-2">
+              <button
+                type="button"
+                onClick={() => setRefsOpen((v) => !v)}
+                className={cn("flex w-full items-center justify-between", linkCls(false))}
+              >
+                Справочники
+                <span className="font-mono text-[11px]">{refsOpen ? "−" : "+"}</span>
+              </button>
+              {refsOpen && (
+                <div className="mt-1 ml-3 flex flex-col gap-1 border-l border-border pl-2">
+                  {refs.map((item) => (
+                    <Link key={item.to} to={item.to} className={cn(linkCls(pathname === item.to), "text-[13px]")}>
+                      {item.label}
+                    </Link>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
         </nav>
 
         <div className="mt-auto space-y-3">
@@ -87,7 +123,10 @@ export function DemoAppShell({ children, title, subtitle }: { children: ReactNod
               Сбросить данные
             </button>
           )}
-          <Link to="/login" className="block w-full rounded-md px-3 py-2 text-center text-xs font-semibold text-muted-foreground hover:bg-muted">
+          <Link
+            to="/login"
+            className="block w-full rounded-md px-3 py-2 text-center text-xs font-semibold text-muted-foreground hover:bg-muted"
+          >
             Войти через API (нужен core)
           </Link>
           <button
@@ -122,20 +161,7 @@ export function DemoAppShell({ children, title, subtitle }: { children: ReactNod
             </span>
           </div>
         </header>
-
-        <nav className="flex gap-1 overflow-x-auto border-b border-border bg-card px-4 py-2 lg:hidden">
-          {NAV.filter((item) => item.roles === "all" || (role && item.roles.includes(role))).map((item) => (
-            <Link key={item.to} to={item.to} className="rounded-md px-2 py-1 text-xs font-medium whitespace-nowrap text-muted-foreground">
-              {item.label}
-            </Link>
-          ))}
-        </nav>
-
-        <main className="flex-1 p-4 lg:p-6">{children}</main>
-
-        <footer className="border-t border-border px-4 py-3 text-[11px] text-muted-foreground lg:px-6">
-          Демо на моках · сделок: {forms.length} · не production API
-        </footer>
+        <main className="flex-1 px-4 py-6 lg:px-8">{children}</main>
       </div>
     </div>
   );

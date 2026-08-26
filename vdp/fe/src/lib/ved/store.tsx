@@ -1,33 +1,63 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
 
 import { COUNTERPARTIES, FORMS, ORGANIZATIONS, USERS } from "./mock";
+import { COMPLIANCE_TOOLS, COUNTRIES, CURRENCIES, HS_CODES, PROVIDERS } from "./reference";
+import type { ComplianceToolRecord, CountryRecord, CurrencyRecord, HsCodeRecord, ProviderRecord } from "./reference";
+import { REGISTRIES, type RefRecord, type RegistryKey } from "./registry";
 import { ROLE_MAP } from "./roles";
-import type { FormAction, PaymentForm, PlatformUser, VedRole } from "./types";
+import type { Counterparty, FormAction, Organization, PaymentForm, PlatformUser, VedRole } from "./types";
 
-const STORAGE_KEY = "ved-demo-state-v1";
+const STORAGE_KEY = "ved-demo-state-v2";
 
 type Session = { role: VedRole; name: string; email: string } | null;
+
+type Refs = Record<RegistryKey, RefRecord[]>;
 
 type State = {
   session: Session;
   forms: PaymentForm[];
   users: PlatformUser[];
+  refs: Refs;
 };
 
 type Store = State & {
   ready: boolean;
-  organizations: typeof ORGANIZATIONS;
-  counterparties: typeof COUNTERPARTIES;
+  organizations: Organization[];
+  counterparties: Counterparty[];
+  providers: ProviderRecord[];
+  currencies: CurrencyRecord[];
+  hsCodes: HsCodeRecord[];
+  countries: CountryRecord[];
+  complianceTools: ComplianceToolRecord[];
+  refRecords: (key: RegistryKey) => RefRecord[];
+  saveRefRecord: (key: RegistryKey, record: RefRecord, originalId?: string) => void;
+  deleteRefRecord: (key: RegistryKey, id: string) => void;
+  importRefRecords: (key: RegistryKey, records: RefRecord[], mode: "append" | "replace") => void;
   signIn: (role: VedRole) => void;
   signOut: () => void;
-  applyAction: (formId: string, action: FormAction, extra?: { reason?: string; fileName?: string }) => void;
+  applyAction: (formId: string, action: FormAction, extra?: { reason?: string; fileName?: string; mark?: string }) => void;
   applyBulk: (formIds: string[], action: FormAction, reason?: string) => void;
   createForm: (draft: Partial<PaymentForm>) => PaymentForm;
   toggleBlocked: (userId: string) => void;
+  createUser: (draft: Omit<PlatformUser, "id" | "createdAt" | "blocked">) => void;
+  updateUser: (userId: string, patch: Partial<PlatformUser>) => void;
+  deleteUser: (userId: string) => void;
+  importUsers: (records: RefRecord[], mode: "append" | "replace") => void;
   resetDemo: () => void;
 };
 
-const initialState: State = { session: null, forms: FORMS, users: USERS };
+
+const initialRefs: Refs = {
+  organizations: ORGANIZATIONS as unknown as RefRecord[],
+  counterparties: COUNTERPARTIES as unknown as RefRecord[],
+  providers: PROVIDERS as unknown as RefRecord[],
+  currencies: CURRENCIES as unknown as RefRecord[],
+  hsCodes: HS_CODES as unknown as RefRecord[],
+  countries: COUNTRIES as unknown as RefRecord[],
+  complianceTools: COMPLIANCE_TOOLS as unknown as RefRecord[],
+};
+
+const initialState: State = { session: null, forms: FORMS, users: USERS, refs: initialRefs };
 
 const StoreContext = createContext<Store | null>(null);
 
@@ -38,7 +68,10 @@ export function VedStoreProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     try {
       const raw = localStorage.getItem(STORAGE_KEY);
-      if (raw) setState({ ...initialState, ...(JSON.parse(raw) as State) });
+      if (raw) {
+        const saved = JSON.parse(raw) as Partial<State>;
+        setState({ ...initialState, ...saved, refs: { ...initialRefs, ...(saved.refs ?? {}) } });
+      }
     } catch {
       /* демо-состояние необязательно */
     }
@@ -55,7 +88,7 @@ export function VedStoreProvider({ children }: { children: ReactNode }) {
   }, [state, ready]);
 
   const patchForm = useCallback(
-    (formId: string, action: FormAction, extra?: { reason?: string; fileName?: string }, actor?: VedRole) => {
+    (formId: string, action: FormAction, extra?: { reason?: string; fileName?: string; mark?: string }, actor?: VedRole) => {
       setState((prev) => ({
         ...prev,
         forms: prev.forms.map((form) => {
@@ -65,6 +98,7 @@ export function VedStoreProvider({ children }: { children: ReactNode }) {
             ...form,
             status: action.nextStatus,
             rejectText: action.requiresReason ? extra?.reason : undefined,
+            rejectMark: action.requiresMark ? extra?.mark : undefined,
             updatedAt: at,
             documents: extra?.fileName
               ? [
@@ -83,7 +117,10 @@ export function VedStoreProvider({ children }: { children: ReactNode }) {
               ...form.timeline,
               {
                 id: `${form.id}-ev-${form.timeline.length + 1}`,
-                title: action.label + (extra?.reason ? `: ${extra.reason}` : ""),
+                title:
+                  action.label +
+                  (extra?.mark ? ` · ${extra.mark}` : "") +
+                  (extra?.reason ? `: ${extra.reason}` : ""),
                 at,
                 actorRole: actor ?? "manager",
                 done: true,
@@ -100,8 +137,51 @@ export function VedStoreProvider({ children }: { children: ReactNode }) {
     () => ({
       ...state,
       ready,
-      organizations: ORGANIZATIONS,
-      counterparties: COUNTERPARTIES,
+      organizations: state.refs.organizations as unknown as Organization[],
+      counterparties: state.refs.counterparties as unknown as Counterparty[],
+      providers: state.refs.providers as unknown as ProviderRecord[],
+      currencies: state.refs.currencies as unknown as CurrencyRecord[],
+      hsCodes: state.refs.hsCodes as unknown as HsCodeRecord[],
+      countries: state.refs.countries as unknown as CountryRecord[],
+      complianceTools: state.refs.complianceTools as unknown as ComplianceToolRecord[],
+      refRecords: (key) => state.refs[key],
+      saveRefRecord: (key, record, originalId) => {
+        const def = REGISTRIES[key];
+        setState((prev) => {
+          const list = prev.refs[key];
+          const id = String(record[def.idField] ?? "");
+          const targetId = originalId ?? id;
+          const exists = list.some((item) => String(item[def.idField]) === targetId);
+          const next = exists
+            ? list.map((item) => (String(item[def.idField]) === targetId ? { ...item, ...record } : item))
+            : [{ ...record, [def.idField]: id || `${key}-${Date.now()}` }, ...list];
+          return { ...prev, refs: { ...prev.refs, [key]: next } };
+        });
+      },
+      deleteRefRecord: (key, id) => {
+        const def = REGISTRIES[key];
+        setState((prev) => ({
+          ...prev,
+          refs: { ...prev.refs, [key]: prev.refs[key].filter((item) => String(item[def.idField]) !== id) },
+        }));
+      },
+      importRefRecords: (key, records, mode) => {
+        const def = REGISTRIES[key];
+        setState((prev) => {
+          const stamped = records.map((record, index) => ({
+            ...record,
+            [def.idField]: String(record[def.idField] ?? "") || `${key}-${Date.now()}-${index}`,
+          }));
+          if (mode === "replace") return { ...prev, refs: { ...prev.refs, [key]: stamped } };
+          const merged = [...prev.refs[key]];
+          for (const record of stamped) {
+            const at = merged.findIndex((item) => String(item[def.idField]) === String(record[def.idField]));
+            if (at >= 0) merged[at] = { ...merged[at], ...record };
+            else merged.unshift(record);
+          }
+          return { ...prev, refs: { ...prev.refs, [key]: merged } };
+        });
+      },
       signIn: (role) => {
         const meta = ROLE_MAP[role];
         setState((prev) => ({ ...prev, session: { role, name: meta.personName, email: meta.seedEmail } }));
@@ -120,8 +200,8 @@ export function VedStoreProvider({ children }: { children: ReactNode }) {
           condition: "advance",
           amountMinor: 0,
           currency: "USD",
-          organizationId: ORGANIZATIONS[0]!.id,
-          counterpartyId: COUNTERPARTIES[0]!.id,
+          organizationId: String(state.refs.organizations[0]?.['id'] ?? ORGANIZATIONS[0]!.id),
+          counterpartyId: String(state.refs.counterparties[0]?.['id'] ?? COUNTERPARTIES[0]!.id),
           hsCode: "—",
           invoiceNumber: "—",
           ownerName: state.session?.name ?? "Д. Морозов",
@@ -147,6 +227,45 @@ export function VedStoreProvider({ children }: { children: ReactNode }) {
           ...prev,
           users: prev.users.map((u) => (u.id === userId ? { ...u, blocked: !u.blocked } : u)),
         })),
+      createUser: (draft) =>
+        setState((prev) => ({
+          ...prev,
+          users: [
+            { ...draft, id: `u-new-${Date.now()}`, blocked: false, createdAt: new Date().toISOString() },
+            ...prev.users,
+          ],
+        })),
+      updateUser: (userId, patch) =>
+        setState((prev) => ({
+          ...prev,
+          users: prev.users.map((u) => (u.id === userId ? { ...u, ...patch } : u)),
+        })),
+      deleteUser: (userId) =>
+        setState((prev) => ({ ...prev, users: prev.users.filter((u) => u.id !== userId) })),
+      importUsers: (records, mode) =>
+        setState((prev) => {
+          const now = new Date().toISOString();
+          const incoming: PlatformUser[] = records
+            .filter((r) => String(r["name"] ?? "").trim() && String(r["email"] ?? "").trim())
+            .map((r, index) => ({
+              id: `u-imp-${Date.now()}-${index}`,
+              name: String(r["name"]).trim(),
+              email: String(r["email"]).trim(),
+              role: (ROLE_MAP[String(r["role"]) as VedRole] ? String(r["role"]) : "user") as VedRole,
+              organization: String(r["organization"] ?? "").trim() || undefined,
+              blocked: false,
+              createdAt: now,
+            }));
+          if (mode === "replace") return { ...prev, users: incoming };
+          const merged = [...prev.users];
+          for (const user of incoming) {
+            const at = merged.findIndex((u) => u.email.toLowerCase() === user.email.toLowerCase());
+            if (at >= 0) merged[at] = { ...merged[at]!, ...user, id: merged[at]!.id };
+            else merged.unshift(user);
+          }
+          return { ...prev, users: merged };
+        }),
+
       resetDemo: () => {
         setState((prev) => ({ ...initialState, session: prev.session }));
       },

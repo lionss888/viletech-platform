@@ -1,5 +1,13 @@
 # AGENTS.md
 
+## MUST: planning vs `.cursor/rules`
+
+Before creating or approving any plan (Plan mode, `.cursor/plans`, roadmaps, DoD):
+
+1. **Strictly** read and cross-check the full set under [`.cursor/rules`](.cursor/rules).
+2. Record in the plan: which rules are mandatory, which are out of scope, which gate checks apply.
+3. Do not execute a plan that skipped this alignment. See project rules `базовые-правила-инструмента` and `планирование-сверка-с-rules` (`alwaysApply: true`).
+
 ## Cursor Cloud specific instructions
 
 ### What this repository is

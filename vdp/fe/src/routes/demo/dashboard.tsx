@@ -4,19 +4,23 @@ import { useMemo } from "react";
 import { DemoAppShell } from "@/components/ved/DemoAppShell";
 import { StatusBadge } from "@/components/ved/StatusBadge";
 import { actionsFor } from "@/lib/ved/actions";
+import { isComplianceRole, subjectState } from "@/lib/ved/compliance";
 import { money, relative } from "@/lib/ved/format";
+import { daysIdle, systemStats } from "@/lib/ved/health";
 import { cpById } from "@/lib/ved/mock";
+import { SYSTEM_INCIDENTS, SYSTEM_SERVICES } from "@/lib/ved/reference";
 import { roleTitle } from "@/lib/ved/roles";
 import { STAGES, statusMeta } from "@/lib/ved/statuses";
 import { useVed, visibleForms } from "@/lib/ved/store";
 import type { VedRole } from "@/lib/ved/types";
+import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/demo/dashboard")({
   head: () => ({
     meta: [
-      { title: "Рабочий стол — Viletech ВЭД" },
+      { title: "Рабочий стол — ВЭД от Вилетех" },
       { name: "description", content: "Стартовый экран роли: задачи, требующие действия, сделки в работе, платежи и отгрузки." },
-      { property: "og:title", content: "Рабочий стол — Viletech ВЭД" },
+      { property: "og:title", content: "Рабочий стол — ВЭД от Вилетех" },
       { property: "og:description", content: "Задачи роли, сделки в работе и последние обновления." },
     ],
   }),
@@ -29,11 +33,153 @@ const ROLE_FOCUS: Record<VedRole, string> = {
   compliance_officer: "Внешняя проверка заявок и подтверждение условий сделки.",
   manager: "Договоры, поручения, платежи и отгрузка по всем сделкам.",
   provider: "Сделки, переданные в исполнение платежа.",
-  root: "Полный контур: сделки, пользователи, справочники.",
+  root: "Состояние системы, критичные ошибки, нагрузка и эффективность команды.",
 };
 
 function DashboardPage() {
-  const { forms, session } = useVed();
+  const { session } = useVed();
+  const role = session?.role ?? "user";
+  return role === "root" ? <RootDashboard /> : <RoleDashboard />;
+}
+
+/* ------------------------------ Суперадмин ------------------------------ */
+
+const STATE = {
+  up: { text: "Работает", cls: "bg-done-soft text-done" },
+  degraded: { text: "Деградация", cls: "bg-wait-soft text-wait" },
+  down: { text: "Недоступен", cls: "bg-return-soft text-return" },
+};
+
+function RootDashboard() {
+  const { forms, users } = useVed();
+  const stats = useMemo(() => systemStats(forms), [forms]);
+
+  const critical = SYSTEM_INCIDENTS.filter((i) => i.severity === "critical");
+  const healthy = SYSTEM_SERVICES.filter((s) => s.state === "up").length;
+  const blocked = users.filter((u) => u.blocked).length;
+
+  const cards = [
+    { label: "Работоспособность системы", value: `${healthy}/${SYSTEM_SERVICES.length} сервисов`, to: null },
+    { label: "Критичные ошибки", value: String(critical.length), to: null },
+    { label: "Заявок в работе", value: String(stats.active), to: "/demo/forms", search: {} },
+    { label: "Зависшие заявки", value: String(stats.stuck.length), to: "/demo/forms", search: { stuck: true } },
+  ] as const;
+
+  const people = [
+    { label: "Самый активный менеджер", value: stats.topManager?.name ?? "—", note: stats.topManager ? `${stats.topManager.count} заявок` : "" },
+    {
+      label: "Самый дорогой клиент",
+      value: stats.topClient?.name ?? "—",
+      note: stats.topClient ? money(stats.topClient.sum, "USD") : "",
+    },
+    { label: "Лучший сотрудник", value: stats.bestEmployee?.name ?? "—", note: stats.bestEmployee ? `${stats.bestEmployee.count} закрытых сделок` : "" },
+    { label: "Требует внимания", value: stats.worstEmployee?.name ?? "—", note: stats.worstEmployee ? `${stats.worstEmployee.count} зависших заявок` : "" },
+  ];
+
+  return (
+    <DemoAppShell title="Рабочий стол · Суперадмин" subtitle={ROLE_FOCUS.root}>
+      <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+        {cards.map((card) =>
+          card.to ? (
+            <Link key={card.label} to={card.to} search={card.search} className="panel block p-4 transition-colors hover:border-accent">
+              <p className="label-caps">{card.label}</p>
+              <p className="mt-1 font-mono text-2xl font-semibold">{card.value}</p>
+            </Link>
+          ) : (
+            <div key={card.label} className="panel p-4">
+              <p className="label-caps">{card.label}</p>
+              <p className="mt-1 font-mono text-2xl font-semibold">{card.value}</p>
+            </div>
+          ),
+        )}
+      </div>
+
+      <div className="mt-4 grid gap-4 lg:grid-cols-[1fr_1fr]">
+        <section className="panel p-4">
+          <h2 className="text-sm font-semibold">Состояние сервисов</h2>
+          <ul className="mt-3 divide-y divide-border">
+            {SYSTEM_SERVICES.map((s) => (
+              <li key={s.id} className="flex items-center gap-3 py-2.5">
+                <span className="min-w-0 flex-1 truncate text-sm">{s.name}</span>
+                <span className="font-mono text-[11px] text-muted-foreground">{s.latencyMs} мс</span>
+                <span className="font-mono text-[11px] text-muted-foreground">{s.uptime}</span>
+                <span className={cn("rounded px-1.5 py-0.5 text-[11px] font-semibold", STATE[s.state].cls)}>
+                  {STATE[s.state].text}
+                </span>
+              </li>
+            ))}
+          </ul>
+        </section>
+
+        <section className="panel p-4">
+          <h2 className="text-sm font-semibold">Ошибки и учётные записи</h2>
+          <ul className="mt-3 divide-y divide-border">
+            {SYSTEM_INCIDENTS.map((i) => (
+              <li key={i.id} className="py-2.5">
+                <div className="flex items-center gap-2">
+                  <span
+                    className={cn(
+                      "rounded px-1.5 py-0.5 text-[11px] font-semibold",
+                      i.severity === "critical" ? "bg-return-soft text-return" : "bg-wait-soft text-wait",
+                    )}
+                  >
+                    {i.severity === "critical" ? "Критично" : "Предупреждение"}
+                  </span>
+                  <span className="min-w-0 flex-1 truncate text-sm">{i.title}</span>
+                </div>
+                <p className="mt-1 font-mono text-[11px] text-muted-foreground">
+                  {i.account} · {i.at}
+                </p>
+              </li>
+            ))}
+          </ul>
+        </section>
+      </div>
+
+      <div className="mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+        {people.map((p) => (
+          <div key={p.label} className="panel p-4">
+            <p className="label-caps">{p.label}</p>
+            <p className="mt-1 truncate text-sm font-semibold">{p.value}</p>
+            <p className="font-mono text-[11px] text-muted-foreground">{p.note}</p>
+          </div>
+        ))}
+      </div>
+
+      <section className="panel mt-4 p-4">
+        <div className="flex items-center justify-between gap-2">
+          <h2 className="text-sm font-semibold">Зависшие заявки</h2>
+          <Link to="/demo/forms" search={{ stuck: true }} className="text-xs font-semibold text-muted-foreground hover:text-foreground">
+            Реестр →
+          </Link>
+        </div>
+        <ul className="mt-3 divide-y divide-border">
+          {stats.stuck.slice(0, 7).map((form) => (
+            <li key={form.id} className="flex flex-wrap items-center gap-3 py-2.5">
+              <Link to="/demo/forms/$id" params={{ id: form.id }} className="font-mono text-xs font-semibold hover:underline">
+                {form.number}
+              </Link>
+              <StatusBadge status={form.status} />
+              <span className="min-w-0 flex-1 truncate text-xs text-muted-foreground">{form.managerName ?? "менеджер не назначен"}</span>
+              <span className="font-mono text-xs">{money(form.amountMinor, form.currency)}</span>
+              <span className="font-mono text-[11px] text-return">{daysIdle(form)} дн. без движения</span>
+            </li>
+          ))}
+          {stats.stuck.length === 0 && <li className="py-2 text-sm text-muted-foreground">Все заявки в движении.</li>}
+        </ul>
+      </section>
+
+      <p className="mt-3 text-[11px] text-muted-foreground">
+        Учётных записей: {users.length} · заблокировано: {blocked} · сделок всего: {stats.total}
+      </p>
+    </DemoAppShell>
+  );
+}
+
+/* -------------------------- Остальные роли -------------------------- */
+
+function RoleDashboard() {
+  const { forms, session, organizations } = useVed();
   const role = session?.role ?? "user";
   const scoped = visibleForms(forms, role, session?.name);
 
@@ -59,19 +205,40 @@ function DashboardPage() {
     return { active: active.length, sum, currency: active[0]?.currency ?? "USD" };
   }, [scoped]);
 
+  const compliance = isComplianceRole(role);
+  const orgsPending = organizations.filter((o) => !subjectState(o.status).ok).length;
+  const orgsCleared = organizations.length - orgsPending;
+
   return (
     <DemoAppShell title={`Рабочий стол · ${roleTitle(role)}`} subtitle={ROLE_FOCUS[role]}>
+      {compliance && (
+        <div className="mb-4 grid gap-3 sm:grid-cols-3">
+          <Link to="/demo/forms" search={{ mine: true }} className="panel block p-4 transition-colors hover:border-accent">
+            <p className="label-caps">Входящие заявки</p>
+            <p className="mt-1 font-mono text-2xl font-semibold">{todo.length}</p>
+          </Link>
+          <Link to="/demo/organizations" className="panel block p-4 transition-colors hover:border-accent">
+            <p className="label-caps">Организации требуют проверки</p>
+            <p className="mt-1 font-mono text-2xl font-semibold">{orgsPending}</p>
+          </Link>
+          <Link to="/demo/organizations" className="panel block p-4 transition-colors hover:border-accent">
+            <p className="label-caps">Организации прошли проверку</p>
+            <p className="mt-1 font-mono text-2xl font-semibold">{orgsCleared}</p>
+          </Link>
+        </div>
+      )}
+
       <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
         {[
-          { label: "Требуют вашего действия", value: String(todo.length) },
-          { label: "Сделок в работе", value: String(totals.active) },
-          { label: "Сумма в работе", value: money(totals.sum, totals.currency) },
-          { label: "Закрыто", value: String(byStage.get("completed") ?? 0) },
+          { label: "Требуют вашего действия", value: String(todo.length), search: { mine: true } },
+          { label: "Сделок в работе", value: String(totals.active), search: {} },
+          { label: "Сумма в работе", value: money(totals.sum, totals.currency), search: {} },
+          { label: "Закрыто", value: String(byStage.get("completed") ?? 0), search: { filter: "completed" } },
         ].map((card) => (
-          <div key={card.label} className="panel p-4">
+          <Link key={card.label} to="/demo/forms" search={card.search} className="panel block p-4 transition-colors hover:border-accent">
             <p className="label-caps">{card.label}</p>
             <p className="mt-1 font-mono text-2xl font-semibold">{card.value}</p>
-          </div>
+          </Link>
         ))}
       </div>
 
@@ -79,7 +246,7 @@ function DashboardPage() {
         <section className="panel p-4">
           <div className="flex items-center justify-between gap-2">
             <h2 className="text-sm font-semibold">Задачи для вас</h2>
-            <Link to="/demo/forms" className="text-xs font-semibold text-muted-foreground hover:text-foreground">
+            <Link to="/demo/forms" search={{ mine: true }} className="text-xs font-semibold text-muted-foreground hover:text-foreground">
               Все заявки →
             </Link>
           </div>
@@ -90,11 +257,7 @@ function DashboardPage() {
             <ul className="mt-3 divide-y divide-border">
               {todo.slice(0, 7).map((form) => (
                 <li key={form.id} className="flex flex-wrap items-center gap-3 py-2.5">
-                  <Link
-                    to="/demo/forms/$id"
-                    params={{ id: form.id }}
-                    className="font-mono text-xs font-semibold hover:underline"
-                  >
+                  <Link to="/demo/forms/$id" params={{ id: form.id }} className="font-mono text-xs font-semibold hover:underline">
                     {form.number}
                   </Link>
                   <StatusBadge status={form.status} />
@@ -102,9 +265,7 @@ function DashboardPage() {
                     {cpById(form.counterpartyId)?.name ?? "—"}
                   </span>
                   <span className="font-mono text-xs">{money(form.amountMinor, form.currency)}</span>
-                  <span className="text-[11px] text-muted-foreground">
-                    {actionsFor(role, form.status)[0]?.label}
-                  </span>
+                  <span className="text-[11px] text-muted-foreground">{actionsFor(role, form.status)[0]?.label}</span>
                 </li>
               ))}
             </ul>
@@ -113,11 +274,17 @@ function DashboardPage() {
 
         <section className="panel p-4">
           <h2 className="text-sm font-semibold">Сделки по этапам</h2>
-          <ul className="mt-3 space-y-2">
+          <ul className="mt-3 space-y-1">
             {STAGES.filter((stage) => (byStage.get(stage.id) ?? 0) > 0).map((stage) => (
-              <li key={stage.id} className="flex items-center justify-between gap-3 text-sm">
-                <span className="truncate text-muted-foreground">{stage.label}</span>
-                <span className="font-mono text-xs font-semibold">{byStage.get(stage.id)}</span>
+              <li key={stage.id}>
+                <Link
+                  to="/demo/forms"
+                  search={{ stage: stage.id }}
+                  className="-mx-2 flex items-center justify-between gap-3 rounded px-2 py-1 text-sm transition-colors hover:bg-muted"
+                >
+                  <span className="truncate text-muted-foreground">{stage.label}</span>
+                  <span className="font-mono text-xs font-semibold">{byStage.get(stage.id)}</span>
+                </Link>
               </li>
             ))}
             {scoped.length === 0 && <li className="text-sm text-muted-foreground">Сделок пока нет.</li>}
