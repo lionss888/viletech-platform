@@ -10,25 +10,28 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
-import { Route as AdminRouteImport } from './routes/admin'
 import { Route as CounterpartiesRouteImport } from './routes/counterparties'
 import { Route as DashboardRouteImport } from './routes/dashboard'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as OrganizationsRouteImport } from './routes/organizations'
-import { Route as StartRouteImport } from './routes/start'
-import { Route as TestingRouteImport } from './routes/testing'
+import { Route as DemoIndexRouteImport } from './routes/demo/index'
+import { Route as DemoAdminRouteImport } from './routes/demo/admin'
+import { Route as DemoCounterpartiesRouteImport } from './routes/demo/counterparties'
+import { Route as DemoDashboardRouteImport } from './routes/demo/dashboard'
+import { Route as DemoLoginRouteImport } from './routes/demo/login'
+import { Route as DemoOrganizationsRouteImport } from './routes/demo/organizations'
+import { Route as DemoStartRouteImport } from './routes/demo/start'
+import { Route as DemoTestingRouteImport } from './routes/demo/testing'
 import { Route as FormsIndexRouteImport } from './routes/forms.index'
 import { Route as FormsIdRouteImport } from './routes/forms.$id'
 import { Route as FormsNewRouteImport } from './routes/forms.new'
+import { Route as DemoFormsIndexRouteImport } from './routes/demo/forms.index'
+import { Route as DemoFormsIdRouteImport } from './routes/demo/forms.$id'
+import { Route as DemoFormsNewRouteImport } from './routes/demo/forms.new'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const AdminRoute = AdminRouteImport.update({
-  id: '/admin',
-  path: '/admin',
   getParentRoute: () => rootRouteImport,
 } as any)
 const CounterpartiesRoute = CounterpartiesRouteImport.update({
@@ -51,14 +54,44 @@ const OrganizationsRoute = OrganizationsRouteImport.update({
   path: '/organizations',
   getParentRoute: () => rootRouteImport,
 } as any)
-const StartRoute = StartRouteImport.update({
-  id: '/start',
-  path: '/start',
+const DemoIndexRoute = DemoIndexRouteImport.update({
+  id: '/demo/',
+  path: '/demo/',
   getParentRoute: () => rootRouteImport,
 } as any)
-const TestingRoute = TestingRouteImport.update({
-  id: '/testing',
-  path: '/testing',
+const DemoAdminRoute = DemoAdminRouteImport.update({
+  id: '/demo/admin',
+  path: '/demo/admin',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const DemoCounterpartiesRoute = DemoCounterpartiesRouteImport.update({
+  id: '/demo/counterparties',
+  path: '/demo/counterparties',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const DemoDashboardRoute = DemoDashboardRouteImport.update({
+  id: '/demo/dashboard',
+  path: '/demo/dashboard',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const DemoLoginRoute = DemoLoginRouteImport.update({
+  id: '/demo/login',
+  path: '/demo/login',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const DemoOrganizationsRoute = DemoOrganizationsRouteImport.update({
+  id: '/demo/organizations',
+  path: '/demo/organizations',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const DemoStartRoute = DemoStartRouteImport.update({
+  id: '/demo/start',
+  path: '/demo/start',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const DemoTestingRoute = DemoTestingRouteImport.update({
+  id: '/demo/testing',
+  path: '/demo/testing',
   getParentRoute: () => rootRouteImport,
 } as any)
 const FormsIndexRoute = FormsIndexRouteImport.update({
@@ -76,101 +109,172 @@ const FormsNewRoute = FormsNewRouteImport.update({
   path: '/forms/new',
   getParentRoute: () => rootRouteImport,
 } as any)
+const DemoFormsIndexRoute = DemoFormsIndexRouteImport.update({
+  id: '/demo/forms/',
+  path: '/demo/forms/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const DemoFormsIdRoute = DemoFormsIdRouteImport.update({
+  id: '/demo/forms/$id',
+  path: '/demo/forms/$id',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const DemoFormsNewRoute = DemoFormsNewRouteImport.update({
+  id: '/demo/forms/new',
+  path: '/demo/forms/new',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
-  '/admin': typeof AdminRoute
   '/counterparties': typeof CounterpartiesRoute
   '/dashboard': typeof DashboardRoute
   '/login': typeof LoginRoute
   '/organizations': typeof OrganizationsRoute
-  '/start': typeof StartRoute
-  '/testing': typeof TestingRoute
+  '/demo/admin': typeof DemoAdminRoute
+  '/demo/counterparties': typeof DemoCounterpartiesRoute
+  '/demo/dashboard': typeof DemoDashboardRoute
+  '/demo/login': typeof DemoLoginRoute
+  '/demo/organizations': typeof DemoOrganizationsRoute
+  '/demo/start': typeof DemoStartRoute
+  '/demo/testing': typeof DemoTestingRoute
   '/forms/$id': typeof FormsIdRoute
   '/forms/new': typeof FormsNewRoute
+  '/demo/': typeof DemoIndexRoute
   '/forms/': typeof FormsIndexRoute
+  '/demo/forms/$id': typeof DemoFormsIdRoute
+  '/demo/forms/new': typeof DemoFormsNewRoute
+  '/demo/forms/': typeof DemoFormsIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
-  '/admin': typeof AdminRoute
   '/counterparties': typeof CounterpartiesRoute
   '/dashboard': typeof DashboardRoute
   '/login': typeof LoginRoute
   '/organizations': typeof OrganizationsRoute
-  '/start': typeof StartRoute
-  '/testing': typeof TestingRoute
+  '/demo/admin': typeof DemoAdminRoute
+  '/demo/counterparties': typeof DemoCounterpartiesRoute
+  '/demo/dashboard': typeof DemoDashboardRoute
+  '/demo/login': typeof DemoLoginRoute
+  '/demo/organizations': typeof DemoOrganizationsRoute
+  '/demo/start': typeof DemoStartRoute
+  '/demo/testing': typeof DemoTestingRoute
   '/forms/$id': typeof FormsIdRoute
   '/forms/new': typeof FormsNewRoute
+  '/demo': typeof DemoIndexRoute
   '/forms': typeof FormsIndexRoute
+  '/demo/forms/$id': typeof DemoFormsIdRoute
+  '/demo/forms/new': typeof DemoFormsNewRoute
+  '/demo/forms': typeof DemoFormsIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
-  '/admin': typeof AdminRoute
   '/counterparties': typeof CounterpartiesRoute
   '/dashboard': typeof DashboardRoute
   '/login': typeof LoginRoute
   '/organizations': typeof OrganizationsRoute
-  '/start': typeof StartRoute
-  '/testing': typeof TestingRoute
+  '/demo/admin': typeof DemoAdminRoute
+  '/demo/counterparties': typeof DemoCounterpartiesRoute
+  '/demo/dashboard': typeof DemoDashboardRoute
+  '/demo/login': typeof DemoLoginRoute
+  '/demo/organizations': typeof DemoOrganizationsRoute
+  '/demo/start': typeof DemoStartRoute
+  '/demo/testing': typeof DemoTestingRoute
   '/forms/$id': typeof FormsIdRoute
   '/forms/new': typeof FormsNewRoute
+  '/demo/': typeof DemoIndexRoute
   '/forms/': typeof FormsIndexRoute
+  '/demo/forms/$id': typeof DemoFormsIdRoute
+  '/demo/forms/new': typeof DemoFormsNewRoute
+  '/demo/forms/': typeof DemoFormsIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
-    | '/admin'
     | '/counterparties'
     | '/dashboard'
     | '/login'
     | '/organizations'
-    | '/start'
-    | '/testing'
+    | '/demo/admin'
+    | '/demo/counterparties'
+    | '/demo/dashboard'
+    | '/demo/login'
+    | '/demo/organizations'
+    | '/demo/start'
+    | '/demo/testing'
     | '/forms/$id'
     | '/forms/new'
+    | '/demo/'
     | '/forms/'
+    | '/demo/forms/$id'
+    | '/demo/forms/new'
+    | '/demo/forms/'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
-    | '/admin'
     | '/counterparties'
     | '/dashboard'
     | '/login'
     | '/organizations'
-    | '/start'
-    | '/testing'
+    | '/demo/admin'
+    | '/demo/counterparties'
+    | '/demo/dashboard'
+    | '/demo/login'
+    | '/demo/organizations'
+    | '/demo/start'
+    | '/demo/testing'
     | '/forms/$id'
     | '/forms/new'
+    | '/demo'
     | '/forms'
+    | '/demo/forms/$id'
+    | '/demo/forms/new'
+    | '/demo/forms'
   id:
     | '__root__'
     | '/'
-    | '/admin'
     | '/counterparties'
     | '/dashboard'
     | '/login'
     | '/organizations'
-    | '/start'
-    | '/testing'
+    | '/demo/admin'
+    | '/demo/counterparties'
+    | '/demo/dashboard'
+    | '/demo/login'
+    | '/demo/organizations'
+    | '/demo/start'
+    | '/demo/testing'
     | '/forms/$id'
     | '/forms/new'
+    | '/demo/'
     | '/forms/'
+    | '/demo/forms/$id'
+    | '/demo/forms/new'
+    | '/demo/forms/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
-  AdminRoute: typeof AdminRoute
   CounterpartiesRoute: typeof CounterpartiesRoute
   DashboardRoute: typeof DashboardRoute
   LoginRoute: typeof LoginRoute
   OrganizationsRoute: typeof OrganizationsRoute
-  StartRoute: typeof StartRoute
-  TestingRoute: typeof TestingRoute
+  DemoAdminRoute: typeof DemoAdminRoute
+  DemoCounterpartiesRoute: typeof DemoCounterpartiesRoute
+  DemoDashboardRoute: typeof DemoDashboardRoute
+  DemoLoginRoute: typeof DemoLoginRoute
+  DemoOrganizationsRoute: typeof DemoOrganizationsRoute
+  DemoStartRoute: typeof DemoStartRoute
+  DemoTestingRoute: typeof DemoTestingRoute
   FormsIdRoute: typeof FormsIdRoute
   FormsNewRoute: typeof FormsNewRoute
+  DemoIndexRoute: typeof DemoIndexRoute
   FormsIndexRoute: typeof FormsIndexRoute
+  DemoFormsIdRoute: typeof DemoFormsIdRoute
+  DemoFormsNewRoute: typeof DemoFormsNewRoute
+  DemoFormsIndexRoute: typeof DemoFormsIndexRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -180,13 +284,6 @@ declare module '@tanstack/react-router' {
       path: '/'
       fullPath: '/'
       preLoaderRoute: typeof IndexRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/admin': {
-      id: '/admin'
-      path: '/admin'
-      fullPath: '/admin'
-      preLoaderRoute: typeof AdminRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/counterparties': {
@@ -217,18 +314,60 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof OrganizationsRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/start': {
-      id: '/start'
-      path: '/start'
-      fullPath: '/start'
-      preLoaderRoute: typeof StartRouteImport
+    '/demo/': {
+      id: '/demo/'
+      path: '/demo'
+      fullPath: '/demo/'
+      preLoaderRoute: typeof DemoIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/testing': {
-      id: '/testing'
-      path: '/testing'
-      fullPath: '/testing'
-      preLoaderRoute: typeof TestingRouteImport
+    '/demo/admin': {
+      id: '/demo/admin'
+      path: '/demo/admin'
+      fullPath: '/demo/admin'
+      preLoaderRoute: typeof DemoAdminRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/demo/counterparties': {
+      id: '/demo/counterparties'
+      path: '/demo/counterparties'
+      fullPath: '/demo/counterparties'
+      preLoaderRoute: typeof DemoCounterpartiesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/demo/dashboard': {
+      id: '/demo/dashboard'
+      path: '/demo/dashboard'
+      fullPath: '/demo/dashboard'
+      preLoaderRoute: typeof DemoDashboardRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/demo/login': {
+      id: '/demo/login'
+      path: '/demo/login'
+      fullPath: '/demo/login'
+      preLoaderRoute: typeof DemoLoginRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/demo/organizations': {
+      id: '/demo/organizations'
+      path: '/demo/organizations'
+      fullPath: '/demo/organizations'
+      preLoaderRoute: typeof DemoOrganizationsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/demo/start': {
+      id: '/demo/start'
+      path: '/demo/start'
+      fullPath: '/demo/start'
+      preLoaderRoute: typeof DemoStartRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/demo/testing': {
+      id: '/demo/testing'
+      path: '/demo/testing'
+      fullPath: '/demo/testing'
+      preLoaderRoute: typeof DemoTestingRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/forms/': {
@@ -252,32 +391,51 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof FormsNewRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/demo/forms/': {
+      id: '/demo/forms/'
+      path: '/demo/forms'
+      fullPath: '/demo/forms/'
+      preLoaderRoute: typeof DemoFormsIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/demo/forms/$id': {
+      id: '/demo/forms/$id'
+      path: '/demo/forms/$id'
+      fullPath: '/demo/forms/$id'
+      preLoaderRoute: typeof DemoFormsIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/demo/forms/new': {
+      id: '/demo/forms/new'
+      path: '/demo/forms/new'
+      fullPath: '/demo/forms/new'
+      preLoaderRoute: typeof DemoFormsNewRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
-  AdminRoute: AdminRoute,
   CounterpartiesRoute: CounterpartiesRoute,
   DashboardRoute: DashboardRoute,
   LoginRoute: LoginRoute,
   OrganizationsRoute: OrganizationsRoute,
-  StartRoute: StartRoute,
-  TestingRoute: TestingRoute,
+  DemoAdminRoute: DemoAdminRoute,
+  DemoCounterpartiesRoute: DemoCounterpartiesRoute,
+  DemoDashboardRoute: DemoDashboardRoute,
+  DemoLoginRoute: DemoLoginRoute,
+  DemoOrganizationsRoute: DemoOrganizationsRoute,
+  DemoStartRoute: DemoStartRoute,
+  DemoTestingRoute: DemoTestingRoute,
   FormsIdRoute: FormsIdRoute,
   FormsNewRoute: FormsNewRoute,
+  DemoIndexRoute: DemoIndexRoute,
   FormsIndexRoute: FormsIndexRoute,
+  DemoFormsIdRoute: DemoFormsIdRoute,
+  DemoFormsNewRoute: DemoFormsNewRoute,
+  DemoFormsIndexRoute: DemoFormsIndexRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
-
-import type { getRouter } from './router.tsx'
-import type { startInstance } from './start.ts'
-declare module '@tanstack/react-start' {
-  interface Register {
-    ssr: true
-    router: Awaited<ReturnType<typeof getRouter>>
-    config: Awaited<ReturnType<typeof startInstance.getOptions>>
-  }
-}

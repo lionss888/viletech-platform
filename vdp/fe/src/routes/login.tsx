@@ -1,40 +1,44 @@
-import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, Link, Navigate, useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
 
-import { ROLES } from "@/lib/ved/roles";
-import { useVed } from "@/lib/ved/store";
+import { ApiError } from "@/lib/api/client";
+import { useAuth } from "@/lib/auth/session";
 
 export const Route = createFileRoute("/login")({
   head: () => ({
     meta: [
       { title: "Вход — Viletech ВЭД" },
-      { name: "description", content: "Вход в операционный контур платежей ВЭД: сделки, документы и платежи." },
-      { property: "og:title", content: "Вход — Viletech ВЭД" },
-      { property: "og:description", content: "Авторизация в платформе управления сделками и платежами." },
+      { name: "description", content: "Вход в операционный контур через vdp/core." },
     ],
   }),
   component: LoginPage,
 });
 
 function LoginPage() {
-  const { signIn } = useVed();
+  const { login, isAuthenticated, ready } = useAuth();
   const navigate = useNavigate();
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
+  const [email, setEmail] = useState("user@vdp.local");
+  const [password, setPassword] = useState("user");
   const [error, setError] = useState<string | null>(null);
+  const [pending, setPending] = useState(false);
 
-  function submit(e: React.FormEvent) {
+  if (ready && isAuthenticated) {
+    return <Navigate to="/dashboard" />;
+  }
+
+  async function submit(e: React.FormEvent) {
     e.preventDefault();
-    const match = ROLES.find(
-      (r) => r.seedEmail.toLowerCase() === email.trim().toLowerCase() && r.seedPassword === password,
-    );
-    if (!match) {
-      setError("Неверный e-mail или пароль");
-      return;
-    }
+    setPending(true);
     setError(null);
-    signIn(match.id);
-    navigate({ to: "/dashboard" });
+    try {
+      await login(email.trim(), password);
+      void navigate({ to: "/dashboard" });
+    } catch (err) {
+      if (err instanceof ApiError) setError(err.message);
+      else setError("Не удалось войти. Проверьте, что vdp/core запущен.");
+    } finally {
+      setPending(false);
+    }
   }
 
   return (
@@ -47,8 +51,10 @@ function LoginPage() {
           <span className="text-sm font-semibold tracking-tight">Viletech ВЭД</span>
         </Link>
 
-        <h1 className="mt-8 text-2xl font-semibold tracking-tight">Вход в платформу</h1>
-        <p className="mt-2 text-sm text-muted-foreground">Управление сделками, документами и платежами.</p>
+        <h1 className="mt-8 text-2xl font-semibold tracking-tight">Вход через API</h1>
+        <p className="mt-2 text-sm text-muted-foreground">
+          Нужен запущенный <span className="font-mono">vdp/core</span> (compose :8080).
+        </p>
 
         <form onSubmit={submit} className="panel mt-6 space-y-4 p-5">
           <div>
@@ -62,7 +68,6 @@ function LoginPage() {
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               className="field mt-1"
-              placeholder="name@company.com"
               required
             />
           </div>
@@ -80,20 +85,23 @@ function LoginPage() {
               required
             />
           </div>
-
           {error && <p className="text-xs font-medium text-destructive">{error}</p>}
-
           <button
             type="submit"
-            className="w-full rounded-md bg-primary px-4 py-2.5 text-sm font-semibold text-primary-foreground transition-colors hover:bg-primary/90"
+            disabled={pending}
+            className="w-full rounded-md bg-primary px-4 py-2.5 text-sm font-semibold text-primary-foreground transition-colors hover:bg-primary/90 disabled:opacity-50"
           >
-            Войти
+            {pending ? "Вход…" : "Войти"}
           </button>
         </form>
 
-        <p className="mt-4 text-center text-xs text-muted-foreground">
-          <Link to="/start" className="font-semibold text-foreground hover:underline">
-            Быстрый вход по роли
+        <p className="mt-4 text-xs text-muted-foreground">
+          Seed: <span className="font-mono">user@vdp.local</span> / <span className="font-mono">user</span>, также
+          manager, ico, eco, provider.
+        </p>
+        <p className="mt-3 text-center text-xs text-muted-foreground">
+          <Link to="/demo/login" className="font-semibold text-foreground hover:underline">
+            Открыть демо без бэкенда
           </Link>
         </p>
       </div>

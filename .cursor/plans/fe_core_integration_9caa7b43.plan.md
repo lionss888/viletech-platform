@@ -25,25 +25,25 @@ todos:
     status: completed
   - id: exec-w0
     content: Исполнить W0 (отдельный plan)
-    status: pending
+    status: completed
   - id: exec-w1
     content: Исполнить W1 (отдельный plan)
-    status: pending
+    status: completed
   - id: exec-w2
     content: Исполнить W2 (отдельный plan)
-    status: pending
+    status: completed
   - id: exec-w3
     content: Исполнить W3 (отдельный plan)
-    status: pending
+    status: completed
   - id: exec-w4
     content: Исполнить W4 (отдельный plan)
-    status: pending
+    status: completed
   - id: exec-w5
     content: Исполнить W5 (отдельный plan)
-    status: pending
+    status: completed
   - id: exec-w6
     content: Исполнить W6 gate (отдельный plan)
-    status: pending
+    status: completed
 isProject: false
 ---
 
