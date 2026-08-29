@@ -90,3 +90,52 @@ services:
       timeout: 3s
       retries: 20
       start_period: 15s
+
+  fe:
+    build:
+      context: ./fe
+      dockerfile: Dockerfile
+      target: development
+    environment:
+      VDP_API_PROXY_TARGET: http://core:8080
+    ports:
+      - "5173:5173"
+    depends_on:
+      core:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://127.0.0.1:5173/ >/dev/null || exit 1"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+      start_period: 30s
+    volumes:
+      - ./fe:/app
+      - fe_node_modules:/app/node_modules
+
+  fe-prod:
+    profiles: ["prod"]
+    build:
+      context: ./fe
+      dockerfile: Dockerfile
+      target: production
+      args:
+        VDP_API_PROXY_TARGET: http://core:8080
+    environment:
+      VDP_API_PROXY_TARGET: http://core:8080
+      PORT: "3000"
+      HOST: "0.0.0.0"
+    ports:
+      - "3000:3000"
+    depends_on:
+      core:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://127.0.0.1:3000/login >/dev/null || exit 1"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+      start_period: 30s
+
+volumes:
+  fe_node_modules:

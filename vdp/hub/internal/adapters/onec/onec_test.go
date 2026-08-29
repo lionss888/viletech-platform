@@ -11,7 +11,8 @@ import (
 )
 
 func TestOneCIdempotentByExternalID(t *testing.T) {
-	t.Parallel()
+	t.Setenv("CORE_URL", "")
+	t.Setenv("ONEC_URL", "")
 	log := slog.New(slog.NewJSONHandler(os.Stdout, &slog.HandlerOptions{Level: slog.LevelError}))
 	plugin := onec.New(time.Second, 2, log) // fixture mode, no core callback
 	params := map[string]any{

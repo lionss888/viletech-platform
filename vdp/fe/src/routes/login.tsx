@@ -7,8 +7,10 @@ import { useAuth } from "@/lib/auth/session";
 export const Route = createFileRoute("/login")({
   head: () => ({
     meta: [
-      { title: "Вход — Viletech ВЭД" },
-      { name: "description", content: "Вход в операционный контур через vdp/core." },
+      { title: "Вход — ВЭД от Вилетех" },
+      { name: "description", content: "Вход в операционный контур платежей ВЭД: сделки, документы и платежи." },
+      { property: "og:title", content: "Вход — ВЭД от Вилетех" },
+      { property: "og:description", content: "Авторизация в платформе управления сделками и платежами." },
     ],
   }),
   component: LoginPage,
@@ -48,13 +50,11 @@ function LoginPage() {
           <span className="grid size-9 place-items-center rounded-lg bg-primary font-mono text-sm font-bold text-primary-foreground">
             V
           </span>
-          <span className="text-sm font-semibold tracking-tight">Viletech ВЭД</span>
+          <span className="text-sm font-semibold tracking-tight">ВЭД от Вилетех</span>
         </Link>
 
-        <h1 className="mt-8 text-2xl font-semibold tracking-tight">Вход через API</h1>
-        <p className="mt-2 text-sm text-muted-foreground">
-          Нужен запущенный <span className="font-mono">vdp/core</span> (compose :8080).
-        </p>
+        <h1 className="mt-8 text-2xl font-semibold tracking-tight">Вход в платформу</h1>
+        <p className="mt-2 text-sm text-muted-foreground">Управление сделками, документами и платежами через API.</p>
 
         <form onSubmit={submit} className="panel mt-6 space-y-4 p-5">
           <div>
@@ -68,6 +68,7 @@ function LoginPage() {
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               className="field mt-1"
+              placeholder="name@company.com"
               required
             />
           </div>
@@ -96,12 +97,16 @@ function LoginPage() {
         </form>
 
         <p className="mt-4 text-xs text-muted-foreground">
-          Seed: <span className="font-mono">user@vdp.local</span> / <span className="font-mono">user</span>, также
-          manager, ico, eco, provider.
+          Seed: <span className="font-mono">user@vdp.local</span> / <span className="font-mono">user</span> · нужен{" "}
+          <span className="font-mono">vdp/core</span>
         </p>
         <p className="mt-3 text-center text-xs text-muted-foreground">
           <Link to="/demo/login" className="font-semibold text-foreground hover:underline">
-            Открыть демо без бэкенда
+            Демо без бэкенда
+          </Link>
+          {" · "}
+          <Link to="/demo/start" className="font-semibold text-foreground hover:underline">
+            Быстрый вход по роли
           </Link>
         </p>
       </div>

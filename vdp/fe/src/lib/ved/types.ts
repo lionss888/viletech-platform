@@ -1,4 +1,4 @@
-/** Домен ВЭД-платформы: типы соответствуют BDUI-контракту backend-for-ved. */
+/** UI-модель VDP: проекция для экранов app и demo (не контракт API core). */
 
 export type VedRole =
   | "user"
@@ -49,7 +49,12 @@ export type Organization = {
   name: string;
   inn: string;
   legalAddress: string;
-  status: "approved" | "not_approved" | "waiting_verification";
+  status: "approved" | "not_approved" | "waiting_verification" | "blocked";
+  clientType?: "ui" | "bank";
+  bankFixedCommissionPercent?: string;
+  applyPlatformMarkup?: boolean;
+  defaultAgentId?: string;
+  bankWebhookUrl?: string;
   createdAt: string;
 };
 
@@ -89,7 +94,16 @@ export type PaymentForm = {
   invoiceNumber: string;
   ownerName: string;
   managerName?: string | undefined;
+  providerId?: string | undefined;
   providerName?: string | undefined;
+  channel?: "ui" | "bank" | undefined;
+  correlationId?: string | undefined;
+  agentId?: string | undefined;
+  contractId?: string | undefined;
+  clientCurrency?: string | undefined;
+  counterpartyCurrency?: string | undefined;
+  shipmentDate?: string | undefined;
+  noDocuments?: boolean | undefined;
   rejectText?: string | undefined;
   /** Код отметки комплаенс при возврате на доработку. */
   rejectMark?: string | undefined;

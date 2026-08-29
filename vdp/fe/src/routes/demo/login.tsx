@@ -7,9 +7,9 @@ import { useVed } from "@/lib/ved/store";
 export const Route = createFileRoute("/demo/login")({
   head: () => ({
     meta: [
-      { title: "Вход — Viletech ВЭД" },
+      { title: "Вход — ВЭД от Вилетех" },
       { name: "description", content: "Вход в операционный контур платежей ВЭД: сделки, документы и платежи." },
-      { property: "og:title", content: "Вход — Viletech ВЭД" },
+      { property: "og:title", content: "Вход — ВЭД от Вилетех" },
       { property: "og:description", content: "Авторизация в платформе управления сделками и платежами." },
     ],
   }),
@@ -44,11 +44,11 @@ function LoginPage() {
           <span className="grid size-9 place-items-center rounded-lg bg-primary font-mono text-sm font-bold text-primary-foreground">
             V
           </span>
-          <span className="text-sm font-semibold tracking-tight">Viletech ВЭД</span>
+          <span className="text-sm font-semibold tracking-tight">ВЭД от Вилетех</span>
         </Link>
 
-        <h1 className="mt-8 text-2xl font-semibold tracking-tight">Демо-вход (моки)</h1>
-        <p className="mt-2 text-sm text-muted-foreground">Офлайн-демонстрация без vdp/core. Не production API.</p>
+        <h1 className="mt-8 text-2xl font-semibold tracking-tight">Вход в платформу</h1>
+        <p className="mt-2 text-sm text-muted-foreground">Управление сделками, документами и платежами · демо на моках.</p>
 
         <form onSubmit={submit} className="panel mt-6 space-y-4 p-5">
           <div>

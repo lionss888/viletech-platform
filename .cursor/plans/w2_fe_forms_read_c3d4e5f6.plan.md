@@ -1,22 +1,22 @@
 ---
 name: W2 FE Forms Read
-overview: "Проекция заявок из core: mapper, React Query list/get, иерархия UI. Gate: реестр = status/id с API."
+overview: "Проекция заявок из core: mapper, React Query list/get, иерархия UI. Gate: реестр = status/id с API. Закрыто 2026-08; дальше RD0–RD11."
 todos:
   - id: w2-api-forms
     content: lib/api/forms.ts list/get
-    status: pending
+    status: completed
   - id: w2-mapper
     content: mappers.ts + unit test (≥3 кейса)
-    status: pending
+    status: completed
   - id: w2-screens
     content: dashboard/forms/detail — Query; статус+что дальше; loading
-    status: pending
+    status: completed
   - id: w2-shell
     content: AppShell без role-switch; logout API; provider без ПДн-колонок
-    status: pending
+    status: completed
   - id: w2-gate
     content: "Gate: list/get совпадают с core status/id"
-    status: pending
+    status: completed
 isProject: false
 ---
 

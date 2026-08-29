@@ -1,16 +1,16 @@
 ---
 name: W4 FE Create Form
-overview: "Use case create: POST /api/v1/forms → карточка. Справочники — stub. Gate: 201 + видно в list."
+overview: "Use case create: POST /api/v1/forms → карточка. Справочники — stub. Gate: 201 + видно в list. Закрыто 2026-08; дальше RD0–RD11."
 todos:
   - id: w4-create-api
     content: createForm + /forms/new (валидация денег/полей)
-    status: pending
+    status: completed
   - id: w4-stub-dirs
     content: App orgs/counterparties stub со ссылкой на /demo
-    status: pending
+    status: completed
   - id: w4-gate
     content: "Gate: POST 201 + заявка в GET /forms"
-    status: pending
+    status: completed
 isProject: false
 ---
 

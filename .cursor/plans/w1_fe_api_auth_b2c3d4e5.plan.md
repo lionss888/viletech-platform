@@ -1,22 +1,22 @@
 ---
 name: W1 FE API Auth
-overview: "Auth adapter к core: apiFetch, AuthProvider, /login, Vite proxy. Gate: seed JWT + GET account."
+overview: "Auth adapter к core: apiFetch, AuthProvider, /login, Vite proxy. Gate: seed JWT + GET account. Закрыто 2026-08; дальше RD0–RD11."
 todos:
   - id: w1-client
     content: lib/api/client.ts + auth.ts (login/logout/refresh/account, X-Request-ID)
-    status: pending
+    status: completed
   - id: w1-session
     content: AuthProvider + useAuth + guard app-роутов
-    status: pending
+    status: completed
   - id: w1-login
     content: App /login seed *@vdp.local; ошибки политики явные
-    status: pending
+    status: completed
   - id: w1-proxy
     content: Vite proxy /api → localhost:8080
-    status: pending
+    status: completed
   - id: w1-gate
     content: "Gate: login 201 + Bearer GET /api/v1/account"
-    status: pending
+    status: completed
 isProject: false
 ---
 

@@ -20,11 +20,12 @@ type State = {
   refs: Refs;
 };
 
-type Store = State & {
+type VedStore = State & {
   ready: boolean;
   organizations: Organization[];
   counterparties: Counterparty[];
   providers: ProviderRecord[];
+  paymentAgents: ProviderRecord[];
   currencies: CurrencyRecord[];
   hsCodes: HsCodeRecord[];
   countries: CountryRecord[];
@@ -35,9 +36,13 @@ type Store = State & {
   importRefRecords: (key: RegistryKey, records: RefRecord[], mode: "append" | "replace") => void;
   signIn: (role: VedRole) => void;
   signOut: () => void;
-  applyAction: (formId: string, action: FormAction, extra?: { reason?: string; fileName?: string; mark?: string }) => void;
+  applyAction: (
+    formId: string,
+    action: FormAction,
+    extra?: { reason?: string; fileName?: string; mark?: string; file?: File; providerId?: string },
+  ) => void | Promise<void>;
   applyBulk: (formIds: string[], action: FormAction, reason?: string) => void;
-  createForm: (draft: Partial<PaymentForm>) => PaymentForm;
+  createForm: (draft: Partial<PaymentForm>) => PaymentForm | Promise<PaymentForm>;
   toggleBlocked: (userId: string) => void;
   createUser: (draft: Omit<PlatformUser, "id" | "createdAt" | "blocked">) => void;
   updateUser: (userId: string, patch: Partial<PlatformUser>) => void;
@@ -133,13 +138,14 @@ export function VedStoreProvider({ children }: { children: ReactNode }) {
     [],
   );
 
-  const value = useMemo<Store>(
+  const value = useMemo<VedStore>(
     () => ({
       ...state,
       ready,
       organizations: state.refs.organizations as unknown as Organization[],
       counterparties: state.refs.counterparties as unknown as Counterparty[],
       providers: state.refs.providers as unknown as ProviderRecord[],
+      paymentAgents: state.refs.providers as unknown as ProviderRecord[],
       currencies: state.refs.currencies as unknown as CurrencyRecord[],
       hsCodes: state.refs.hsCodes as unknown as HsCodeRecord[],
       countries: state.refs.countries as unknown as CountryRecord[],
@@ -191,10 +197,11 @@ export function VedStoreProvider({ children }: { children: ReactNode }) {
       applyBulk: (ids, action, reason) =>
         ids.forEach((id) => patchForm(id, action, reason ? { reason } : undefined, state.session?.role)),
       createForm: (draft) => {
+        const hasDocs = (draft.documents?.length ?? 0) > 0;
         const created: PaymentForm = {
           id: `form-new-${Date.now()}`,
           number: `ВЭД-2026-${Math.floor(2000 + Math.random() * 7999)}`,
-          status: "draft",
+          status: hasDocs ? "creating" : draft.noDocuments ? "draft" : "creating",
           direction: "import",
           kind: "good",
           condition: "advance",
@@ -276,16 +283,25 @@ export function VedStoreProvider({ children }: { children: ReactNode }) {
   return <StoreContext.Provider value={value}>{children}</StoreContext.Provider>;
 }
 
-export function useVed(): Store {
+export type { VedStore };
+
+export function useVed(): VedStore {
   const ctx = useContext(StoreContext);
   if (!ctx) throw new Error("useVed должен вызываться внутри VedStoreProvider");
   return ctx;
 }
 
-/** Заявки, видимые роли (упрощённая модель прав из BDUI-контракта). */
+/**
+ * Заявки, видимые роли.
+ * Demo: фильтр по ownerName / статусу.
+ * App: list уже ACL-scoped в core; ownerName штампуется сессией — чужие не попадают в список.
+ */
 export function visibleForms(forms: PaymentForm[], role: VedRole | undefined, ownerName?: string): PaymentForm[] {
   if (!role) return [];
-  if (role === "user") return forms.filter((f) => f.ownerName === (ownerName ?? "Д. Морозов"));
+  if (role === "user") {
+    if (!ownerName) return forms;
+    return forms.filter((f) => f.ownerName === ownerName || f.ownerName === "—");
+  }
   if (role === "provider") return forms.filter((f) => f.status.startsWith("payment"));
   if (role === "internal_compliance_officer")
     return forms.filter((f) => f.status.startsWith("organization") || f.status.startsWith("form") || f.status.startsWith("canceled"));

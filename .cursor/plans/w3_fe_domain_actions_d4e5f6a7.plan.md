@@ -1,19 +1,19 @@
 ---
 name: W3 FE Domain Actions
-overview: "CTA = use case command в core; ActionPanel без nextStatus-истины. Gate: ≥1 переход + явный % матрицы."
+overview: "CTA = use case command в core; ActionPanel без nextStatus-истины. Gate: ≥1 переход + явный % матрицы. Закрыто 2026-08; дальше RD0–RD11."
 todos:
   - id: w3-app-actions
     content: app-actions.ts роль×статус → coreAction (use case id)
-    status: pending
+    status: completed
   - id: w3-panel
     content: ActionPanel primary CTA + confirm destructive; invalidate
-    status: pending
+    status: completed
   - id: w3-map-test
     content: Table-driven FE→domain action + запрет чужой роли (ожидание 403)
-    status: pending
+    status: completed
   - id: w3-gate
     content: "Gate: POST action меняет status; указать N/M покрытых статусов"
-    status: pending
+    status: completed
 isProject: false
 ---
 

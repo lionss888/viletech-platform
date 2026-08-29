@@ -74,6 +74,9 @@ func (s *FormPaymentService) Create(ctx context.Context, principal authz.Princip
 	if err := s.store.SaveForm(ctx, form); err != nil {
 		return formpayment.Form{}, err
 	}
+	if saved, err := s.store.FormByID(ctx, form.ID); err == nil {
+		form = saved
+	}
 	ctx = logger.WithFormPaymentID(ctx, form.ID)
 	logger.FromContext(ctx, nil).Info("form created")
 	if input.NoDocuments {
@@ -87,6 +90,10 @@ func (s *FormPaymentService) Create(ctx context.Context, principal authz.Princip
 }
 
 func (s *FormPaymentService) Transition(ctx context.Context, principal authz.Principal, formID string, action formpayment.Action) (formpayment.Form, error) {
+	return s.TransitionWithComment(ctx, principal, formID, action, "")
+}
+
+func (s *FormPaymentService) TransitionWithComment(ctx context.Context, principal authz.Principal, formID string, action formpayment.Action, comment string) (formpayment.Form, error) {
 	form, err := s.store.FormByID(ctx, formID)
 	if err != nil {
 		return formpayment.Form{}, err
@@ -130,6 +137,7 @@ func (s *FormPaymentService) Transition(ctx context.Context, principal authz.Pri
 		ActorID:       principal.AccountID,
 		FromStatus:    form.Status,
 		ToStatus:      next.Status,
+		Comment:       comment,
 		CreatedAt:     time.Now().UTC(),
 	}
 	if err := s.store.AppendHistory(ctx, history); err != nil {

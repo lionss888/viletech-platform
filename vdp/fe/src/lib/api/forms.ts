@@ -5,15 +5,22 @@ export type CoreForm = {
   account_id: string;
   organization_id: string;
   provider_id?: string;
+  agent_id?: string;
   manager_id?: string;
   counterparty_id?: string;
+  contract_id?: string;
   status: string;
   direction: string;
   kind: string;
+  channel?: string;
+  correlation_id?: string;
   invoice_amount?: string;
   currency?: string;
   contract_number?: string;
   contract_date?: string;
+  no_documents?: boolean;
+  docs_json?: string;
+  confirmation_hash?: string;
   created_at: string;
   updated_at: string;
 };
@@ -26,6 +33,23 @@ export type CreateFormInput = {
   no_documents?: boolean;
   contract_number?: string;
   contract_date?: string;
+  organization_id?: string;
+  counterparty_id?: string;
+};
+
+export type TransitionInput = {
+  comment?: string;
+  mark?: string;
+};
+
+export type ComplianceHistoryEntry = {
+  id: string;
+  form_payment_id: string;
+  actor_id: string;
+  from_status: string;
+  to_status: string;
+  comment?: string;
+  created_at: string;
 };
 
 export function listForms(): Promise<CoreForm[]> {
@@ -43,9 +67,24 @@ export function createForm(input: CreateFormInput): Promise<CoreForm> {
   });
 }
 
-export function transitionForm(id: string, action: string): Promise<CoreForm> {
+export function transitionForm(id: string, action: string, input: TransitionInput = {}): Promise<CoreForm> {
+  const comment = [input.mark, input.comment].filter(Boolean).join(" · ");
   return apiFetch<CoreForm>(`/api/v1/forms/${id}/actions/${action}`, {
     method: "POST",
-    body: JSON.stringify({}),
+    body: JSON.stringify(comment ? { comment } : {}),
   });
+}
+
+export function assignProvider(formId: string, providerId: string, clientAgreed = true): Promise<CoreForm> {
+  return apiFetch<CoreForm>(`/api/v1/forms/${formId}/provider`, {
+    method: "POST",
+    body: JSON.stringify({ provider_id: providerId, client_agreed: clientAgreed }),
+  });
+}
+
+export { attachContract, resolveContractBranch, rejectContract } from "./contract";
+export type { ContractType } from "./contract";
+
+export function getComplianceHistory(formId: string): Promise<ComplianceHistoryEntry[]> {
+  return apiFetch<ComplianceHistoryEntry[]>(`/api/v1/compliance-history/${formId}`);
 }

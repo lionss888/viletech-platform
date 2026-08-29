@@ -1,24 +1,10 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute } from "@tanstack/react-router";
 
-import { AppShell } from "@/components/ved/AppShell";
+import { CounterpartiesPage } from "./demo/counterparties";
 
 export const Route = createFileRoute("/counterparties")({
   head: () => ({
-    meta: [{ title: "Контрагенты — Viletech ВЭД" }],
+    meta: [{ title: "Контрагенты — ВЭД от Вилетех" }],
   }),
-  component: CounterpartiesStub,
+  component: CounterpartiesPage,
 });
-
-function CounterpartiesStub() {
-  return (
-    <AppShell title="Контрагенты" subtitle="Stub — следующий этап">
-      <div className="panel p-6 text-sm text-muted-foreground">
-        Справочник контрагентов через API — в следующем этапе. Демо:{" "}
-        <Link to="/demo/counterparties" className="font-semibold text-accent hover:underline">
-          /demo/counterparties
-        </Link>
-        .
-      </div>
-    </AppShell>
-  );
-}

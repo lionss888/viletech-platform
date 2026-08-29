@@ -17,6 +17,7 @@ const (
 	OrgID      = "66666666-6666-6666-6666-666666666666"
 	BankID     = "77777777-7777-7777-7777-777777777777"
 	BankOrgID  = "88888888-8888-8888-8888-888888888888"
+	RootID     = "99999999-9999-9999-9999-999999999999"
 )
 
 func Dev(store repository.Store) {
@@ -27,6 +28,7 @@ func Dev(store repository.Store) {
 		{ID: ICOID, Email: "ico@vdp.local", PasswordHash: service.HashPassword("ico"), Role: domain.RoleInternalComplianceOfficer, Active: true},
 		{ID: ECOID, Email: "eco@vdp.local", PasswordHash: service.HashPassword("eco"), Role: domain.RoleComplianceOfficer, Active: true},
 		{ID: ProviderID, Email: "provider@vdp.local", PasswordHash: service.HashPassword("provider"), Role: domain.RoleProvider, Active: true},
+		{ID: RootID, Email: "root@vdp.local", PasswordHash: service.HashPassword("root"), Role: domain.RoleRoot, FullName: "Root Admin", Active: true},
 		{ID: BankID, Email: "bank@vdp.local", PasswordHash: service.HashPassword("bank"), Role: domain.RoleBank, OrganizationID: BankOrgID, Active: true, BankRateReadonly: true},
 	}
 	for _, account := range accounts {

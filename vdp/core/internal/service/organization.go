@@ -153,6 +153,10 @@ func (s *OrganizationService) Approve(ctx context.Context, principal authz.Princ
 	if err := s.store.SaveOrganization(ctx, org); err != nil {
 		return domain.Organization{}, err
 	}
+	if acct, err := s.store.AccountByID(ctx, org.AccountID); err == nil {
+		acct.Blocked = false
+		_ = s.store.SaveAccount(ctx, acct)
+	}
 	return org, nil
 }
 

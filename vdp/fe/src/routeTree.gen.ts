@@ -10,10 +10,18 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as AdminRouteImport } from './routes/admin'
+import { Route as CodesRouteImport } from './routes/codes'
+import { Route as ComplianceToolsRouteImport } from './routes/compliance-tools'
 import { Route as CounterpartiesRouteImport } from './routes/counterparties'
+import { Route as CountriesRouteImport } from './routes/countries'
+import { Route as CurrenciesRouteImport } from './routes/currencies'
 import { Route as DashboardRouteImport } from './routes/dashboard'
+import { Route as DocumentsRouteImport } from './routes/documents'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as OrganizationsRouteImport } from './routes/organizations'
+import { Route as ProvidersRouteImport } from './routes/providers'
+import { Route as TestingRouteImport } from './routes/testing'
 import { Route as DemoIndexRouteImport } from './routes/demo/index'
 import { Route as DemoAdminRouteImport } from './routes/demo/admin'
 import { Route as DemoCodesRouteImport } from './routes/demo/codes'
@@ -40,14 +48,44 @@ const IndexRoute = IndexRouteImport.update({
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AdminRoute = AdminRouteImport.update({
+  id: '/admin',
+  path: '/admin',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const CodesRoute = CodesRouteImport.update({
+  id: '/codes',
+  path: '/codes',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ComplianceToolsRoute = ComplianceToolsRouteImport.update({
+  id: '/compliance-tools',
+  path: '/compliance-tools',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const CounterpartiesRoute = CounterpartiesRouteImport.update({
   id: '/counterparties',
   path: '/counterparties',
   getParentRoute: () => rootRouteImport,
 } as any)
+const CountriesRoute = CountriesRouteImport.update({
+  id: '/countries',
+  path: '/countries',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const CurrenciesRoute = CurrenciesRouteImport.update({
+  id: '/currencies',
+  path: '/currencies',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const DashboardRoute = DashboardRouteImport.update({
   id: '/dashboard',
   path: '/dashboard',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const DocumentsRoute = DocumentsRouteImport.update({
+  id: '/documents',
+  path: '/documents',
   getParentRoute: () => rootRouteImport,
 } as any)
 const LoginRoute = LoginRouteImport.update({
@@ -58,6 +96,16 @@ const LoginRoute = LoginRouteImport.update({
 const OrganizationsRoute = OrganizationsRouteImport.update({
   id: '/organizations',
   path: '/organizations',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ProvidersRoute = ProvidersRouteImport.update({
+  id: '/providers',
+  path: '/providers',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const TestingRoute = TestingRouteImport.update({
+  id: '/testing',
+  path: '/testing',
   getParentRoute: () => rootRouteImport,
 } as any)
 const DemoIndexRoute = DemoIndexRouteImport.update({
@@ -163,10 +211,18 @@ const DemoFormsNewRoute = DemoFormsNewRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/admin': typeof AdminRoute
+  '/codes': typeof CodesRoute
+  '/compliance-tools': typeof ComplianceToolsRoute
   '/counterparties': typeof CounterpartiesRoute
+  '/countries': typeof CountriesRoute
+  '/currencies': typeof CurrenciesRoute
   '/dashboard': typeof DashboardRoute
+  '/documents': typeof DocumentsRoute
   '/login': typeof LoginRoute
   '/organizations': typeof OrganizationsRoute
+  '/providers': typeof ProvidersRoute
+  '/testing': typeof TestingRoute
   '/demo/admin': typeof DemoAdminRoute
   '/demo/codes': typeof DemoCodesRoute
   '/demo/compliance-tools': typeof DemoComplianceToolsRoute
@@ -190,10 +246,18 @@ export interface FileRoutesByFullPath {
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/admin': typeof AdminRoute
+  '/codes': typeof CodesRoute
+  '/compliance-tools': typeof ComplianceToolsRoute
   '/counterparties': typeof CounterpartiesRoute
+  '/countries': typeof CountriesRoute
+  '/currencies': typeof CurrenciesRoute
   '/dashboard': typeof DashboardRoute
+  '/documents': typeof DocumentsRoute
   '/login': typeof LoginRoute
   '/organizations': typeof OrganizationsRoute
+  '/providers': typeof ProvidersRoute
+  '/testing': typeof TestingRoute
   '/demo/admin': typeof DemoAdminRoute
   '/demo/codes': typeof DemoCodesRoute
   '/demo/compliance-tools': typeof DemoComplianceToolsRoute
@@ -218,10 +282,18 @@ export interface FileRoutesByTo {
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/admin': typeof AdminRoute
+  '/codes': typeof CodesRoute
+  '/compliance-tools': typeof ComplianceToolsRoute
   '/counterparties': typeof CounterpartiesRoute
+  '/countries': typeof CountriesRoute
+  '/currencies': typeof CurrenciesRoute
   '/dashboard': typeof DashboardRoute
+  '/documents': typeof DocumentsRoute
   '/login': typeof LoginRoute
   '/organizations': typeof OrganizationsRoute
+  '/providers': typeof ProvidersRoute
+  '/testing': typeof TestingRoute
   '/demo/admin': typeof DemoAdminRoute
   '/demo/codes': typeof DemoCodesRoute
   '/demo/compliance-tools': typeof DemoComplianceToolsRoute
@@ -247,10 +319,18 @@ export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
+    | '/admin'
+    | '/codes'
+    | '/compliance-tools'
     | '/counterparties'
+    | '/countries'
+    | '/currencies'
     | '/dashboard'
+    | '/documents'
     | '/login'
     | '/organizations'
+    | '/providers'
+    | '/testing'
     | '/demo/admin'
     | '/demo/codes'
     | '/demo/compliance-tools'
@@ -274,10 +354,18 @@ export interface FileRouteTypes {
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
+    | '/admin'
+    | '/codes'
+    | '/compliance-tools'
     | '/counterparties'
+    | '/countries'
+    | '/currencies'
     | '/dashboard'
+    | '/documents'
     | '/login'
     | '/organizations'
+    | '/providers'
+    | '/testing'
     | '/demo/admin'
     | '/demo/codes'
     | '/demo/compliance-tools'
@@ -301,10 +389,18 @@ export interface FileRouteTypes {
   id:
     | '__root__'
     | '/'
+    | '/admin'
+    | '/codes'
+    | '/compliance-tools'
     | '/counterparties'
+    | '/countries'
+    | '/currencies'
     | '/dashboard'
+    | '/documents'
     | '/login'
     | '/organizations'
+    | '/providers'
+    | '/testing'
     | '/demo/admin'
     | '/demo/codes'
     | '/demo/compliance-tools'
@@ -329,10 +425,18 @@ export interface FileRouteTypes {
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  AdminRoute: typeof AdminRoute
+  CodesRoute: typeof CodesRoute
+  ComplianceToolsRoute: typeof ComplianceToolsRoute
   CounterpartiesRoute: typeof CounterpartiesRoute
+  CountriesRoute: typeof CountriesRoute
+  CurrenciesRoute: typeof CurrenciesRoute
   DashboardRoute: typeof DashboardRoute
+  DocumentsRoute: typeof DocumentsRoute
   LoginRoute: typeof LoginRoute
   OrganizationsRoute: typeof OrganizationsRoute
+  ProvidersRoute: typeof ProvidersRoute
+  TestingRoute: typeof TestingRoute
   DemoAdminRoute: typeof DemoAdminRoute
   DemoCodesRoute: typeof DemoCodesRoute
   DemoComplianceToolsRoute: typeof DemoComplianceToolsRoute
@@ -364,6 +468,27 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/admin': {
+      id: '/admin'
+      path: '/admin'
+      fullPath: '/admin'
+      preLoaderRoute: typeof AdminRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/codes': {
+      id: '/codes'
+      path: '/codes'
+      fullPath: '/codes'
+      preLoaderRoute: typeof CodesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/compliance-tools': {
+      id: '/compliance-tools'
+      path: '/compliance-tools'
+      fullPath: '/compliance-tools'
+      preLoaderRoute: typeof ComplianceToolsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/counterparties': {
       id: '/counterparties'
       path: '/counterparties'
@@ -371,11 +496,32 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof CounterpartiesRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/countries': {
+      id: '/countries'
+      path: '/countries'
+      fullPath: '/countries'
+      preLoaderRoute: typeof CountriesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/currencies': {
+      id: '/currencies'
+      path: '/currencies'
+      fullPath: '/currencies'
+      preLoaderRoute: typeof CurrenciesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/dashboard': {
       id: '/dashboard'
       path: '/dashboard'
       fullPath: '/dashboard'
       preLoaderRoute: typeof DashboardRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/documents': {
+      id: '/documents'
+      path: '/documents'
+      fullPath: '/documents'
+      preLoaderRoute: typeof DocumentsRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/login': {
@@ -390,6 +536,20 @@ declare module '@tanstack/react-router' {
       path: '/organizations'
       fullPath: '/organizations'
       preLoaderRoute: typeof OrganizationsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/providers': {
+      id: '/providers'
+      path: '/providers'
+      fullPath: '/providers'
+      preLoaderRoute: typeof ProvidersRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/testing': {
+      id: '/testing'
+      path: '/testing'
+      fullPath: '/testing'
+      preLoaderRoute: typeof TestingRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/demo/': {
@@ -537,10 +697,18 @@ declare module '@tanstack/react-router' {
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  AdminRoute: AdminRoute,
+  CodesRoute: CodesRoute,
+  ComplianceToolsRoute: ComplianceToolsRoute,
   CounterpartiesRoute: CounterpartiesRoute,
+  CountriesRoute: CountriesRoute,
+  CurrenciesRoute: CurrenciesRoute,
   DashboardRoute: DashboardRoute,
+  DocumentsRoute: DocumentsRoute,
   LoginRoute: LoginRoute,
   OrganizationsRoute: OrganizationsRoute,
+  ProvidersRoute: ProvidersRoute,
+  TestingRoute: TestingRoute,
   DemoAdminRoute: DemoAdminRoute,
   DemoCodesRoute: DemoCodesRoute,
   DemoComplianceToolsRoute: DemoComplianceToolsRoute,

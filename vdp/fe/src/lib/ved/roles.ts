@@ -9,54 +9,54 @@ export type RoleMeta = {
   personName: string;
 };
 
-/** Роли BDUI-контракта + seed-аккаунты из fe-experiment/README.md. */
+/** Seed-аккаунты для demo-контура (`/demo/login`), не связаны с app JWT. */
 export const ROLES: RoleMeta[] = [
   {
     id: "user",
     group: "Личный кабинет",
     title: "Клиент",
-    seedEmail: "user@bdui.local",
-    seedPassword: "BduiUser2024!",
+    seedEmail: "user@demo.vdp.local",
+    seedPassword: "DemoUser2024!",
     personName: "Д. Морозов",
   },
   {
     id: "internal_compliance_officer",
     group: "Контроль",
     title: "Внутренний комплаенс",
-    seedEmail: "ico@bdui.local",
-    seedPassword: "BduiLifecycle2024!",
+    seedEmail: "ico@demo.vdp.local",
+    seedPassword: "DemoLifecycle2024!",
     personName: "Е. Соколова",
   },
   {
     id: "compliance_officer",
     group: "Проверка",
     title: "Внешний комплаенс",
-    seedEmail: "eco@bdui.local",
-    seedPassword: "BduiLifecycle2024!",
+    seedEmail: "eco@demo.vdp.local",
+    seedPassword: "DemoLifecycle2024!",
     personName: "М. Гаврилов",
   },
   {
     id: "manager",
     group: "Операции",
     title: "Менеджер",
-    seedEmail: "manager@bdui.local",
-    seedPassword: "BduiLifecycle2024!",
+    seedEmail: "manager@demo.vdp.local",
+    seedPassword: "DemoLifecycle2024!",
     personName: "П. Иванов",
   },
   {
     id: "provider",
     group: "Сервис",
     title: "Провайдер",
-    seedEmail: "provider@bdui.local",
-    seedPassword: "BduiLifecycle2024!",
+    seedEmail: "provider@demo.vdp.local",
+    seedPassword: "DemoLifecycle2024!",
     personName: "S. Chen",
   },
   {
     id: "root",
     group: "Система",
     title: "Суперадмин",
-    seedEmail: "root@bdui.local",
-    seedPassword: "BduiLifecycle2024!",
+    seedEmail: "root@demo.vdp.local",
+    seedPassword: "DemoLifecycle2024!",
     personName: "А. Константинов",
   },
 ];

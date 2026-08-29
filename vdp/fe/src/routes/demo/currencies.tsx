@@ -1,10 +1,10 @@
 import { createFileRoute } from "@tanstack/react-router";
 
-import { DemoAppShell } from "@/components/ved/DemoAppShell";
+import { VedAppShell } from "@/components/ved/VedAppShell";
 import { RegistryManager } from "@/components/ved/RegistryManager";
 import { money } from "@/lib/ved/format";
 import { REGISTRIES } from "@/lib/ved/registry";
-import { useVed } from "@/lib/ved/store";
+import { usePlatformStore } from "@/lib/ved/platform-store";
 
 export const Route = createFileRoute("/demo/currencies")({
   head: () => ({
@@ -18,12 +18,12 @@ export const Route = createFileRoute("/demo/currencies")({
   component: CurrenciesPage,
 });
 
-function CurrenciesPage() {
-  const { forms, currencies } = useVed();
+export function CurrenciesPage() {
+  const { forms, currencies } = usePlatformStore();
   const def = REGISTRIES.currencies;
 
   return (
-    <DemoAppShell title={def.title} subtitle={`${def.subtitle} · записей: ${currencies.length}`}>
+    <VedAppShell title={def.title} subtitle={`${def.subtitle} · записей: ${currencies.length}`}>
       <RegistryManager
         def={def}
         badge={(record) =>
@@ -46,6 +46,6 @@ function CurrenciesPage() {
           },
         ]}
       />
-    </DemoAppShell>
+    </VedAppShell>
   );
 }

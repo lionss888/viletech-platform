@@ -1,9 +1,9 @@
 import { createFileRoute } from "@tanstack/react-router";
 
-import { DemoAppShell } from "@/components/ved/DemoAppShell";
+import { VedAppShell } from "@/components/ved/VedAppShell";
 import { RegistryManager } from "@/components/ved/RegistryManager";
 import { REGISTRIES } from "@/lib/ved/registry";
-import { useVed } from "@/lib/ved/store";
+import { usePlatformStore } from "@/lib/ved/platform-store";
 
 export const Route = createFileRoute("/demo/compliance-tools")({
   head: () => ({
@@ -27,18 +27,18 @@ const SCOPE: Record<string, { text: string; cls: string }> = {
   both: { text: "Заявка и организация", cls: "bg-neutral-tone-soft text-neutral-tone" },
 };
 
-function ComplianceToolsPage() {
-  const { complianceTools } = useVed();
+export function ComplianceToolsPage() {
+  const { complianceTools } = usePlatformStore();
   const def = REGISTRIES.complianceTools;
 
   return (
-    <DemoAppShell title={def.title} subtitle={`${def.subtitle} · отметок: ${complianceTools.length}`}>
+    <VedAppShell title={def.title} subtitle={`${def.subtitle} · отметок: ${complianceTools.length}`}>
       <RegistryManager
         def={def}
         extraColumns={[
           { label: "Контур", value: (record) => SCOPE[String(record["scope"])]?.text ?? "—" },
         ]}
       />
-    </DemoAppShell>
+    </VedAppShell>
   );
 }

@@ -6,17 +6,36 @@
 // You can pass additional config via defineConfig({ vite: { ... }, etc... }) if needed.
 import { defineConfig } from "@lovable.dev/vite-tanstack-config";
 
+const apiProxyTarget = (process.env.VDP_API_PROXY_TARGET ?? "http://localhost:8080").replace(
+  /\/$/,
+  "",
+);
+
 export default defineConfig({
   tanstackStart: {
     // Redirect TanStack Start's bundled server entry to src/server.ts (our SSR error wrapper).
     // nitro/vite builds from this
     server: { entry: "server" },
   },
+  nitro: {
+    preset: process.env.NITRO_PRESET ?? "cloudflare",
+    routeRules: {
+      "/api/**": { proxy: `${apiProxyTarget}/api/**` },
+    },
+  },
   vite: {
     server: {
       proxy: {
         "/api": {
-          target: "http://localhost:8080",
+          target: apiProxyTarget,
+          changeOrigin: true,
+        },
+      },
+    },
+    preview: {
+      proxy: {
+        "/api": {
+          target: apiProxyTarget,
           changeOrigin: true,
         },
       },

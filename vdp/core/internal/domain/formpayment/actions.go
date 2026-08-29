@@ -34,8 +34,9 @@ const (
 	ActionOrderAccept       Action = "order_accept"
 	ActionOrderReject       Action = "order_reject"
 	ActionOrderSigning      Action = "order_signing"
-	ActionUserUploadOrder   Action = "user_upload_order"
-	ActionAdvanceUserUpload Action = "advance_user_upload"
+	ActionUserUploadOrder    Action = "user_upload_order"
+	ActionUserUploadContract Action = "user_upload_contract"
+	ActionAdvanceUserUpload  Action = "advance_user_upload"
 	ActionAdvanceSigning    Action = "advance_signing"
 	ActionAdvanceStart      Action = "advance_start"
 	ActionAdvanceStop       Action = "advance_stop"
@@ -90,7 +91,7 @@ func RolesForAction(action Action) []domain.Role {
 	switch action {
 	case ActionRecognizeComplete:
 		return []domain.Role{domain.RoleRoot, domain.RoleUser, domain.RoleManager}
-	case ActionSubmit, ActionUserUploadOrder, ActionAdvanceUserUpload, ActionReportUpload, ActionShipmentUpload, ActionShipmentAcceptUser, ActionTreasurerUserVerify:
+	case ActionSubmit, ActionUserUploadOrder, ActionUserUploadContract, ActionAdvanceUserUpload, ActionReportUpload, ActionShipmentUpload, ActionShipmentAcceptUser, ActionTreasurerUserVerify:
 		return []domain.Role{domain.RoleUser, domain.RoleRoot}
 	case ActionCancel:
 		return []domain.Role{domain.RoleUser, domain.RoleRoot}
@@ -169,6 +170,8 @@ func TargetStatus(form Form, action Action, orgApproved bool) (Status, error) {
 		return StatusSigningOrder, nil
 	case ActionUserUploadOrder:
 		return StatusSigningOrderWaitingVerification, nil
+	case ActionUserUploadContract:
+		return StatusContractVerification, nil
 	case ActionOrderStart:
 		return StatusSigningOrderVerification, nil
 	case ActionOrderStop:

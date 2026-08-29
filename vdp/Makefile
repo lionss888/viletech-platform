@@ -1,4 +1,4 @@
-.PHONY: deps test build db-setup db-migrate run-hub run-core run smoke stop compose-up compose-down compose-ps compose-e2e
+.PHONY: deps test build db-setup db-migrate run-hub run-core run smoke stop compose-up compose-up-prod compose-down compose-ps compose-e2e compose-fe-smoke compose-fe-prod-smoke compose-playwright integration-gate playwright-e2e
 
 CORE_DIR := core
 HUB_DIR := hub
@@ -49,14 +49,48 @@ db-migrate:
 	PGPASSWORD=vdp_hub psql -h localhost -U vdp_hub -d vdp_hub -v ON_ERROR_STOP=1 -f $(HUB_DIR)/migrations/001_hub.sql
 	PGPASSWORD=vdp_hub psql -h localhost -U vdp_hub -d vdp_hub -v ON_ERROR_STOP=1 -f $(HUB_DIR)/migrations/002_hub.sql
 
-# Default compose path: Postgres for core+hub (not memory).
+# Default compose path: Postgres for core+hub+fe (not memory).
 compose-up:
 	docker compose up -d --build
-	@echo "waiting for core health..."
-	@for i in 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28 29 30; do \
-		curl -sf http://127.0.0.1:8080/api/v1/health >/dev/null && curl -sf http://127.0.0.1:8081/api/v1/health >/dev/null && echo "core+hub healthy (STORE_DRIVER=postgres)" && exit 0; \
+	@echo "waiting for core+hub+fe health..."
+	@ok=0; for i in 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28 29 30; do \
+		if curl -sf http://127.0.0.1:8080/api/v1/health >/dev/null && \
+		   curl -sf http://127.0.0.1:8081/api/v1/health >/dev/null && \
+		   curl -sf http://127.0.0.1:5173/ >/dev/null; then \
+			ok=1; break; \
+		fi; \
 		sleep 2; \
-	done; echo "health timeout"; docker compose ps; exit 1
+	done; \
+	if [ "$$ok" != "1" ]; then echo "health timeout"; docker compose ps; exit 1; fi
+	@echo "core+hub+fe healthy (STORE_DRIVER=postgres)"
+	@$(MAKE) compose-fe-smoke
+	@echo "UI  http://localhost:5173"
+	@echo "API http://localhost:8080"
+
+compose-up-prod:
+	docker compose --profile prod up -d --build
+	@echo "waiting for core+hub+fe-prod health..."
+	@ok=0; for i in 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28 29 30; do \
+		if curl -sf http://127.0.0.1:8080/api/v1/health >/dev/null && \
+		   curl -sf http://127.0.0.1:8081/api/v1/health >/dev/null && \
+		   curl -sf http://127.0.0.1:3000/login >/dev/null; then \
+			ok=1; break; \
+		fi; \
+		sleep 2; \
+	done; \
+	if [ "$$ok" != "1" ]; then echo "health timeout"; docker compose ps; exit 1; fi
+	@echo "core+hub+fe-prod healthy"
+	@$(MAKE) compose-fe-prod-smoke
+	@echo "UI (prod) http://localhost:3000"
+	@echo "API       http://localhost:8080"
+
+compose-fe-smoke:
+	@chmod +x scripts/compose-fe-smoke.sh
+	@./scripts/compose-fe-smoke.sh
+
+compose-fe-prod-smoke:
+	@chmod +x scripts/compose-fe-prod-smoke.sh
+	@./scripts/compose-fe-prod-smoke.sh
 
 compose-down:
 	docker compose down
@@ -94,3 +128,16 @@ smoke:
 compose-e2e: compose-up
 	@chmod +x scripts/compose-e2e.sh
 	@./scripts/compose-e2e.sh
+
+# RD10: unit gates + compose journey (RD1–RD9 spots on shared stack).
+integration-gate:
+	cd fe && npm test
+	$(MAKE) test
+	$(MAKE) compose-e2e
+
+# RD11: browser E2E via Docker (Linux browsers; works when host `playwright install` is unsupported).
+compose-playwright:
+	@./scripts/compose-playwright.sh
+
+# RD11: local npm run when Chromium is installed on host; else use compose-playwright.
+playwright-e2e: compose-playwright

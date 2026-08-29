@@ -1,12 +1,14 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute } from '@tanstack/react-router'
+import { VedFormLink } from "@/components/ved/VedLink";
 import { useMemo, useState } from "react";
 
-import { DemoAppShell } from "@/components/ved/DemoAppShell";
+import { VedAppShell } from "@/components/ved/VedAppShell";
 import { RegistryManager } from "@/components/ved/RegistryManager";
+import { BankSettingsPanel } from "@/components/ved/BankSettingsPanel";
 import { SubjectReview } from "@/components/ved/SubjectReview";
 import { isComplianceRole, subjectState, type ReviewSubject } from "@/lib/ved/compliance";
 import { REGISTRIES } from "@/lib/ved/registry";
-import { useVed } from "@/lib/ved/store";
+import { usePlatformStore } from "@/lib/ved/platform-store";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/demo/organizations")({
@@ -28,15 +30,15 @@ const LABEL: Record<string, { text: string; cls: string }> = {
   blocked: { text: "Заблокирована", cls: "bg-destructive-soft text-destructive" },
 };
 
-function OrganizationsPage() {
-  const { session } = useVed();
+export function OrganizationsPage() {
+  const { session } = usePlatformStore();
   return isComplianceRole(session?.role) ? <ComplianceOrganizations /> : <OrganizationsRegistry />;
 }
 
 /* ------------------------- Комплаенс: проверка ------------------------- */
 
 function ComplianceOrganizations() {
-  const { organizations, forms } = useVed();
+  const { organizations, forms } = usePlatformStore();
   const [tab, setTab] = useState<"pending" | "cleared">("pending");
 
   const subjects: ReviewSubject[] = useMemo(
@@ -62,7 +64,7 @@ function ComplianceOrganizations() {
   const shown = tab === "pending" ? pending : cleared;
 
   return (
-    <DemoAppShell
+    <VedAppShell
       title="Проверка организаций"
       subtitle={`Требуют проверки: ${pending.length} · прошли проверку: ${cleared.length}`}
     >
@@ -99,9 +101,9 @@ function ComplianceOrganizations() {
             .slice(0, 8)
             .map((form) => (
               <li key={form.id} className="flex flex-wrap items-center gap-3 py-2.5 text-xs">
-                <Link to="/demo/forms/$id" params={{ id: form.id }} className="font-mono font-semibold hover:underline">
+                <VedFormLink id={form.id} className="font-mono font-semibold hover:underline">
                   {form.number}
-                </Link>
+                </VedFormLink>
                 <span className="min-w-0 flex-1 truncate text-muted-foreground">{form.ownerName}</span>
               </li>
             ))}
@@ -110,18 +112,38 @@ function ComplianceOrganizations() {
           )}
         </ul>
       </section>
-    </DemoAppShell>
+    </VedAppShell>
   );
 }
 
 /* ------------------------- Справочник ------------------------- */
 
 function OrganizationsRegistry() {
-  const { organizations, forms } = useVed();
+  const { organizations, forms, session } = usePlatformStore();
   const def = REGISTRIES.organizations;
+  const showBank = session?.role === "root" || session?.role === "manager";
 
   return (
-    <DemoAppShell title={def.title} subtitle={`${def.subtitle} · записей: ${organizations.length}`}>
+    <VedAppShell title={def.title} subtitle={`${def.subtitle} · записей: ${organizations.length}`}>
+      {showBank && organizations.length > 0 && (
+        <div className="panel mb-4 p-4">
+          <p className="label-caps">Bank API (организации)</p>
+          <ul className="mt-2 divide-y divide-border">
+            {organizations.slice(0, 6).map((org) => (
+              <li key={org.id} className="flex flex-wrap items-center gap-2 py-2 text-sm">
+                <span className="font-semibold">{org.name}</span>
+                {org.clientType === "bank" && (
+                  <span className="rounded-md bg-wait-soft px-1.5 py-0.5 text-[10px] font-semibold text-wait">Bank client</span>
+                )}
+                <span className="font-mono text-xs text-muted-foreground">ИНН {org.inn}</span>
+                <span className="ml-auto">
+                  <BankSettingsPanel org={org} />
+                </span>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
       <RegistryManager
         def={def}
         badge={(record) => LABEL[String(record["status"])] ?? null}
@@ -132,6 +154,6 @@ function OrganizationsRegistry() {
           },
         ]}
       />
-    </DemoAppShell>
+    </VedAppShell>
   );
 }

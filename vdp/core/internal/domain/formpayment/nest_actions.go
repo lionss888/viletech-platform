@@ -39,6 +39,7 @@ var nestActionMap = map[string]Action{
 	"site|form/accept-corrections":             ActionSubmit,
 	"site|order":                               ActionUserUploadOrder,
 	"site|order-advance":                       ActionAdvanceUserUpload,
+	"site|contract":                            ActionUserUploadContract,
 	"site|report":                              ActionReportUpload,
 	"site|shipment":                            ActionShipmentUpload,
 	"site|shipment/accept":                     ActionShipmentAcceptUser,

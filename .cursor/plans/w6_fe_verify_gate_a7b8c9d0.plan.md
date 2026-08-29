@@ -1,16 +1,16 @@
 ---
 name: W6 FE Verify Gate
-overview: "Gate FE↔core: unit mapper/actions, узкий journey smoke, честный %. Без E2E-мороженого и prod-claims."
+overview: "Gate FE↔core: unit mapper/actions, узкий journey smoke, честный %. Без E2E-мороженого и prod-claims. Закрыто 2026-08; дальше RD0–RD11."
 todos:
   - id: w6-unit
     content: Unit mapper + app-actions (vitest); table-driven
-    status: pending
+    status: completed
   - id: w6-smoke
     content: "Journey smoke: demo offline + app login/list/action/create"
-    status: pending
+    status: completed
   - id: w6-honesty
     content: "Gate-ответ: N/M matrix, дыры, completed только по DoD волн"
-    status: pending
+    status: completed
 isProject: false
 ---
 
@@ -60,3 +60,11 @@ Playwright CI, CDC Pact pipeline, Nest path UI parity, BDUI.
 ## Gate
 
 demo OK / login OK / action OK / create OK / matrix N/M / дыры. Без «100%».
+
+## Статус закрытия (2026-08-29)
+
+- Vitest: **88/88** green (`cd vdp/fe && npm test`).
+- Compose gates: см. [`vdp/rd0-baseline.md`](vdp/rd0-baseline.md).
+- Матрица CTA: **~22/40** статусов (`coveredStatusCount`); не full lifecycle.
+- Известные оговорки W2/W3/W4: client `visibleForms` в app list; нет FE unit на 403; catalog API вместо stub orgs.
+- Playwright — **RD11**, не W6.

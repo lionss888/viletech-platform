@@ -1,19 +1,19 @@
 ---
 name: W0 FE Demo Routes
-overview: "Вынести mock под /demo/*; явная развилка demo/app по ui-web top tasks. Без API. Gate: demo офлайн как раньше."
+overview: "Вынести mock под /demo/*; явная развилка demo/app по ui-web top tasks. Без API. Gate: demo офлайн как раньше. Закрыто 2026-08; дальше RD0–RD11."
 todos:
   - id: w0-move-routes
     content: Перенести operational routes в src/routes/demo/*
-    status: pending
+    status: completed
   - id: w0-demo-shell
     content: Demo AppShell — /demo/*, role-switch только demo; бейдж «Демо»
-    status: pending
+    status: completed
   - id: w0-index-cta
     content: index — CTA Войти + Демо; честный копирайт режимов
-    status: pending
+    status: completed
   - id: w0-gate
     content: "Gate: /demo login→forms на моках; app placeholders без claim интеграции"
-    status: pending
+    status: completed
 isProject: false
 ---
 
@@ -21,7 +21,7 @@ isProject: false
 
 ## Цель
 
-Разделить URL-деревья: mock demo vs будущий app-адатер к core. Политика статусов в demo остаётся локальной **только** для показа (явно помечено).
+Разделить URL-деревья: mock demo vs app-адаптер к core. Demo — локальный показ UI vdp/fe, **не** fe-experiment / BDUI.
 
 ## Якоря
 

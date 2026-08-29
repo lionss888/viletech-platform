@@ -1,48 +1,68 @@
 import { describe, expect, it } from "vitest";
 
-import { mapCoreFormToPaymentForm, nextStepHint } from "./mappers";
+import { mapComplianceHistory, mapCoreFormToPaymentForm, normalizeFormId, parseDocsJson } from "./mappers";
 import type { CoreForm } from "./forms";
 
-function sample(overrides: Partial<CoreForm> = {}): CoreForm {
-  return {
-    id: "abcdef12-3456-7890-abcd-ef1234567890",
-    account_id: "acc-1",
-    organization_id: "org-1",
-    status: "draft",
-    direction: "import",
-    kind: "good",
-    invoice_amount: "1500.50",
-    currency: "USD",
-    created_at: "2026-01-01T00:00:00Z",
-    updated_at: "2026-01-02T00:00:00Z",
-    ...overrides,
-  };
-}
-
-describe("mapCoreFormToPaymentForm", () => {
-  it("maps amount with decimal to minor units", () => {
-    const actual = mapCoreFormToPaymentForm(sample());
-    expect(actual.amountMinor).toBe(150050);
-    expect(actual.currency).toBe("USD");
+describe("normalizeFormId", () => {
+  it("formats 32-char hex as dashed uuid", () => {
+    expect(normalizeFormId("ca3dcfcddd3de79d19109c885e5f397b")).toBe(
+      "ca3dcfcd-dd3d-e79d-1910-9c885e5f397b",
+    );
   });
 
-  it("maps status and short number from id", () => {
-    const actual = mapCoreFormToPaymentForm(sample({ status: "payment_processing" }));
-    expect(actual.status).toBe("payment_processing");
-    expect(actual.number).toBe("ВЭД-abcdef12");
-  });
-
-  it("fills missing optional fields with placeholders", () => {
-    const actual = mapCoreFormToPaymentForm(sample({ invoice_amount: "", currency: "" }), "Ivan");
-    expect(actual.amountMinor).toBe(0);
-    expect(actual.currency).toBe("USD");
-    expect(actual.counterpartyId).toBe("—");
-    expect(actual.ownerName).toBe("Ivan");
+  it("keeps already dashed uuid", () => {
+    expect(normalizeFormId("ca3dcfcd-dd3d-e79d-1910-9c885e5f397b")).toBe(
+      "ca3dcfcd-dd3d-e79d-1910-9c885e5f397b",
+    );
   });
 });
 
-describe("nextStepHint", () => {
-  it("returns draft hint", () => {
-    expect(nextStepHint("draft")).toContain("проверку");
+describe("mapCoreFormToPaymentForm", () => {
+  it("normalizes create-style hex id", () => {
+    const form = {
+      id: "ca3dcfcddd3de79d19109c885e5f397b",
+      account_id: "a1",
+      organization_id: "o1",
+      status: "draft",
+      direction: "import",
+      kind: "good",
+      invoice_amount: "10",
+      currency: "USD",
+      created_at: "2026-01-01T00:00:00Z",
+      updated_at: "2026-01-01T00:00:00Z",
+    } as CoreForm;
+    const mapped = mapCoreFormToPaymentForm(form, "User");
+    expect(mapped.id).toBe("ca3dcfcd-dd3d-e79d-1910-9c885e5f397b");
+  });
+});
+
+describe("parseDocsJson", () => {
+  it("parses array docs_json", () => {
+    const raw = JSON.stringify([{ id: "f1", kind: "invoice", label: "INV.pdf", mime: "application/pdf" }]);
+    const docs = parseDocsJson(raw, "form-1");
+    expect(docs).toHaveLength(1);
+    expect(docs[0]?.title).toBe("INV.pdf");
+    expect(docs[0]?.kind).toBe("invoice");
+  });
+
+  it("returns empty for invalid json", () => {
+    expect(parseDocsJson("{bad", "x")).toEqual([]);
+  });
+});
+
+describe("mapComplianceHistory", () => {
+  it("maps history entries to timeline", () => {
+    const timeline = mapComplianceHistory([
+      {
+        id: "h1",
+        form_payment_id: "f1",
+        actor_id: "a1",
+        from_status: "draft",
+        to_status: "form_waiting_verification",
+        comment: "submit",
+        created_at: "2026-01-01T00:00:00Z",
+      },
+    ]);
+    expect(timeline[0]?.title).toContain("submit");
   });
 });

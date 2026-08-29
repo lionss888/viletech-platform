@@ -28,6 +28,7 @@ func TestApplyTable(t *testing.T) {
 		{"eco accept", StatusFormVerification, ActionECOAccept, domain.RoleComplianceOfficer, true, StatusFormAccepted, false},
 		{"provider cannot accept form", StatusFormVerification, ActionECOAccept, domain.RoleProvider, true, "", true},
 		{"manager send order", StatusFormAccepted, ActionManagerSendOrder, domain.RoleManager, true, StatusSigningOrder, false},
+		{"user upload contract", StatusContractWaiting, ActionUserUploadContract, domain.RoleUser, true, StatusContractVerification, false},
 		{"illegal skip completed", StatusDraft, ActionProviderSent, domain.RoleProvider, false, "", true},
 	}
 	for _, tc := range cases {
@@ -69,6 +70,12 @@ func TestImportTransitionCoverage(t *testing.T) {
 	}
 	if !IsAllowedTransition(StatusPaymentSent, StatusReportWaiting, DirectionImport, false) {
 		t.Fatal("import payment_sent -> report_waiting (Nest advance checkTransit)")
+	}
+	if !IsAllowedTransition(StatusReportWaiting, StatusReportWaitingVerification, DirectionImport, false) {
+		t.Fatal("report_waiting -> report_waiting_verification (user report upload)")
+	}
+	if !IsAllowedTransition(StatusReportAccepted, StatusShipmentWaiting, DirectionImport, false) {
+		t.Fatal("report_accepted -> shipment_waiting")
 	}
 	if !IsAllowedTransition(StatusPaymentSent, StatusAdvanceSigningOrder, DirectionImport, true) {
 		t.Fatal("rate-on-provider overlay missing")

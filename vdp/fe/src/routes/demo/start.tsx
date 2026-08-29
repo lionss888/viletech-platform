@@ -50,6 +50,12 @@ function StartPage() {
               Войти по логину и паролю
             </Link>
             <Link
+              to="/login"
+              className="rounded-md px-5 py-2.5 text-sm font-semibold shadow-[0_0_0_1px_var(--input)] transition-colors hover:bg-muted"
+            >
+              Войти через API
+            </Link>
+            <Link
               to="/"
               className="rounded-md px-5 py-2.5 text-sm font-semibold shadow-[0_0_0_1px_var(--input)] transition-colors hover:bg-muted"
             >

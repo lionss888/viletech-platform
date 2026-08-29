@@ -182,6 +182,7 @@ var transitionsImportForm = map[Status][]Status{
 		StatusAdvanceSigningOrderAccepted,
 		StatusReportAccepted,
 		StatusReportWaitingDiadoc,
+		StatusReportWaitingVerification,
 	},
 	StatusReportWaitingDiadoc: {
 		StatusReportWaitingVerification,
@@ -202,6 +203,7 @@ var transitionsImportForm = map[Status][]Status{
 	},
 	StatusReportAccepted: {
 		StatusCompleted,
+		StatusShipmentWaiting,
 		StatusCanceledByManager,
 		StatusCanceledByUser,
 	},

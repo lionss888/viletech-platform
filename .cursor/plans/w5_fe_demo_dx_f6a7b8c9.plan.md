@@ -1,19 +1,19 @@
 ---
 name: W5 FE Demo DX
-overview: "Перекрёстные ссылки demo↔app; изоляция сессий; честный self-service copy. Gate: навигация режимов очевидна."
+overview: "Перекрёстные ссылки demo↔app; изоляция сессий; честный self-service copy. Gate: навигация режимов очевидна. Закрыто 2026-08; дальше RD0–RD11."
 todos:
   - id: w5-cross-links
     content: Ссылки demo↔app на index и login
-    status: pending
+    status: completed
   - id: w5-testing
     content: /demo/testing пути и сценарии после split
-    status: pending
+    status: completed
   - id: w5-isolation
-    content: ved-demo-state-v1 vs vdp-auth-v1 без утечек
-    status: pending
+    content: ved-demo-state-v2 vs vdp-auth-v1 без утечек
+    status: completed
   - id: w5-gate
     content: "Gate: чеклист навигации demo↔app"
-    status: pending
+    status: completed
 isProject: false
 ---
 

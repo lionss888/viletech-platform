@@ -1,11 +1,12 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute } from '@tanstack/react-router'
+import { VedFormLink } from "@/components/ved/VedLink";
 import { useMemo, useState } from "react";
 
-import { DemoAppShell } from "@/components/ved/DemoAppShell";
+import { VedAppShell } from "@/components/ved/VedAppShell";
 import { KIND_LABEL } from "@/components/ved/DocumentViewer";
 import { Modal, ModalButton } from "@/components/ved/Modal";
 import { dateTime } from "@/lib/ved/format";
-import { useVed, visibleForms } from "@/lib/ved/store";
+import { usePlatformStore, visibleForms } from "@/lib/ved/platform-store";
 import type { AttachedDocument, PaymentForm } from "@/lib/ved/types";
 
 type DocRow = { doc: AttachedDocument; form: PaymentForm };
@@ -27,8 +28,8 @@ export const Route = createFileRoute("/demo/documents")({
   component: DocumentsPage,
 });
 
-function DocumentsPage() {
-  const { forms, session } = useVed();
+export function DocumentsPage() {
+  const { forms, session } = usePlatformStore();
   const mine = visibleForms(forms, session?.role, session?.name);
 
   const [query, setQuery] = useState("");
@@ -52,7 +53,7 @@ function DocumentsPage() {
   }, [mine, query, kind]);
 
   return (
-    <DemoAppShell title="Документы" subtitle={`Договоры, поручения и отчёты по вашим сделкам · документов: ${rows.length}`}>
+    <VedAppShell title="Документы" subtitle={`Договоры, поручения и отчёты по вашим сделкам · документов: ${rows.length}`}>
       <div className="panel p-4">
         <div className="flex flex-wrap items-center gap-3">
           <input
@@ -94,13 +95,9 @@ function DocumentsPage() {
                   </td>
                   <td className="py-2 pr-4 text-muted-foreground">{KIND_LABEL[doc.kind]}</td>
                   <td className="py-2 pr-4">
-                    <Link
-                      to="/demo/forms/$id"
-                      params={{ id: form.id }}
-                      className="font-mono text-xs font-semibold text-accent hover:underline"
-                    >
+                    <VedFormLink id={form.id} className="font-mono text-xs font-semibold text-accent hover:underline">
                       {form.number}
-                    </Link>
+                    </VedFormLink>
                   </td>
                   <td className="py-2 pr-4 font-mono text-xs text-muted-foreground">{doc.size}</td>
                   <td className="py-2 pr-4 font-mono text-xs text-muted-foreground">{dateTime(doc.uploadedAt)}</td>
@@ -144,6 +141,6 @@ function DocumentsPage() {
           </div>
         </div>
       </Modal>
-    </DemoAppShell>
+    </VedAppShell>
   );
 }

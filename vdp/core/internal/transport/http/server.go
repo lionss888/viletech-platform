@@ -139,7 +139,11 @@ func (s *Server) handleProviderForm(w http.ResponseWriter, r *http.Request, prin
 }
 
 func (s *Server) handleTransition(w http.ResponseWriter, r *http.Request, principal authz.Principal) {
-	form, err := s.forms.Transition(r.Context(), principal, r.PathValue("id"), parseAction(r.PathValue("action")))
+	var body struct {
+		Comment string `json:"comment"`
+	}
+	_ = json.NewDecoder(r.Body).Decode(&body)
+	form, err := s.forms.TransitionWithComment(r.Context(), principal, r.PathValue("id"), parseAction(r.PathValue("action")), body.Comment)
 	if err != nil {
 		writeError(w, err)
 		return
@@ -386,5 +390,7 @@ func writeError(w http.ResponseWriter, err error) {
 func newID() string {
 	buf := make([]byte, 16)
 	_, _ = rand.Read(buf)
-	return hex.EncodeToString(buf)
+	h := hex.EncodeToString(buf)
+	// Dashed UUID so create JSON matches postgres uuid text from list/get.
+	return h[0:8] + "-" + h[8:12] + "-" + h[12:16] + "-" + h[16:20] + "-" + h[20:32]
 }

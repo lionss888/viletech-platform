@@ -31,7 +31,7 @@ function HomePage() {
             <span className="grid size-8 place-items-center rounded-md bg-primary font-mono text-sm font-bold text-primary-foreground">
               V
             </span>
-            <span className="text-sm font-semibold tracking-tight">Viletech ВЭД</span>
+            <span className="text-sm font-semibold tracking-tight">ВЭД от Вилетех</span>
           </span>
           <Link
             to="/login"
@@ -47,8 +47,7 @@ function HomePage() {
           ВЭД — операционный контур платежей
         </h1>
         <p className="mt-5 max-w-xl text-base leading-relaxed text-muted-foreground">
-          Управление сделками, документами и платежами через API платформы. Для быстрого показа без бэкенда — демо на
-          моках.
+          Управление сделками, документами и платежами.
         </p>
 
         <div className="mt-8 flex flex-wrap gap-3">
@@ -64,9 +63,16 @@ function HomePage() {
           >
             Демо без бэкенда
           </Link>
+          <Link
+            to="/demo/start"
+            className="rounded-md px-5 py-2.5 text-sm font-semibold shadow-[0_0_0_1px_var(--input)] transition-colors hover:bg-muted"
+          >
+            Быстрый вход по роли
+          </Link>
         </div>
         <p className="mt-3 text-xs text-muted-foreground">
-          Платформа требует запущенный <span className="font-mono">vdp/core</span>. Демо работает офлайн на моках.
+          Платформа через API требует <span className="font-mono">vdp/core</span> (compose :8080). Демо работает офлайн на
+          моках.
         </p>
 
         <div className="mt-16 grid gap-4 sm:grid-cols-3">

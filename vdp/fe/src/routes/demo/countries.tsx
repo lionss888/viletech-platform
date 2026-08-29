@@ -1,9 +1,9 @@
 import { createFileRoute } from "@tanstack/react-router";
 
-import { DemoAppShell } from "@/components/ved/DemoAppShell";
+import { VedAppShell } from "@/components/ved/VedAppShell";
 import { RegistryManager } from "@/components/ved/RegistryManager";
 import { REGISTRIES } from "@/lib/ved/registry";
-import { useVed } from "@/lib/ved/store";
+import { usePlatformStore } from "@/lib/ved/platform-store";
 
 export const Route = createFileRoute("/demo/countries")({
   head: () => ({
@@ -17,12 +17,12 @@ export const Route = createFileRoute("/demo/countries")({
   component: CountriesPage,
 });
 
-function CountriesPage() {
-  const { counterparties, countries } = useVed();
+export function CountriesPage() {
+  const { counterparties, countries } = usePlatformStore();
   const def = REGISTRIES.countries;
 
   return (
-    <DemoAppShell title={def.title} subtitle={`${def.subtitle} · записей: ${countries.length}`}>
+    <VedAppShell title={def.title} subtitle={`${def.subtitle} · записей: ${countries.length}`}>
       <RegistryManager
         def={def}
         extraColumns={[
@@ -32,6 +32,6 @@ function CountriesPage() {
           },
         ]}
       />
-    </DemoAppShell>
+    </VedAppShell>
   );
 }

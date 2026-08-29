@@ -1,9 +1,9 @@
 import { createFileRoute } from "@tanstack/react-router";
 
-import { DemoAppShell } from "@/components/ved/DemoAppShell";
+import { VedAppShell } from "@/components/ved/VedAppShell";
 import { RegistryManager } from "@/components/ved/RegistryManager";
 import { REGISTRIES } from "@/lib/ved/registry";
-import { useVed } from "@/lib/ved/store";
+import { usePlatformStore } from "@/lib/ved/platform-store";
 
 export const Route = createFileRoute("/demo/counterparties")({
   head: () => ({
@@ -17,12 +17,12 @@ export const Route = createFileRoute("/demo/counterparties")({
   component: CounterpartiesPage,
 });
 
-function CounterpartiesPage() {
-  const { counterparties, forms } = useVed();
+export function CounterpartiesPage() {
+  const { counterparties, forms } = usePlatformStore();
   const def = REGISTRIES.counterparties;
 
   return (
-    <DemoAppShell title={def.title} subtitle={`${def.subtitle} · записей: ${counterparties.length}`}>
+    <VedAppShell title={def.title} subtitle={`${def.subtitle} · записей: ${counterparties.length}`}>
       <RegistryManager
         def={def}
         writeRoles={["user", "manager", "compliance_officer", "internal_compliance_officer"]}
@@ -38,6 +38,6 @@ function CounterpartiesPage() {
           },
         ]}
       />
-    </DemoAppShell>
+    </VedAppShell>
   );
 }

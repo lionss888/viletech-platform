@@ -49,7 +49,7 @@ function apiBase(): string {
   return (fromEnv ?? "").replace(/\/$/, "");
 }
 
-function newRequestId(): string {
+export function newRequestId(): string {
   return `fe-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 10)}`;
 }
 

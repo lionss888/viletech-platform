@@ -1,19 +1,26 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute } from '@tanstack/react-router'
+import { useMemo, useState } from "react";
+import { useQueryClient } from "@tanstack/react-query";
+import { VedFormLink } from "@/components/ved/VedLink";
 
-import { DemoAppShell } from "@/components/ved/DemoAppShell";
+import { VedAppShell } from "@/components/ved/VedAppShell";
 import { StatusBadge } from "@/components/ved/StatusBadge";
+import { smokeCreateBankForm } from "@/lib/api/bank";
 import { actionsFor } from "@/lib/ved/actions";
+import { APP_SEED_ACCOUNTS } from "@/lib/ved/app-seed-accounts";
+import { BANK_ORG_ID } from "@/lib/ved/bank-channel";
 import { money } from "@/lib/ved/format";
+import { usePlatformMode } from "@/lib/ved/platform-mode";
 import { ROLES } from "@/lib/ved/roles";
 import { statusMeta } from "@/lib/ved/statuses";
-import { useVed } from "@/lib/ved/store";
+import { usePlatformStore } from "@/lib/ved/platform-store";
 
 export const Route = createFileRoute("/demo/testing")({
   head: () => ({
     meta: [
-      { title: "Тестовые данные и сценарии — Viletech ВЭД" },
+      { title: "Тестовые данные и сценарии — ВЭД от Вилетех" },
       { name: "description", content: "Тестовые аккаунты всех шести ролей, набор заявок по каждой стадии и сценарии ручной проверки интерфейса ВЭД." },
-      { property: "og:title", content: "Тестовые данные и сценарии — Viletech ВЭД" },
+      { property: "og:title", content: "Тестовые данные и сценарии — ВЭД от Вилетех" },
       { property: "og:description", content: "Аккаунты ролей, заявки по стадиям и пошаговые сценарии ручного тестирования." },
     ],
   }),
@@ -47,7 +54,15 @@ const SCENARIOS: { title: string; steps: string[] }[] = [
     steps: [
       "Провайдер видит только платёжные статусы и не видит ПДн клиента (колонка «Клиент» скрыта).",
       "Клиент видит только собственные заявки.",
-      "Суперадмин видит всё и может отменить любую активную заявку; раздел «Пользователи» доступен только ему.",
+      "Суперадмин: union CTA на карточке + «Отменить заявку» в блоке администрирования; `/admin` — CRUD и блокировка.",
+    ],
+  },
+  {
+    title: "Bank API channel",
+    steps: [
+      "POST /api/v1/bank/forms от bank@vdp.local с Idempotency-Key и correlation_id.",
+      "На карточке заявки: badge «Канал: Bank API» и corr: …",
+      "В /organizations (manager/root): Bank settings для org с client_type=bank.",
     ],
   },
   {
@@ -60,13 +75,87 @@ const SCENARIOS: { title: string; steps: string[] }[] = [
   },
 ];
 
-function TestingPage() {
-  const { forms, users } = useVed();
+export function TestingPage() {
+  const { forms, users, organizations, counterparties } = usePlatformStore();
+  const mode = usePlatformMode();
+  const queryClient = useQueryClient();
+  const isApp = mode === "app";
+  const [bankBusy, setBankBusy] = useState(false);
+  const [bankResult, setBankResult] = useState<string | null>(null);
+  const [bankError, setBankError] = useState<string | null>(null);
+
+  const accountRows = useMemo(() => {
+    if (isApp) {
+      return APP_SEED_ACCOUNTS.map((seed) => ({
+        roleId: seed.role,
+        title: seed.title,
+        personName: seed.personName,
+        email: seed.email,
+        password: seed.password,
+      }));
+    }
+    return ROLES.map((role) => ({
+      roleId: role.id,
+      title: role.title,
+      personName: role.personName,
+      email: role.seedEmail,
+      password: role.seedPassword,
+    }));
+  }, [isApp]);
+
+  async function simulateBankCreate() {
+    setBankBusy(true);
+    setBankError(null);
+    setBankResult(null);
+    try {
+      const correlationId = `corr-${Date.now()}`;
+      const form = await smokeCreateBankForm(
+        {
+          organization_id: BANK_ORG_ID,
+          counterparty_id: counterparties[0]?.id,
+          invoice_amount: "1500",
+          currency: "USD",
+          direction: "import",
+          kind: "good",
+          contract_number: `BANK-${Date.now()}`,
+          contract_date: "2026-08-01",
+          correlation_id: correlationId,
+        },
+        `idem-${Date.now()}`,
+      );
+      await queryClient.invalidateQueries({ queryKey: ["forms"] });
+      setBankResult(
+        `Создана заявка ${form.id} · channel=${form.channel} · corr=${form.correlation_id ?? correlationId} · откройте карточку для badge`,
+      );
+    } catch (e) {
+      setBankError(e instanceof Error ? e.message : "Bank API error");
+    } finally {
+      setBankBusy(false);
+    }
+  }
 
   return (
-    <DemoAppShell title="Тестовые данные и сценарии" subtitle="Для ручной проверки интерфейса по всем ролям">
+    <VedAppShell title="Тестовые данные и сценарии" subtitle="Для ручной проверки интерфейса по всем ролям">
+      {mode === "app" && (
+        <div className="panel p-4">
+          <p className="label-caps">Bank API smoke</p>
+          <p className="mt-1 text-xs text-muted-foreground">
+            Логин bank@vdp.local (отдельный токен, сессия UI не меняется) · org {BANK_ORG_ID}
+          </p>
+          <button
+            type="button"
+            disabled={bankBusy}
+            onClick={() => void simulateBankCreate()}
+            className="mt-3 rounded-md bg-accent px-3 py-2 text-sm font-semibold text-accent-foreground disabled:opacity-50"
+          >
+            {bankBusy ? "Запрос…" : "Создать bank-заявку"}
+          </button>
+          {bankResult && <p className="mt-2 text-xs text-done">{bankResult}</p>}
+          {bankError && <p className="mt-2 text-xs text-destructive">{bankError}</p>}
+        </div>
+      )}
       <div className="panel p-4">
-        <p className="label-caps">Тестовые аккаунты (вход на экране /)</p>
+        <p className="label-caps">{isApp ? "Seed-аккаунты app (вход на /login)" : "Тестовые аккаунты (вход на /demo/login)"}</p>
         <div className="mt-3 overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
@@ -79,14 +168,14 @@ function TestingPage() {
               </tr>
             </thead>
             <tbody>
-              {ROLES.map((role) => (
-                <tr key={role.id} className="border-b border-border/60">
-                  <td className="py-2 pr-4 font-medium">{role.title}</td>
-                  <td className="py-2 pr-4 text-xs">{role.personName}</td>
-                  <td className="py-2 pr-4 font-mono text-xs">{role.seedEmail}</td>
-                  <td className="py-2 pr-4 font-mono text-xs">{role.seedPassword}</td>
+              {accountRows.map((row) => (
+                <tr key={row.roleId} className="border-b border-border/60">
+                  <td className="py-2 pr-4 font-medium">{row.title}</td>
+                  <td className="py-2 pr-4 text-xs">{row.personName}</td>
+                  <td className="py-2 pr-4 font-mono text-xs">{row.email}</td>
+                  <td className="py-2 pr-4 font-mono text-xs">{row.password}</td>
                   <td className="py-2 pr-4 text-right font-mono text-xs">
-                    {forms.filter((f) => actionsFor(role.id, f.status).length > 0).length}
+                    {forms.filter((f) => actionsFor(row.roleId, f.status).length > 0).length}
                   </td>
                 </tr>
               ))}
@@ -94,7 +183,9 @@ function TestingPage() {
           </table>
         </div>
         <p className="mt-3 text-xs text-muted-foreground">
-          В демо пароль не проверяется — вход по кнопке роли. Всего аккаунтов в наборе: {users.length}.
+          {isApp
+            ? `App-контур: JWT через /login, API core на :8080. Аккаунтов в БД: ${users.length}. E2E: make compose-e2e.`
+            : `Демо: пароль не проверяется — вход по кнопке роли. Аккаунтов в наборе: ${users.length}.`}
         </p>
       </div>
 
@@ -119,6 +210,7 @@ function TestingPage() {
               <tr className="border-b border-border text-left">
                 <th className="label-caps py-2 pr-4">Номер</th>
                 <th className="label-caps py-2 pr-4">Статус</th>
+                <th className="label-caps py-2 pr-4">Канал</th>
                 <th className="label-caps py-2 pr-4">Стадия</th>
                 <th className="label-caps py-2 pr-4">Кто действует</th>
                 <th className="label-caps py-2 pr-4 text-right">Сумма</th>
@@ -130,12 +222,19 @@ function TestingPage() {
                 return (
                   <tr key={f.id} className="border-b border-border/60">
                     <td className="py-2 pr-4">
-                      <Link to="/demo/forms/$id" params={{ id: f.id }} className="font-mono text-xs font-semibold hover:underline">
+                      <VedFormLink id={f.id} className="font-mono text-xs font-semibold hover:underline">
                         {f.number}
-                      </Link>
+                      </VedFormLink>
                     </td>
                     <td className="py-2 pr-4">
                       <StatusBadge status={f.status} />
+                    </td>
+                    <td className="py-2 pr-4 text-xs">
+                      {f.channel === "bank" ? (
+                        <span className="rounded-md bg-wait-soft px-1.5 py-0.5 font-semibold text-wait">Bank API</span>
+                      ) : (
+                        <span className="text-muted-foreground">UI</span>
+                      )}
                     </td>
                     <td className="py-2 pr-4 text-xs text-muted-foreground">{statusMeta(f.status).stage}</td>
                     <td className="py-2 pr-4 text-xs">{actors.map((a) => a.title).join(", ") || "—"}</td>
@@ -147,6 +246,6 @@ function TestingPage() {
           </table>
         </div>
       </div>
-    </DemoAppShell>
+    </VedAppShell>
   );
 }

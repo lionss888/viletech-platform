@@ -79,13 +79,13 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
-      { title: "Viletech ВЭД — платформа платежей по внешнеэкономическим сделкам" },
+      { title: "ВЭД от Вилетех — платформа платежей по внешнеэкономическим сделкам" },
       {
         name: "description",
         content:
           "Операционная платформа ВЭД: реестр платёжных заявок, комплаенс организаций, агентские договоры, поручения, платежи и отгрузка.",
       },
-      { property: "og:title", content: "Viletech ВЭД — платформа платежей по внешнеэкономическим сделкам" },
+      { property: "og:title", content: "ВЭД от Вилетех — платформа платежей по внешнеэкономическим сделкам" },
       { property: "og:description", content: "Реестр заявок, комплаенс, договоры, поручения, платежи и отгрузка в одном контуре." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },

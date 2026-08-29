@@ -1,6 +1,6 @@
 ---
 name: FE Core Integration
-overview: "Программа интеграции vdp/fe с vdp/core (W0–W6): FE — адаптер/деталь UI; политика статусов в core. Demo /demo; app JWT+REST. Закрывать по одной волне после DoD/gate."
+overview: "Программа интеграции vdp/fe с vdp/core (W0–W6): FE — адаптер/деталь UI; политика статусов в core. Demo /demo; app JWT+REST. Закрыто 2026-08; продолжение — RD0–RD11 + RW0–RW9."
 todos:
   - id: create-w0
     content: Создать plan-файл W0 Demo routes split
@@ -58,7 +58,7 @@ isProject: false
 ## Зафиксированные решения
 
 - App (корень): JWT → `POST/GET /api/v1/...` на core.
-- Demo (`/demo/*`): mock + `localStorage` (`ved-demo-state-v1`) — отдельный контур, явно помечен как демо.
+- Demo (`/demo/*`): mock + `localStorage` (`ved-demo-state-v2`) — **локальный UX-контур vdp/fe**, не fe-experiment и не BDUI schema engine.
 - Actions: `POST /api/v1/forms/{id}/actions/{action}` (domain / use-case ids), не Nest path API на этом этапе.
 - Dev: Vite proxy `/api` → `:8080`. Токен app: `sessionStorage` `vdp-auth-v1`.
 - Seed: `*@vdp.local` / пароль = local-part ([`seed.go`](vdp/core/internal/repository/seed/seed.go)).
@@ -130,3 +130,7 @@ Upload/docs, SSE, hub из браузера, Nest form-payment paths, CORS в co
 - Demo офлайн на `/demo` работает.
 - App journey: login → list → action меняет статус в core → create.
 - Формулировка: «FE = UI-адатер (auth+read+actions partial+create); политика в core; demo mock; не prod».
+
+## Статус закрытия (2026-08-29)
+
+Все волны W0–W6 закрыты; gate W6 — [`w6_fe_verify_gate_a7b8c9d0.plan.md`](w6_fe_verify_gate_a7b8c9d0.plan.md). Дальнейшая работа — [`vdp_role_debug_master.plan.md`](vdp_role_debug_master.plan.md) (RD/RW), не расширение W-программы.

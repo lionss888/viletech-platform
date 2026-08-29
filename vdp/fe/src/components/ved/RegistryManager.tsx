@@ -11,7 +11,7 @@ import {
   type RefRecord,
   type RegistryDef,
 } from "@/lib/ved/registry";
-import { useVed } from "@/lib/ved/store";
+import { usePlatformStore } from "@/lib/ved/platform-store";
 import type { VedRole } from "@/lib/ved/types";
 import { cn } from "@/lib/utils";
 
@@ -30,7 +30,7 @@ export function RegistryManager({
   /** Роли, которым разрешено добавлять и редактировать записи (удаление и импорт — только суперадмину). */
   writeRoles?: VedRole[];
 }) {
-  const { session, refRecords, saveRefRecord, deleteRefRecord, importRefRecords } = useVed();
+  const { session, refRecords, saveRefRecord, deleteRefRecord, importRefRecords } = usePlatformStore();
   const records = refRecords(def.key);
   const canManage = session?.role === "root";
   const canWrite = canManage || (session != null && writeRoles.includes(session.role));

@@ -1,12 +1,14 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useRef, useState } from "react";
 
-import { DemoAppShell } from "@/components/ved/DemoAppShell";
+import { VedAppShell } from "@/components/ved/VedAppShell";
 import { Modal, ModalButton } from "@/components/ved/Modal";
 import { dateOnly } from "@/lib/ved/format";
+import { usePlatformMode } from "@/lib/ved/platform-mode";
 import { parseRecords, templateCsv, toCsv, USER_IMPORT_FIELDS } from "@/lib/ved/registry";
 import { roleTitle, ROLES } from "@/lib/ved/roles";
-import { useVed } from "@/lib/ved/store";
+import { usePlatformStore } from "@/lib/ved/platform-store";
+import { useAuth } from "@/lib/auth/session";
 import type { PlatformUser, VedRole } from "@/lib/ved/types";
 import { cn } from "@/lib/utils";
 
@@ -37,8 +39,13 @@ function download(text: string, name: string) {
   URL.revokeObjectURL(url);
 }
 
-function AdminPage() {
-  const { users, organizations, toggleBlocked, createUser, updateUser, deleteUser, importUsers, session } = useVed();
+export function AdminPage() {
+  const { users, organizations, toggleBlocked, createUser, updateUser, deleteUser, importUsers, session, ready } =
+    usePlatformStore();
+  const auth = useAuth();
+  const mode = usePlatformMode();
+  const isApp = mode === "app";
+  const role = session?.role ?? auth.role;
   const [editing, setEditing] = useState<PlatformUser | null>(null);
   const [creating, setCreating] = useState(false);
   const [removing, setRemoving] = useState<PlatformUser | null>(null);
@@ -51,13 +58,22 @@ function AdminPage() {
   const [notice, setNotice] = useState<string | null>(null);
   const fileRef = useRef<HTMLInputElement | null>(null);
 
-  if (session?.role !== "root") {
+  if (!ready && isApp) {
     return (
-      <DemoAppShell title="Доступ ограничен">
+      <VedAppShell title="Пользователи и роли">
+        <p className="text-sm text-muted-foreground">Загрузка учётных записей…</p>
+      </VedAppShell>
+    );
+  }
+
+  if (role !== "root") {
+    return (
+      <VedAppShell title="Доступ ограничен">
         <div className="panel p-6 text-sm text-muted-foreground">
-          Раздел доступен только роли «Суперадмин». Переключите роль в сайдбаре.
+          Раздел доступен только роли «Суперадмин».
+          {isApp ? " Войдите как root@vdp.local." : " Переключите роль в сайдбаре."}
         </div>
-      </DemoAppShell>
+      </VedAppShell>
     );
   }
 
@@ -80,8 +96,14 @@ function AdminPage() {
       role: draft.role,
       organization: draft.organization || undefined,
     };
-    if (editing) updateUser(editing.id, payload);
-    else createUser(payload);
+    if (editing) {
+      void updateUser(editing.id, payload);
+    } else {
+      void createUser(payload);
+      if (isApp) {
+        setNotice(`Создан ${payload.email}. Временный пароль: ChangeMe2024!`);
+      }
+    }
     setEditing(null);
     setCreating(false);
     setDraft(EMPTY);
@@ -135,7 +157,7 @@ function AdminPage() {
   );
 
   return (
-    <DemoAppShell title="Пользователи и роли" subtitle={`Всего аккаунтов: ${users.length}`}>
+    <VedAppShell title="Пользователи и роли" subtitle={`Всего аккаунтов: ${users.length}`}>
       <div className="grid gap-3 sm:grid-cols-3 xl:grid-cols-6">
         {ROLES.map((role) => (
           <div key={role.id} className="panel p-3">
@@ -162,6 +184,8 @@ function AdminPage() {
             </ModalButton>
             <ModalButton
               variant="quiet"
+              disabled={isApp}
+              title={isApp ? "Импорт доступен только в демо-контуре" : undefined}
               onClick={() => {
                 setImportOpen(true);
                 setImportError(null);
@@ -212,8 +236,10 @@ function AdminPage() {
                       </button>
                       <button
                         type="button"
+                        disabled={isApp}
+                        title={isApp ? "Удаление через API не поддерживается — используйте блокировку" : undefined}
                         onClick={() => setRemoving(u)}
-                        className="rounded-md bg-destructive-soft px-2 py-1 text-[11px] font-semibold text-destructive"
+                        className="rounded-md bg-destructive-soft px-2 py-1 text-[11px] font-semibold text-destructive disabled:cursor-not-allowed disabled:opacity-40"
                       >
                         Удалить
                       </button>
@@ -361,6 +387,6 @@ function AdminPage() {
           {importError && <p className="text-xs text-destructive">{importError}</p>}
         </div>
       </Modal>
-    </DemoAppShell>
+    </VedAppShell>
   );
 }

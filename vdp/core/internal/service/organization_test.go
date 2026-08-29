@@ -54,6 +54,21 @@ func TestOrganizationVIClientStatuses(t *testing.T) {
 	if org.ClientStatus() != domain.ClientStatusBlocked {
 		t.Fatalf("want заблокированный got %s", org.ClientStatus())
 	}
+	acct, err := store.AccountByID(context.Background(), seed.UserID)
+	if err != nil || !acct.Blocked {
+		t.Fatalf("block should mark account blocked: %#v %v", acct, err)
+	}
+	org, err = orgs.Approve(context.Background(), ico, seed.OrgID)
+	if err != nil {
+		t.Fatal(err)
+	}
+	acct, err = store.AccountByID(context.Background(), seed.UserID)
+	if err != nil || acct.Blocked {
+		t.Fatalf("approve should unblock account: %#v %v", acct, err)
+	}
+	if org.ClientStatus() != domain.ClientStatusActive {
+		t.Fatalf("want активный after re-approve got %s", org.ClientStatus())
+	}
 }
 
 func TestAccountRBACAdminCreateForbiddenForUser(t *testing.T) {

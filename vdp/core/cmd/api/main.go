@@ -88,5 +88,7 @@ func pollOutbox(ctx context.Context, publisher *service.HubPublisher, log *slog.
 func newID() string {
 	buf := make([]byte, 16)
 	_, _ = rand.Read(buf)
-	return hex.EncodeToString(buf)
+	h := hex.EncodeToString(buf)
+	// Dashed UUID so create JSON matches postgres uuid text from list/get.
+	return h[0:8] + "-" + h[8:12] + "-" + h[12:16] + "-" + h[16:20] + "-" + h[20:32]
 }
