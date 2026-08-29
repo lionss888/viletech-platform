@@ -31,6 +31,7 @@ import {
   providerVisibleDocuments,
 } from "@/lib/ved/provider-acl";
 import { roleTitle } from "@/lib/ved/roles";
+import { USER_FORMS_LIST } from "@/lib/ved/copy";
 import { statusMeta } from "@/lib/ved/statuses";
 import { cn } from "@/lib/utils";
 
@@ -80,7 +81,7 @@ export function FormDetail() {
         <div className="panel p-6 text-sm text-muted-foreground">
           Заявка не найдена или недоступна вашей роли.{" "}
           <VedLink segment="/forms" className="font-semibold text-accent hover:underline">
-            Вернуться в реестр
+            {role === "user" ? USER_FORMS_LIST.backToRegistry : "Вернуться в реестр"}
           </VedLink>
         </div>
       </VedAppShell>
@@ -89,7 +90,7 @@ export function FormDetail() {
 
   const org = orgByIdFrom(organizations, form.organizationId);
   const cp = cpByIdFrom(counterparties, form.counterpartyId);
-  const meta = statusMeta(form.status);
+  const meta = statusMeta(form.status, role);
   const compliance = isComplianceRole(role);
   const subjects = subjectsOf(form, organizations, counterparties);
   const cleared = subjectsCleared(subjects);

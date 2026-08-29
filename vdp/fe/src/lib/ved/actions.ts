@@ -1,3 +1,4 @@
+import { applyUserActionLabels } from "./copy/action-labels";
 import type { FormAction, FormStatus, VedRole } from "./types";
 
 /**
@@ -211,7 +212,9 @@ function rootActions(status: FormStatus): FormAction[] {
 
 export function actionsFor(role: VedRole, status: FormStatus): FormAction[] {
   if (role === "root") return rootActions(status);
-  return MATRIX[role]?.[status] ?? [];
+  const actions = MATRIX[role]?.[status] ?? [];
+  if (role === "user") return applyUserActionLabels(actions, status);
+  return actions;
 }
 
 /** Provider видит org/INN; скрываем только ПДн клиента. */

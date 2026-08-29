@@ -1,4 +1,5 @@
-import type { FormStatus, StageId, StatusTone } from "./types";
+import { userStatusLabel } from "./copy/status-labels";
+import type { FormStatus, StageId, StatusTone, VedRole } from "./types";
 
 export type StatusMeta = {
   label: string;
@@ -164,8 +165,12 @@ export const STATUS_META: Record<string, StatusMeta> = {
   },
 };
 
-export function statusMeta(status: FormStatus): StatusMeta {
-  return STATUS_META[status] ?? { label: status, short: status, tone: "neutral", stage: "new" };
+export function statusMeta(status: FormStatus, role?: VedRole): StatusMeta {
+  const base = STATUS_META[status] ?? { label: status, short: status, tone: "neutral" as StatusTone, stage: "new" as StageId };
+  if (role !== "user") return base;
+  const user = userStatusLabel(status);
+  if (!user) return base;
+  return { ...base, label: user.label, short: user.short ?? user.label };
 }
 
 export const STAGES: { id: StageId; label: string }[] = [

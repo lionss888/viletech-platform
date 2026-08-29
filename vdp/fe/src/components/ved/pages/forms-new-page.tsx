@@ -2,18 +2,23 @@ import { useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
 
 import { VedAppShell } from "@/components/ved/VedAppShell";
+import { useAuth } from "@/lib/auth/session";
+import { USER_WIZARD } from "@/lib/ved/copy";
 import { usePlatformBasePath, usePlatformMode } from "@/lib/ved/platform-mode";
 import { usePlatformStore } from "@/lib/ved/platform-store";
 import type { FormCondition, FormDirection, FormKind } from "@/lib/ved/types";
 import { cn } from "@/lib/utils";
 
-const STEPS = ["Направление", "Стороны", "Условия", "Документы", "Проверка"];
+const DEFAULT_STEPS = ["Направление", "Стороны", "Условия", "Документы", "Проверка"];
 
 export function NewForm() {
-  const { organizations, counterparties, createForm } = usePlatformStore();
+  const { organizations, counterparties, createForm, session } = usePlatformStore();
+  const auth = useAuth();
   const navigate = useNavigate();
   const base = usePlatformBasePath();
   const mode = usePlatformMode();
+  const role = session?.role ?? auth.role ?? "user";
+  const steps = role === "user" ? USER_WIZARD.steps : DEFAULT_STEPS;
   const [step, setStep] = useState(0);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -136,16 +141,18 @@ export function NewForm() {
 
   return (
     <VedAppShell
-      title="Новая платёжная заявка"
+      title={role === "user" ? USER_WIZARD.title : "Новая платёжная заявка"}
       subtitle={
-        mode === "demo"
-          ? "Черновик создаётся локально; после create — CTA «Завершить распознавание» на статусе creating"
-          : "Черновик создаётся в ядре; документы загружаются через API после create"
+        role === "user"
+          ? USER_WIZARD.subtitle
+          : mode === "demo"
+            ? "Черновик создаётся локально; после create — CTA «Завершить распознавание» на статусе creating"
+            : "Черновик создаётся в ядре; документы загружаются через API после create"
       }
     >
       <div className="panel p-4">
         <ol className="flex flex-wrap gap-2">
-          {STEPS.map((label, i) => (
+          {steps.map((label, i) => (
             <li
               key={label}
               className={cn(
@@ -266,7 +273,13 @@ export function NewForm() {
                 draft.noDocuments ? "bg-wait-soft text-wait" : "bg-muted text-muted-foreground",
               )}
             >
-              {draft.noDocuments ? "✓ У меня нет документов" : "У меня нет документов"}
+              {draft.noDocuments
+                ? role === "user"
+                  ? USER_WIZARD.noDocumentsActive
+                  : "✓ У меня нет документов"
+                : role === "user"
+                  ? USER_WIZARD.noDocuments
+                  : "У меня нет документов"}
             </button>
             {!draft.noDocuments && (
               <>

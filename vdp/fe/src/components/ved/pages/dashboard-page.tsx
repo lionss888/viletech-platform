@@ -4,6 +4,7 @@ import { useMemo } from "react";
 import { VedAppShell } from "@/components/ved/VedAppShell";
 import { VedFormLink, VedLink } from "@/components/ved/VedLink";
 import { StatusBadge } from "@/components/ved/StatusBadge";
+import { ROLE_FOCUS, USER_DASHBOARD_CARDS, USER_FORMS_LIST } from "@/lib/ved/copy";
 import { actionsFor } from "@/lib/ved/actions";
 import { isComplianceRole, subjectState } from "@/lib/ved/compliance";
 import { money, relative } from "@/lib/ved/format";
@@ -15,15 +16,6 @@ import { STAGES, statusMeta } from "@/lib/ved/statuses";
 import { cpByIdFrom, usePlatformStore, visibleForms } from "@/lib/ved/platform-store";
 import type { VedRole } from "@/lib/ved/types";
 import { cn } from "@/lib/utils";
-
-const ROLE_FOCUS: Record<VedRole, string> = {
-  user: "Ваши сделки, документы к загрузке и статусы платежей.",
-  internal_compliance_officer: "Проверка организаций и заявок перед запуском сделки.",
-  compliance_officer: "Внешняя проверка заявок и подтверждение условий сделки.",
-  manager: "Договоры, поручения, платежи и отгрузка по всем сделкам.",
-  provider: "Сделки, переданные в исполнение платежа.",
-  root: "Состояние системы, критичные ошибки, нагрузка и эффективность команды.",
-};
 
 const STATE = {
   up: { text: "Работает", cls: "bg-done-soft text-done" },
@@ -228,12 +220,26 @@ function RoleDashboard() {
       )}
 
       <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-        {[
-          { label: "Требуют вашего действия", value: String(todo.length), search: { mine: true } },
-          { label: "Сделок в работе", value: String(totals.active), search: {} },
-          { label: "Сумма в работе", value: money(totals.sum, totals.currency), search: {} },
-          { label: "Закрыто", value: String(byStage.get("completed") ?? 0), search: { filter: "completed" } },
-        ].map((card) => (
+        {(role === "user"
+          ? USER_DASHBOARD_CARDS.map((card, i) => ({
+              label: card.label,
+              value:
+                i === 0
+                  ? String(todo.length)
+                  : i === 1
+                    ? String(totals.active)
+                    : i === 2
+                      ? money(totals.sum, totals.currency)
+                      : String(byStage.get("completed") ?? 0),
+              search: card.search,
+            }))
+          : [
+              { label: "Требуют вашего действия", value: String(todo.length), search: { mine: true } },
+              { label: "Сделок в работе", value: String(totals.active), search: {} },
+              { label: "Сумма в работе", value: money(totals.sum, totals.currency), search: {} },
+              { label: "Закрыто", value: String(byStage.get("completed") ?? 0), search: { filter: "completed" } },
+            ]
+        ).map((card) => (
           <VedLink key={card.label} segment="/forms" search={card.search} className="panel block p-4 transition-colors hover:border-accent">
             <p className="label-caps">{card.label}</p>
             <p className="mt-1 font-mono text-2xl font-semibold">{card.value}</p>
@@ -246,12 +252,14 @@ function RoleDashboard() {
           <div className="flex items-center justify-between gap-2">
             <h2 className="text-sm font-semibold">Задачи для вас</h2>
             <VedLink segment="/forms" search={{ mine: true }} className="text-xs font-semibold text-muted-foreground hover:text-foreground">
-              Все заявки →
+              {role === "user" ? USER_FORMS_LIST.tasksLink : "Все заявки →"}
             </VedLink>
           </div>
 
           {todo.length === 0 ? (
-            <p className="mt-3 text-sm text-muted-foreground">Сейчас нет задач, требующих вашего участия.</p>
+            <p className="mt-3 text-sm text-muted-foreground">
+              {role === "user" ? USER_FORMS_LIST.tasksEmpty : "Сейчас нет задач, требующих вашего участия."}
+            </p>
           ) : (
             <ul className="mt-3 divide-y divide-border">
               {todo.slice(0, 7).map((form) => (

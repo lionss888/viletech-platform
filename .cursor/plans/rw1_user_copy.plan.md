@@ -4,16 +4,16 @@ overview: "Копирайт кабинета клиента (User): nav, statuse
 todos:
   - id: rw1-copy-layer
     content: Ввести/расширить lib/ved/copy для user voice
-    status: pending
+    status: completed
   - id: rw1-labels
     content: Role-aware labels User (statuses, actions, nav, dashboard)
-    status: pending
+    status: completed
   - id: rw1-uploads
     content: Формулировки upload-веток (contract/order/payment/report/shipment)
-    status: pending
+    status: completed
   - id: rw1-gate
     content: "DoD: User UI на сленге участника ВЭД; npm test; root не тронут"
-    status: pending
+    status: completed
 isProject: false
 ---
 

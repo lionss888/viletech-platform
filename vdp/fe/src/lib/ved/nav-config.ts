@@ -1,3 +1,4 @@
+import { navLabelForRole } from "./copy/nav-labels";
 import type { VedRole } from "./types";
 
 export type NavItem = { segment: string; label: string; roles: VedRole[] | "all"; matchExact?: boolean };
@@ -25,4 +26,8 @@ export const REFERENCE_NAV: NavItem[] = [
 
 export function filterNav(items: NavItem[], role: VedRole | undefined): NavItem[] {
   return items.filter((item) => item.roles === "all" || (role && item.roles.includes(role)));
+}
+
+export function resolveNavLabel(item: NavItem, role: VedRole | undefined): string {
+  return navLabelForRole(item.segment, item.label, role);
 }

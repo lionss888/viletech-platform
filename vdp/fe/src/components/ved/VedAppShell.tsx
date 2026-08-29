@@ -12,7 +12,7 @@ import {
 import { Modal, ModalButton } from "@/components/ved/Modal";
 import { useAuth } from "@/lib/auth/session";
 import { actionsFor } from "@/lib/ved/actions";
-import { filterNav, MAIN_NAV, REFERENCE_NAV } from "@/lib/ved/nav-config";
+import { filterNav, MAIN_NAV, REFERENCE_NAV, resolveNavLabel } from "@/lib/ved/nav-config";
 import { usePlatformBasePath, usePlatformMode } from "@/lib/ved/platform-mode";
 import { usePlatformStore } from "@/lib/ved/platform-store";
 import { ROLES, roleTitle } from "@/lib/ved/roles";
@@ -127,8 +127,8 @@ export function VedAppShell({ children, title, subtitle }: { children: ReactNode
             const active = pathname === to;
             return (
               <Link key={`${item.segment}-${item.label}`} to={to} className={linkCls(active)}>
-                {item.label}
-                {item.segment === "/forms" && item.label.includes("Реестр") && todo > 0 && (
+                {resolveNavLabel(item, role)}
+                {item.segment === "/forms" && todo > 0 && (
                   <span className="ml-2 rounded bg-accent px-1.5 py-0.5 font-mono text-[11px] text-accent-foreground">{todo}</span>
                 )}
               </Link>

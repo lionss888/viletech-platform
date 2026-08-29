@@ -6,6 +6,7 @@ import { VedFormLink, VedLink } from "@/components/ved/VedLink";
 import { Modal, ModalButton } from "@/components/ved/Modal";
 import { DirectionTag, StatusBadge } from "@/components/ved/StatusBadge";
 import { ChannelBadge } from "@/components/ved/ChannelBadge";
+import { statusFilterLabelForUser, USER_FORMS_LIST } from "@/lib/ved/copy";
 import { actionsFor } from "@/lib/ved/actions";
 import { money } from "@/lib/ved/format";
 import { daysIdle, stuckForms } from "@/lib/ved/health";
@@ -72,7 +73,14 @@ export function FormsList() {
   }, [scoped]);
 
   return (
-    <VedAppShell title="Реестр платёжных заявок" subtitle={`${roleTitle(role)} · видимых заявок: ${scoped.length}`}>
+    <VedAppShell
+      title={role === "user" ? USER_FORMS_LIST.title : "Реестр платёжных заявок"}
+      subtitle={
+        role === "user"
+          ? USER_FORMS_LIST.subtitle(scoped.length)
+          : `${roleTitle(role)} · видимых заявок: ${scoped.length}`
+      }
+    >
       <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
         {[
           role === "root"
@@ -132,7 +140,7 @@ export function FormsList() {
           <select value={filter} onChange={(e) => setFilter(e.target.value)} className="field max-w-[200px] text-sm">
             {STATUS_FILTERS.map((f) => (
               <option key={f.value} value={f.value}>
-                {f.label}
+                {statusFilterLabelForUser(f.value, f.label, role)}
               </option>
             ))}
           </select>
@@ -234,7 +242,11 @@ export function FormsList() {
               {rows.length === 0 && (
                 <tr>
                   <td colSpan={8} className="py-10 text-center text-sm text-muted-foreground">
-                    Нет заявок под текущий фильтр
+                    {role === "user"
+                      ? scoped.length === 0
+                        ? USER_FORMS_LIST.emptyRegistry
+                        : USER_FORMS_LIST.emptyFilter
+                      : "Нет заявок под текущий фильтр"}
                   </td>
                 </tr>
               )}
@@ -313,8 +325,8 @@ function formsToCsv(
     const cpName = cpByIdFrom(counterparties, form.counterpartyId)?.name ?? "";
     const cpCountry = cpByIdFrom(counterparties, form.counterpartyId)?.countryCode ?? "";
     const orgName = orgByIdFrom(organizations, form.organizationId)?.name ?? "";
-    const statusLabel = statusMeta(form.status).label;
-    const stage = statusMeta(form.status).stage;
+    const statusLabel = statusMeta(form.status, role).label;
+    const stage = statusMeta(form.status, role).stage;
     const updatedLabel = dateTime(form.updatedAt);
     const cells = isProvider
       ? providerCsvRow(form, statusLabel, stage, cpName, cpCountry, orgName, updatedLabel)

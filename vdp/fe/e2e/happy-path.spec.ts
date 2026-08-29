@@ -12,9 +12,13 @@ test.describe("Happy path (app UI)", () => {
 
     await loginAs("user");
     await page.goto(`/forms/${formId}`);
-    await expect(page.getByRole("button", { name: "Отправить на проверку" })).toBeVisible();
-    await page.getByRole("button", { name: "Отправить на проверку" }).click();
-    await expect(page.locator('[title="Ожидает проверки комплаенса"]').first()).toBeVisible({
+    await expect(page.getByRole("button", { name: "Отправить заявку на проверку" })).toBeVisible();
+    await page.getByRole("button", { name: "Отправить заявку на проверку" }).click();
+    await expect(
+      page
+        .locator('[title="Отправлено на проверку компании"], [title="Заявка на проверке"]')
+        .first(),
+    ).toBeVisible({
       timeout: 15_000,
     });
 

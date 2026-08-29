@@ -13,9 +13,9 @@ test.describe("Reject path (ECO → corrections → user resubmit)", () => {
     await loginAs("user");
     await page.goto(`/forms/${formId}`);
     await expect(page.getByRole("button", { name: "Отправить исправления" })).toBeVisible({ timeout: 15_000 });
-    await expect(page.locator('[title="Возвращена на коррекцию"]').first()).toBeVisible();
+    await expect(page.locator('[title="Нужны исправления"]').first()).toBeVisible();
     await page.getByRole("button", { name: "Отправить исправления" }).click();
-    await expect(page.locator('[title="Ожидает проверки комплаенса"]').first()).toBeVisible({
+    await expect(page.locator('[title="Заявка на проверке"]').first()).toBeVisible({
       timeout: 15_000,
     });
   });
