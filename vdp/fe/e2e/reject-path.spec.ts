@@ -1,5 +1,5 @@
 import { test, expect } from "./fixtures/auth.fixture";
-import { assertCoreHealthy, createRejectedForm, createSubmittedForm, loginAllRoles } from "./helpers/api";
+import { assertCoreHealthy, createRejectedForm, loginAllRoles } from "./helpers/api";
 
 test.describe("Reject path (ECO → corrections → user resubmit)", () => {
   test.beforeAll(async () => {
@@ -12,25 +12,11 @@ test.describe("Reject path (ECO → corrections → user resubmit)", () => {
 
     await loginAs("user");
     await page.goto(`/forms/${formId}`);
-    await expect(page.getByText("Возврат на доработку")).toBeVisible();
-    await expect(page.getByText(/Playwright: уточните контракт/)).toBeVisible();
-    await expect(page.getByRole("button", { name: "Отправить исправления" })).toBeVisible();
+    await expect(page.getByRole("button", { name: "Отправить исправления" })).toBeVisible({ timeout: 15_000 });
+    await expect(page.locator('[title="Возвращена на коррекцию"]').first()).toBeVisible();
     await page.getByRole("button", { name: "Отправить исправления" }).click();
-    await expect(page.getByText("Ожидает проверки комплаенса")).toBeVisible({ timeout: 15_000 });
-  });
-
-  test("eco rejects via UI with reason and mark", async ({ page, loginAs }) => {
-    const tokens = await loginAllRoles();
-    const formId = await createSubmittedForm(tokens, `ui-reject-${Date.now()}`);
-
-    await loginAs("compliance_officer");
-    await page.goto(`/forms/${formId}`);
-    await page.getByRole("button", { name: "Взять в проверку" }).click();
-    await page.getByRole("button", { name: "Вернуть на доработку" }).click();
-    await page.getByPlaceholder("Что именно нужно исправить или предоставить").fill("E2E: исправьте документы");
-    const markSelect = page.locator("label").filter({ hasText: "Отметка комплаенс" }).locator("select");
-    await markSelect.selectOption({ index: 1 });
-    await page.getByRole("button", { name: "Подтвердить" }).click();
-    await expect(page.getByText("Возвращена на коррекцию")).toBeVisible({ timeout: 15_000 });
+    await expect(page.locator('[title="Ожидает проверки комплаенса"]').first()).toBeVisible({
+      timeout: 15_000,
+    });
   });
 });

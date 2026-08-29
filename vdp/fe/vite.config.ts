@@ -25,6 +25,8 @@ export default defineConfig({
   },
   vite: {
     server: {
+      // RD11: Playwright in Docker hits fe:5173 on compose network.
+      allowedHosts: ["fe", "host.docker.internal", "localhost", "127.0.0.1"],
       proxy: {
         "/api": {
           target: apiProxyTarget,

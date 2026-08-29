@@ -140,5 +140,6 @@ Fixed: use `BANK_ORG_ID` default `88888888-8888-8888-8888-888888888888`.
 ## RD11 verify (2026-08-29)
 
 - Playwright scaffold: `playwright.config.ts`, `e2e/fixtures/auth.fixture.ts`, `e2e/helpers/api.ts`
-- Specs: `happy-path`, `reject-path`, `provider-acl`, `bank-badge` (5 tests)
-- Gate: `make playwright-e2e` (requires `make compose-up`)
+- Specs: `happy-path`, `reject-path`, `provider-acl`, `bank-badge` (6 tests)
+- Gate: `make playwright-e2e` → `scripts/compose-playwright.sh` (Docker + compose network `fe:5173` / `core:8080`)
+- Prerequisite: `make compose-up`; `vite.config.ts` `allowedHosts` includes `fe` for in-network dev server

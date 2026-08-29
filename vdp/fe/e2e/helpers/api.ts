@@ -109,6 +109,19 @@ export async function createSubmittedForm(tokens: ApiTokens, suffix: string): Pr
   return id;
 }
 
+/** Advance to form_verification (ECO in review). */
+export async function createEcoVerificationForm(tokens: ApiTokens, suffix: string): Promise<string> {
+  const id = await createSubmittedForm(tokens, suffix);
+  const st = await formStatus(tokens.user, `/api/v1/site/form-payment/${id}`);
+  if (st === "organization_waiting_verification") {
+    await authPut(tokens.ico, `/api/v1/admin/internal-compliance-officer/organization/${ORG_ID}/approve`);
+    await authPut(tokens.ico, `/api/v1/ico/form-payment/${id}/form/start`);
+    await authPut(tokens.ico, `/api/v1/ico/form-payment/${id}/form/accept`);
+  }
+  await authPut(tokens.eco, `/api/v1/eco/form-payment/${id}/form/start`);
+  return id;
+}
+
 /** Advance to form_accepted (manager queue). */
 export async function createFormAccepted(tokens: ApiTokens, suffix: string): Promise<string> {
   const id = await createSubmittedForm(tokens, suffix);
@@ -119,6 +132,12 @@ export async function createFormAccepted(tokens: ApiTokens, suffix: string): Pro
 /** ECO reject → form_waiting_corrections. */
 export async function createRejectedForm(tokens: ApiTokens, suffix: string): Promise<string> {
   const id = await createSubmittedForm(tokens, suffix);
+  const st = await formStatus(tokens.user, `/api/v1/site/form-payment/${id}`);
+  if (st === "organization_waiting_verification") {
+    await authPut(tokens.ico, `/api/v1/admin/internal-compliance-officer/organization/${ORG_ID}/approve`);
+    await authPut(tokens.ico, `/api/v1/ico/form-payment/${id}/form/start`);
+    await authPut(tokens.ico, `/api/v1/ico/form-payment/${id}/form/accept`);
+  }
   await authPut(tokens.eco, `/api/v1/eco/form-payment/${id}/form/start`);
   await authPut(tokens.eco, `/api/v1/eco/form-payment/${id}/form/reject`, {
     reason: "Playwright: уточните контракт",

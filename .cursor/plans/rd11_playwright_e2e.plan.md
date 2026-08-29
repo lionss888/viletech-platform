@@ -4,13 +4,13 @@ overview: "Deferred Playwright: 3–5 specs (happy, reject, provider ACL, bank).
 todos:
   - id: rd11-scaffold
     content: playwright.config + projects/fixtures login seeds
-    status: in_progress
+    status: completed
   - id: rd11-specs
     content: "Specs: happy path, reject, provider ACL, bank badge"
-    status: pending
+    status: completed
   - id: rd11-ci
     content: Document how to run in CI / local compose
-    status: pending
+    status: completed
 isProject: false
 ---
 

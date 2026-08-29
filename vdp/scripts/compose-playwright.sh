@@ -4,38 +4,32 @@
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
-FE_HOST="${FE_HOST:-127.0.0.1}"
-CORE_HOST="${CORE_HOST:-127.0.0.1}"
-FE_PORT="${FE_PORT:-5173}"
-CORE_PORT="${CORE_PORT:-8080}"
+COMPOSE_NETWORK="${COMPOSE_NETWORK:-vdp_default}"
 PLAYWRIGHT_IMAGE="${PLAYWRIGHT_IMAGE:-mcr.microsoft.com/playwright:v1.62.1-jammy}"
+# In-container URLs on compose network (ignore host CORE_URL / PLAYWRIGHT_BASE_URL from Makefile).
+E2E_FE_URL="${E2E_FE_URL:-http://fe:5173}"
+E2E_CORE_URL="${E2E_CORE_URL:-http://core:8080}"
 
-PLAYWRIGHT_BASE_URL="${PLAYWRIGHT_BASE_URL:-http://${FE_HOST}:${FE_PORT}}"
-CORE_URL="${CORE_URL:-http://${CORE_HOST}:${CORE_PORT}}"
-
-echo "== health (host) =="
-curl -sf "${CORE_URL}/api/v1/health" >/dev/null || {
-  echo "FAIL: core not reachable at ${CORE_URL} — run: cd vdp && make compose-up" >&2
+echo "== health (compose network ${COMPOSE_NETWORK}) =="
+docker run --rm --network "${COMPOSE_NETWORK}" curlimages/curl:latest \
+  -sf "${E2E_CORE_URL}/api/v1/health" >/dev/null || {
+  echo "FAIL: core not reachable at ${E2E_CORE_URL} on ${COMPOSE_NETWORK} — run: cd vdp && make compose-up" >&2
   exit 1
 }
-curl -sf "${PLAYWRIGHT_BASE_URL}/login" >/dev/null || {
-  echo "FAIL: fe not reachable at ${PLAYWRIGHT_BASE_URL}" >&2
+docker run --rm --network "${COMPOSE_NETWORK}" curlimages/curl:latest \
+  -sf "${E2E_FE_URL}/login" >/dev/null || {
+  echo "FAIL: fe not reachable at ${E2E_FE_URL} (check vite allowedHosts includes fe)" >&2
   exit 1
 }
-
-# Inside the container, reach host services via host.docker.internal (Linux: host-gateway).
-CONTAINER_FE_URL="http://host.docker.internal:${FE_PORT}"
-CONTAINER_CORE_URL="http://host.docker.internal:${CORE_PORT}"
 
 echo "== playwright (docker ${PLAYWRIGHT_IMAGE}) =="
 docker run --rm \
-  --add-host=host.docker.internal:host-gateway \
+  --network "${COMPOSE_NETWORK}" \
   -v "${ROOT}/fe:/app" \
   -w /app \
-  -e PLAYWRIGHT_BASE_URL="${CONTAINER_FE_URL}" \
-  -e CORE_URL="${CONTAINER_CORE_URL}" \
-  -e CI=1 \
+  -e PLAYWRIGHT_BASE_URL="${E2E_FE_URL}" \
+  -e CORE_URL="${E2E_CORE_URL}" \
   "${PLAYWRIGHT_IMAGE}" \
-  bash -lc 'npm ci --ignore-scripts && npx playwright test'
+  bash -lc 'if [ ! -d node_modules/@playwright/test ]; then npm ci --ignore-scripts; fi && npx playwright test'
 
 echo "playwright e2e green"
