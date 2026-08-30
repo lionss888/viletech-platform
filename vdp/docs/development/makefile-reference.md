@@ -42,6 +42,10 @@ docker compose up с Postgres, core, hub, fe dev на порту 5173. Health wa
 
 HTTP smoke frontend против core. Команды make compose-fe-smoke, make compose-fe-prod-smoke.
 
+## compose-fe-refresh
+
+Обновляет npm-зависимости внутри volume `fe_node_modules` и перезапускает сервис fe. По умолчанию спрашивает подтверждение. Без вопроса: `FE_REFRESH=1 make compose-fe-refresh`. Нужно после старта с новым lockfile, смены ветки или sync UI. Команда make compose-fe-refresh.
+
 ## run-hub, run-core, run, stop, smoke
 
 Локальный запуск бинарников без Docker. run поднимает hub и core, smoke проверяет health и login. Команды make run, make stop, make smoke.

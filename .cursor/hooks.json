@@ -1,0 +1,16 @@
+{
+  "version": 1,
+  "hooks": {
+    "sessionStart": [
+      {
+        "command": "bash .cursor/hooks/vdp-fe-rebuild-session-start.sh"
+      }
+    ],
+    "postToolUse": [
+      {
+        "command": "bash .cursor/hooks/vdp-fe-rebuild-after-git.sh",
+        "matcher": "Shell"
+      }
+    ]
+  }
+}

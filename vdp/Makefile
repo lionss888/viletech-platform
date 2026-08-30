@@ -1,4 +1,4 @@
-.PHONY: deps test test-integration test-adapters build db-setup db-migrate run-hub run-core run smoke stop compose-up compose-up-prod compose-down compose-ps compose-e2e compose-fe-smoke compose-fe-prod-smoke compose-playwright integration-gate playwright-e2e docs-format-check release-gate
+.PHONY: deps test test-integration test-adapters build db-setup db-migrate run-hub run-core run smoke stop compose-up compose-up-prod compose-down compose-ps compose-e2e compose-fe-smoke compose-fe-refresh compose-fe-prod-smoke compose-playwright integration-gate playwright-e2e docs-format-check release-gate
 
 CORE_DIR := core
 HUB_DIR := hub
@@ -94,6 +94,11 @@ compose-up-prod:
 compose-fe-smoke:
 	@chmod +x scripts/compose-fe-smoke.sh
 	@./scripts/compose-fe-smoke.sh
+
+# Refresh fe_node_modules volume (asks interactively unless FE_REFRESH=1 or --yes).
+compose-fe-refresh:
+	@chmod +x scripts/compose-fe-refresh.sh
+	@./scripts/compose-fe-refresh.sh $(if $(FE_REFRESH),--yes,)
 
 compose-fe-prod-smoke:
 	@chmod +x scripts/compose-fe-prod-smoke.sh
