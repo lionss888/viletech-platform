@@ -25,9 +25,9 @@ test.describe("Happy path (app UI)", () => {
     await logout();
     await loginAs("compliance_officer");
     await page.goto(`/forms/${formId}`);
-    await page.getByRole("button", { name: "Взять в проверку" }).click();
-    await page.getByRole("button", { name: "Подтвердить заявку" }).click();
-    await expect(page.locator('[title="Заявка подтверждена"]').first()).toBeVisible({ timeout: 15_000 });
+    await page.getByRole("button", { name: "Взять сделку в проверку" }).click();
+    await page.getByRole("button", { name: "Подтвердить условия сделки" }).click();
+    await expect(page.locator('[title="Сделка подтверждена"]').first()).toBeVisible({ timeout: 15_000 });
 
     await logout();
     await loginAs("manager");

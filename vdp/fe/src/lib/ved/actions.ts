@@ -1,4 +1,4 @@
-import { applyUserActionLabels } from "./copy/action-labels";
+import { applyEcoActionLabels, applyIcoActionLabels, applyUserActionLabels } from "./copy/action-labels";
 import type { FormAction, FormStatus, VedRole } from "./types";
 
 /**
@@ -214,6 +214,8 @@ export function actionsFor(role: VedRole, status: FormStatus): FormAction[] {
   if (role === "root") return rootActions(status);
   const actions = MATRIX[role]?.[status] ?? [];
   if (role === "user") return applyUserActionLabels(actions, status);
+  if (role === "internal_compliance_officer") return applyIcoActionLabels(actions, status);
+  if (role === "compliance_officer") return applyEcoActionLabels(actions, status);
   return actions;
 }
 

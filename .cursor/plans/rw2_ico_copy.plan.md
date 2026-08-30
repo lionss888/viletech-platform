@@ -4,16 +4,16 @@ overview: "Копирайт внутреннего комплаенса (ICO): �
 todos:
   - id: rw2-nav-focus
     content: Nav + ROLE_FOCUS ICO (проверка организаций / входящие)
-    status: pending
+    status: completed
   - id: rw2-cta-status
     content: Labels ico_form_* и org verification statuses
-    status: pending
+    status: completed
   - id: rw2-subject-review
     content: SubjectReview / lockNote copy без ПДн-шума
-    status: pending
+    status: completed
   - id: rw2-gate
     content: "DoD: ICO voice; root не тронут"
-    status: pending
+    status: completed
 isProject: false
 ---
 

@@ -4,16 +4,16 @@ overview: "Копирайт внешнего комплаенса (ECO): оче�
 todos:
   - id: rw3-nav-focus
     content: ROLE_FOCUS + nav ECO
-    status: pending
+    status: completed
   - id: rw3-cta-status
     content: Labels eco_form_* / form_verification*
-    status: pending
+    status: completed
   - id: rw3-reject-path
     content: Copy reject → corrections → resubmit (понятно ECO и User)
-    status: pending
+    status: completed
   - id: rw3-gate
     content: "DoD: ECO voice; root не тронут"
-    status: pending
+    status: completed
 isProject: false
 ---
 

@@ -1,9 +1,9 @@
 import type { FormStatus } from "../types";
 
-export type UserStatusLabel = { label: string; short?: string };
+export type RoleStatusLabel = { label: string; short?: string };
 
 /** User-facing status labels (canonical id unchanged). Source: glossariy-po-rolyam.txt */
-export const USER_STATUS_LABELS: Partial<Record<FormStatus, UserStatusLabel>> = {
+export const USER_STATUS_LABELS: Partial<Record<FormStatus, RoleStatusLabel>> = {
   creating: { label: "Создаётся заявка", short: "Создаётся" },
   draft: { label: "Черновик заявки", short: "Черновик" },
 
@@ -62,6 +62,70 @@ export const USER_STATUS_LABELS: Partial<Record<FormStatus, UserStatusLabel>> = 
   canceled_by_internal_compliance_officer: { label: "Отменена комплаенсом", short: "Отменена" },
 };
 
-export function userStatusLabel(status: FormStatus): UserStatusLabel | undefined {
+/** Internal CO (ICO) status labels — glossary column «ico». */
+export const ICO_STATUS_LABELS: Partial<Record<FormStatus, RoleStatusLabel>> = {
+  organization_waiting_verification: {
+    label: "В очереди на верификацию организации",
+    short: "Очередь ВКО",
+  },
+  organization_verification: {
+    label: "На верификации организации",
+    short: "Верификация",
+  },
+  form_waiting_corrections: {
+    label: "Возврат на доработку",
+    short: "Доработка",
+  },
+  form_waiting_verification: {
+    label: "Ожидает внешней проверки",
+    short: "Передано ECO",
+  },
+  form_verification: {
+    label: "На внешней проверке",
+    short: "ECO",
+  },
+  form_accepted: {
+    label: "Сделка подтверждена",
+    short: "Подтверждена",
+  },
+  canceled_by_internal_compliance_officer: {
+    label: "Отклонена внутренним комплаенсом",
+    short: "Отклонена",
+  },
+};
+
+export function userStatusLabel(status: FormStatus): RoleStatusLabel | undefined {
   return USER_STATUS_LABELS[status];
+}
+
+export function icoStatusLabel(status: FormStatus): RoleStatusLabel | undefined {
+  return ICO_STATUS_LABELS[status];
+}
+
+/** External CO (ECO) status labels — glossary column «eco». */
+export const ECO_STATUS_LABELS: Partial<Record<FormStatus, RoleStatusLabel>> = {
+  form_waiting_verification: {
+    label: "В очереди на проверку сделки",
+    short: "Очередь ECO",
+  },
+  form_verification: {
+    label: "На проверке сделки",
+    short: "Проверка сделки",
+  },
+  form_waiting_corrections: {
+    label: "Возврат на доработку",
+    short: "Доработка",
+  },
+  form_accepted: {
+    label: "Сделка подтверждена",
+    short: "Подтверждена",
+  },
+  canceled_by_compliance_officer: {
+    label: "Отклонена внешним комплаенсом",
+    short: "Отклонена",
+  },
+};
+
+export function ecoStatusLabel(status: FormStatus): RoleStatusLabel | undefined {
+  return ECO_STATUS_LABELS[status];
 }

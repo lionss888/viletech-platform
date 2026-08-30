@@ -31,7 +31,7 @@ import {
   providerVisibleDocuments,
 } from "@/lib/ved/provider-acl";
 import { roleTitle } from "@/lib/ved/roles";
-import { USER_FORMS_LIST } from "@/lib/ved/copy";
+import { ECO_FORM_DETAIL, ICO_FORM_DETAIL, USER_CORRECTIONS_BANNER, USER_FORMS_LIST } from "@/lib/ved/copy";
 import { statusMeta } from "@/lib/ved/statuses";
 import { cn } from "@/lib/utils";
 
@@ -81,7 +81,13 @@ export function FormDetail() {
         <div className="panel p-6 text-sm text-muted-foreground">
           Заявка не найдена или недоступна вашей роли.{" "}
           <VedLink segment="/forms" className="font-semibold text-accent hover:underline">
-            {role === "user" ? USER_FORMS_LIST.backToRegistry : "Вернуться в реестр"}
+            {role === "user"
+              ? USER_FORMS_LIST.backToRegistry
+              : role === "internal_compliance_officer"
+                ? ICO_FORM_DETAIL.backToQueue
+                : role === "compliance_officer"
+                  ? ECO_FORM_DETAIL.backToQueue
+                  : "Вернуться в реестр"}
           </VedLink>
         </div>
       </VedAppShell>
@@ -102,15 +108,26 @@ export function FormDetail() {
     users.find((u) => u.id === form.providerId)?.name ?? form.providerName ?? "не назначен";
   const icoOrgStage =
     role === "internal_compliance_officer" && String(form.status).startsWith("organization");
+  const isEco = role === "compliance_officer";
   const actionLock = hasBlocked
-    ? ({ lockNote: "Организация клиента заблокирована — согласование заявки недоступно." } as const)
+    ? ({
+        lockNote: isEco
+          ? ECO_FORM_DETAIL.lockNote
+          : role === "internal_compliance_officer"
+            ? ICO_FORM_DETAIL.lockNote
+            : "Организация клиента заблокирована — согласование заявки недоступно.",
+      } as const)
     : subjectsPending && !icoOrgStage
       ? ({
-          lockAcceptNote: "Участники сделки не проверены — одобрение заявки недоступно.",
+          lockAcceptNote: isEco
+            ? ECO_FORM_DETAIL.lockAcceptNote
+            : role === "internal_compliance_officer"
+              ? ICO_FORM_DETAIL.lockAcceptNote
+              : "Участники сделки не проверены — одобрение заявки недоступно.",
         } as const)
       : orgPending && role === "internal_compliance_officer"
         ? ({
-            note: "Организация ещё не одобрена — сначала проверьте участника, затем можно взять заявку в работу.",
+            note: ICO_FORM_DETAIL.orgPendingNote,
           } as const)
         : {};
 
@@ -156,9 +173,22 @@ export function FormDetail() {
 
       {(form.rejectText || form.rejectMark) && (
         <div className="mt-4 rounded-lg bg-return-soft p-4">
-          <p className="label-caps text-return">Возврат на доработку</p>
-          {form.rejectMark && <p className="mt-1 text-sm font-semibold text-return">Отметка: {form.rejectMark}</p>}
+          <p className="label-caps text-return">
+            {role === "user"
+              ? USER_CORRECTIONS_BANNER.title
+              : role === "compliance_officer" && form.status === "form_waiting_corrections"
+                ? ECO_FORM_DETAIL.correctionsPending
+                : "Возврат на доработку"}
+          </p>
+          {form.rejectMark && (
+            <p className="mt-1 text-sm font-semibold text-return">
+              {role === "user" ? USER_CORRECTIONS_BANNER.markPrefix : "Отметка:"} {form.rejectMark}
+            </p>
+          )}
           {form.rejectText && <p className="mt-1 text-sm text-return">{form.rejectText}</p>}
+          {role === "user" && (
+            <p className="mt-2 text-xs text-muted-foreground">{USER_CORRECTIONS_BANNER.nextStep}</p>
+          )}
         </div>
       )}
 
@@ -212,8 +242,12 @@ export function FormDetail() {
         <div className="space-y-4">
           {compliance ? (
             <>
-              <ActionPanel form={form} title="Рассмотрение заявки" {...actionLock} />
-              <SubjectReview subjects={subjects} />
+              <ActionPanel
+                form={form}
+                title={isEco ? ECO_FORM_DETAIL.actionPanelTitle : "Рассмотрение заявки"}
+                {...actionLock}
+              />
+              <SubjectReview subjects={subjects} role={role} />
             </>
           ) : (
             <>
@@ -223,7 +257,7 @@ export function FormDetail() {
           )}
 
           {!compliance && !isProvider && subjects.some((s) => !subjectState(s.status).ok) && (
-            <SubjectReview subjects={subjects} readOnly />
+            <SubjectReview subjects={subjects} readOnly role={role} />
           )}
 
           {role !== "provider" && (

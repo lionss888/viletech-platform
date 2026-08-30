@@ -4,7 +4,7 @@ import { useMemo } from "react";
 import { VedAppShell } from "@/components/ved/VedAppShell";
 import { VedFormLink, VedLink } from "@/components/ved/VedLink";
 import { StatusBadge } from "@/components/ved/StatusBadge";
-import { ROLE_FOCUS, USER_DASHBOARD_CARDS, USER_FORMS_LIST } from "@/lib/ved/copy";
+import { ROLE_FOCUS, USER_DASHBOARD_CARDS, USER_FORMS_LIST, ICO_DASHBOARD, ECO_DASHBOARD } from "@/lib/ved/copy";
 import { actionsFor } from "@/lib/ved/actions";
 import { isComplianceRole, subjectState } from "@/lib/ved/compliance";
 import { money, relative } from "@/lib/ved/format";
@@ -205,15 +205,33 @@ function RoleDashboard() {
       {compliance && (
         <div className="mb-4 grid gap-3 sm:grid-cols-3">
           <VedLink segment="/forms" search={{ mine: true }} className="panel block p-4 transition-colors hover:border-accent">
-            <p className="label-caps">Входящие заявки</p>
+            <p className="label-caps">
+              {role === "internal_compliance_officer"
+                ? ICO_DASHBOARD.incomingForms
+                : role === "compliance_officer"
+                  ? ECO_DASHBOARD.incomingForms
+                  : "Входящие заявки"}
+            </p>
             <p className="mt-1 font-mono text-2xl font-semibold">{todo.length}</p>
           </VedLink>
           <VedLink segment="/organizations" className="panel block p-4 transition-colors hover:border-accent">
-            <p className="label-caps">Организации требуют проверки</p>
+            <p className="label-caps">
+              {role === "internal_compliance_officer"
+                ? ICO_DASHBOARD.orgsPending
+                : role === "compliance_officer"
+                  ? ECO_DASHBOARD.orgsPending
+                  : "Организации требуют проверки"}
+            </p>
             <p className="mt-1 font-mono text-2xl font-semibold">{orgsPending}</p>
           </VedLink>
           <VedLink segment="/organizations" className="panel block p-4 transition-colors hover:border-accent">
-            <p className="label-caps">Организации прошли проверку</p>
+            <p className="label-caps">
+              {role === "internal_compliance_officer"
+                ? ICO_DASHBOARD.orgsCleared
+                : role === "compliance_officer"
+                  ? ECO_DASHBOARD.orgsCleared
+                  : "Организации прошли проверку"}
+            </p>
             <p className="mt-1 font-mono text-2xl font-semibold">{orgsCleared}</p>
           </VedLink>
         </div>
@@ -250,15 +268,33 @@ function RoleDashboard() {
       <div className="mt-4 grid gap-4 lg:grid-cols-[1.3fr_1fr]">
         <section className="panel p-4">
           <div className="flex items-center justify-between gap-2">
-            <h2 className="text-sm font-semibold">Задачи для вас</h2>
+            <h2 className="text-sm font-semibold">
+              {role === "internal_compliance_officer"
+                ? ICO_DASHBOARD.tasksTitle
+                : role === "compliance_officer"
+                  ? ECO_DASHBOARD.tasksTitle
+                  : "Задачи для вас"}
+            </h2>
             <VedLink segment="/forms" search={{ mine: true }} className="text-xs font-semibold text-muted-foreground hover:text-foreground">
-              {role === "user" ? USER_FORMS_LIST.tasksLink : "Все заявки →"}
+              {role === "user"
+                ? USER_FORMS_LIST.tasksLink
+                : role === "internal_compliance_officer"
+                  ? ICO_DASHBOARD.tasksLink
+                  : role === "compliance_officer"
+                    ? ECO_DASHBOARD.tasksLink
+                    : "Все заявки →"}
             </VedLink>
           </div>
 
           {todo.length === 0 ? (
             <p className="mt-3 text-sm text-muted-foreground">
-              {role === "user" ? USER_FORMS_LIST.tasksEmpty : "Сейчас нет задач, требующих вашего участия."}
+              {role === "user"
+                ? USER_FORMS_LIST.tasksEmpty
+                : role === "internal_compliance_officer"
+                  ? ICO_DASHBOARD.tasksEmpty
+                  : role === "compliance_officer"
+                    ? ECO_DASHBOARD.tasksEmpty
+                    : "Сейчас нет задач, требующих вашего участия."}
             </p>
           ) : (
             <ul className="mt-3 divide-y divide-border">

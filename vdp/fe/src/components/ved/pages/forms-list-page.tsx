@@ -6,7 +6,7 @@ import { VedFormLink, VedLink } from "@/components/ved/VedLink";
 import { Modal, ModalButton } from "@/components/ved/Modal";
 import { DirectionTag, StatusBadge } from "@/components/ved/StatusBadge";
 import { ChannelBadge } from "@/components/ved/ChannelBadge";
-import { statusFilterLabelForUser, USER_FORMS_LIST } from "@/lib/ved/copy";
+import { ECO_FORMS_LIST, ICO_FORMS_LIST, statusFilterLabelForRole, USER_FORMS_LIST } from "@/lib/ved/copy";
 import { actionsFor } from "@/lib/ved/actions";
 import { money } from "@/lib/ved/format";
 import { daysIdle, stuckForms } from "@/lib/ved/health";
@@ -40,7 +40,7 @@ export function FormsList() {
     const statusPreset = STATUS_FILTERS.find((f) => f.value === filter);
     return scoped.filter((form) => {
       if (statusPreset && statusPreset.statuses.length > 0 && !statusPreset.statuses.includes(form.status)) return false;
-      if (stageFilter && statusMeta(form.status).stage !== stageFilter) return false;
+      if (stageFilter && statusMeta(form.status, role).stage !== stageFilter) return false;
       if (onlyMine && actionsFor(role, form.status).length === 0) return false;
       if (onlyStuck && !stuckIds.has(form.id)) return false;
       if (query) {
@@ -66,7 +66,7 @@ export function FormsList() {
   const counters = useMemo(() => {
     const map = new Map<string, number>();
     scoped.forEach((f) => {
-      const stage = statusMeta(f.status).stage;
+      const stage = statusMeta(f.status, role).stage;
       map.set(stage, (map.get(stage) ?? 0) + 1);
     });
     return map;
@@ -74,11 +74,23 @@ export function FormsList() {
 
   return (
     <VedAppShell
-      title={role === "user" ? USER_FORMS_LIST.title : "Реестр платёжных заявок"}
+      title={
+        role === "user"
+          ? USER_FORMS_LIST.title
+          : role === "internal_compliance_officer"
+            ? ICO_FORMS_LIST.title
+            : role === "compliance_officer"
+              ? ECO_FORMS_LIST.title
+              : "Реестр платёжных заявок"
+      }
       subtitle={
         role === "user"
           ? USER_FORMS_LIST.subtitle(scoped.length)
-          : `${roleTitle(role)} · видимых заявок: ${scoped.length}`
+          : role === "internal_compliance_officer"
+            ? ICO_FORMS_LIST.subtitle(scoped.length)
+            : role === "compliance_officer"
+              ? ECO_FORMS_LIST.subtitle(scoped.length)
+              : `${roleTitle(role)} · видимых заявок: ${scoped.length}`
       }
     >
       <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
@@ -140,7 +152,7 @@ export function FormsList() {
           <select value={filter} onChange={(e) => setFilter(e.target.value)} className="field max-w-[200px] text-sm">
             {STATUS_FILTERS.map((f) => (
               <option key={f.value} value={f.value}>
-                {statusFilterLabelForUser(f.value, f.label, role)}
+                {statusFilterLabelForRole(f.value, f.label, role)}
               </option>
             ))}
           </select>
@@ -246,7 +258,11 @@ export function FormsList() {
                       ? scoped.length === 0
                         ? USER_FORMS_LIST.emptyRegistry
                         : USER_FORMS_LIST.emptyFilter
-                      : "Нет заявок под текущий фильтр"}
+                      : role === "internal_compliance_officer"
+                        ? ICO_FORMS_LIST.emptyFilter
+                        : role === "compliance_officer"
+                          ? ECO_FORMS_LIST.emptyFilter
+                          : "Нет заявок под текущий фильтр"}
                   </td>
                 </tr>
               )}

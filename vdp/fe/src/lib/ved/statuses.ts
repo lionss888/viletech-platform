@@ -1,4 +1,4 @@
-import { userStatusLabel } from "./copy/status-labels";
+import { ecoStatusLabel, icoStatusLabel, userStatusLabel } from "./copy/status-labels";
 import type { FormStatus, StageId, StatusTone, VedRole } from "./types";
 
 export type StatusMeta = {
@@ -167,10 +167,19 @@ export const STATUS_META: Record<string, StatusMeta> = {
 
 export function statusMeta(status: FormStatus, role?: VedRole): StatusMeta {
   const base = STATUS_META[status] ?? { label: status, short: status, tone: "neutral" as StatusTone, stage: "new" as StageId };
-  if (role !== "user") return base;
-  const user = userStatusLabel(status);
-  if (!user) return base;
-  return { ...base, label: user.label, short: user.short ?? user.label };
+  if (role === "user") {
+    const user = userStatusLabel(status);
+    if (user) return { ...base, label: user.label, short: user.short ?? user.label };
+  }
+  if (role === "internal_compliance_officer") {
+    const ico = icoStatusLabel(status);
+    if (ico) return { ...base, label: ico.label, short: ico.short ?? ico.label };
+  }
+  if (role === "compliance_officer") {
+    const eco = ecoStatusLabel(status);
+    if (eco) return { ...base, label: eco.label, short: eco.short ?? eco.label };
+  }
+  return base;
 }
 
 export const STAGES: { id: StageId; label: string }[] = [

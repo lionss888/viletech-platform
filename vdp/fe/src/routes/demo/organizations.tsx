@@ -6,6 +6,7 @@ import { VedAppShell } from "@/components/ved/VedAppShell";
 import { RegistryManager } from "@/components/ved/RegistryManager";
 import { BankSettingsPanel } from "@/components/ved/BankSettingsPanel";
 import { SubjectReview } from "@/components/ved/SubjectReview";
+import { ICO_ORGANIZATIONS } from "@/lib/ved/copy";
 import { isComplianceRole, subjectState, type ReviewSubject } from "@/lib/ved/compliance";
 import { REGISTRIES } from "@/lib/ved/registry";
 import { usePlatformStore } from "@/lib/ved/platform-store";
@@ -38,7 +39,9 @@ export function OrganizationsPage() {
 /* ------------------------- Комплаенс: проверка ------------------------- */
 
 function ComplianceOrganizations() {
-  const { organizations, forms } = usePlatformStore();
+  const { organizations, forms, session } = usePlatformStore();
+  const role = session?.role;
+  const isIco = role === "internal_compliance_officer";
   const [tab, setTab] = useState<"pending" | "cleared">("pending");
 
   const subjects: ReviewSubject[] = useMemo(
@@ -65,14 +68,24 @@ function ComplianceOrganizations() {
 
   return (
     <VedAppShell
-      title="Проверка организаций"
-      subtitle={`Требуют проверки: ${pending.length} · прошли проверку: ${cleared.length}`}
+      title={isIco ? ICO_ORGANIZATIONS.title : "Проверка организаций"}
+      subtitle={
+        isIco
+          ? ICO_ORGANIZATIONS.subtitle(pending.length, cleared.length)
+          : `Требуют проверки: ${pending.length} · прошли проверку: ${cleared.length}`
+      }
     >
       <div className="flex gap-2">
         {(
           [
-            { id: "pending" as const, label: `Требуют проверки (${pending.length})` },
-            { id: "cleared" as const, label: `Прошли проверку (${cleared.length})` },
+            {
+              id: "pending" as const,
+              label: isIco ? ICO_ORGANIZATIONS.tabPending(pending.length) : `Требуют проверки (${pending.length})`,
+            },
+            {
+              id: "cleared" as const,
+              label: isIco ? ICO_ORGANIZATIONS.tabCleared(cleared.length) : `Прошли проверку (${cleared.length})`,
+            },
           ]
         ).map((item) => (
           <button
@@ -90,11 +103,13 @@ function ComplianceOrganizations() {
       </div>
 
       <div className="mt-4">
-        <SubjectReview subjects={shown} readOnly={tab === "cleared"} />
+        <SubjectReview subjects={shown} readOnly={tab === "cleared"} role={role} />
       </div>
 
       <section className="panel mt-4 p-4">
-        <p className="label-caps">Заявки организаций, ожидающих проверки</p>
+        <p className="label-caps">
+          {isIco ? ICO_ORGANIZATIONS.pendingFormsTitle : "Заявки организаций, ожидающих проверки"}
+        </p>
         <ul className="mt-3 divide-y divide-border">
           {forms
             .filter((form) => pending.some((s) => s.id === form.organizationId))
@@ -108,7 +123,9 @@ function ComplianceOrganizations() {
               </li>
             ))}
           {forms.filter((form) => pending.some((s) => s.id === form.organizationId)).length === 0 && (
-            <li className="py-2 text-sm text-muted-foreground">Все организации по заявкам проверены.</li>
+            <li className="py-2 text-sm text-muted-foreground">
+              {isIco ? ICO_ORGANIZATIONS.pendingFormsEmpty : "Все организации по заявкам проверены."}
+            </li>
           )}
         </ul>
       </section>

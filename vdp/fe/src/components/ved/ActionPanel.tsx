@@ -1,6 +1,7 @@
 import { useMemo, useState } from "react";
 
 import { Modal, ModalButton } from "@/components/ved/Modal";
+import { ECO_ACTION_PANEL } from "@/lib/ved/copy";
 import { actionsFor } from "@/lib/ved/actions";
 import type { ContractType } from "@/lib/api/contract";
 import { marksFor } from "@/lib/ved/compliance";
@@ -67,6 +68,8 @@ export function ActionPanel({
       : providers;
 
   const role = session?.role ?? "user";
+  const isEco = role === "compliance_officer";
+  const panelCopy = isEco ? ECO_ACTION_PANEL : null;
   const actions = actionsFor(role, form.status);
   const { operationalActions, rootCancelAction } = useMemo(() => {
     if (role !== "root") {
@@ -83,7 +86,8 @@ export function ActionPanel({
       <div className="panel p-4">
         <p className="label-caps">{title}</p>
         <p className="mt-2 text-sm text-muted-foreground">
-          На этом статусе для вашей роли действий нет — заявка у другого участника процесса.
+          {panelCopy?.empty ??
+            "На этом статусе для вашей роли действий нет — заявка у другого участника процесса."}
         </p>
       </div>
     );
@@ -244,7 +248,12 @@ export function ActionPanel({
         open={pending !== null}
         onOpenChange={(v) => !v && close()}
         title={pending?.label ?? ""}
-        description={pending?.confirm ?? `Заявка ${form.number}. Подтвердите действие.`}
+        description={
+          pending?.confirm ??
+          (isEco && pending?.id === "eco_form_reject"
+            ? panelCopy!.rejectConfirm(form.number)
+            : `Заявка ${form.number}. Подтвердите действие.`)
+        }
         footer={
           <>
             <ModalButton variant="quiet" onClick={close} disabled={busy}>
@@ -338,7 +347,7 @@ export function ActionPanel({
         )}
         {pending?.requiresMark && (
           <label className="block">
-            <span className="label-caps">Отметка комплаенс</span>
+            <span className="label-caps">{panelCopy?.markLabel ?? "Отметка комплаенс"}</span>
             <select value={mark} onChange={(e) => setMark(e.target.value)} className="field mt-1">
               <option value="">Выберите отметку</option>
               {marks.map((tool) => (
@@ -349,18 +358,20 @@ export function ActionPanel({
             </select>
             {marks.find((t) => t.title === mark) && (
               <span className="mt-1 block text-xs text-muted-foreground">
-                Клиент увидит: {marks.find((t) => t.title === mark)?.instruction}
+                {panelCopy?.markHint ?? "Клиент увидит:"} {marks.find((t) => t.title === mark)?.instruction}
               </span>
             )}
           </label>
         )}
         {pending?.requiresReason && (
           <label className="block">
-            <span className="label-caps">Комментарий для клиента</span>
+            <span className="label-caps">{panelCopy?.reasonLabel ?? "Комментарий для клиента"}</span>
             <textarea
               value={reason}
               onChange={(e) => setReason(e.target.value)}
-              placeholder="Что именно нужно исправить или предоставить"
+              placeholder={
+                panelCopy?.reasonPlaceholder ?? "Что именно нужно исправить или предоставить"
+              }
               rows={3}
               className="field mt-1 resize-none"
             />
