@@ -1,4 +1,4 @@
-.PHONY: deps test build db-setup db-migrate run-hub run-core run smoke stop compose-up compose-up-prod compose-down compose-ps compose-e2e compose-fe-smoke compose-fe-prod-smoke compose-playwright integration-gate playwright-e2e
+.PHONY: deps test build db-setup db-migrate run-hub run-core run smoke stop compose-up compose-up-prod compose-down compose-ps compose-e2e compose-fe-smoke compose-fe-prod-smoke compose-playwright integration-gate playwright-e2e docs-format-check
 
 CORE_DIR := core
 HUB_DIR := hub
@@ -141,3 +141,7 @@ compose-playwright:
 
 # RD11: local npm run when Chromium is installed on host; else use compose-playwright.
 playwright-e2e: compose-playwright
+
+docs-format-check:
+	@chmod +x scripts/docs-format-check.sh
+	@./scripts/docs-format-check.sh

@@ -1,6 +1,8 @@
 # RD0 baseline (2026-08-29)
 
-Gate result for role-debug program. Do not treat as product docs — working notes for RD1+.
+Internal gate notes for role-debug program RD1–RD11. Do not treat as product documentation.
+
+Product docs: [docs/README.md](docs/README.md).
 
 ## Gate status
 
