@@ -80,14 +80,3 @@ export function subjectsOf(
 export function subjectsCleared(subjects: ReviewSubject[]): boolean {
   return subjects.length > 0 && subjects.every((s) => subjectState(s.status).ok);
 }
-
-/** Блокировка организации останавливает согласование заявок. */
-export function orgBlocksApproval(subjects: ReviewSubject[]): boolean {
-  return subjects.some((s) => s.key === "organizations" && s.status === "blocked");
-}
-
-/** ICO: org не одобрена — form-этап недоступен до проверки организации. */
-export function orgPendingIco(subjects: ReviewSubject[]): boolean {
-  const org = subjects.find((s) => s.key === "organizations");
-  return !!org && !subjectState(org.status).ok && org.status !== "blocked";
-}

@@ -1,19 +1,17 @@
-import { applyEcoActionLabels, applyIcoActionLabels, applyUserActionLabels } from "./copy/action-labels";
-import { applyManagerActionLabels } from "./copy/manager-close-copy";
-import { applyProviderActionLabels } from "./copy/provider-copy";
 import type { FormAction, FormStatus, VedRole } from "./types";
 
 /**
- * Матрица действий роль × статус (demo UI + bridge к core в app-режиме).
+ * Матрица действий роль × статус.
+ * Портирована из lifecycle-action.matrix.ts / lifecycle-action.catalog.ts backend-for-ved.
  */
 const MATRIX: Record<VedRole, Record<string, FormAction[]>> = {
   user: {
-    creating: [
-      { id: "recognize_complete", label: "Завершить распознавание", tone: "quiet", nextStatus: "draft" },
-    ],
     draft: [
       { id: "accept_form", label: "Отправить на проверку", tone: "accent", nextStatus: "organization_waiting_verification" },
       { id: "cancel_form", label: "Отменить заявку", tone: "danger", nextStatus: "canceled_by_user", confirm: "Отменить заявку?" },
+    ],
+    creating: [
+      { id: "accept_form", label: "Отправить на проверку", tone: "accent", nextStatus: "organization_waiting_verification" },
     ],
     form_waiting_corrections: [
       { id: "accept_corrections", label: "Отправить исправления", tone: "accent", nextStatus: "form_waiting_verification" },
@@ -34,11 +32,8 @@ const MATRIX: Record<VedRole, Record<string, FormAction[]>> = {
     advance_signing_order: [
       { id: "upload_order_advance", label: "Загрузить доп. поручение", tone: "accent", requiresFile: true, nextStatus: "advance_signing_order_waiting_verification" },
     ],
-    advance_signing_order_waiting_corrections: [
-      { id: "upload_order_advance", label: "Загрузить исправленное доп. поручение", tone: "accent", requiresFile: true, nextStatus: "advance_signing_order_waiting_verification" },
-    ],
     signing_order_accepted: [
-      { id: "upload_payments", label: "Загрузить платёжное поручение", tone: "accent", requiresFile: true, nextStatus: "signing_order_accepted" },
+      { id: "upload_payments", label: "Загрузить платёжное поручение", tone: "accent", requiresFile: true, nextStatus: "payment_received" },
     ],
     report_waiting: [
       { id: "upload_report", label: "Загрузить подписанный отчёт", tone: "accent", requiresFile: true, nextStatus: "report_waiting_verification" },
@@ -92,18 +87,12 @@ const MATRIX: Record<VedRole, Record<string, FormAction[]>> = {
 
   manager: {
     form_accepted: [
-      { id: "mgr_assign_agent", label: "Назначить платёжного агента", tone: "primary", nextStatus: "form_accepted" },
-      { id: "mgr_contract_attach", label: "Прикрепить договор вручную", tone: "accent", requiresFile: true, nextStatus: "signing_order" },
+      { id: "mgr_contract_attach", label: "Прикрепить агентский договор", tone: "accent", requiresFile: true, nextStatus: "contract_waiting" },
       { id: "mgr_form_reject", label: "Вернуть на коррекцию", tone: "quiet", requiresReason: true, nextStatus: "form_waiting_corrections" },
     ],
     contract_verification: [
-      { id: "mgr_contract_confirm", label: "Подтвердить договор", tone: "accent", nextStatus: "signing_order" },
-      { id: "mgr_contract_return", label: "Вернуть договор клиенту", tone: "quiet", requiresReason: true, nextStatus: "contract_waiting_correction" },
       { id: "mgr_order_generate", label: "Сформировать поручение принципала", tone: "accent", nextStatus: "signing_order" },
       { id: "mgr_order_attach", label: "Загрузить своё поручение", tone: "quiet", requiresFile: true, nextStatus: "signing_order" },
-    ],
-    contract_waiting: [
-      { id: "mgr_contract_confirm", label: "Проверить ветку договора", tone: "primary", nextStatus: "contract_verification" },
     ],
     signing_order_waiting_verification: [
       { id: "mgr_order_start", label: "Взять поручение в проверку", tone: "primary", nextStatus: "signing_order_verification" },
@@ -113,54 +102,28 @@ const MATRIX: Record<VedRole, Record<string, FormAction[]>> = {
       { id: "mgr_order_reject", label: "Вернуть поручение", tone: "quiet", requiresReason: true, nextStatus: "signing_order_waiting_corrections" },
       { id: "mgr_order_stop", label: "Приостановить", tone: "quiet", nextStatus: "signing_order_waiting_verification" },
     ],
+    advance_signing_order_waiting_verification: [
+      { id: "mgr_order_advance_accept", label: "Подтвердить доп. поручение", tone: "accent", nextStatus: "advance_signing_order_accepted" },
+      { id: "mgr_order_advance_reject", label: "Вернуть доп. поручение", tone: "quiet", requiresReason: true, nextStatus: "advance_signing_order_waiting_corrections" },
+    ],
     signing_order_accepted: [
       { id: "mgr_payment_received", label: "Подтвердить получение средств", tone: "accent", nextStatus: "payment_received" },
-      { id: "mgr_advance_signing", label: "Сформировать доп. поручение", tone: "quiet", nextStatus: "advance_signing_order" },
-      { id: "mgr_refund_init", label: "Инициировать возврат средств", tone: "danger", requiresReason: true, nextStatus: "payment_refund_waiting" },
-    ],
-    advance_signing_order_waiting_verification: [
-      { id: "mgr_order_advance_start", label: "Взять доп. поручение в проверку", tone: "primary", nextStatus: "advance_signing_order_verification" },
-      { id: "mgr_order_advance_accept", label: "Подтвердить доп. поручение", tone: "accent", nextStatus: "advance_signing_order_accepted" },
-      { id: "mgr_order_advance_reject", label: "Вернуть доп. поручение", tone: "quiet", requiresReason: true, nextStatus: "advance_signing_order_waiting_corrections" },
-    ],
-    advance_signing_order_verification: [
-      { id: "mgr_order_advance_accept", label: "Подтвердить доп. поручение", tone: "accent", nextStatus: "advance_signing_order_accepted" },
-      { id: "mgr_order_advance_reject", label: "Вернуть доп. поручение", tone: "quiet", requiresReason: true, nextStatus: "advance_signing_order_waiting_corrections" },
-      { id: "mgr_order_advance_stop", label: "Приостановить", tone: "quiet", nextStatus: "advance_signing_order_waiting_verification" },
     ],
     payment_received: [
       { id: "mgr_assign_provider", label: "Назначить провайдера", tone: "primary", nextStatus: "payment_received" },
-      { id: "mgr_assign_deadline", label: "Установить срок исполнения", tone: "quiet", nextStatus: "payment_received" },
       { id: "mgr_payment_start", label: "Запустить исполнение платежа", tone: "accent", nextStatus: "payment_processing" },
-      { id: "mgr_refund_init", label: "Инициировать возврат средств", tone: "danger", requiresReason: true, nextStatus: "payment_refund_waiting" },
     ],
     manager_checking: [
       { id: "mgr_payment_start", label: "Вернуть в исполнение", tone: "accent", nextStatus: "payment_processing" },
-      { id: "mgr_refund_init", label: "Инициировать возврат средств", tone: "danger", requiresReason: true, nextStatus: "payment_refund_waiting" },
       { id: "mgr_cancel", label: "Отменить заявку", tone: "danger", requiresReason: true, nextStatus: "canceled_by_manager" },
     ],
-    payment_refund_waiting: [
-      { id: "mgr_refund_start", label: "Начать процесс возврата", tone: "accent", nextStatus: "payment_refund_processing" },
-      { id: "mgr_refund_cancel", label: "Отменить возврат", tone: "quiet", nextStatus: "signing_order_accepted" },
-    ],
-    payment_refund_processing: [
-      { id: "mgr_refund_file", label: "Прикрепить подтверждение возврата", tone: "quiet", requiresFile: true, nextStatus: "payment_refund_processing" },
-      { id: "mgr_refund_sent", label: "Подтвердить возврат ДС", tone: "accent", nextStatus: "payment_refund_sent" },
-      { id: "mgr_refund_stop", label: "Приостановить возврат", tone: "quiet", nextStatus: "payment_refund_waiting" },
-    ],
-    payment_sent: [
-      { id: "mgr_report_signing", label: "Отправить отчёт агента на подпись", tone: "accent", nextStatus: "report_waiting" },
-      { id: "mgr_advance_signing", label: "Сформировать доп. поручение", tone: "quiet", nextStatus: "advance_signing_order" },
-    ],
+    payment_sent: [{ id: "mgr_report_signing", label: "Отправить отчёт агента на подпись", tone: "accent", nextStatus: "report_waiting" }],
     report_waiting_verification: [
       { id: "mgr_report_start", label: "Взять отчёт в проверку", tone: "primary", nextStatus: "report_verification" },
     ],
     report_verification: [
-      { id: "mgr_report_accept", label: "Подтвердить отчёт", tone: "accent", nextStatus: "report_accepted" },
+      { id: "mgr_report_accept", label: "Подтвердить отчёт", tone: "accent", nextStatus: "shipment_waiting" },
       { id: "mgr_report_reject", label: "Вернуть отчёт", tone: "quiet", requiresReason: true, nextStatus: "report_waiting_corrections" },
-    ],
-    report_accepted: [
-      { id: "mgr_shipment_waiting", label: "Перейти к документам отгрузки", tone: "accent", nextStatus: "shipment_waiting" },
     ],
     shipment_waiting_verification: [
       { id: "mgr_shipment_start", label: "Взять отгрузку в проверку", tone: "primary", nextStatus: "shipment_verification" },
@@ -214,14 +177,9 @@ function rootActions(status: FormStatus): FormAction[] {
 
 export function actionsFor(role: VedRole, status: FormStatus): FormAction[] {
   if (role === "root") return rootActions(status);
-  const actions = MATRIX[role]?.[status] ?? [];
-  if (role === "user") return applyUserActionLabels(actions, status);
-  if (role === "internal_compliance_officer") return applyIcoActionLabels(actions, status);
-  if (role === "compliance_officer") return applyEcoActionLabels(actions, status);
-  if (role === "manager") return applyManagerActionLabels(actions, status);
-  if (role === "provider") return applyProviderActionLabels(actions);
-  return actions;
+  return MATRIX[role]?.[status] ?? [];
 }
 
-/** Provider видит org/INN; скрываем только ПДн клиента. */
+
+/** Провайдер не видит ПДн клиента — узкий набор колонок. */
 export const PROVIDER_HIDDEN_FIELDS = ["ownerName", "organizationEmail", "organizationPhone", "managerName"];

@@ -1,17 +1,13 @@
 import { useState } from "react";
 
 import { Modal, ModalButton } from "@/components/ved/Modal";
-import { useAuth } from "@/lib/auth/session";
-import { ECO_SUBJECT_REVIEW, ICO_SUBJECT_REVIEW } from "@/lib/ved/copy";
 import { marksFor, subjectState, type ReviewSubject } from "@/lib/ved/compliance";
-import { usePlatformMode } from "@/lib/ved/platform-mode";
-import { usePlatformStore } from "@/lib/ved/platform-store";
-import type { VedRole } from "@/lib/ved/types";
+import { useVed } from "@/lib/ved/store";
 import { cn } from "@/lib/utils";
 
 type Verdict = "approved" | "waiting_verification" | "blocked";
 
-const DEFAULT_VERDICT: Record<Verdict, { label: string; title: string; needsMark: boolean; tone: string }> = {
+const VERDICT: Record<Verdict, { label: string; title: string; needsMark: boolean; tone: string }> = {
   approved: {
     label: "Проверен",
     title: "Одобрить участника",
@@ -32,37 +28,17 @@ const DEFAULT_VERDICT: Record<Verdict, { label: string; title: string; needsMark
   },
 };
 
-function verdictMeta(role: VedRole | undefined, verdict: Verdict) {
-  if (role === "internal_compliance_officer") {
-    const ico = ICO_SUBJECT_REVIEW.verdicts[verdict];
-    return { ...DEFAULT_VERDICT[verdict], label: ico.label, title: ico.title };
-  }
-  if (role === "compliance_officer") {
-    const eco = ECO_SUBJECT_REVIEW.verdicts[verdict];
-    return { ...DEFAULT_VERDICT[verdict], label: eco.label, title: eco.title };
-  }
-  return DEFAULT_VERDICT[verdict];
-}
-
 /** Проверка участников сделки (организация клиента и контрагент) — отдельный контур от рассмотрения заявки. */
 export function SubjectReview({
   subjects,
   readOnly = false,
   compact = false,
-  role: roleProp,
 }: {
   subjects: ReviewSubject[];
   readOnly?: boolean;
   compact?: boolean;
-  role?: VedRole;
 }) {
-  const { complianceTools, saveRefRecord, session } = usePlatformStore();
-  const auth = useAuth();
-  const mode = usePlatformMode();
-  const role = roleProp ?? (mode === "demo" ? session?.role : auth.role);
-  const isIco = role === "internal_compliance_officer";
-  const isEco = role === "compliance_officer";
-  const copy = isIco ? ICO_SUBJECT_REVIEW : isEco ? ECO_SUBJECT_REVIEW : null;
+  const { complianceTools, saveRefRecord } = useVed();
   const marks = marksFor(complianceTools, "organization");
   const [pending, setPending] = useState<{ subject: ReviewSubject; verdict: Verdict } | null>(null);
   const [mark, setMark] = useState("");
@@ -90,15 +66,14 @@ export function SubjectReview({
     close();
   }
 
-  const meta = pending ? verdictMeta(role, pending.verdict) : null;
+  const meta = pending ? VERDICT[pending.verdict] : null;
   const blocked = !!meta && meta.needsMark && (!mark || note.trim().length < 3);
 
   return (
     <div className={cn("panel", compact ? "p-4" : "p-4")}>
-      <p className="label-caps">{copy?.title ?? "Проверка участников сделки"}</p>
+      <p className="label-caps">Проверка участников сделки</p>
       <p className="mt-1 text-xs text-muted-foreground">
-        {copy?.hint ??
-          "Блокировка организации останавливает отправку новых заявок и согласование текущих. Одобрение участника разблокирует ICO/ECO-путь для заявок этой организации."}
+        Решение по участникам не блокирует саму заявку: организацию можно вернуть на доработку отдельно.
       </p>
       <ul className="mt-3 divide-y divide-border">
         {subjects.map((subject) => {
@@ -119,34 +94,29 @@ export function SubjectReview({
               )}
               {!readOnly && (
                 <div className="mt-2 flex flex-wrap gap-2">
-                  {(Object.keys(DEFAULT_VERDICT) as Verdict[]).map((verdict) => {
-                    const v = verdictMeta(role, verdict);
-                    return (
-                      <button
-                        key={verdict}
-                        type="button"
-                        onClick={() => {
-                          setMark("");
-                          setNote("");
-                          setPending({ subject, verdict });
-                        }}
-                        className={cn(
-                          "rounded-md px-2.5 py-1.5 text-xs font-semibold transition-opacity hover:opacity-90",
-                          v.tone,
-                        )}
-                      >
-                        {v.label}
-                      </button>
-                    );
-                  })}
+                  {(Object.keys(VERDICT) as Verdict[]).map((verdict) => (
+                    <button
+                      key={verdict}
+                      type="button"
+                      onClick={() => {
+                        setMark("");
+                        setNote("");
+                        setPending({ subject, verdict });
+                      }}
+                      className={cn(
+                        "rounded-md px-2.5 py-1.5 text-xs font-semibold transition-opacity hover:opacity-90",
+                        VERDICT[verdict].tone,
+                      )}
+                    >
+                      {VERDICT[verdict].label}
+                    </button>
+                  ))}
                 </div>
               )}
             </li>
           );
         })}
-        {subjects.length === 0 && (
-          <li className="py-2 text-sm text-muted-foreground">{copy?.empty ?? "Участники не определены."}</li>
-        )}
+        {subjects.length === 0 && <li className="py-2 text-sm text-muted-foreground">Участники не определены.</li>}
       </ul>
 
       <Modal
@@ -172,7 +142,7 @@ export function SubjectReview({
         {meta?.needsMark && (
           <div className="space-y-3">
             <label className="block">
-              <span className="label-caps">{copy?.markLabel ?? "Отметка комплаенс"}</span>
+              <span className="label-caps">Отметка комплаенс</span>
               <select value={mark} onChange={(e) => setMark(e.target.value)} className="field mt-1">
                 <option value="">Выберите отметку</option>
                 {marks.map((tool) => (
@@ -183,17 +153,17 @@ export function SubjectReview({
               </select>
               {marks.find((t) => t.title === mark) && (
                 <span className="mt-1 block text-xs text-muted-foreground">
-                  {copy?.clientHint ?? "Клиент увидит:"} {marks.find((t) => t.title === mark)?.instruction}
+                  Клиент увидит: {marks.find((t) => t.title === mark)?.instruction}
                 </span>
               )}
             </label>
             <label className="block">
-              <span className="label-caps">{copy?.noteLabel ?? "Комментарий для клиента"}</span>
+              <span className="label-caps">Комментарий для клиента</span>
               <textarea
                 value={note}
                 onChange={(e) => setNote(e.target.value)}
                 rows={3}
-                placeholder={copy?.notePlaceholder ?? "Какие сведения или документы нужны по участнику"}
+                placeholder="Какие сведения или документы нужны по участнику"
                 className="field mt-1 resize-none"
               />
             </label>

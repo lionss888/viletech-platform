@@ -1,9 +1,4 @@
-import { ecoStatusLabel, icoStatusLabel, userStatusLabel } from "./copy/status-labels";
-import { managerCloseStatusLabel } from "./copy/manager-close-copy";
-import { managerContractStatusLabel } from "./copy/manager-contract-copy";
-import { managerPaymentStatusLabel } from "./copy/manager-payment-copy";
-import { providerStatusLabel } from "./copy/provider-copy";
-import type { FormStatus, StageId, StatusTone, VedRole } from "./types";
+import type { FormStatus, StageId, StatusTone } from "./types";
 
 export type StatusMeta = {
   label: string;
@@ -169,33 +164,8 @@ export const STATUS_META: Record<string, StatusMeta> = {
   },
 };
 
-export function statusMeta(status: FormStatus, role?: VedRole): StatusMeta {
-  const base = STATUS_META[status] ?? { label: status, short: status, tone: "neutral" as StatusTone, stage: "new" as StageId };
-  if (role === "user") {
-    const user = userStatusLabel(status);
-    if (user) return { ...base, label: user.label, short: user.short ?? user.label };
-  }
-  if (role === "internal_compliance_officer") {
-    const ico = icoStatusLabel(status);
-    if (ico) return { ...base, label: ico.label, short: ico.short ?? ico.label };
-  }
-  if (role === "compliance_officer") {
-    const eco = ecoStatusLabel(status);
-    if (eco) return { ...base, label: eco.label, short: eco.short ?? eco.label };
-  }
-  if (role === "manager") {
-    const close = managerCloseStatusLabel(status);
-    if (close) return { ...base, label: close.label, short: close.short ?? close.label };
-    const payment = managerPaymentStatusLabel(status);
-    if (payment) return { ...base, label: payment.label, short: payment.short ?? payment.label };
-    const mgr = managerContractStatusLabel(status);
-    if (mgr) return { ...base, label: mgr.label, short: mgr.short ?? mgr.label };
-  }
-  if (role === "provider") {
-    const provider = providerStatusLabel(status);
-    if (provider) return { ...base, label: provider.label, short: provider.short ?? provider.label };
-  }
-  return base;
+export function statusMeta(status: FormStatus): StatusMeta {
+  return STATUS_META[status] ?? { label: status, short: status, tone: "neutral", stage: "new" };
 }
 
 export const STAGES: { id: StageId; label: string }[] = [

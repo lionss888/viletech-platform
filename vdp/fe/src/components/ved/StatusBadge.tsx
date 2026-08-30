@@ -1,8 +1,5 @@
-import { useAuth } from "@/lib/auth/session";
-import { usePlatformMode } from "@/lib/ved/platform-mode";
-import { usePlatformStore } from "@/lib/ved/platform-store";
 import { statusMeta } from "@/lib/ved/statuses";
-import type { FormStatus, StatusTone, VedRole } from "@/lib/ved/types";
+import type { FormStatus, StatusTone } from "@/lib/ved/types";
 import { cn } from "@/lib/utils";
 
 const TONE: Record<StatusTone, string> = {
@@ -17,18 +14,12 @@ export function StatusBadge({
   status,
   full = false,
   className,
-  role: roleProp,
 }: {
   status: FormStatus;
   full?: boolean;
   className?: string;
-  role?: VedRole;
 }) {
-  const mode = usePlatformMode();
-  const auth = useAuth();
-  const { session } = usePlatformStore();
-  const role = roleProp ?? (mode === "demo" ? session?.role : auth.role);
-  const meta = statusMeta(status, role);
+  const meta = statusMeta(status);
   return (
     <span
       title={meta.label}

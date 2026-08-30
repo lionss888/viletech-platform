@@ -50,30 +50,20 @@ function HomePage() {
           Управление сделками, документами и платежами.
         </p>
 
-        <div className="mt-8 flex flex-wrap gap-3">
+        <div className="mt-8 flex flex-col gap-3 sm:flex-row sm:flex-wrap">
           <Link
             to="/login"
-            className="rounded-md bg-primary px-5 py-2.5 text-sm font-semibold text-primary-foreground transition-colors hover:bg-primary/90"
+            className="w-full rounded-md bg-primary px-5 py-2.5 text-center text-sm font-semibold text-primary-foreground transition-colors hover:bg-primary/90 sm:w-auto"
           >
             Войти в платформу
           </Link>
           <Link
-            to="/demo/login"
-            className="rounded-md px-5 py-2.5 text-sm font-semibold shadow-[0_0_0_1px_var(--input)] transition-colors hover:bg-muted"
-          >
-            Демо без бэкенда
-          </Link>
-          <Link
-            to="/demo/start"
-            className="rounded-md px-5 py-2.5 text-sm font-semibold shadow-[0_0_0_1px_var(--input)] transition-colors hover:bg-muted"
+            to="/start"
+            className="w-full rounded-md px-5 py-2.5 text-center text-sm font-semibold shadow-[0_0_0_1px_var(--input)] transition-colors hover:bg-muted sm:w-auto"
           >
             Быстрый вход по роли
           </Link>
         </div>
-        <p className="mt-3 text-xs text-muted-foreground">
-          Платформа через API требует <span className="font-mono">vdp/core</span> (compose :8080). Демо работает офлайн на
-          моках.
-        </p>
 
         <div className="mt-16 grid gap-4 sm:grid-cols-3">
           {HIGHLIGHTS.map((item) => (

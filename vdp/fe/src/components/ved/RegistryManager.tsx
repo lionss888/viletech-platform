@@ -11,7 +11,7 @@ import {
   type RefRecord,
   type RegistryDef,
 } from "@/lib/ved/registry";
-import { usePlatformStore } from "@/lib/ved/platform-store";
+import { useVed } from "@/lib/ved/store";
 import type { VedRole } from "@/lib/ved/types";
 import { cn } from "@/lib/utils";
 
@@ -30,7 +30,7 @@ export function RegistryManager({
   /** Роли, которым разрешено добавлять и редактировать записи (удаление и импорт — только суперадмину). */
   writeRoles?: VedRole[];
 }) {
-  const { session, refRecords, saveRefRecord, deleteRefRecord, importRefRecords } = usePlatformStore();
+  const { session, refRecords, saveRefRecord, deleteRefRecord, importRefRecords } = useVed();
   const records = refRecords(def.key);
   const canManage = session?.role === "root";
   const canWrite = canManage || (session != null && writeRoles.includes(session.role));
@@ -121,18 +121,20 @@ export function RegistryManager({
             >
               Скачать CSV
             </button>
-            {canManage && (
+            {canWrite && (
               <button
                 type="button"
                 onClick={() => {
                   setImportOpen(true);
                   setImportError(null);
+                  if (!canManage) setImportMode("append");
                 }}
                 className="rounded-md bg-card px-3 py-2 text-xs font-semibold shadow-[0_0_0_1px_var(--input)] hover:bg-muted"
               >
-                Загрузить данные
+                Загрузить Excel / CSV
               </button>
             )}
+
             {canWrite && (
               <button
                 type="button"
@@ -349,13 +351,30 @@ export function RegistryManager({
             <input
               ref={fileRef}
               type="file"
-              accept=".csv,.tsv,.txt"
+              accept=".csv,.tsv,.txt,.xlsx,.xls"
               className="hidden"
               onChange={async (e) => {
                 const file = e.target.files?.[0];
                 if (!file) return;
-                setImportText(await file.text());
                 setImportError(null);
+                try {
+                  if (/\.xlsx?$/i.test(file.name)) {
+                    const XLSX = await import("xlsx");
+                    const book = XLSX.read(await file.arrayBuffer(), { type: "array" });
+                    const first = book.SheetNames[0];
+                    const sheet = first ? book.Sheets[first] : undefined;
+                    if (!sheet) {
+                      setImportError("В файле Excel нет данных");
+                      return;
+                    }
+                    setImportText(XLSX.utils.sheet_to_csv(sheet, { FS: ";" }).trim());
+                  } else {
+                    setImportText(await file.text());
+                  }
+                } catch {
+                  setImportError("Не удалось прочитать файл");
+                }
+                e.target.value = "";
               }}
             />
           </div>
@@ -367,7 +386,7 @@ export function RegistryManager({
             className="field resize-none font-mono text-xs"
           />
           <div className="flex gap-4 text-xs">
-            {(["append", "replace"] as const).map((mode) => (
+            {(canManage ? (["append", "replace"] as const) : (["append"] as const)).map((mode) => (
               <label key={mode} className="flex items-center gap-2">
                 <input type="radio" checked={importMode === mode} onChange={() => setImportMode(mode)} />
                 {mode === "append" ? "Добавить и обновить" : "Заменить справочник"}
@@ -375,9 +394,10 @@ export function RegistryManager({
             ))}
           </div>
           <p className="text-xs text-muted-foreground">
-            Ожидаемые колонки: {def.fields.map((f) => f.label).join(", ")}
+            Поддерживаются файлы .xlsx, .xls и .csv. Ожидаемые колонки: {def.fields.map((f) => f.label).join(", ")}
           </p>
           {importError && <p className="text-xs text-destructive">{importError}</p>}
+
         </div>
       </Modal>
     </div>
