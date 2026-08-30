@@ -59,7 +59,7 @@ describe("Manager payment & refund copy (RW5)", () => {
     expect(action?.label).toBe("Вернуть в исполнение");
   });
 
-  it("does not override report/close actions (RW6 scope)", () => {
+  it("does not override close actions (RW6 scope)", () => {
     const sent = actionsFor("manager", "payment_sent");
     expect(sent.find((a) => a.id === "mgr_report_signing")?.label).toBe("Отправить отчёт агента на подпись");
   });

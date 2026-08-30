@@ -49,9 +49,9 @@ describe("Manager contract & order copy (RW4)", () => {
     expect(orderCheck.find((a) => a.id === "mgr_order_accept")?.confirm).toContain("средств");
   });
 
-  it("preserves report action labels outside RW4 scope", () => {
+  it("does not override close actions (RW6 scope)", () => {
     const sent = actionsFor("manager", "payment_sent");
-    expect(sent.find((a) => a.id === "mgr_report_signing")?.label).toBe("Отправить отчёт агента на подпись");
+    expect(sent.find((a) => a.id === "mgr_report_signing")?.confirm).toContain("подпись");
   });
 
   it("preserves action ids", () => {

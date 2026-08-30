@@ -4,13 +4,13 @@ overview: "Копирайт Manager: отчёт агента, отгрузка, 
 todos:
   - id: rw6-report
     content: Labels report_* / mgr_report_*
-    status: pending
+    status: completed
   - id: rw6-shipment-close
     content: Labels shipment_* / mgr_shipment_* / mgr_completed
-    status: pending
+    status: completed
   - id: rw6-gate
     content: "DoD: close path voice; root не тронут"
-    status: pending
+    status: completed
 isProject: false
 ---
 

@@ -26,10 +26,23 @@ export {
   MANAGER_PAYMENT_FORM_DETAIL,
   managerPaymentStatusLabel,
   applyManagerPaymentActionLabels,
-  applyManagerActionLabels,
   isManagerPaymentPhaseStatus,
   managerPaymentReasonFields,
 } from "./manager-payment-copy";
+export {
+  MANAGER_CLOSE_STATUS_LABELS,
+  MANAGER_CLOSE_ACTION_LABELS,
+  MANAGER_CLOSE_ACTION_PANEL,
+  MANAGER_CLOSE_FORM_DETAIL,
+  MANAGER_DASHBOARD,
+  MANAGER_STAGE_LABELS,
+  managerCloseStatusLabel,
+  applyManagerCloseActionLabels,
+  applyManagerActionLabels,
+  isManagerClosePhaseStatus,
+  managerCloseReasonFields,
+  managerStageLabel,
+} from "./manager-close-copy";
 export { navLabelForRole } from "./nav-labels";
 export {
   ROLE_FOCUS,

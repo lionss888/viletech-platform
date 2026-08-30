@@ -34,8 +34,10 @@ import { roleTitle } from "@/lib/ved/roles";
 import {
   ECO_FORM_DETAIL,
   ICO_FORM_DETAIL,
+  MANAGER_CLOSE_FORM_DETAIL,
   MANAGER_CONTRACT_FORM_DETAIL,
   MANAGER_PAYMENT_FORM_DETAIL,
+  isManagerClosePhaseStatus,
   isManagerContractPhaseStatus,
   isManagerPaymentPhaseStatus,
   USER_CORRECTIONS_BANNER,
@@ -158,11 +160,13 @@ export function FormDetail() {
   const paymentRequisites = isProvider ? providerPaymentRequisites(form, org, cp) : [];
   const visibleDocuments = isProvider ? providerVisibleDocuments(form) : form.documents;
   const managerActionPanelTitle =
-    role === "manager" && isManagerPaymentPhaseStatus(form.status)
-      ? MANAGER_PAYMENT_FORM_DETAIL.actionPanelTitle
-      : role === "manager" && isManagerContractPhaseStatus(form.status)
-        ? MANAGER_CONTRACT_FORM_DETAIL.actionPanelTitle
-        : undefined;
+    role === "manager" && isManagerClosePhaseStatus(form.status)
+      ? MANAGER_CLOSE_FORM_DETAIL.actionPanelTitle
+      : role === "manager" && isManagerPaymentPhaseStatus(form.status)
+        ? MANAGER_PAYMENT_FORM_DETAIL.actionPanelTitle
+        : role === "manager" && isManagerContractPhaseStatus(form.status)
+          ? MANAGER_CONTRACT_FORM_DETAIL.actionPanelTitle
+          : undefined;
 
   return (
     <VedAppShell title={form.number} subtitle={`${meta.label} · роль: ${roleTitle(role)}`}>

@@ -1,5 +1,4 @@
 import type { FormAction, FormStatus } from "../types";
-import { applyManagerContractActionLabels } from "./manager-contract-copy";
 import type { ActionCopy, RoleStatusLabel } from "./status-labels";
 
 /** Manager: payment & refund phase. Glossary column «manager» + ДС where уместно. */
@@ -129,8 +128,4 @@ export function managerPaymentReasonFields(
     };
   }
   return undefined;
-}
-
-export function applyManagerActionLabels(actions: FormAction[], status: FormStatus): FormAction[] {
-  return applyManagerPaymentActionLabels(applyManagerContractActionLabels(actions, status), status);
 }

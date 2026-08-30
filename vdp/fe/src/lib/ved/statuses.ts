@@ -1,4 +1,5 @@
 import { ecoStatusLabel, icoStatusLabel, userStatusLabel } from "./copy/status-labels";
+import { managerCloseStatusLabel } from "./copy/manager-close-copy";
 import { managerContractStatusLabel } from "./copy/manager-contract-copy";
 import { managerPaymentStatusLabel } from "./copy/manager-payment-copy";
 import type { FormStatus, StageId, StatusTone, VedRole } from "./types";
@@ -182,6 +183,8 @@ export function statusMeta(status: FormStatus, role?: VedRole): StatusMeta {
     if (eco) return { ...base, label: eco.label, short: eco.short ?? eco.label };
   }
   if (role === "manager") {
+    const close = managerCloseStatusLabel(status);
+    if (close) return { ...base, label: close.label, short: close.short ?? close.label };
     const payment = managerPaymentStatusLabel(status);
     if (payment) return { ...base, label: payment.label, short: payment.short ?? payment.label };
     const mgr = managerContractStatusLabel(status);

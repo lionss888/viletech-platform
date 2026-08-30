@@ -6,6 +6,7 @@ import {
   MANAGER_CONTRACT_ACTION_PANEL,
   MANAGER_PAYMENT_ACTION_PANEL,
   MANAGER_REFUND_PANEL,
+  managerCloseReasonFields,
   managerContractReasonFields,
   managerPaymentReasonFields,
 } from "@/lib/ved/copy";
@@ -376,7 +377,9 @@ export function ActionPanel({
         {pending?.requiresReason && (() => {
           const mgrReason =
             isManager && pending
-              ? managerContractReasonFields(pending.id) ?? managerPaymentReasonFields(pending.id)
+              ? managerContractReasonFields(pending.id) ??
+                managerPaymentReasonFields(pending.id) ??
+                managerCloseReasonFields(pending.id)
               : undefined;
           return (
           <label className="block">

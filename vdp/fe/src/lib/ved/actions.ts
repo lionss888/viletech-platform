@@ -1,5 +1,5 @@
 import { applyEcoActionLabels, applyIcoActionLabels, applyUserActionLabels } from "./copy/action-labels";
-import { applyManagerActionLabels } from "./copy/manager-payment-copy";
+import { applyManagerActionLabels } from "./copy/manager-close-copy";
 import type { FormAction, FormStatus, VedRole } from "./types";
 
 /**
