@@ -7,13 +7,42 @@
 import { defineConfig } from "@lovable.dev/vite-tanstack-config";
 import { mcpPlugin } from "@lovable.dev/mcp-js/stacks/tanstack/vite";
 
+const apiProxyTarget = (process.env.VDP_API_PROXY_TARGET ?? "http://localhost:8080").replace(
+  /\/$/,
+  "",
+);
+
 export default defineConfig({
   tanstackStart: {
     // Redirect TanStack Start's bundled server entry to src/server.ts (our SSR error wrapper).
     // nitro/vite builds from this
     server: { entry: "server" },
   },
+  nitro: {
+    preset: process.env.NITRO_PRESET ?? "cloudflare",
+    routeRules: {
+      "/api/**": { proxy: `${apiProxyTarget}/api/**` },
+    },
+  },
   vite: {
     plugins: [mcpPlugin()],
+    server: {
+      // RD11: Playwright in Docker hits fe:5173 on compose network.
+      allowedHosts: ["fe", "host.docker.internal", "localhost", "127.0.0.1"],
+      proxy: {
+        "/api": {
+          target: apiProxyTarget,
+          changeOrigin: true,
+        },
+      },
+    },
+    preview: {
+      proxy: {
+        "/api": {
+          target: apiProxyTarget,
+          changeOrigin: true,
+        },
+      },
+    },
   },
 });
