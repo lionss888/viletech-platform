@@ -46,4 +46,4 @@ report/accept может перевести напрямую в completed в com
 
 ## UI projection
 
-Fe mapStatusLabel применяет role-specific labels из copy layer RW1–RW9. Канонический id статуса один; labels различаются per role. См. product/copy-glossary.md.
+Fe mapStatusLabel применяет role-specific labels из copy layer RW1–RW9. Канонический id статуса один; labels различаются по роли. Исходники: vdp/fe/src/lib/ved/copy/.

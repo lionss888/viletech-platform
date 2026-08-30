@@ -1,41 +1,37 @@
 # Документация VDP
 
-Этот каталог — единая точка product documentation для vdp. Формат: только заголовки h1–h3 и абзацы p. Правило описано в [conventions/format.md](conventions/format.md).
+Здесь собрана вся документация по платформе VDP.
 
-## Аудитория Dev
+## Для разработчиков
 
-Разработчикам и инженерам, которые поднимают стек, пишут код и прогоняют gate-тесты.
+Если вы хотите развернуть проект локально или разобраться в коде, начните с [быстрого старта](development/getting-started.md).
 
-Точка входа: [development/getting-started.md](development/getting-started.md).
+Как запустить тесты и что они проверяют: [development/testing.md](development/testing.md).
 
-Тесты и parity: [development/testing.md](development/testing.md).
+Команды Makefile: [development/makefile-reference.md](development/makefile-reference.md).
 
-Makefile: [development/makefile-reference.md](development/makefile-reference.md).
+Архитектура системы: [architecture/overview.md](architecture/overview.md), [architecture/contexts-and-data.md](architecture/contexts-and-data.md), [architecture/app-vs-demo.md](architecture/app-vs-demo.md).
 
-Архитектура: [architecture/overview.md](architecture/overview.md), [architecture/contexts-and-data.md](architecture/contexts-and-data.md), [architecture/app-vs-demo.md](architecture/app-vs-demo.md).
+Бизнес-логика и роли: [domain/roles-and-authz.md](domain/roles-and-authz.md), [domain/form-lifecycle.md](domain/form-lifecycle.md), [domain/documents-and-uploads.md](domain/documents-and-uploads.md).
 
-Домен: [domain/roles-and-authz.md](domain/roles-and-authz.md), [domain/form-lifecycle.md](domain/form-lifecycle.md), [domain/documents-and-uploads.md](domain/documents-and-uploads.md).
+API и интеграции: [api/overview.md](api/overview.md), [api/openapi.md](api/openapi.md).
 
-API: [api/overview.md](api/overview.md), [api/openapi.md](api/openapi.md).
+Деплой и настройка: [operations/docker-compose.md](operations/docker-compose.md), [operations/environment.md](operations/environment.md), [operations/staging-checklist.md](operations/staging-checklist.md).
 
-Операции: [operations/docker-compose.md](operations/docker-compose.md), [operations/environment.md](operations/environment.md), [operations/staging-checklist.md](operations/staging-checklist.md).
+## Для пилотного запуска
 
-## Аудитория Pilot
+Если планируете пилот или UAT, сначала прочтите про ограничения: [pilot/readiness-and-limits.md](pilot/readiness-and-limits.md).
 
-Заказчику и команде UAT для пилотной передачи с явными ограничениями MVP.
+Как тестировать систему: [pilot/uat-scenarios.md](pilot/uat-scenarios.md).
 
-Готовность и ограничения: [pilot/readiness-and-limits.md](pilot/readiness-and-limits.md).
+Что пока не реализовано: [pilot/known-gaps.md](pilot/known-gaps.md).
 
-Сценарии UAT: [pilot/uat-scenarios.md](pilot/uat-scenarios.md).
+## Для поддержки пользователей
 
-Известные пробелы: [pilot/known-gaps.md](pilot/known-gaps.md).
+Какие задачи решают разные роли: [product/role-cabinets.md](product/role-cabinets.md).
 
-## Аудитория Support
+Что видят провайдеры платежей: [product/provider-data-boundary.md](product/provider-data-boundary.md).
 
-Поддержке и продукту для self-service help в кабинетах.
+## О формате документов
 
-Кабинеты и top tasks: [product/role-cabinets.md](product/role-cabinets.md).
-
-Глоссарий UI по ролям: [product/copy-glossary.md](product/copy-glossary.md).
-
-Граница данных Provider: [product/provider-data-boundary.md](product/provider-data-boundary.md).
+Правила оформления описаны в [conventions/format.md](conventions/format.md).

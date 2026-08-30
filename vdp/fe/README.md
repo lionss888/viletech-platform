@@ -42,4 +42,4 @@ Integration gate, parity RD, Playwright: [../docs/development/testing.md](../doc
 
 ## Copy layer
 
-Role wording RW1–RW9: src/lib/ved/copy/*. Gate: copy-consistency.test.ts. Glossary: [../docs/product/copy-glossary.md](../docs/product/copy-glossary.md).
+Role wording RW1–RW9: src/lib/ved/copy/*. Gate: copy-consistency.test.ts.
