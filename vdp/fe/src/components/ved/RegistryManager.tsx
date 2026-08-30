@@ -112,12 +112,12 @@ export function RegistryManager({
             placeholder="Поиск по справочнику"
             className="field max-w-xs"
           />
-          <div className="flex flex-wrap items-center gap-2">
+          <div className="flex w-full flex-col items-stretch gap-2 sm:w-auto sm:flex-row sm:flex-wrap sm:items-center">
             <span className="font-mono text-xs text-muted-foreground">{rows.length} записей</span>
             <button
               type="button"
               onClick={() => download(toCsv(def, records), `${def.key}.csv`)}
-              className="rounded-md bg-card px-3 py-2 text-xs font-semibold shadow-[0_0_0_1px_var(--input)] hover:bg-muted"
+              className="w-full rounded-md bg-card px-3 py-2 text-xs font-semibold shadow-[0_0_0_1px_var(--input)] hover:bg-muted sm:w-auto"
             >
               Скачать CSV
             </button>
@@ -129,7 +129,7 @@ export function RegistryManager({
                   setImportError(null);
                   if (!canManage) setImportMode("append");
                 }}
-                className="rounded-md bg-card px-3 py-2 text-xs font-semibold shadow-[0_0_0_1px_var(--input)] hover:bg-muted"
+                className="w-full rounded-md bg-card px-3 py-2 text-xs font-semibold shadow-[0_0_0_1px_var(--input)] hover:bg-muted sm:w-auto"
               >
                 Загрузить Excel / CSV
               </button>
@@ -139,7 +139,7 @@ export function RegistryManager({
               <button
                 type="button"
                 onClick={openCreate}
-                className="rounded-md bg-primary px-3 py-2 text-xs font-semibold text-primary-foreground hover:opacity-90"
+                className="w-full rounded-md bg-primary px-3 py-2 text-xs font-semibold text-primary-foreground hover:opacity-90 sm:w-auto"
               >
                 Добавить
               </button>

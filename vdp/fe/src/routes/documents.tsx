@@ -98,7 +98,7 @@ function DocumentsPage() {
             <button
               type="button"
               onClick={startUpload}
-              className="rounded-md bg-primary px-3 py-2 text-xs font-semibold text-primary-foreground"
+              className="w-full rounded-md bg-primary px-3 py-2 text-xs font-semibold text-primary-foreground sm:w-auto"
             >
               Загрузить документы
             </button>

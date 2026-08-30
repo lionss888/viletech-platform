@@ -42,16 +42,16 @@ function StartPage() {
             заявками и действиями.
           </p>
 
-          <div className="mt-8 flex flex-wrap gap-3">
+          <div className="mt-8 flex flex-col gap-3 sm:flex-row sm:flex-wrap">
             <Link
               to="/login"
-              className="rounded-md bg-primary px-5 py-2.5 text-sm font-semibold text-primary-foreground transition-colors hover:bg-primary/90"
+              className="w-full rounded-md bg-primary px-5 py-2.5 text-center text-sm font-semibold text-primary-foreground transition-colors hover:bg-primary/90 sm:w-auto"
             >
               Войти по логину и паролю
             </Link>
             <Link
               to="/"
-              className="rounded-md px-5 py-2.5 text-sm font-semibold shadow-[0_0_0_1px_var(--input)] transition-colors hover:bg-muted"
+              className="w-full rounded-md px-5 py-2.5 text-center text-sm font-semibold shadow-[0_0_0_1px_var(--input)] transition-colors hover:bg-muted sm:w-auto"
             >
               О платформе
             </Link>

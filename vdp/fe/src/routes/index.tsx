@@ -50,16 +50,16 @@ function HomePage() {
           Управление сделками, документами и платежами.
         </p>
 
-        <div className="mt-8 flex flex-col gap-3 sm:flex-row sm:flex-wrap">
+        <div className="mt-8 flex flex-col gap-3 sm:flex-row">
           <Link
             to="/login"
-            className="w-full rounded-md bg-primary px-5 py-2.5 text-center text-sm font-semibold text-primary-foreground transition-colors hover:bg-primary/90 sm:w-auto"
+            className="flex-1 rounded-md bg-primary px-5 py-2.5 text-center text-sm font-semibold text-primary-foreground transition-colors hover:bg-primary/90"
           >
             Войти в платформу
           </Link>
           <Link
             to="/start"
-            className="w-full rounded-md px-5 py-2.5 text-center text-sm font-semibold shadow-[0_0_0_1px_var(--input)] transition-colors hover:bg-muted sm:w-auto"
+            className="flex-1 rounded-md px-5 py-2.5 text-center text-sm font-semibold shadow-[0_0_0_1px_var(--input)] transition-colors hover:bg-muted"
           >
             Быстрый вход по роли
           </Link>
