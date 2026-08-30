@@ -23,12 +23,14 @@ export function RegistryManager({
   extraColumns = [],
   badge,
   writeRoles = [],
+  recordFilter,
 }: {
   def: RegistryDef;
   extraColumns?: Extra[];
   badge?: (record: RefRecord) => { text: string; cls: string } | null;
   /** Роли, которым разрешено добавлять и редактировать записи (удаление и импорт — только суперадмину). */
   writeRoles?: VedRole[];
+  recordFilter?: (record: RefRecord) => boolean;
 }) {
   const { session, refRecords, saveRefRecord, deleteRefRecord, importRefRecords } = useVed();
   const records = refRecords(def.key);
@@ -48,12 +50,13 @@ export function RegistryManager({
   const fileRef = useRef<HTMLInputElement | null>(null);
 
   const rows = useMemo(() => {
+    const base = recordFilter ? records.filter(recordFilter) : records;
     const q = query.trim().toLowerCase();
-    if (!q) return records;
-    return records.filter((record) =>
+    if (!q) return base;
+    return base.filter((record) =>
       def.fields.some((field) => String(record[field.key] ?? "").toLowerCase().includes(q)),
     );
-  }, [records, query, def.fields]);
+  }, [records, query, def.fields, recordFilter]);
 
   function openCreate() {
     setDraft(emptyRecord(def));

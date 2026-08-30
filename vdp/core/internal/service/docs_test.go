@@ -81,3 +81,26 @@ func TestDocsApprovalIndicatorAndCanSkip(t *testing.T) {
 	}
 }
 
+func TestFileACLUserCannotPreviewForeignFormFile(t *testing.T) {
+	t.Parallel()
+	store := repository.NewMemoryStore()
+	ids := 0
+	catalog := service.NewCatalogService(store, outbox.NewMemoryStore(), func() string {
+		ids++
+		return fmt.Sprintf("f%d", ids)
+	})
+	owner := authz.Principal{AccountID: "owner", Role: domain.RoleUser, OrganizationID: "org-a"}
+	other := authz.Principal{AccountID: "other", Role: domain.RoleUser, OrganizationID: "org-b"}
+	file, err := catalog.UploadFileBytes(context.Background(), owner, "form-foreign", "application/pdf", []byte("secret"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, _, _, err := catalog.PreviewFile(context.Background(), other, file.ID); err == nil {
+		t.Fatal("foreign user must not preview form file")
+	}
+	provider := authz.Principal{AccountID: "prov", Role: domain.RoleProvider}
+	if _, _, _, err := catalog.PreviewFile(context.Background(), provider, file.ID); err != nil {
+		t.Fatalf("provider may preview for ops: %v", err)
+	}
+}
+

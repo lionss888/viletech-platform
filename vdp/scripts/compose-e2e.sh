@@ -250,5 +250,45 @@ if [[ "$ST7" != "payment_refund_sent" ]]; then
 fi
 echo "RH2 refund full ok form=$ID7"
 
+echo "== P5 advance_signing smoke =="
+FORM8=$(auth_post "$USER_T" /api/v1/site/form-payment \
+  '{"currency":"USD","invoice_amount":"800","no_documents":true,"contract_number":"P5-ADV"}')
+ID8=$(echo "$FORM8" | python3 -c 'import sys,json; print(json.load(sys.stdin)["id"])')
+auth_post "$USER_T" "/api/v1/forms/$ID8/actions/recognize_complete" '{}' >/dev/null
+auth_put "$USER_T" "/api/v1/site/form-payment/$ID8/form/accept"
+advance_compliance "$ID8"
+auth_put "$MGR_T" "/api/v1/manager/form-payment/$ID8/order/signing"
+auth_put "$USER_T" "/api/v1/site/form-payment/$ID8/order"
+auth_put "$MGR_T" "/api/v1/manager/form-payment/$ID8/order/start"
+auth_put "$MGR_T" "/api/v1/manager/form-payment/$ID8/order/accept"
+auth_put "$MGR_T" "/api/v1/manager/form-payment/$ID8/order-advance/signing"
+auth_put "$USER_T" "/api/v1/site/form-payment/$ID8/order-advance"
+auth_put "$MGR_T" "/api/v1/manager/form-payment/$ID8/order-advance/start"
+auth_put "$MGR_T" "/api/v1/manager/form-payment/$ID8/order-advance/accept"
+ST8=$(form_status "$MGR_T" "/api/v1/manager/form-payment/$ID8")
+if [[ "$ST8" != "advance_signing_order_accepted" ]]; then
+  echo "FAIL P5 advance status=$ST8 want advance_signing_order_accepted" >&2
+  exit 1
+fi
+echo "P5 advance_signing ok form=$ID8"
+
+echo "== P5 shipment smoke =="
+auth_post "$MGR_T" "/api/v1/forms/$ID8/provider" '{"provider_id":"55555555-5555-5555-5555-555555555555","client_agreed":true}' >/dev/null
+auth_post "$MGR_T" "/api/v1/manager/form-payment/$ID8/shipment/waiting" '{}' >/dev/null
+ST8B=$(form_status "$MGR_T" "/api/v1/manager/form-payment/$ID8")
+if [[ "$ST8B" != "shipment_waiting" ]]; then
+  echo "FAIL P5 shipment_waiting status=$ST8B" >&2
+  exit 1
+fi
+auth_put "$USER_T" "/api/v1/site/form-payment/$ID8/shipment"
+auth_put "$MGR_T" "/api/v1/manager/form-payment/$ID8/shipment/start"
+auth_put "$MGR_T" "/api/v1/manager/form-payment/$ID8/shipment/accept"
+ST8C=$(form_status "$MGR_T" "/api/v1/manager/form-payment/$ID8")
+if [[ "$ST8C" != "completed" ]]; then
+  echo "FAIL P5 shipment accept status=$ST8C want completed" >&2
+  exit 1
+fi
+echo "P5 shipment ok form=$ID8"
+
 curl -sf -X POST "$BASE/api/v1/internal/outbox/flush" -H "X-VDP-S2S: $S2S" >/dev/null
-echo "RH10 compose E2E green (main=$ID RD7=$ID3 RD8=$ID4 RH2=$ID6)"
+echo "RH10 compose E2E green (main=$ID RD7=$ID3 RD8=$ID4 RH2=$ID6 P5=$ID8)"

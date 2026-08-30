@@ -1,6 +1,7 @@
 package config
 
 import (
+	"fmt"
 	"os"
 	"strconv"
 )
@@ -45,4 +46,16 @@ func getEnvAsInt(key string, defaultValue int) int {
 		}
 	}
 	return defaultValue
+}
+
+// ValidateProduction rejects well-known dev S2S secret in production.
+func (c *Config) ValidateProduction() error {
+	env := os.Getenv("ENVIRONMENT")
+	if env != "production" && env != "prod" {
+		return nil
+	}
+	if c.SharedSecret == "" || c.SharedSecret == "vdp-s2s-dev-secret" {
+		return fmt.Errorf("production: set non-default HUB_SHARED_SECRET")
+	}
+	return nil
 }

@@ -264,7 +264,12 @@ func (s *Server) handleAdminAccountPatch(w http.ResponseWriter, r *http.Request,
 }
 
 func (s *Server) handleOrgList(w http.ResponseWriter, r *http.Request, principal authz.Principal) {
-	items, err := s.orgs.List(r.Context(), principal)
+	filter := service.OrgListFilter{
+		Rating:             r.URL.Query().Get("rating"),
+		Status:             r.URL.Query().Get("status"),
+		AwaitingProcessing: r.URL.Query().Get("awaiting_processing") == "true",
+	}
+	items, err := s.orgs.ListFiltered(r.Context(), principal, filter)
 	if err != nil {
 		writeError(w, err)
 		return

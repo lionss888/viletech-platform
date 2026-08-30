@@ -8,6 +8,7 @@ import (
 	"github.com/viletech/vdp/core/internal/authz"
 	"github.com/viletech/vdp/core/internal/domain"
 	"github.com/viletech/vdp/core/internal/domain/formpayment"
+	"github.com/viletech/vdp/core/internal/export"
 	"github.com/viletech/vdp/core/internal/service"
 	apperrors "github.com/viletech/vdp/core/pkg/errors"
 )
@@ -352,9 +353,7 @@ func (s *Server) handleNestFormGETPath(w http.ResponseWriter, r *http.Request, p
 	}
 	switch path {
 	case "xlsx":
-		w.Header().Set("Content-Type", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
-		w.WriteHeader(http.StatusOK)
-		_, _ = w.Write([]byte("PK\x03\x04xlsx-placeholder"))
+		writeNestFormsXLSX(w, s.forms.List(r.Context(), principal))
 	case "hs-codes":
 		writeJSON(w, http.StatusOK, decodeJSONArray(form.InvoiceJSON))
 	case "suggested-providers":
@@ -380,9 +379,7 @@ func (s *Server) handleNestFormSpecialGET(w http.ResponseWriter, r *http.Request
 	case "count":
 		writeJSON(w, http.StatusOK, map[string]int{"count": s.forms.Count(r.Context(), principal)})
 	case "xlsx":
-		w.Header().Set("Content-Type", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
-		w.WriteHeader(http.StatusOK)
-		_, _ = w.Write([]byte("PK\x03\x04xlsx-placeholder"))
+		writeNestFormsXLSX(w, s.forms.List(r.Context(), principal))
 	case "by-order-accepted":
 		items := make([]formpayment.Form, 0)
 		for _, f := range s.forms.List(r.Context(), principal) {
@@ -513,4 +510,28 @@ func decodeJSONArray(raw string) []any {
 		return []any{}
 	}
 	return out
+}
+
+func writeNestFormsXLSX(w http.ResponseWriter, forms []formpayment.Form) {
+	headers := []string{"id", "status", "direction", "currency", "invoice_amount", "updated_at"}
+	rows := make([][]string, 0, len(forms))
+	for _, f := range forms {
+		rows = append(rows, []string{
+			f.ID,
+			string(f.Status),
+			string(f.Direction),
+			f.Currency,
+			f.InvoiceAmount,
+			f.UpdatedAt.UTC().Format("2006-01-02T15:04:05Z"),
+		})
+	}
+	data, err := export.MinimalXLSX("form-payments", headers, rows)
+	if err != nil {
+		writeError(w, err)
+		return
+	}
+	w.Header().Set("Content-Type", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
+	w.Header().Set("Content-Disposition", `attachment; filename="form-payments.xlsx"`)
+	w.WriteHeader(http.StatusOK)
+	_, _ = w.Write(data)
 }

@@ -1,6 +1,7 @@
 package config
 
 import (
+	"fmt"
 	"os"
 	"strconv"
 )
@@ -51,4 +52,30 @@ func getEnvAsInt(key string, defaultValue int) int {
 		}
 	}
 	return defaultValue
+}
+
+// ValidateProduction rejects well-known dev secrets when ENVIRONMENT is production/prod.
+func (c *Config) ValidateProduction() error {
+	env := c.Environment
+	if env != "production" && env != "prod" {
+		return nil
+	}
+	checks := map[string]string{
+		"JWT_SECRET":        "vdp-core-dev-secret",
+		"HUB_SHARED_SECRET": "vdp-s2s-dev-secret",
+	}
+	for key, forbidden := range checks {
+		val := os.Getenv(key)
+		if val == "" {
+			if key == "JWT_SECRET" {
+				val = c.JWTSecret
+			} else {
+				val = c.HubSharedSecret
+			}
+		}
+		if val == forbidden {
+			return fmt.Errorf("production: set non-default %s", key)
+		}
+	}
+	return nil
 }

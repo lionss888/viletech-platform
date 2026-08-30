@@ -117,14 +117,57 @@ function ComplianceOrganizations() {
 /* ------------------------- Справочник ------------------------- */
 
 function OrganizationsRegistry() {
-  const { organizations, forms } = useVed();
+  const { organizations, forms, session } = useVed();
   const def = REGISTRIES.organizations;
+  const [ratingFilter, setRatingFilter] = useState<string>("");
+  const role = session?.role ?? "user";
+  const shownCount = useMemo(() => {
+    if (role !== "manager" || ratingFilter === "") return organizations.length;
+    return organizations.filter((o) => (o.rating ?? "") === ratingFilter).length;
+  }, [organizations, role, ratingFilter]);
+
+  const RATING_LABEL: Record<string, { text: string; cls: string }> = {
+    red: { text: "Красный", cls: "bg-destructive-soft text-destructive" },
+    yellow: { text: "Жёлтый", cls: "bg-wait-soft text-wait" },
+  };
 
   return (
-    <AppShell title={def.title} subtitle={`${def.subtitle} · записей: ${organizations.length}`}>
+    <AppShell title={def.title} subtitle={`${def.subtitle} · записей: ${shownCount}`}>
+      {role === "manager" && (
+        <div className="mb-4 flex flex-wrap gap-2">
+          {(
+            [
+              { id: "", label: "Все" },
+              { id: "yellow", label: "Жёлтый рейтинг" },
+              { id: "red", label: "Красный рейтинг" },
+            ] as const
+          ).map((item) => (
+            <button
+              key={item.id || "all"}
+              type="button"
+              onClick={() => setRatingFilter(item.id)}
+              className={cn(
+                "rounded-md px-3 py-2 text-sm font-semibold transition-colors",
+                ratingFilter === item.id ? "bg-primary text-primary-foreground" : "bg-card shadow-[0_0_0_1px_var(--input)] hover:bg-muted",
+              )}
+            >
+              {item.label}
+            </button>
+          ))}
+        </div>
+      )}
       <RegistryManager
         def={def}
-        badge={(record) => LABEL[String(record["status"])] ?? null}
+        recordFilter={
+          role === "manager" && ratingFilter !== ""
+            ? (record) => String(record["rating"] ?? "") === ratingFilter
+            : undefined
+        }
+        badge={(record) => {
+          const rating = String(record["rating"] ?? "");
+          if (rating && RATING_LABEL[rating]) return RATING_LABEL[rating]!;
+          return LABEL[String(record["status"])] ?? null;
+        }}
         extraColumns={[
           {
             label: "Заявок",

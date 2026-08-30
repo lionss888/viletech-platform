@@ -22,6 +22,7 @@ export const ORGANIZATIONS: Organization[] = [
     inn: "7708123456",
     legalAddress: "г. Москва, ул. Тверская, 12, стр. 3",
     status: "approved",
+    rating: "yellow",
     createdAt: "2026-01-14T09:12:00Z",
   },
   {

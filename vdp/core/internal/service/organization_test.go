@@ -71,6 +71,35 @@ func TestOrganizationVIClientStatuses(t *testing.T) {
 	}
 }
 
+func TestOrganizationListFilteredByRating(t *testing.T) {
+	t.Parallel()
+	store := repository.NewStore()
+	seed.Dev(store)
+	orgs := service.NewOrganizationService(store)
+	manager := authz.Principal{AccountID: seed.ManagerID, Role: domain.RoleManager}
+	if _, err := orgs.SetRating(context.Background(), manager, seed.OrgID, domain.RatingRed); err != nil {
+		t.Fatal(err)
+	}
+	red, err := orgs.ListFiltered(context.Background(), manager, service.OrgListFilter{Rating: "red"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(red) != 1 || red[0].ID != seed.OrgID {
+		t.Fatalf("red filter=%#v", red)
+	}
+	yellow, err := orgs.ListFiltered(context.Background(), manager, service.OrgListFilter{Rating: "yellow"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(yellow) != 0 {
+		t.Fatalf("yellow filter=%#v", yellow)
+	}
+	awaiting, err := orgs.ListFiltered(context.Background(), manager, service.OrgListFilter{AwaitingProcessing: true})
+	if err != nil || len(awaiting) == 0 {
+		t.Fatalf("awaiting_processing filter empty: %#v err=%v", awaiting, err)
+	}
+}
+
 func TestAccountRBACAdminCreateForbiddenForUser(t *testing.T) {
 	t.Parallel()
 	store := repository.NewStore()

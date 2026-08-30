@@ -50,6 +50,7 @@ function FormsList() {
   const [onlyMine, setOnlyMine] = useState(preset.mine ?? false);
   const [selected, setSelected] = useState<string[]>([]);
   const [onlyStuck, setOnlyStuck] = useState(preset.stuck ?? false);
+  const [onlyRatedOrgs, setOnlyRatedOrgs] = useState(false);
   const [stageFilter, setStageFilter] = useState(preset.stage ?? "");
   const [bulkPending, setBulkPending] = useState<FormAction | null>(null);
   const [bulkReason, setBulkReason] = useState("");
@@ -70,13 +71,17 @@ function FormsList() {
       } else if (stageFilter && statusMeta(form.status).stage !== stageFilter) return false;
       if (onlyMine && actionsFor(role, form.status).length === 0) return false;
       if (onlyStuck && !stuckIds.has(form.id)) return false;
+      if (onlyRatedOrgs && role === "manager") {
+        const org = orgById(form.organizationId);
+        if (!org?.rating) return false;
+      }
       if (query) {
         const hay = `${form.number} ${form.invoiceNumber} ${form.ownerName} ${cpById(form.counterpartyId)?.name ?? ""} ${orgById(form.organizationId)?.name ?? ""}`;
         if (!hay.toLowerCase().includes(query.toLowerCase())) return false;
       }
       return true;
     });
-  }, [scoped, filter, stageFilter, onlyMine, onlyStuck, stuckIds, query, role]);
+  }, [scoped, filter, stageFilter, onlyMine, onlyStuck, onlyRatedOrgs, stuckIds, query, role]);
 
   const bulkActions = useMemo(() => {
     const chosen = rows.filter((f) => selected.includes(f.id));
@@ -111,6 +116,16 @@ function FormsList() {
                 active: onlyMine,
                 onClick: () => setOnlyMine((v) => !v),
               },
+          ...(role === "manager"
+            ? [
+                {
+                  label: "Организации с рейтингом",
+                  value: scoped.filter((f) => Boolean(orgById(f.organizationId)?.rating)).length,
+                  active: onlyRatedOrgs,
+                  onClick: () => setOnlyRatedOrgs((v) => !v),
+                },
+              ]
+            : []),
           {
             label: "На комплаенсе",
             value: (counters.get("organization_verification") ?? 0) + (counters.get("form_verification") ?? 0),

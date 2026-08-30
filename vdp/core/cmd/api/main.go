@@ -24,6 +24,10 @@ func main() {
 	cfg := config.Load()
 	log := logger.New(cfg.LogLevel)
 	slog.SetDefault(log)
+	if err := cfg.ValidateProduction(); err != nil {
+		log.Error("invalid production config", "error", err)
+		os.Exit(1)
+	}
 	ctx := context.Background()
 	if os.Getenv("STORE_DRIVER") == "" {
 		_ = os.Setenv("STORE_DRIVER", cfg.StoreDriver)

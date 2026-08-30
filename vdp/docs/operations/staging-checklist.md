@@ -2,9 +2,11 @@
 
 Перед UAT или staging go-live с реальными интеграциями проверьте env и контракты. MVP compose работает со stubs без этих URL.
 
+Шаблон env: [staging-env.example](staging-env.example). Smoke: `scripts/staging-smoke.sh` из каталога `vdp`.
+
 ## Hub documents DOCS_URL
 
-CI verified. Test docs_http_test.go in make test-adapters asserts POST payload and retry on 503. Staging manual. Stub docs id stub.pdf без prod URL. Staging нужен реальный file store или docs service URL. Env DOCS_URL.
+CI verified. Test docs_http_test.go in make test-adapters asserts POST payload and retry on 503. Staging: export DOCS_URL and run staging-smoke. Dev stub `docs/{id}/stub.pdf` when URL empty. Payload includes template_id per payment agent.
 
 ## Diadoc
 
@@ -12,11 +14,11 @@ CI not verified. Staging manual only. Контракт и callback есть. Pro
 
 ## Mail notify
 
-CI verified. Test mail_http_test.go in make test-adapters asserts notify HTTP without stub when MAIL_URL set. Staging manual. Hub mail adapter stub when URL empty. Staging нужен SMTP or provider API. Env MAIL_URL.
+CI verified. Test mail_http_test.go in make test-adapters. Staging: MAIL_URL in staging-smoke. Hub mail adapter stub when URL empty.
 
 ## OCR recognition
 
-CI not verified. Staging optional side path. recognize_complete в app сразу to draft без OCR. Staging OCR worker optional not transactional payment path.
+Policy: optional side-path only. `recognize_complete` in core advances draft without vendor OCR. Staging OCR worker optional — not on payment commit path. If OCR unavailable, user manual entry remains. Do not auto-approve or auto-pay from OCR output.
 
 ## Telegram 1C partner
 
@@ -24,23 +26,23 @@ CI not verified. Staging manual. Extended Nest modules R9. Callback contract onl
 
 ## XLSX export
 
-CI not verified. Placeholder bytes not real Excel per known-gaps honesty. Staging replace hub xlsx generator or set disable feature. Dev returns PK xlsx-placeholder.
+CI verified via nest_xlsx_test and compliance xlsx routes. Real OOXML MinimalXLSX. No placeholder bytes on export paths.
 
 ## Bank webhook
 
-CI partial via compose RD9 spot only. Staging manual HTTPS. BankSettingsPanel webhook URL. Staging endpoint with auth for status push.
+CI partial via compose RD9 spot and staging-smoke optional BANK_WEBHOOK_URL. Staging manual HTTPS. BankSettingsPanel webhook URL.
 
 ## Postgres
 
-Separate core and hub databases. Backups encrypted. No shared schema with Nest legacy. CI integration job uses postgres service for make test-integration.
+Separate core and hub databases. Backups encrypted checklist in security-signoff-checklist.md. No shared schema with Nest legacy.
 
 ## Observability staging
 
-Structured logs with correlation id and form id per observability.md. Tracing OpenTelemetry recommended. Semantic alert stuck forms awaiting provider.
+Structured logs with correlation id and form id per observability.md. Semantic alerts semantic-alerts.md. Runbooks runbooks/.
 
 ## Security review before prod
 
-AuthZ every endpoint. Provider DTO audit. Secrets rotation. File ACL documents. S2S mTLS optional maturity path.
+security-signoff-checklist.md. AuthZ every endpoint. Provider DTO audit. Secrets rotation. File ACL documents. S2S mTLS optional maturity path.
 
 ## Release gate before pilot handover
 

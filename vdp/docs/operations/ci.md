@@ -32,7 +32,7 @@ Pre-handover. Команда cd vdp && make release-gate агрегирует в
 
 ## Staging smoke manual
 
-Опциональный workflow_dispatch staging-smoke не входит в обязательный PR green. Требует secrets STAGING_DOCS_URL, STAGING_MAIL_URL и аналогов вне репозитория. Используется только перед UAT на staging окружении. См. [staging-checklist.md](staging-checklist.md).
+Опциональный staging smoke: `./scripts/staging-smoke.sh` с `staging-env.example`. Не входит в обязательный PR green.
 
 ## Честность готовности
 

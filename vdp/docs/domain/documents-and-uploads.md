@@ -26,11 +26,9 @@ Provider prov_attach_proof — подтверждение платёжка ил�
 
 ## Хранение и hub
 
-Core хранит metadata документов в JSON формы. Генерация PDF и XLSX через outbox to hub.
+Core хранит metadata документов в JSON формы. Генерация PDF через outbox to hub с полным payload (`template_id` по агенту ПА). XLSX — `export.MinimalXLSX` на export endpoints.
 
-MVP stub. Hub возвращает docs/{id}/stub.pdf без prod URL. XLSX placeholder bytes PK xlsx-placeholder.
-
-Staging требует DOCS_URL и реальные адаптеры. См. operations/staging-checklist.md.
+Dev без DOCS_URL: hub stub `docs/{id}/stub.pdf`. Staging: DOCS_URL + `scripts/staging-smoke.sh`. См. operations/staging-checklist.md.
 
 ## ACL по ролям
 

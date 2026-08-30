@@ -34,11 +34,11 @@ Docs mail stub when URL empty; HTTP contract tested in CI. OCR not on user path.
 
 ## Stub inventory export
 
-XLSX placeholder bytes PK xlsx-placeholder documented in known-gaps.
+Nest/compliance XLSX — real OOXML. PDF — payload with PA template_id; file bytes from DOCS_URL service or dev stub.pdf.
 
 ## Dev secrets compose
 
-JWT_SECRET vdp-core-dev-secret. HUB_SHARED_SECRET vdp-s2s-dev-secret. Only for local compose never prod.
+JWT_SECRET vdp-core-dev-secret. HUB_SHARED_SECRET vdp-s2s-dev-secret. Only for local compose never prod. Core/hub exit on production with these defaults.
 
 ## Gate metrics reference
 
@@ -46,6 +46,6 @@ R1 form-payment 148/148 done. R12 matrix 331/331 in-scope done. go test pass cor
 
 ## Следующие шаги prod
 
-Staging env checklist real hub URLs. Security review. Deployed semantic alerting. Load testing. Nest data migration out of scope.
+Staging: `staging-env.example`, `scripts/staging-smoke.sh`. Security: `security-signoff-checklist.md`. Ops: `semantic-alerts.md`, runbooks. Load testing. Nest data migration out of scope.
 
 UAT сценарии: [uat-scenarios.md](uat-scenarios.md). Gaps: [known-gaps.md](known-gaps.md). CI: [ci.md](../operations/ci.md).

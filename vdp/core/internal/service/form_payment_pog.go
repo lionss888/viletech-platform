@@ -53,12 +53,10 @@ func (s *FormPaymentService) RequestPaymentOrderGeneration(ctx context.Context, 
 	if err := s.store.SaveForm(ctx, form); err != nil {
 		return err
 	}
-	return s.enqueue(ctx, form, events.TypeDocsGenerate, map[string]any{
-		"kind":       kind,
-		"direction":  string(form.Direction),
-		"attempt":    form.POGAttempts,
-		"idempotent": form.ID + "|" + kind + "|" + fmt.Sprint(form.POGAttempts),
-	})
+	payload := s.buildDocsGeneratePayload(ctx, form, kind)
+	payload["attempt"] = form.POGAttempts
+	payload["idempotent"] = form.ID + "|" + kind + "|" + fmt.Sprint(form.POGAttempts)
+	return s.enqueue(ctx, form, events.TypeDocsGenerate, payload)
 }
 
 // ApplyDocsGenerateResult attaches hub docs.generate result without changing form status.

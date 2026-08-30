@@ -49,7 +49,22 @@ func (p *Plugin) Execute(ctx context.Context, action string, params map[string]a
 			}
 			return nil
 		}
-		out, err := remote.PostJSON(ctx, p.baseURL, p.timeout, params)
+		body := map[string]any{
+			"event_id":        params["event_id"],
+			"form_payment_id": formPaymentID,
+		}
+		if nested, ok := params["payload"].(map[string]any); ok {
+			for k, v := range nested {
+				body[k] = v
+			}
+		}
+		for k, v := range params {
+			if k == "payload" || k == "event_id" || k == "form_payment_id" {
+				continue
+			}
+			body[k] = v
+		}
+		out, err := remote.PostJSON(ctx, p.baseURL, p.timeout, body)
 		if err != nil {
 			return err
 		}

@@ -26,7 +26,9 @@ Journey Root cancel admin. Unit root-flow.test. API E2E RD8 spot. UI E2E not cov
 
 Journey Bank channel badge. Unit bank-channel.test. API E2E RD9 spot. UI E2E bank-badge.spec.ts.
 
-Journey Happy path partial UI create to assign agent. Unit platform-create.test. API E2E not duplicated. UI E2E happy-path.spec.ts.
+Journey Manager org rating queue. Unit organization_test ListFiltered. API GET organization?rating= and awaiting_processing. UI demo filters on organizations registry (mock store).
+
+Journey Advance signing and shipment. Unit r5_multi_order_test. API E2E P5 sections compose-e2e.sh. UI E2E not covered.
 
 ## Статусы form payment
 
@@ -42,7 +44,7 @@ completed. Unit manager-close.test. Compose main. Playwright completed-journey m
 
 payment_refund_sent and refund variants. Unit refund tests. Compose RH2 full refund API. Not Playwright.
 
-advance_signing_order treasurer diadoc shipment corrections. Unit selective gates. Not compose E2E. Not Playwright. Documented as unit only honesty.
+advance_signing_order treasurer diadoc shipment corrections. Unit selective gates. Compose P5 advance_signing and shipment sections in compose-e2e.sh. Not Playwright. Documented honesty.
 
 ## Hub adapters
 

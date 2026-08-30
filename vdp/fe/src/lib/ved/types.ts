@@ -50,6 +50,7 @@ export type Organization = {
   inn: string;
   legalAddress: string;
   status: "approved" | "not_approved" | "waiting_verification";
+  rating?: "red" | "yellow" | "";
   createdAt: string;
 };
 

@@ -217,15 +217,36 @@ func (s *OrganizationService) Update(ctx context.Context, principal authz.Princi
 }
 
 func (s *OrganizationService) List(ctx context.Context, principal authz.Principal) ([]domain.Organization, error) {
+	return s.ListFiltered(ctx, principal, OrgListFilter{})
+}
+
+// OrgListFilter narrows manager/compliance organization queues.
+type OrgListFilter struct {
+	Rating             string
+	Status             string
+	AwaitingProcessing bool
+}
+
+func (s *OrganizationService) ListFiltered(ctx context.Context, principal authz.Principal, filter OrgListFilter) ([]domain.Organization, error) {
 	all, err := s.store.ListOrganizations(ctx)
 	if err != nil {
 		return nil, err
 	}
 	out := make([]domain.Organization, 0)
 	for _, org := range all {
-		if s.canView(principal, org) {
-			out = append(out, org)
+		if !s.canView(principal, org) {
+			continue
 		}
+		if filter.AwaitingProcessing && org.Status != domain.OrgAwaitingProcessing {
+			continue
+		}
+		if filter.Status != "" && string(org.Status) != filter.Status {
+			continue
+		}
+		if filter.Rating != "" && string(org.Rating) != filter.Rating {
+			continue
+		}
+		out = append(out, org)
 	}
 	return out, nil
 }
