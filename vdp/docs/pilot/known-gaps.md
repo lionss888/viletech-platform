@@ -8,27 +8,27 @@
 
 ## Hub integrations depth
 
-Docs mail OCR Diadoc TG 1C need prod adapter config. HTTP 200 with stub body in dev.
+Docs and mail HTTP contract verified in CI via make test-adapters with httptest.Server. Diadoc TG 1C OCR prod vendor need staging config. Dev compose uses stub when DOCS_URL or MAIL_URL empty.
 
 ## XLSX and templates
 
-Excel export placeholder. Template import path tested in core not full prod document fidelity.
+Excel export returns placeholder bytes PK xlsx-placeholder not real Excel. Template import path tested in core not full prod document fidelity. Staging replace generator or disable export flag.
 
 ## CI CD in vdp repo
 
-integration-gate documented. GitHub Actions workflow not committed in vdp. Manual make targets.
+GitHub Actions vdp-ci.yml jobs fast docs integration playwright. Release vdp-release.yml runs make release-gate. GitLab mirror documented in ci.md not implemented in MVP.
 
 ## Playwright UI coverage
 
-Specs cover happy path partial reject provider ACL bank badge. Full browser journey to completed not single spec yet. Backend compose-e2e covers full path.
+Six specs happy path partial reject provider ACL bank badge completed journey manager payment. Full browser matrix all roles times all statuses not covered. Backend compose-e2e covers API journeys including RH2 ICO reject refund full.
 
 ## Postgres test coverage
 
-Many unit tests memory driver. Integration postgres selective. compose uses real postgres.
+make test-integration with build tag integration runs five postgres tests in CI before compose-e2e. Unit HTTP gates remain memory driver by design for speed.
 
 ## Observability prod
 
-Structured logs exist. Distributed tracing semantic alerts stuck payments not operational runbooks in repo.
+Structured logs and observability.md baseline published. Distributed tracing semantic alerts stuck payments not operational runbooks or deployed alerting in repo.
 
 ## Migration from Nest
 

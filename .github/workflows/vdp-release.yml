@@ -1,0 +1,75 @@
+name: VDP Release Gate
+
+on:
+  workflow_dispatch:
+  push:
+    tags:
+      - "vdp-v*"
+
+concurrency:
+  group: vdp-release-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  release-gate:
+    name: release-gate
+    runs-on: ubuntu-latest
+    timeout-minutes: 75
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: vdp
+          POSTGRES_PASSWORD: vdp
+          POSTGRES_DB: postgres
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U vdp"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: "1.22"
+          cache-dependency-path: |
+            vdp/core/go.sum
+            vdp/hub/go.sum
+            vdp/shared/go.sum
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: npm
+          cache-dependency-path: vdp/fe/package-lock.json
+      - name: Bootstrap postgres for integration tests
+        env:
+          PGPASSWORD: vdp
+        run: |
+          psql -h localhost -U vdp -d postgres -v ON_ERROR_STOP=1 <<'SQL'
+          DO $$ BEGIN
+            IF NOT EXISTS (SELECT FROM pg_roles WHERE rolname = 'vdp_core') THEN
+              CREATE ROLE vdp_core LOGIN PASSWORD 'vdp_core';
+            END IF;
+            IF NOT EXISTS (SELECT FROM pg_roles WHERE rolname = 'vdp_hub') THEN
+              CREATE ROLE vdp_hub LOGIN PASSWORD 'vdp_hub';
+            END IF;
+          END $$;
+          SQL
+          psql -h localhost -U vdp -d postgres -tc "SELECT 1 FROM pg_database WHERE datname='vdp_core'" | grep -q 1 || \
+            psql -h localhost -U vdp -d postgres -c "CREATE DATABASE vdp_core OWNER vdp_core;"
+          psql -h localhost -U vdp -d postgres -tc "SELECT 1 FROM pg_database WHERE datname='vdp_hub'" | grep -q 1 || \
+            psql -h localhost -U vdp -d postgres -c "CREATE DATABASE vdp_hub OWNER vdp_hub;"
+      - name: Release gate
+        working-directory: vdp
+        env:
+          DATABASE_URL_CORE: postgres://vdp_core:vdp_core@localhost:5432/vdp_core?sslmode=disable
+          DATABASE_URL_HUB: postgres://vdp_hub:vdp_hub@localhost:5432/vdp_hub?sslmode=disable
+        run: |
+          make db-migrate
+          make release-gate
+      - name: Compose down
+        if: always()
+        working-directory: vdp
+        run: make compose-down

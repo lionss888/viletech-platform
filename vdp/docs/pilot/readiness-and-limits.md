@@ -10,11 +10,11 @@
 
 Оценка 7 из 10 для MVP demo. Оценка 6 из 10 для prod без hardening.
 
-Сильные unit и HTTP gate tests. compose reproducible. Слабее prod observability CI postgres coverage everywhere.
+Сильные unit и HTTP gate tests. compose reproducible. RH program добавил GitHub CI postgres integration expanded E2E release-gate. Слабее prod observability deployed alerting real vendor integrations.
 
 ## Передача пилот
 
-Оценка 65–70 процентов готовности к UAT demo с оговорками. Prod go-live 35–45 процентов без доработок.
+Оценка 72–75 процентов готовности к UAT demo при green make release-gate и принятии known-gaps. Prod go-live 40–45 процентов без staging vendor config security sign-off operational monitoring.
 
 ## Что можно показывать на пилоте
 
@@ -22,19 +22,19 @@
 
 Role cabinets ICO ECO Manager Provider Bank channel smoke.
 
-Unit integration compose-e2e playwright partial browser suite.
+Unit postgres integration compose-e2e playwright six spec browser suite. CI vdp-ci.yml on main.
 
 ## Что нельзя обещать на пилоте
 
-100 процентов готовности. Полный паритет Nest. Prod Diadoc mail OCR без config. Real XLSX. Prod secrets in compose defaults.
+100 процентов готовности. Полный паритет Nest. Prod Diadoc mail OCR without staging config. Real XLSX. Prod secrets in compose defaults. Full browser matrix all statuses.
 
 ## Stub inventory hub
 
-Docs generate returns stub pdf path. Mail notify stub. OCR not on user path. Diadoc TG 1C partner callback only without vendor URL.
+Docs mail stub when URL empty; HTTP contract tested in CI. OCR not on user path. Diadoc TG 1C partner callback only without vendor URL.
 
 ## Stub inventory export
 
-XLSX placeholder bytes PK xlsx-placeholder.
+XLSX placeholder bytes PK xlsx-placeholder documented in known-gaps.
 
 ## Dev secrets compose
 
@@ -42,10 +42,10 @@ JWT_SECRET vdp-core-dev-secret. HUB_SHARED_SECRET vdp-s2s-dev-secret. Only for l
 
 ## Gate metrics reference
 
-R1 form-payment 148/148 done. R12 matrix 331/331 in-scope done. go test pass core hub. make integration-gate pass on stack.
+R1 form-payment 148/148 done. R12 matrix 331/331 in-scope done. go test pass core hub. make integration-gate pass on stack. make release-gate recommended before handover.
 
 ## Следующие шаги prod
 
-CI pipeline integration-gate. Staging env checklist. Security review. Full UI playwright to completed. Real hub URLs.
+Staging env checklist real hub URLs. Security review. Deployed semantic alerting. Load testing. Nest data migration out of scope.
 
-UAT сценарии: [uat-scenarios.md](uat-scenarios.md). Gaps: [known-gaps.md](known-gaps.md).
+UAT сценарии: [uat-scenarios.md](uat-scenarios.md). Gaps: [known-gaps.md](known-gaps.md). CI: [ci.md](../operations/ci.md).

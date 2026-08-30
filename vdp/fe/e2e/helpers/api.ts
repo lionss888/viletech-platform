@@ -163,6 +163,47 @@ export async function createProviderProcessingForm(tokens: ApiTokens, suffix: st
   return id;
 }
 
+/** Form at payment_received with provider assigned (manager payment CTAs). */
+export async function createPaymentReceivedForm(tokens: ApiTokens, suffix: string): Promise<string> {
+  const id = await createFormAccepted(tokens, suffix);
+  await authPut(tokens.manager, `/api/v1/manager/form-payment/${id}/order/signing`);
+  await authPut(tokens.user, `/api/v1/site/form-payment/${id}/order`);
+  await authPut(tokens.manager, `/api/v1/manager/form-payment/${id}/order/start`);
+  await authPut(tokens.manager, `/api/v1/manager/form-payment/${id}/order/accept`);
+  await authPut(tokens.manager, `/api/v1/manager/form-payment/${id}/payment/received`);
+  await authPost(tokens.manager, `/api/v1/forms/${id}/provider`, {
+    provider_id: PROVIDER_ID,
+    client_agreed: true,
+  });
+  return id;
+}
+
+/** API-only path User → completed (mirror compose-e2e main). */
+export async function createCompletedForm(tokens: ApiTokens, suffix: string): Promise<string> {
+  const id = await createFormAccepted(tokens, suffix);
+  await authPost(tokens.manager, "/api/v1/agents", { name: `PW Agent ${suffix}`, inn: "7701" });
+  await authPut(tokens.manager, `/api/v1/manager/form-payment/${id}/order/signing`);
+  await authPut(tokens.user, `/api/v1/site/form-payment/${id}/order`);
+  await authPut(tokens.manager, `/api/v1/manager/form-payment/${id}/order/start`);
+  await authPut(tokens.manager, `/api/v1/manager/form-payment/${id}/order/accept`);
+  await authPut(tokens.manager, `/api/v1/manager/form-payment/${id}/payment/received`);
+  await authPost(tokens.manager, `/api/v1/forms/${id}/provider`, {
+    provider_id: PROVIDER_ID,
+    client_agreed: true,
+  });
+  await authPut(tokens.manager, `/api/v1/manager/form-payment/${id}/payment/start`);
+  await authPut(tokens.provider, `/api/v1/provider/form-payment/${id}/payment/start`);
+  await authPut(tokens.provider, `/api/v1/provider/form-payment/${id}/payment/sent`);
+  await authPut(tokens.manager, `/api/v1/manager/form-payment/${id}/report/signing`);
+  await authPut(tokens.manager, `/api/v1/manager/form-payment/${id}/report/accept`);
+  await authPut(tokens.manager, `/api/v1/manager/form-payment/${id}/completed`);
+  const st = await formStatus(tokens.manager, `/api/v1/manager/form-payment/${id}`);
+  if (st !== "completed") {
+    throw new Error(`expected completed, got ${st}`);
+  }
+  return id;
+}
+
 export async function assertCoreHealthy(): Promise<void> {
   const res = await fetch(`${CORE_URL}/api/v1/health`);
   if (!res.ok) {

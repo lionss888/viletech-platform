@@ -1,3 +1,5 @@
+//go:build integration
+
 package postgres_test
 
 import (
@@ -76,5 +78,50 @@ func TestPostgresStoreAndOutbox(t *testing.T) {
 	}
 	if err := box.MarkPublished(ctx, eventID); err != nil {
 		t.Fatal(err)
+	}
+}
+
+func TestPostgresFormStatusTransition(t *testing.T) {
+	url := os.Getenv("DATABASE_URL")
+	if url == "" {
+		url = "postgres://vdp_core:vdp_core@localhost:5432/vdp_core?sslmode=disable"
+	}
+	t.Setenv("STORE_DRIVER", "postgres")
+	ctx := context.Background()
+	db, err := postgres.OpenDB(ctx, url)
+	if err != nil {
+		t.Skip("postgres unavailable:", err)
+	}
+	t.Cleanup(func() { _ = db.Close() })
+	store := postgres.NewStore(db)
+	seed.Dev(store)
+	formID := fmt.Sprintf("%032x", time.Now().UnixNano())
+	formID = formID[len(formID)-32:]
+	form := formpayment.Form{
+		ID:             formID,
+		AccountID:      seed.UserID,
+		OrganizationID: seed.OrgID,
+		Status:         formpayment.StatusDraft,
+		Direction:      formpayment.DirectionImport,
+		Kind:           formpayment.KindGood,
+		Currency:       "EUR",
+		InvoiceAmount:  "100",
+		CreatedAt:      time.Now().UTC(),
+		UpdatedAt:      time.Now().UTC(),
+	}
+	if err := store.SaveForm(ctx, form); err != nil {
+		t.Fatal("SaveForm:", err)
+	}
+	form.Status = formpayment.StatusFormWaitingVerification
+	form.UpdatedAt = time.Now().UTC()
+	if err := store.SaveForm(ctx, form); err != nil {
+		t.Fatal("SaveForm transition:", err)
+	}
+	got, err := store.FormByID(ctx, formID)
+	if err != nil {
+		t.Fatal("FormByID:", err)
+	}
+	if got.Status != formpayment.StatusFormWaitingVerification {
+		t.Fatalf("status=%s want form_waiting_verification", got.Status)
 	}
 }

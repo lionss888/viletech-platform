@@ -49,3 +49,6 @@ isProject: false
 
 ## Note
 Исполнение отложено — этот файл готов как backlog plan.
+
+## RH2 expansion scope
+Дальнейшее расширение Playwright и compose-e2e (completed-journey, manager-payment, ICO/reject/refund API sections, e2e-coverage-matrix.md) выполнено программой RH2 Reliability Hardening, не retroactive closure todos RD11.

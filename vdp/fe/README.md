@@ -38,7 +38,7 @@ Lovable git constraints: см. AGENTS.md — не force-push pushed history.
 
 Unit: npm test в vdp/fe.
 
-Integration gate, parity RD, Playwright: [../docs/development/testing.md](../docs/development/testing.md).
+Integration gate, parity RD, Playwright: [../docs/development/testing.md](../docs/development/testing.md). CI topology: [../docs/operations/ci.md](../docs/operations/ci.md). E2E matrix: [../docs/development/e2e-coverage-matrix.md](../docs/development/e2e-coverage-matrix.md).
 
 ## Copy layer
 

@@ -8,7 +8,15 @@
 
 ## test
 
-Unit-тесты Go в core и hub. Команда make test.
+Unit-тесты Go в core и hub без build tag integration. Команда make test.
+
+## test-integration
+
+Postgres integration tests с тегом integration в core store outbox и hub inbox. Требует DATABASE_URL_CORE и DATABASE_URL_HUB. Команда make test-integration.
+
+## test-adapters
+
+Hub adapter HTTP tests docs mail. Команда make test-adapters. Входит в CI job fast.
 
 ## build
 
@@ -53,3 +61,7 @@ Browser E2E через Docker. Команды make playwright-e2e, make compose-
 ## docs-format-check
 
 Проверка markdown в vdp/docs и vdp/README.md на запрещённую разметку. Команда make docs-format-check.
+
+## release-gate
+
+Pre-handover агрегат RH4. Последовательность make test-integration, make test-adapters, make integration-gate, make playwright-e2e, make docs-format-check. Требует docker postgres для compose и playwright. Команда make release-gate. CI эквивалент workflow vdp-release.yml.

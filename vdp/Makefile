@@ -1,4 +1,4 @@
-.PHONY: deps test build db-setup db-migrate run-hub run-core run smoke stop compose-up compose-up-prod compose-down compose-ps compose-e2e compose-fe-smoke compose-fe-prod-smoke compose-playwright integration-gate playwright-e2e docs-format-check
+.PHONY: deps test test-integration test-adapters build db-setup db-migrate run-hub run-core run smoke stop compose-up compose-up-prod compose-down compose-ps compose-e2e compose-fe-smoke compose-fe-prod-smoke compose-playwright integration-gate playwright-e2e docs-format-check release-gate
 
 CORE_DIR := core
 HUB_DIR := hub
@@ -21,6 +21,13 @@ deps:
 test:
 	cd $(CORE_DIR) && go test ./...
 	cd $(HUB_DIR) && go test ./...
+
+test-integration:
+	cd $(CORE_DIR) && go test -tags=integration ./...
+	cd $(HUB_DIR) && go test -tags=integration ./...
+
+test-adapters:
+	cd $(HUB_DIR) && go test ./internal/adapters/...
 
 build:
 	mkdir -p bin
@@ -145,3 +152,14 @@ playwright-e2e: compose-playwright
 docs-format-check:
 	@chmod +x scripts/docs-format-check.sh
 	@./scripts/docs-format-check.sh
+
+# RH4: pre-handover — all reliability gates (requires compose for e2e/playwright).
+release-gate:
+	$(MAKE) test-integration
+	$(MAKE) test-adapters
+	$(MAKE) integration-gate
+	@echo "release-gate: pause 65s for gateway rate-limit window before browser E2E"
+	@sleep 65
+	$(MAKE) playwright-e2e
+	$(MAKE) docs-format-check
+	@echo "release-gate green"

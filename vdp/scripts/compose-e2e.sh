@@ -19,6 +19,11 @@ auth_put() {
   curl -sf -X PUT "$BASE$path" -H "Authorization: Bearer $token" -H 'Content-Type: application/json' -d '{}' >/dev/null
 }
 
+auth_put_json() {
+  local token="$1" path="$2" body="$3"
+  curl -sf -X PUT "$BASE$path" -H "Authorization: Bearer $token" -H 'Content-Type: application/json' -d "$body" >/dev/null
+}
+
 auth_post() {
   local token="$1" path="$2" body="$3"
   curl -sf -X POST "$BASE$path" -H "Authorization: Bearer $token" -H 'Content-Type: application/json' -d "$body"
@@ -175,5 +180,75 @@ if [[ "$BCH" != "bank" ]]; then
 fi
 echo "RD9 bank spot ok"
 
+echo "== RH2 ICO org-pending spot =="
+FORM5=$(auth_post "$USER_T" /api/v1/site/form-payment \
+  '{"currency":"USD","invoice_amount":"120","no_documents":true,"contract_number":"RH2-ICO"}')
+ID5=$(echo "$FORM5" | python3 -c 'import sys,json; print(json.load(sys.stdin)["id"])')
+auth_post "$USER_T" "/api/v1/forms/$ID5/actions/recognize_complete" '{}' >/dev/null
+auth_put "$USER_T" "/api/v1/site/form-payment/$ID5/form/accept"
+ST5=$(form_status "$USER_T" "/api/v1/site/form-payment/$ID5")
+if [[ "$ST5" == "organization_waiting_verification" ]]; then
+  auth_put "$ICO_T" "/api/v1/admin/internal-compliance-officer/organization/66666666-6666-6666-6666-666666666666/approve"
+  auth_put "$ICO_T" "/api/v1/ico/form-payment/$ID5/form/start"
+  auth_put "$ICO_T" "/api/v1/ico/form-payment/$ID5/form/accept"
+  echo "RH2 ICO org-pending path ok form=$ID5"
+elif [[ "$ST5" == "form_waiting_verification" ]]; then
+  echo "RH2 ICO spot skipped (org already approved) form=$ID5 status=$ST5"
+else
+  echo "FAIL RH2 ICO entry status=$ST5 form=$ID5" >&2
+  exit 1
+fi
+
+echo "== RH2 ECO reject + user resubmit =="
+FORM6=$(auth_post "$USER_T" /api/v1/site/form-payment \
+  '{"currency":"USD","invoice_amount":"130","no_documents":true,"contract_number":"RH2-REJECT"}')
+ID6=$(echo "$FORM6" | python3 -c 'import sys,json; print(json.load(sys.stdin)["id"])')
+auth_post "$USER_T" "/api/v1/forms/$ID6/actions/recognize_complete" '{}' >/dev/null
+auth_put "$USER_T" "/api/v1/site/form-payment/$ID6/form/accept"
+if [[ "$(form_status "$USER_T" "/api/v1/site/form-payment/$ID6")" == "organization_waiting_verification" ]]; then
+  auth_put "$ICO_T" "/api/v1/admin/internal-compliance-officer/organization/66666666-6666-6666-6666-666666666666/approve"
+  auth_put "$ICO_T" "/api/v1/ico/form-payment/$ID6/form/start"
+  auth_put "$ICO_T" "/api/v1/ico/form-payment/$ID6/form/accept"
+fi
+auth_put "$ECO_T" "/api/v1/eco/form-payment/$ID6/form/start"
+auth_put_json "$ECO_T" "/api/v1/eco/form-payment/$ID6/form/reject" \
+  '{"reason":"RH2: уточните контракт","mark":"docs"}'
+ST6=$(form_status "$USER_T" "/api/v1/site/form-payment/$ID6")
+if [[ "$ST6" != "form_waiting_corrections" ]]; then
+  echo "FAIL RH2 reject status=$ST6 want form_waiting_corrections" >&2
+  exit 1
+fi
+auth_put "$USER_T" "/api/v1/site/form-payment/$ID6/form/accept-corrections"
+ST6B=$(form_status "$USER_T" "/api/v1/site/form-payment/$ID6")
+if [[ "$ST6B" != "form_waiting_verification" && "$ST6B" != "form_verification" ]]; then
+  echo "FAIL RH2 resubmit status=$ST6B" >&2
+  exit 1
+fi
+echo "RH2 reject/resubmit ok form=$ID6"
+
+echo "== RH2 refund full cycle =="
+FORM7=$(auth_post "$USER_T" /api/v1/site/form-payment \
+  '{"currency":"USD","invoice_amount":"1000","no_documents":true,"contract_number":"RH2-REFUND"}')
+ID7=$(echo "$FORM7" | python3 -c 'import sys,json; print(json.load(sys.stdin)["id"])')
+auth_post "$USER_T" "/api/v1/forms/$ID7/actions/recognize_complete" '{}' >/dev/null
+auth_put "$USER_T" "/api/v1/site/form-payment/$ID7/form/accept"
+advance_compliance "$ID7"
+auth_put "$MGR_T" "/api/v1/manager/form-payment/$ID7/order/signing"
+auth_put "$USER_T" "/api/v1/site/form-payment/$ID7/order"
+auth_put "$MGR_T" "/api/v1/manager/form-payment/$ID7/order/start"
+auth_put "$MGR_T" "/api/v1/manager/form-payment/$ID7/order/accept"
+auth_put "$MGR_T" "/api/v1/manager/form-payment/$ID7/payment/received"
+auth_post "$MGR_T" "/api/v1/manager/form-payment/$ID7/refund/init" \
+  '{"amount":"1000","currency":"USD","comment":"RH2 full refund"}' >/dev/null
+auth_post "$MGR_T" "/api/v1/forms/$ID7/refund/file" '{"file_id":"rf-rh2-1"}' >/dev/null
+auth_put "$MGR_T" "/api/v1/manager/form-payment/$ID7/refund/start"
+auth_post "$MGR_T" "/api/v1/forms/$ID7/refund/sent" '{"comment":"RH2 sent"}' >/dev/null
+ST7=$(form_status "$MGR_T" "/api/v1/manager/form-payment/$ID7")
+if [[ "$ST7" != "payment_refund_sent" ]]; then
+  echo "FAIL RH2 refund full status=$ST7 want payment_refund_sent" >&2
+  exit 1
+fi
+echo "RH2 refund full ok form=$ID7"
+
 curl -sf -X POST "$BASE/api/v1/internal/outbox/flush" -H "X-VDP-S2S: $S2S" >/dev/null
-echo "RD10 compose E2E green (main=$ID RD7=$ID3 RD8=$ID4)"
+echo "RH10 compose E2E green (main=$ID RD7=$ID3 RD8=$ID4 RH2=$ID6)"

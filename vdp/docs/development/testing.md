@@ -33,9 +33,9 @@ cd vdp
 make integration-gate
 ```
 
-Последовательность: npm test в fe, make test, make compose-e2e. Compose-e2e поднимает стек и прогоняет scripts/compose-e2e.sh: основной путь User to completed, spot RD7 provider, RD8 root admin, RD9 bank channel, refund 409 smoke.
+Последовательность: npm test в fe, make test, make compose-e2e. Compose-e2e поднимает стек и прогоняет scripts/compose-e2e.sh: основной путь User to completed, spot RD7 provider, RD8 root admin, RD9 bank channel, refund 409 smoke, RH2 ICO org-pending, ECO reject resubmit, refund full cycle.
 
-## Playwright RD11
+## Playwright RD11 и RH2
 
 Предусловие: make compose-up.
 
@@ -55,7 +55,28 @@ npx playwright install chromium
 PLAYWRIGHT_BASE_URL=http://127.0.0.1:5173 CORE_URL=http://127.0.0.1:8080 npm run test:e2e
 ```
 
-Спеки e2e/: happy-path, reject-path, provider-acl, bank-badge.
+Спеки e2e/: happy-path, reject-path, provider-acl, bank-badge, completed-journey, manager-payment. Матрица покрытия: [e2e-coverage-matrix.md](e2e-coverage-matrix.md).
+
+## Слои backend тестов RH1
+
+Слой 1 unit memory. Команда make test без build tag integration. Быстрые HTTP gate smoke tests в core используют memory store намеренно.
+
+Слой 2 postgres integration. Команда make test-integration с тегом integration и env DATABASE_URL_CORE, DATABASE_URL_HUB. Покрывает store, outbox, hub inbox idempotency. Skip с сообщением если postgres недоступен локально.
+
+Слой 3 compose API E2E. Команда make compose-e2e поднимает docker stack STORE_DRIVER postgres и scripts/compose-e2e.sh включая RH2 ICO reject refund sections.
+
+Слой 4 browser E2E. make playwright-e2e отдельный failure domain.
+
+Слой 5 release. make release-gate агрегирует все слои per RH4.
+
+## Hub adapter tests RH3
+
+```sh
+cd vdp
+make test-adapters
+```
+
+HTTP fake-server tests для docs и mail в CI job fast.
 
 ## Parity по программе RD
 
@@ -176,12 +197,25 @@ cd vdp
 make docs-format-check
 ```
 
-## CI sketch
+## CI
 
-Шаг pipeline. cd vdp && make compose-up.
+GitHub Actions workflow vdp-ci.yml. Job fast на каждом PR. Job integration и playwright на main nightly или PR с label integration. Release workflow vdp-release.yml на tag vdp-v* и workflow_dispatch. Подробнее [ci.md](../operations/ci.md).
 
-Шаг pipeline. cd vdp && make integration-gate.
+Локальный эквивалент fast.
 
-Шаг pipeline опционально. cd vdp && make playwright-e2e.
+```sh
+cd vdp/fe && npm test
+cd vdp && make test && make test-adapters
+```
 
-Шаг pipeline docs. cd vdp && make docs-format-check.
+Локальный эквивалент integration.
+
+```sh
+cd vdp && make integration-gate
+```
+
+Локальный pre-handover.
+
+```sh
+cd vdp && make release-gate
+```

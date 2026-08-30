@@ -76,6 +76,7 @@ services:
       HUB_URL: http://hub:8081
       HUB_SHARED_SECRET: vdp-s2s-dev-secret
       JWT_SECRET: vdp-core-dev-secret
+      GATEWAY_RATE_LIMIT: "2000"
       DATABASE_URL: postgres://vdp_core:vdp_core@postgres-core:5432/vdp_core?sslmode=disable
     ports:
       - "8080:8080"
