@@ -1,0 +1,11 @@
+{
+  "mcpServers": {
+    "lovable": {
+      "type": "http",
+      "url": "https://mcp.lovable.dev/?src=settings",
+      "auth": {
+        "CLIENT_ID": "6d465f583e1e4ce5801b1616f735670c"
+      }
+    }
+  }
+}
