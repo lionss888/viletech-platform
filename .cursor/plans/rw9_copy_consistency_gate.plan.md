@@ -1,19 +1,19 @@
 ---
 name: RW9 Copy Consistency Gate
-overview: "Сквозная проверка согласованности терминов между ролями после RW1–RW8. Unit на copy helpers. Root не трогаем."
+overview: Сквозная проверка согласованности терминов между ролями после RW1–RW8. Unit на copy helpers. Root не трогаем.
 todos:
   - id: rw9-cross-role
     content: Пройти User→completed и сверить labels между кабинетами
-    status: pending
+    status: completed
   - id: rw9-glossary-sync
     content: Синхронизировать glossariy-po-rolyam с финальными labels
-    status: pending
+    status: completed
   - id: rw9-tests
     content: npm test на copy helpers / role-voice
-    status: pending
+    status: completed
   - id: rw9-gate
     content: "DoD: нет конфликтов терминов P0; root не тронут"
-    status: pending
+    status: completed
 isProject: false
 ---
 

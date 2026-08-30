@@ -44,6 +44,17 @@ export {
   managerStageLabel,
 } from "./manager-close-copy";
 export {
+  COPY_JOURNEY,
+  ROLE_ENTITY_PRIMARY,
+  ROOT_COPY_SNAPSHOT,
+  collectAllCopyConsistencyIssues,
+  collectBankRootBleedIssues,
+  collectEntityPrimaryIssues,
+  collectJourneyLabelMismatches,
+  collectPaymentSentAlignmentIssues,
+  collectProviderPiiIssues,
+} from "./copy-consistency";
+export {
   BANK_CHANNEL_BADGE,
   BANK_CORRELATION,
   BANK_ORGANIZATIONS,
