@@ -9,6 +9,7 @@ import { smokeCreateBankForm } from "@/lib/api/bank";
 import { actionsFor } from "@/lib/ved/actions";
 import { APP_SEED_ACCOUNTS } from "@/lib/ved/app-seed-accounts";
 import { BANK_ORG_ID } from "@/lib/ved/bank-channel";
+import { BANK_CHANNEL_BADGE, BANK_TESTING, formatBankCreateSuccess } from "@/lib/ved/copy/bank-copy";
 import { money } from "@/lib/ved/format";
 import { usePlatformMode } from "@/lib/ved/platform-mode";
 import { ROLES } from "@/lib/ved/roles";
@@ -37,7 +38,7 @@ const SCENARIOS: { title: string; steps: string[] }[] = [
       "Менеджер: «Прикрепить агентский договор», затем «Сформировать поручение принципала».",
       "Клиент: «Загрузить подписанное поручение», далее «Загрузить платёжное поручение».",
       "Менеджер: «Назначить провайдера» → «Запустить исполнение платежа».",
-      "Провайдер: «Платёж отправлен».",
+      "Провайдер: «Подтвердить отправку платежа».",
       "Менеджер: отчёт агента → подтверждение → отгрузка → «Закрыть заявку».",
     ],
   },
@@ -46,7 +47,7 @@ const SCENARIOS: { title: string; steps: string[] }[] = [
     steps: [
       "Комплаенс: «Вернуть на коррекцию» с причиной — проверьте баннер комментария в карточке.",
       "Клиент: статус «Возвращена на коррекцию» → «Отправить исправления».",
-      "Провайдер: «Вернуть менеджеру» — заявка уходит в «Уточнение».",
+      "Провайдер: «Вернуть на уточнение менеджеру» — заявка уходит в «Уточнение».",
     ],
   },
   {
@@ -58,12 +59,8 @@ const SCENARIOS: { title: string; steps: string[] }[] = [
     ],
   },
   {
-    title: "Bank API channel",
-    steps: [
-      "POST /api/v1/bank/forms от bank@vdp.local с Idempotency-Key и correlation_id.",
-      "На карточке заявки: badge «Канал: Bank API» и corr: …",
-      "В /organizations (manager/root): Bank settings для org с client_type=bank.",
-    ],
+    title: BANK_TESTING.scenarioTitle,
+    steps: [...BANK_TESTING.scenarioSteps],
   },
   {
     title: "Реестр и массовые действия",
@@ -124,11 +121,9 @@ export function TestingPage() {
         `idem-${Date.now()}`,
       );
       await queryClient.invalidateQueries({ queryKey: ["forms"] });
-      setBankResult(
-        `Создана заявка ${form.id} · channel=${form.channel} · corr=${form.correlation_id ?? correlationId} · откройте карточку для badge`,
-      );
+      setBankResult(formatBankCreateSuccess(form.id, form.correlation_id ?? correlationId));
     } catch (e) {
-      setBankError(e instanceof Error ? e.message : "Bank API error");
+      setBankError(e instanceof Error ? e.message : BANK_TESTING.simulateError);
     } finally {
       setBankBusy(false);
     }
@@ -138,17 +133,15 @@ export function TestingPage() {
     <VedAppShell title="Тестовые данные и сценарии" subtitle="Для ручной проверки интерфейса по всем ролям">
       {mode === "app" && (
         <div className="panel p-4">
-          <p className="label-caps">Bank API smoke</p>
-          <p className="mt-1 text-xs text-muted-foreground">
-            Логин bank@vdp.local (отдельный токен, сессия UI не меняется) · org {BANK_ORG_ID}
-          </p>
+          <p className="label-caps">{BANK_TESTING.smokeTitle}</p>
+          <p className="mt-1 text-xs text-muted-foreground">{BANK_TESTING.smokeHint(BANK_ORG_ID)}</p>
           <button
             type="button"
             disabled={bankBusy}
             onClick={() => void simulateBankCreate()}
             className="mt-3 rounded-md bg-accent px-3 py-2 text-sm font-semibold text-accent-foreground disabled:opacity-50"
           >
-            {bankBusy ? "Запрос…" : "Создать bank-заявку"}
+            {bankBusy ? BANK_TESTING.simulateBusy : BANK_TESTING.simulateButton}
           </button>
           {bankResult && <p className="mt-2 text-xs text-done">{bankResult}</p>}
           {bankError && <p className="mt-2 text-xs text-destructive">{bankError}</p>}
@@ -231,9 +224,9 @@ export function TestingPage() {
                     </td>
                     <td className="py-2 pr-4 text-xs">
                       {f.channel === "bank" ? (
-                        <span className="rounded-md bg-wait-soft px-1.5 py-0.5 font-semibold text-wait">Bank API</span>
+                        <span className="rounded-md bg-wait-soft px-1.5 py-0.5 font-semibold text-wait">{BANK_CHANNEL_BADGE.bankShort}</span>
                       ) : (
-                        <span className="text-muted-foreground">UI</span>
+                        <span className="text-muted-foreground">{BANK_CHANNEL_BADGE.uiShort}</span>
                       )}
                     </td>
                     <td className="py-2 pr-4 text-xs text-muted-foreground">{statusMeta(f.status).stage}</td>

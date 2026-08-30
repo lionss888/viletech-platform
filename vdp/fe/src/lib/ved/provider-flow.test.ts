@@ -121,11 +121,13 @@ describe("provider payment actions", () => {
     expect(ids).toEqual(["prov_payment_start"]);
   });
 
-  it("payment_processing exposes attach proof, sent, return", () => {
-    const ids = actionsFor("provider", "payment_processing").map((a) => a.id);
+  it("payment_processing exposes attach proof, sent, return with provider labels", () => {
+    const actions = actionsFor("provider", "payment_processing");
+    const ids = actions.map((a) => a.id);
     expect(ids).toContain("prov_attach_proof");
     expect(ids).toContain("prov_payment_sent");
     expect(ids).toContain("prov_payment_return");
+    expect(actions.find((a) => a.id === "prov_payment_sent")?.label).toBe("Подтвердить отправку платежа");
   });
 
   it("attach proof is set_confirmation side effect, not immediate sent", () => {

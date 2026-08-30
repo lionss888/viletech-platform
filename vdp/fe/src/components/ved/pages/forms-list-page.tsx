@@ -6,7 +6,7 @@ import { VedFormLink, VedLink } from "@/components/ved/VedLink";
 import { Modal, ModalButton } from "@/components/ved/Modal";
 import { DirectionTag, StatusBadge } from "@/components/ved/StatusBadge";
 import { ChannelBadge } from "@/components/ved/ChannelBadge";
-import { ECO_FORMS_LIST, ICO_FORMS_LIST, statusFilterLabelForRole, USER_FORMS_LIST } from "@/lib/ved/copy";
+import { ECO_FORMS_LIST, ICO_FORMS_LIST, PROVIDER_FORMS_LIST, statusFilterLabelForRole, USER_FORMS_LIST } from "@/lib/ved/copy";
 import { actionsFor } from "@/lib/ved/actions";
 import { money } from "@/lib/ved/format";
 import { daysIdle, stuckForms } from "@/lib/ved/health";
@@ -81,7 +81,9 @@ export function FormsList() {
             ? ICO_FORMS_LIST.title
             : role === "compliance_officer"
               ? ECO_FORMS_LIST.title
-              : "Реестр платёжных заявок"
+              : role === "provider"
+                ? PROVIDER_FORMS_LIST.title
+                : "Реестр платёжных заявок"
       }
       subtitle={
         role === "user"
@@ -90,18 +92,43 @@ export function FormsList() {
             ? ICO_FORMS_LIST.subtitle(scoped.length)
             : role === "compliance_officer"
               ? ECO_FORMS_LIST.subtitle(scoped.length)
-              : `${roleTitle(role)} · видимых заявок: ${scoped.length}`
+              : role === "provider"
+                ? PROVIDER_FORMS_LIST.subtitle(scoped.length)
+                : `${roleTitle(role)} · видимых заявок: ${scoped.length}`
       }
     >
       <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-        {[
-          role === "root"
-            ? { label: "Зависшие заявки", value: stuck.length }
-            : { label: "Требуют моего действия", value: scoped.filter((f) => actionsFor(role, f.status).length > 0).length },
-          { label: "На комплаенсе", value: (counters.get("organization_verification") ?? 0) + (counters.get("form_verification") ?? 0) },
-          { label: "В платеже", value: counters.get("payment") ?? 0 },
-          { label: "Закрыто", value: counters.get("completed") ?? 0 },
-        ].map((card) => (
+        {(role === "root"
+          ? [{ label: "Зависшие заявки", value: stuck.length }]
+          : role === "provider"
+            ? [
+                {
+                  label: PROVIDER_FORMS_LIST.counterActionRequired,
+                  value: scoped.filter((f) => actionsFor(role, f.status).length > 0).length,
+                },
+                { label: PROVIDER_FORMS_LIST.counterInPayment, value: counters.get("payment") ?? 0 },
+                {
+                  label: PROVIDER_FORMS_LIST.counterActiveSum,
+                  value: money(
+                    scoped.reduce((acc, f) => acc + f.amountMinor, 0),
+                    scoped[0]?.currency ?? "USD",
+                  ),
+                },
+                { label: PROVIDER_FORMS_LIST.counterClosed, value: counters.get("completed") ?? 0 },
+              ]
+            : [
+                {
+                  label: "Требуют моего действия",
+                  value: scoped.filter((f) => actionsFor(role, f.status).length > 0).length,
+                },
+                {
+                  label: "На комплаенсе",
+                  value: (counters.get("organization_verification") ?? 0) + (counters.get("form_verification") ?? 0),
+                },
+                { label: "В платеже", value: counters.get("payment") ?? 0 },
+                { label: "Закрыто", value: counters.get("completed") ?? 0 },
+              ]
+        ).map((card) => (
           <div key={card.label} className="panel p-4">
             <p className="label-caps">{card.label}</p>
             <p className="mt-1 font-mono text-2xl font-semibold">{card.value}</p>
@@ -145,7 +172,9 @@ export function FormsList() {
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             placeholder={
-              role === "provider" ? "Поиск: номер, инвойс, контрагент, организация" : "Поиск: номер, инвойс, контрагент, клиент"
+              role === "provider"
+                ? PROVIDER_FORMS_LIST.searchPlaceholder
+                : "Поиск: номер, инвойс, контрагент, клиент"
             }
             className="field max-w-xs"
           />
@@ -262,7 +291,11 @@ export function FormsList() {
                         ? ICO_FORMS_LIST.emptyFilter
                         : role === "compliance_officer"
                           ? ECO_FORMS_LIST.emptyFilter
-                          : "Нет заявок под текущий фильтр"}
+                          : role === "provider"
+                            ? scoped.length === 0
+                              ? PROVIDER_FORMS_LIST.emptyRegistry
+                              : PROVIDER_FORMS_LIST.emptyFilter
+                            : "Нет заявок под текущий фильтр"}
                   </td>
                 </tr>
               )}

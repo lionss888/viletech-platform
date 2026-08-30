@@ -4,13 +4,13 @@ overview: "Копирайт Provider: исполнение платежа, по�
 todos:
   - id: rw7-acl-copy
     content: Убрать/не вводить copy с ПДн и колонкой Клиент
-    status: pending
+    status: completed
   - id: rw7-payment-cta
     content: Labels prov_payment_* / attach proof
-    status: pending
+    status: completed
   - id: rw7-gate
     content: "DoD: provider voice + ACL copy; root не тронут"
-    status: pending
+    status: completed
 isProject: false
 ---
 

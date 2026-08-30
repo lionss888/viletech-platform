@@ -40,8 +40,11 @@ import {
   isManagerClosePhaseStatus,
   isManagerContractPhaseStatus,
   isManagerPaymentPhaseStatus,
+  PROVIDER_FORM_DETAIL,
   USER_CORRECTIONS_BANNER,
   USER_FORMS_LIST,
+  BANK_CORRELATION,
+  formatBankCorrelationId,
 } from "@/lib/ved/copy";
 import { statusMeta } from "@/lib/ved/statuses";
 import { cn } from "@/lib/utils";
@@ -176,8 +179,8 @@ export function FormDetail() {
         {form.channel === "bank" && <ChannelBadge channel="bank" labeled />}
         {form.channel === "ui" && <ChannelBadge channel="ui" labeled />}
         {form.correlationId && (
-          <span className="font-mono text-[11px] text-muted-foreground" title="Correlation ID">
-            corr: {form.correlationId}
+          <span className="font-mono text-[11px] text-muted-foreground" title={BANK_CORRELATION.title}>
+            {formatBankCorrelationId(form.correlationId)}
           </span>
         )}
         <span className="ml-auto font-mono text-lg font-semibold">{money(form.amountMinor, form.currency)}</span>
@@ -246,11 +249,11 @@ export function FormDetail() {
 
           <div className="panel p-4">
             <p className="label-caps">
-              {isProvider ? "Документы платежа" : "Документы"} ({visibleDocuments.length})
+              {isProvider ? PROVIDER_FORM_DETAIL.documentsTitle : "Документы"} ({visibleDocuments.length})
             </p>
             {visibleDocuments.length === 0 ? (
               <p className="mt-2 text-sm text-muted-foreground">
-                {isProvider ? "Подтверждение платежа можно прикрепить через действие на карточке." : "Документы пока не загружены."}
+                {isProvider ? PROVIDER_FORM_DETAIL.documentsEmpty : "Документы пока не загружены."}
               </p>
             ) : (
               <DocumentList documents={visibleDocuments} />
@@ -270,7 +273,10 @@ export function FormDetail() {
             </>
           ) : (
             <>
-              <ActionPanel form={form} title={managerActionPanelTitle} />
+              <ActionPanel
+                form={form}
+                title={isProvider ? PROVIDER_FORM_DETAIL.actionPanelTitle : managerActionPanelTitle}
+              />
               {!isProvider && <RefundPanel form={form} />}
             </>
           )}
@@ -292,7 +298,7 @@ export function FormDetail() {
 
           {isProvider && (
             <div className="panel p-4">
-              <p className="label-caps">Реквизиты платежа (без ПДн клиента)</p>
+              <p className="label-caps">{PROVIDER_FORM_DETAIL.requisitesTitle}</p>
               <dl className="mt-3 grid gap-x-6 gap-y-3 sm:grid-cols-2">
                 {paymentRequisites.map(([k, v]) => (
                   <div key={k}>
@@ -308,7 +314,9 @@ export function FormDetail() {
             <p className="label-caps">Хронология</p>
             <ol className="mt-3 space-y-3">
               {form.timeline.length === 0 && (
-                <li className="text-sm text-muted-foreground">События появятся после действий по заявке.</li>
+                <li className="text-sm text-muted-foreground">
+                  {isProvider ? PROVIDER_FORM_DETAIL.timelineEmpty : "События появятся после действий по заявке."}
+                </li>
               )}
               {form.timeline.map((entry) => (
                 <li key={entry.id} className="flex gap-3">

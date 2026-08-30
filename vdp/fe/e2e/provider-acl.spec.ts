@@ -20,9 +20,9 @@ test.describe("Provider ACL (no client PII in UI)", () => {
 
     await loginAs("provider");
     await page.goto(`/forms/${formId}`);
-    await expect(page.getByText("Реквизиты платежа (без ПДн клиента)")).toBeVisible();
+    await expect(page.getByText("Реквизиты для исполнения платежа")).toBeVisible();
     await expect(page.getByText("Участники")).toHaveCount(0);
     await expect(page.getByText("Организация клиента")).toHaveCount(0);
-    await expect(page.getByRole("button", { name: "Платёж отправлен" })).toBeVisible();
+    await expect(page.getByRole("button", { name: "Подтвердить отправку платежа" })).toBeVisible();
   });
 });

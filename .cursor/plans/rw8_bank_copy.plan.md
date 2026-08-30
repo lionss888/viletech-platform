@@ -1,16 +1,16 @@
 ---
 name: RW8 Bank Copy
-overview: "Копирайт банковского канала: badge, BankSettingsPanel, testing simulate. Root UI не переписываем."
+overview: ""
 todos:
   - id: rw8-badge
-    content: Badge «Канал: Bank API» + correlation copy
-    status: pending
+    content: "Badge «Канал: Bank API» + correlation copy"
+    status: completed
   - id: rw8-settings
     content: BankSettingsPanel labels (webhook/commission)
-    status: pending
+    status: completed
   - id: rw8-gate
-    content: "DoD: bank channel voice; root shell не тронут"
-    status: pending
+    content: ""
+    status: completed
 isProject: false
 ---
 

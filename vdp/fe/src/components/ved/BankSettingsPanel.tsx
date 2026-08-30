@@ -3,6 +3,7 @@ import { useQueryClient } from "@tanstack/react-query";
 
 import { Modal, ModalButton } from "@/components/ved/Modal";
 import { setBankSettings } from "@/lib/api/bank";
+import { BANK_SETTINGS_PANEL } from "@/lib/ved/copy/bank-copy";
 import { usePlatformMode } from "@/lib/ved/platform-mode";
 import { usePlatformStore } from "@/lib/ved/platform-store";
 import type { Organization } from "@/lib/ved/types";
@@ -50,11 +51,14 @@ export function BankSettingsPanel({ org }: { org: Organization }) {
       await queryClient.invalidateQueries({ queryKey: ["organizations"] });
       setOpen(false);
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Не удалось сохранить");
+      setError(e instanceof Error ? e.message : BANK_SETTINGS_PANEL.saveError);
     } finally {
       setBusy(false);
     }
   }
+
+  const openLabel =
+    org.clientType === "bank" ? BANK_SETTINGS_PANEL.openButtonActive : BANK_SETTINGS_PANEL.openButton;
 
   return (
     <>
@@ -63,20 +67,20 @@ export function BankSettingsPanel({ org }: { org: Organization }) {
         onClick={openModal}
         className="rounded-md bg-card px-2.5 py-1.5 text-xs font-semibold shadow-[0_0_0_1px_var(--input)] hover:bg-muted"
       >
-        Bank API{org.clientType === "bank" ? " · bank" : ""}
+        {openLabel}
       </button>
       <Modal
         open={open}
         onOpenChange={setOpen}
-        title={`Bank settings · ${org.name}`}
-        description="Тип клиента «Bank API»: фиксированная комиссия, webhook и агент по умолчанию."
+        title={BANK_SETTINGS_PANEL.modalTitle(org.name)}
+        description={BANK_SETTINGS_PANEL.modalDescription}
         footer={
           <>
             <ModalButton variant="quiet" onClick={() => setOpen(false)} disabled={busy}>
-              Отмена
+              {BANK_SETTINGS_PANEL.cancel}
             </ModalButton>
             <ModalButton variant="primary" onClick={() => void save()} disabled={busy}>
-              {busy ? "Сохранение…" : "Сохранить"}
+              {busy ? BANK_SETTINGS_PANEL.saving : BANK_SETTINGS_PANEL.save}
             </ModalButton>
           </>
         }
@@ -84,24 +88,24 @@ export function BankSettingsPanel({ org }: { org: Organization }) {
         {error && <p className="mb-3 rounded-md bg-destructive-soft px-2 py-1.5 text-xs text-destructive">{error}</p>}
         <div className="grid gap-3">
           <label className="block">
-            <span className="label-caps">Тип клиента</span>
+            <span className="label-caps">{BANK_SETTINGS_PANEL.clientTypeLabel}</span>
             <select value={clientType} onChange={(e) => setClientType(e.target.value as "ui" | "bank")} className="field mt-1">
-              <option value="ui">UI</option>
-              <option value="bank">Bank API</option>
+              <option value="ui">{BANK_SETTINGS_PANEL.clientTypeUi}</option>
+              <option value="bank">{BANK_SETTINGS_PANEL.clientTypeBank}</option>
             </select>
           </label>
           <label className="block">
-            <span className="label-caps">Фикс. комиссия, %</span>
+            <span className="label-caps">{BANK_SETTINGS_PANEL.commissionLabel}</span>
             <input value={commission} onChange={(e) => setCommission(e.target.value)} className="field mt-1 font-mono" />
           </label>
           <label className="flex items-center gap-2 text-sm">
             <input type="checkbox" checked={markup} onChange={(e) => setMarkup(e.target.checked)} />
-            Применять platform markup
+            {BANK_SETTINGS_PANEL.markupLabel}
           </label>
           <label className="block">
-            <span className="label-caps">Агент по умолчанию</span>
+            <span className="label-caps">{BANK_SETTINGS_PANEL.defaultAgentLabel}</span>
             <select value={agentId} onChange={(e) => setAgentId(e.target.value)} className="field mt-1">
-              <option value="">—</option>
+              <option value="">{BANK_SETTINGS_PANEL.defaultAgentEmpty}</option>
               {paymentAgents.map((a) => (
                 <option key={a.id} value={a.id}>
                   {a.name}
@@ -110,11 +114,11 @@ export function BankSettingsPanel({ org }: { org: Organization }) {
             </select>
           </label>
           <label className="block">
-            <span className="label-caps">Webhook URL</span>
+            <span className="label-caps">{BANK_SETTINGS_PANEL.webhookUrlLabel}</span>
             <input value={webhookUrl} onChange={(e) => setWebhookUrl(e.target.value)} className="field mt-1 text-xs" />
           </label>
           <label className="block">
-            <span className="label-caps">Webhook secret</span>
+            <span className="label-caps">{BANK_SETTINGS_PANEL.webhookSecretLabel}</span>
             <input value={webhookSecret} onChange={(e) => setWebhookSecret(e.target.value)} className="field mt-1 font-mono text-xs" />
           </label>
         </div>

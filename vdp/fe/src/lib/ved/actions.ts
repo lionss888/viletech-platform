@@ -1,5 +1,6 @@
 import { applyEcoActionLabels, applyIcoActionLabels, applyUserActionLabels } from "./copy/action-labels";
 import { applyManagerActionLabels } from "./copy/manager-close-copy";
+import { applyProviderActionLabels } from "./copy/provider-copy";
 import type { FormAction, FormStatus, VedRole } from "./types";
 
 /**
@@ -218,6 +219,7 @@ export function actionsFor(role: VedRole, status: FormStatus): FormAction[] {
   if (role === "internal_compliance_officer") return applyIcoActionLabels(actions, status);
   if (role === "compliance_officer") return applyEcoActionLabels(actions, status);
   if (role === "manager") return applyManagerActionLabels(actions, status);
+  if (role === "provider") return applyProviderActionLabels(actions);
   return actions;
 }
 

@@ -4,7 +4,7 @@ import { useMemo } from "react";
 import { VedAppShell } from "@/components/ved/VedAppShell";
 import { VedFormLink, VedLink } from "@/components/ved/VedLink";
 import { StatusBadge } from "@/components/ved/StatusBadge";
-import { ROLE_FOCUS, USER_DASHBOARD_CARDS, USER_FORMS_LIST, ICO_DASHBOARD, ECO_DASHBOARD, MANAGER_DASHBOARD, managerStageLabel } from "@/lib/ved/copy";
+import { ROLE_FOCUS, USER_DASHBOARD_CARDS, USER_FORMS_LIST, ICO_DASHBOARD, ECO_DASHBOARD, MANAGER_DASHBOARD, PROVIDER_DASHBOARD, managerStageLabel } from "@/lib/ved/copy";
 import { actionsFor } from "@/lib/ved/actions";
 import { isComplianceRole, subjectState } from "@/lib/ved/compliance";
 import { money, relative } from "@/lib/ved/format";
@@ -262,7 +262,18 @@ function RoleDashboard() {
                   search: { filter: "completed" },
                 },
               ]
-            : [
+            : role === "provider"
+              ? [
+                  { label: PROVIDER_DASHBOARD.actionRequired, value: String(todo.length), search: { mine: true } },
+                  { label: PROVIDER_DASHBOARD.activePayments, value: String(totals.active), search: {} },
+                  { label: PROVIDER_DASHBOARD.activeSum, value: money(totals.sum, totals.currency), search: {} },
+                  {
+                    label: PROVIDER_DASHBOARD.completed,
+                    value: String(byStage.get("completed") ?? 0),
+                    search: { filter: "completed" },
+                  },
+                ]
+              : [
               { label: "Требуют вашего действия", value: String(todo.length), search: { mine: true } },
               { label: "Сделок в работе", value: String(totals.active), search: {} },
               { label: "Сумма в работе", value: money(totals.sum, totals.currency), search: {} },
@@ -286,7 +297,9 @@ function RoleDashboard() {
                   ? ECO_DASHBOARD.tasksTitle
                   : role === "manager"
                     ? MANAGER_DASHBOARD.tasksTitle
-                    : "Задачи для вас"}
+                    : role === "provider"
+                      ? PROVIDER_DASHBOARD.tasksTitle
+                      : "Задачи для вас"}
             </h2>
             <VedLink segment="/forms" search={{ mine: true }} className="text-xs font-semibold text-muted-foreground hover:text-foreground">
               {role === "user"
@@ -297,7 +310,9 @@ function RoleDashboard() {
                     ? ECO_DASHBOARD.tasksLink
                     : role === "manager"
                       ? MANAGER_DASHBOARD.tasksLink
-                      : "Все заявки →"}
+                      : role === "provider"
+                        ? PROVIDER_DASHBOARD.tasksLink
+                        : "Все заявки →"}
             </VedLink>
           </div>
 
@@ -311,7 +326,9 @@ function RoleDashboard() {
                     ? ECO_DASHBOARD.tasksEmpty
                     : role === "manager"
                       ? MANAGER_DASHBOARD.tasksEmpty
-                      : "Сейчас нет задач, требующих вашего участия."}
+                      : role === "provider"
+                        ? PROVIDER_DASHBOARD.tasksEmpty
+                        : "Сейчас нет задач, требующих вашего участия."}
             </p>
           ) : (
             <ul className="mt-3 divide-y divide-border">
@@ -334,7 +351,7 @@ function RoleDashboard() {
 
         <section className="panel p-4">
           <h2 className="text-sm font-semibold">
-            {role === "manager" ? MANAGER_DASHBOARD.stagesTitle : "Сделки по этапам"}
+            {role === "manager" ? MANAGER_DASHBOARD.stagesTitle : role === "provider" ? PROVIDER_DASHBOARD.stagesTitle : "Сделки по этапам"}
           </h2>
           <ul className="mt-3 space-y-1">
             {STAGES.filter((stage) => (byStage.get(stage.id) ?? 0) > 0).map((stage) => (
@@ -345,7 +362,11 @@ function RoleDashboard() {
                   className="-mx-2 flex items-center justify-between gap-3 rounded px-2 py-1 text-sm transition-colors hover:bg-muted"
                 >
                   <span className="truncate text-muted-foreground">
-                    {role === "manager" ? managerStageLabel(stage.id) ?? stage.label : stage.label}
+                    {role === "manager"
+                      ? managerStageLabel(stage.id) ?? stage.label
+                      : role === "provider"
+                        ? "Платёж"
+                        : stage.label}
                   </span>
                   <span className="font-mono text-xs font-semibold">{byStage.get(stage.id)}</span>
                 </VedLink>

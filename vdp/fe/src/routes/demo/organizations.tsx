@@ -6,7 +6,7 @@ import { VedAppShell } from "@/components/ved/VedAppShell";
 import { RegistryManager } from "@/components/ved/RegistryManager";
 import { BankSettingsPanel } from "@/components/ved/BankSettingsPanel";
 import { SubjectReview } from "@/components/ved/SubjectReview";
-import { ICO_ORGANIZATIONS } from "@/lib/ved/copy";
+import { ICO_ORGANIZATIONS, BANK_ORGANIZATIONS } from "@/lib/ved/copy";
 import { isComplianceRole, subjectState, type ReviewSubject } from "@/lib/ved/compliance";
 import { REGISTRIES } from "@/lib/ved/registry";
 import { usePlatformStore } from "@/lib/ved/platform-store";
@@ -144,13 +144,15 @@ function OrganizationsRegistry() {
     <VedAppShell title={def.title} subtitle={`${def.subtitle} · записей: ${organizations.length}`}>
       {showBank && organizations.length > 0 && (
         <div className="panel mb-4 p-4">
-          <p className="label-caps">Bank API (организации)</p>
+          <p className="label-caps">{BANK_ORGANIZATIONS.sectionTitle}</p>
           <ul className="mt-2 divide-y divide-border">
             {organizations.slice(0, 6).map((org) => (
               <li key={org.id} className="flex flex-wrap items-center gap-2 py-2 text-sm">
                 <span className="font-semibold">{org.name}</span>
                 {org.clientType === "bank" && (
-                  <span className="rounded-md bg-wait-soft px-1.5 py-0.5 text-[10px] font-semibold text-wait">Bank client</span>
+                  <span className="rounded-md bg-wait-soft px-1.5 py-0.5 text-[10px] font-semibold text-wait">
+                    {BANK_ORGANIZATIONS.clientBadge}
+                  </span>
                 )}
                 <span className="font-mono text-xs text-muted-foreground">ИНН {org.inn}</span>
                 <span className="ml-auto">

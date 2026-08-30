@@ -6,9 +6,11 @@ import {
   MANAGER_CONTRACT_ACTION_PANEL,
   MANAGER_PAYMENT_ACTION_PANEL,
   MANAGER_REFUND_PANEL,
+  PROVIDER_ACTION_PANEL,
   managerCloseReasonFields,
   managerContractReasonFields,
   managerPaymentReasonFields,
+  providerReasonFields,
 } from "@/lib/ved/copy";
 import { actionsFor } from "@/lib/ved/actions";
 import type { ContractType } from "@/lib/api/contract";
@@ -41,13 +43,13 @@ type ActionExtraPayload = {
 
 export function ActionPanel({
   form,
-  title = "Доступные действия",
+  title,
   lockNote,
   lockAcceptNote,
   note,
 }: {
   form: PaymentForm;
-  title?: string;
+  title?: string | undefined;
   note?: string | undefined;
   lockNote?: string | undefined;
   /** Soft lock: disables accept CTAs; start/take-in-work stays available. */
@@ -78,10 +80,13 @@ export function ActionPanel({
   const role = session?.role ?? "user";
   const isEco = role === "compliance_officer";
   const isManager = role === "manager";
+  const isProvider = role === "provider";
   const panelCopy = isEco ? ECO_ACTION_PANEL : null;
   const managerPaymentPanel = isManager ? MANAGER_PAYMENT_ACTION_PANEL : null;
   const managerContractPanel = isManager ? MANAGER_CONTRACT_ACTION_PANEL : null;
+  const providerPanel = isProvider ? PROVIDER_ACTION_PANEL : null;
   const actions = actionsFor(role, form.status);
+  const panelTitle = title ?? "Доступные действия";
   const { operationalActions, rootCancelAction } = useMemo(() => {
     if (role !== "root") {
       return { operationalActions: actions, rootCancelAction: null as FormAction | null };
@@ -95,7 +100,7 @@ export function ActionPanel({
   if (actions.length === 0) {
     return (
       <div className="panel p-4">
-        <p className="label-caps">{title}</p>
+        <p className="label-caps">{panelTitle}</p>
         <p className="mt-2 text-sm text-muted-foreground">
           {panelCopy?.empty ??
             "На этом статусе для вашей роли действий нет — заявка у другого участника процесса."}
@@ -346,14 +351,16 @@ export function ActionPanel({
         )}
         {pending?.id === "prov_attach_proof" && (
           <label className="block">
-            <span className="label-caps">Хеш транзакции (crypto)</span>
+            <span className="label-caps">{providerPanel?.proofHashLabel ?? "Хеш транзакции (crypto)"}</span>
             <input
               value={confirmationHash}
               onChange={(e) => setConfirmationHash(e.target.value)}
-              placeholder="0x… или txid"
+              placeholder={providerPanel?.proofHashPlaceholder ?? "0x… или txid"}
               className="field mt-1 font-mono text-xs"
             />
-            <span className="mt-1 block text-xs text-muted-foreground">Для fiat — прикрепите файл ниже.</span>
+            <span className="mt-1 block text-xs text-muted-foreground">
+              {providerPanel?.proofHashHint ?? "Для fiat — прикрепите файл ниже."}
+            </span>
           </label>
         )}
         {pending?.requiresMark && (
@@ -381,16 +388,18 @@ export function ActionPanel({
                 managerPaymentReasonFields(pending.id) ??
                 managerCloseReasonFields(pending.id)
               : undefined;
+          const providerReason = isProvider && pending ? providerReasonFields(pending.id) : undefined;
+          const reasonCopy = providerReason ?? mgrReason;
           return (
           <label className="block">
             <span className="label-caps">
-              {mgrReason?.label ?? (isEco ? panelCopy?.reasonLabel : undefined) ?? "Комментарий для клиента"}
+              {reasonCopy?.label ?? (isEco ? panelCopy?.reasonLabel : undefined) ?? "Комментарий для клиента"}
             </span>
             <textarea
               value={reason}
               onChange={(e) => setReason(e.target.value)}
               placeholder={
-                mgrReason?.placeholder ??
+                reasonCopy?.placeholder ??
                 (isEco ? panelCopy?.reasonPlaceholder : undefined) ??
                 "Что именно нужно исправить или предоставить"
               }
@@ -402,7 +411,11 @@ export function ActionPanel({
         })()}
         {(pending?.requiresFile || pending?.id === "prov_attach_proof") && (
           <label className="block">
-            <span className="label-caps">Документ</span>
+            <span className="label-caps">
+              {pending.id === "prov_attach_proof" && providerPanel?.proofFileLabel
+                ? providerPanel.proofFileLabel
+                : "Документ"}
+            </span>
             <input
               type="file"
               onChange={(e) => {

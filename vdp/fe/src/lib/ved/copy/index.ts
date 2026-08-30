@@ -43,6 +43,30 @@ export {
   managerCloseReasonFields,
   managerStageLabel,
 } from "./manager-close-copy";
+export {
+  BANK_CHANNEL_BADGE,
+  BANK_CORRELATION,
+  BANK_ORGANIZATIONS,
+  BANK_SETTINGS_PANEL,
+  BANK_TESTING,
+  collectBankCopyStrings,
+  formatBankCorrelationId,
+  formatBankCreateSuccess,
+} from "./bank-copy";
+export {
+  PROVIDER_STATUS_LABELS,
+  PROVIDER_ACTION_LABELS,
+  PROVIDER_ACTION_PANEL,
+  PROVIDER_FORM_DETAIL,
+  PROVIDER_FORMS_LIST,
+  PROVIDER_DASHBOARD,
+  PROVIDER_NAV,
+  PROVIDER_FORBIDDEN_COPY_TERMS,
+  providerStatusLabel,
+  applyProviderActionLabels,
+  providerReasonFields,
+  collectProviderCopyStrings,
+} from "./provider-copy";
 export { navLabelForRole } from "./nav-labels";
 export {
   ROLE_FOCUS,
