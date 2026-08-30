@@ -1,7 +1,14 @@
 import { useMemo, useState } from "react";
 
 import { Modal, ModalButton } from "@/components/ved/Modal";
-import { ECO_ACTION_PANEL } from "@/lib/ved/copy";
+import {
+  ECO_ACTION_PANEL,
+  MANAGER_CONTRACT_ACTION_PANEL,
+  MANAGER_PAYMENT_ACTION_PANEL,
+  MANAGER_REFUND_PANEL,
+  managerContractReasonFields,
+  managerPaymentReasonFields,
+} from "@/lib/ved/copy";
 import { actionsFor } from "@/lib/ved/actions";
 import type { ContractType } from "@/lib/api/contract";
 import { marksFor } from "@/lib/ved/compliance";
@@ -69,7 +76,10 @@ export function ActionPanel({
 
   const role = session?.role ?? "user";
   const isEco = role === "compliance_officer";
+  const isManager = role === "manager";
   const panelCopy = isEco ? ECO_ACTION_PANEL : null;
+  const managerPaymentPanel = isManager ? MANAGER_PAYMENT_ACTION_PANEL : null;
+  const managerContractPanel = isManager ? MANAGER_CONTRACT_ACTION_PANEL : null;
   const actions = actionsFor(role, form.status);
   const { operationalActions, rootCancelAction } = useMemo(() => {
     if (role !== "root") {
@@ -272,9 +282,9 @@ export function ActionPanel({
         {error && <p className="mb-3 rounded-md bg-destructive-soft px-2 py-1.5 text-xs text-destructive">{error}</p>}
         {pending?.id === "mgr_assign_provider" && (
           <label className="block">
-            <span className="label-caps">Провайдер исполнения</span>
+            <span className="label-caps">{managerPaymentPanel?.providerLabel ?? "Провайдер исполнения"}</span>
             <select value={providerId} onChange={(e) => setProviderId(e.target.value)} className="field mt-1">
-              <option value="">Выберите провайдера</option>
+              <option value="">{managerPaymentPanel?.providerPlaceholder ?? "Выберите провайдера"}</option>
               {providerOptions.map((p) => (
                 <option key={p.id} value={p.id}>
                   {p.name} · {p.country}
@@ -285,9 +295,9 @@ export function ActionPanel({
         )}
         {pending?.id === "mgr_assign_agent" && (
           <label className="block">
-            <span className="label-caps">Платёжный агент</span>
+            <span className="label-caps">{managerContractPanel?.assignAgentLabel ?? "Платёжный агент"}</span>
             <select value={agentId} onChange={(e) => setAgentId(e.target.value)} className="field mt-1">
-              <option value="">Выберите агента</option>
+              <option value="">{managerContractPanel?.assignAgentPlaceholder ?? "Выберите агента"}</option>
               {paymentAgents.map((p) => (
                 <option key={p.id} value={p.id}>
                   {p.name} · {p.country}
@@ -298,13 +308,13 @@ export function ActionPanel({
         )}
         {pending?.id === "mgr_assign_deadline" && (
           <label className="block">
-            <span className="label-caps">Срок исполнения</span>
+            <span className="label-caps">{managerPaymentPanel?.deadlineLabel ?? "Срок исполнения"}</span>
             <input type="datetime-local" value={deadline} onChange={(e) => setDeadline(e.target.value)} className="field mt-1" />
           </label>
         )}
         {pending?.id === "mgr_contract_attach" && (
           <label className="block">
-            <span className="label-caps">Тип договора</span>
+            <span className="label-caps">{managerContractPanel?.contractAttachLabel ?? "Тип договора"}</span>
             <select
               value={contractType}
               onChange={(e) => setContractType(e.target.value as ContractType)}
@@ -319,7 +329,7 @@ export function ActionPanel({
         {pending?.id === "mgr_refund_init" && (
           <div className="grid gap-3 sm:grid-cols-2">
             <label className="block">
-              <span className="label-caps">Сумма возврата</span>
+              <span className="label-caps">{managerPaymentPanel?.refundAmountLabel ?? "Сумма возврата"}</span>
               <input
                 value={refundAmount}
                 onChange={(e) => setRefundAmount(e.target.value)}
@@ -328,7 +338,7 @@ export function ActionPanel({
               />
             </label>
             <label className="block">
-              <span className="label-caps">Валюта</span>
+              <span className="label-caps">{managerPaymentPanel?.refundCurrencyLabel ?? "Валюта"}</span>
               <input value={refundCurrency} onChange={(e) => setRefundCurrency(e.target.value)} className="field mt-1 font-mono" />
             </label>
           </div>
@@ -363,20 +373,30 @@ export function ActionPanel({
             )}
           </label>
         )}
-        {pending?.requiresReason && (
+        {pending?.requiresReason && (() => {
+          const mgrReason =
+            isManager && pending
+              ? managerContractReasonFields(pending.id) ?? managerPaymentReasonFields(pending.id)
+              : undefined;
+          return (
           <label className="block">
-            <span className="label-caps">{panelCopy?.reasonLabel ?? "Комментарий для клиента"}</span>
+            <span className="label-caps">
+              {mgrReason?.label ?? (isEco ? panelCopy?.reasonLabel : undefined) ?? "Комментарий для клиента"}
+            </span>
             <textarea
               value={reason}
               onChange={(e) => setReason(e.target.value)}
               placeholder={
-                panelCopy?.reasonPlaceholder ?? "Что именно нужно исправить или предоставить"
+                mgrReason?.placeholder ??
+                (isEco ? panelCopy?.reasonPlaceholder : undefined) ??
+                "Что именно нужно исправить или предоставить"
               }
               rows={3}
               className="field mt-1 resize-none"
             />
           </label>
-        )}
+          );
+        })()}
         {(pending?.requiresFile || pending?.id === "prov_attach_proof") && (
           <label className="block">
             <span className="label-caps">Документ</span>

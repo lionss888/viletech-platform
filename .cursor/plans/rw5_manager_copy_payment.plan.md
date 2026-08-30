@@ -4,13 +4,13 @@ overview: "Копирайт Manager: провайдер, платёж, возв�
 todos:
   - id: rw5-payment
     content: Labels payment_* / mgr_payment_* / mgr_assign_provider
-    status: pending
+    status: completed
   - id: rw5-refund
     content: RefundPanel + mgr_refund_* copy
-    status: pending
+    status: completed
   - id: rw5-gate
     content: "DoD: payment+refund voice; root не тронут"
-    status: pending
+    status: completed
 isProject: false
 ---
 

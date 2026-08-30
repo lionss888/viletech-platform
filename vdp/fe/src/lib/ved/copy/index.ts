@@ -7,6 +7,29 @@ export {
   applyIcoActionLabels,
   applyEcoActionLabels,
 } from "./action-labels";
+export {
+  MANAGER_CONTRACT_STATUS_LABELS,
+  MANAGER_CONTRACT_ACTION_LABELS,
+  MANAGER_CONTRACT_ACTION_PANEL,
+  MANAGER_CONTRACT_FORM_DETAIL,
+  managerContractStatusLabel,
+  applyManagerContractActionLabels,
+  isManagerContractPhaseStatus,
+  managerContractReasonFields,
+} from "./manager-contract-copy";
+export {
+  MANAGER_PAYMENT_STATUS_LABELS,
+  MANAGER_PAYMENT_ACTION_LABELS,
+  MANAGER_PAYMENT_ACTION_PANEL,
+  MANAGER_PAYMENT_PROVIDER_LOCK,
+  MANAGER_REFUND_PANEL,
+  MANAGER_PAYMENT_FORM_DETAIL,
+  managerPaymentStatusLabel,
+  applyManagerPaymentActionLabels,
+  applyManagerActionLabels,
+  isManagerPaymentPhaseStatus,
+  managerPaymentReasonFields,
+} from "./manager-payment-copy";
 export { navLabelForRole } from "./nav-labels";
 export {
   ROLE_FOCUS,

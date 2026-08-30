@@ -24,7 +24,7 @@ describe("ECO copy layer", () => {
 
   it("maps form_accepted for ECO", () => {
     expect(statusMeta("form_accepted", "compliance_officer").label).toBe("Сделка подтверждена");
-    expect(statusMeta("form_accepted", "manager").label).toBe("Заявка подтверждена");
+    expect(statusMeta("form_accepted", "manager").label).toBe("Готова к сопровождению");
   });
 
   it("maps eco_form_start and eco_form_accept", () => {

@@ -32,7 +32,7 @@ test.describe("Happy path (app UI)", () => {
     await logout();
     await loginAs("manager");
     await page.goto(`/forms/${formId}`);
-    await expect(page.getByRole("button", { name: "Назначить платёжного агента" })).toBeVisible();
+    await expect(page.getByRole("button", { name: "Назначить агента по сделке" })).toBeVisible();
   });
 
   test("manager opens form_accepted from API seed", async ({ page, loginAs }) => {
@@ -41,7 +41,7 @@ test.describe("Happy path (app UI)", () => {
 
     await loginAs("manager");
     await page.goto(`/forms/${formId}`);
-    await expect(page.getByRole("button", { name: "Назначить платёжного агента" })).toBeVisible();
-    await expect(page.getByRole("button", { name: "Прикрепить договор вручную" })).toBeVisible();
+    await expect(page.getByRole("button", { name: "Назначить агента по сделке" })).toBeVisible();
+    await expect(page.getByRole("button", { name: "Прикрепить агентский договор" })).toBeVisible();
   });
 });

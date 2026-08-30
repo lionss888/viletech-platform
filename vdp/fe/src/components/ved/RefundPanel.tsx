@@ -1,7 +1,9 @@
 import { useQuery } from "@tanstack/react-query";
 
 import { getRefund } from "@/lib/api/refund";
+import { MANAGER_REFUND_PANEL } from "@/lib/ved/copy";
 import { usePlatformMode } from "@/lib/ved/platform-mode";
+import { usePlatformStore } from "@/lib/ved/platform-store";
 import type { PaymentForm } from "@/lib/ved/types";
 
 const REFUND_STATUSES = new Set([
@@ -10,7 +12,7 @@ const REFUND_STATUSES = new Set([
   "payment_refund_sent",
 ]);
 
-const REFUND_STATUS_LABEL: Record<string, string> = {
+const DEFAULT_REFUND_STATUS_LABEL: Record<string, string> = {
   payment_refund_waiting: "Ожидает запуска",
   payment_refund_processing: "В процессе",
   payment_refund_sent: "Средства возвращены",
@@ -18,6 +20,9 @@ const REFUND_STATUS_LABEL: Record<string, string> = {
 
 export function RefundPanel({ form }: { form: PaymentForm }) {
   const mode = usePlatformMode();
+  const role = usePlatformStore((s) => s.session?.role ?? "user");
+  const isManager = role === "manager";
+  const copy = isManager ? MANAGER_REFUND_PANEL : null;
   const enabled = mode === "app" && REFUND_STATUSES.has(form.status);
   const refundQuery = useQuery({
     queryKey: ["refund", form.id],
@@ -30,25 +35,27 @@ export function RefundPanel({ form }: { form: PaymentForm }) {
   const refund = refundQuery.data;
   const refundAmount = refund?.refund_amount ?? refund?.amount;
   const refundCurrency = refund?.refund_currency ?? refund?.currency ?? form.currency;
+  const refundStatusLabels = copy?.apiStatusLabels ?? DEFAULT_REFUND_STATUS_LABEL;
 
   return (
     <div className="panel p-4">
-      <p className="label-caps">Процесс возврата средств</p>
+      <p className="label-caps">{copy?.title ?? "Процесс возврата средств"}</p>
       {mode === "demo" && (
         <p className="mt-2 text-xs text-muted-foreground">
-          Статус заявки: {form.status}. Действия возврата — в панели «Доступные действия».
+          {copy?.demoHint ??
+            `Статус заявки: ${form.status}. Действия возврата — в панели «Доступные действия».`}
         </p>
       )}
       {mode === "app" && refundQuery.isLoading && <p className="mt-2 text-xs text-muted-foreground">Загрузка…</p>}
       {refund && (
         <dl className="mt-3 grid gap-2 text-sm">
           <div>
-            <dt className="label-caps">Статус возврата</dt>
-            <dd>{REFUND_STATUS_LABEL[refund.status] ?? refund.status}</dd>
+            <dt className="label-caps">{copy?.refundStatusLabel ?? "Статус возврата"}</dt>
+            <dd>{refundStatusLabels[refund.status] ?? refund.status}</dd>
           </div>
           {refundAmount && (
             <div>
-              <dt className="label-caps">Сумма возврата</dt>
+              <dt className="label-caps">{copy?.refundAmountLabel ?? "Сумма возврата"}</dt>
               <dd className="font-mono">
                 {refundAmount} {refundCurrency}
               </dd>
@@ -56,7 +63,7 @@ export function RefundPanel({ form }: { form: PaymentForm }) {
           )}
           {refund.received_amount && (
             <div>
-              <dt className="label-caps">Получено от клиента</dt>
+              <dt className="label-caps">{copy?.receivedLabel ?? "Получено от клиента"}</dt>
               <dd className="font-mono">
                 {refund.received_amount} {refund.received_currency ?? form.currency}
               </dd>
@@ -64,7 +71,7 @@ export function RefundPanel({ form }: { form: PaymentForm }) {
           )}
           {refund.comment && (
             <div>
-              <dt className="label-caps">Комментарий</dt>
+              <dt className="label-caps">{copy?.commentLabel ?? "Комментарий"}</dt>
               <dd>{refund.comment}</dd>
             </div>
           )}
@@ -72,12 +79,14 @@ export function RefundPanel({ form }: { form: PaymentForm }) {
       )}
       {refund?.unrefunded_blocks_cancel && (
         <p className="mt-2 rounded-md bg-destructive-soft px-2 py-1.5 text-xs text-destructive">
-          Отмена заявки заблокирована: средства ещё не возвращены клиенту. Завершите возврат или отмените процесс
-          возврата.
+          {copy?.blockCancel ??
+            "Отмена заявки заблокирована: средства ещё не возвращены клиенту. Завершите возврат или отмените процесс возврата."}
         </p>
       )}
       {!refund?.unrefunded_blocks_cancel && refund && (
-        <p className="mt-2 text-xs text-muted-foreground">После возврата средств заявку можно отменить или закрыть.</p>
+        <p className="mt-2 text-xs text-muted-foreground">
+          {copy?.afterRefund ?? "После возврата средств заявку можно отменить или закрыть."}
+        </p>
       )}
     </div>
   );

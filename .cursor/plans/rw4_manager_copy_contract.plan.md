@@ -4,13 +4,13 @@ overview: "Копирайт Manager: агент, договор, поручен�
 todos:
   - id: rw4-agent-contract
     content: Labels mgr_assign_agent, mgr_contract_*, contract_* statuses
-    status: pending
+    status: completed
   - id: rw4-order
     content: Labels mgr_order_* / signing_order* (принципал / поручение)
-    status: pending
+    status: completed
   - id: rw4-gate
     content: "DoD: contract+order voice; root не тронут"
-    status: pending
+    status: completed
 isProject: false
 ---
 

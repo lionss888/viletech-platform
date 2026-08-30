@@ -1,3 +1,5 @@
+import { MANAGER_PAYMENT_PROVIDER_LOCK } from "./copy/manager-payment-copy";
+
 /** Manager must assign provider before starting payment execution. */
 export function blocksPaymentStartWithoutProvider(
   status: string,
@@ -9,5 +11,4 @@ export function blocksPaymentStartWithoutProvider(
   return !providerId;
 }
 
-export const PAYMENT_START_PROVIDER_LOCK =
-  "Назначьте провайдера исполнения — без этого платёж провайдеру не передать.";
+export const PAYMENT_START_PROVIDER_LOCK = MANAGER_PAYMENT_PROVIDER_LOCK;

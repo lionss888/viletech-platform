@@ -31,7 +31,16 @@ import {
   providerVisibleDocuments,
 } from "@/lib/ved/provider-acl";
 import { roleTitle } from "@/lib/ved/roles";
-import { ECO_FORM_DETAIL, ICO_FORM_DETAIL, USER_CORRECTIONS_BANNER, USER_FORMS_LIST } from "@/lib/ved/copy";
+import {
+  ECO_FORM_DETAIL,
+  ICO_FORM_DETAIL,
+  MANAGER_CONTRACT_FORM_DETAIL,
+  MANAGER_PAYMENT_FORM_DETAIL,
+  isManagerContractPhaseStatus,
+  isManagerPaymentPhaseStatus,
+  USER_CORRECTIONS_BANNER,
+  USER_FORMS_LIST,
+} from "@/lib/ved/copy";
 import { statusMeta } from "@/lib/ved/statuses";
 import { cn } from "@/lib/utils";
 
@@ -148,6 +157,12 @@ export function FormDetail() {
       ];
   const paymentRequisites = isProvider ? providerPaymentRequisites(form, org, cp) : [];
   const visibleDocuments = isProvider ? providerVisibleDocuments(form) : form.documents;
+  const managerActionPanelTitle =
+    role === "manager" && isManagerPaymentPhaseStatus(form.status)
+      ? MANAGER_PAYMENT_FORM_DETAIL.actionPanelTitle
+      : role === "manager" && isManagerContractPhaseStatus(form.status)
+        ? MANAGER_CONTRACT_FORM_DETAIL.actionPanelTitle
+        : undefined;
 
   return (
     <VedAppShell title={form.number} subtitle={`${meta.label} · роль: ${roleTitle(role)}`}>
@@ -251,7 +266,7 @@ export function FormDetail() {
             </>
           ) : (
             <>
-              <ActionPanel form={form} />
+              <ActionPanel form={form} title={managerActionPanelTitle} />
               {!isProvider && <RefundPanel form={form} />}
             </>
           )}
