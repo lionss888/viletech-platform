@@ -46,4 +46,12 @@ security-signoff-checklist.md. AuthZ every endpoint. Provider DTO audit. Secrets
 
 ## Release gate before pilot handover
 
-make release-gate green locally or vdp-release workflow. Tag vdp-v* triggers vdp-images (gate + GHCR digest) and vdp-deploy → staging. Prod: workflow_dispatch VDP Deploy environment production (required reviewers). Review e2e-coverage-matrix.md and known-gaps with customer.
+make release-gate green locally or vdp-release workflow. Tag vdp-v* triggers vdp-images (gate + GHCR digest for core/hub/docs/fe) and vdp-deploy → alpha (auto after Images on main). beta/gamma: workflow_dispatch VDP Deploy with GitHub Environment (gamma: required reviewers). Review e2e-coverage-matrix.md and known-gaps with customer.
+
+## Alpha host bootstrap (one-time)
+
+1. Generate deploy key locally: `ssh-keygen -t ed25519 -f ~/.ssh/vdp_deploy_ed25519 -N '' -C vdp-deploy`.
+2. On Ubuntu VM as root: `DEPLOY_PUBKEY="$(cat ~/.ssh/vdp_deploy_ed25519.pub)" VDP_DOMAIN=alpha.vedy.io ENVIRONMENT=alpha bash /path/to/bootstrap-host.sh` (or copy script first). Without domain, omit `VDP_DOMAIN` for IP-only HTTP demo.
+3. Confirm `/opt/vdp/.env.deploy` has non-dev `JWT_SECRET` / `HUB_SHARED_SECRET` and `*_BIND=127.0.0.1`.
+4. GitHub Environment `alpha` secrets: `DEPLOY_HOST`, `DEPLOY_USER=deploy`, `DEPLOY_PATH=/opt/vdp`, `DEPLOY_SSH_KEY` = private key contents.
+5. Push `d0-1`/`main`, run workflow `VDP Images`, then `VDP Deploy` (environment alpha). Smoke: `scripts/staging-smoke.sh` on host; browser: `https://$VDP_DOMAIN/login`.

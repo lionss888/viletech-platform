@@ -15,6 +15,10 @@ dist-ssr
 .tanstack/**
 .nitro
 *.local
+test-results/
+playwright-report/
+*.rej
+*.orig
 
 # Wrangler / Cloudflare
 .wrangler/
