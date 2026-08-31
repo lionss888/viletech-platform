@@ -1,4 +1,4 @@
-.PHONY: deps test test-integration test-adapters build db-setup db-migrate run-hub run-core run smoke stop compose-up compose-up-prod compose-down compose-ps compose-e2e compose-fe-smoke compose-fe-refresh compose-fe-prod-smoke compose-playwright integration-gate playwright-e2e docs-format-check release-gate image-build image-push image-build-push compose-release-config-check compose-release-up deploy-staging deploy-prod rollback-staging rollback-prod test-cd-scripts
+.PHONY: deps test test-integration test-adapters build db-setup db-migrate compose-db-migrate run-hub run-core run smoke stop compose-up compose-up-prod compose-down compose-ps compose-e2e compose-fe-smoke compose-fe-refresh compose-fe-prod-smoke compose-playwright integration-gate playwright-e2e docs-format-check release-gate image-build image-push image-build-push compose-release-config-check compose-release-up deploy-alpha deploy-beta deploy-gamma rollback-alpha rollback-beta rollback-gamma test-cd-scripts
 
 CORE_DIR := core
 HUB_DIR := hub
@@ -59,12 +59,19 @@ db-migrate:
 	PGPASSWORD=vdp_core psql -h localhost -U vdp_core -d vdp_core -v ON_ERROR_STOP=1 -f $(CORE_DIR)/migrations/010_r9_extended.sql
 	PGPASSWORD=vdp_core psql -h localhost -U vdp_core -d vdp_core -v ON_ERROR_STOP=1 -f $(CORE_DIR)/migrations/011_r10_bank.sql
 	PGPASSWORD=vdp_core psql -h localhost -U vdp_core -d vdp_core -v ON_ERROR_STOP=1 -f $(CORE_DIR)/migrations/012_b2_org_signer.sql
+	PGPASSWORD=vdp_core psql -h localhost -U vdp_core -d vdp_core -v ON_ERROR_STOP=1 -f $(CORE_DIR)/migrations/013_bank_org_client_type.sql
 	PGPASSWORD=vdp_hub psql -h localhost -U vdp_hub -d vdp_hub -v ON_ERROR_STOP=1 -f $(HUB_DIR)/migrations/001_hub.sql
 	PGPASSWORD=vdp_hub psql -h localhost -U vdp_hub -d vdp_hub -v ON_ERROR_STOP=1 -f $(HUB_DIR)/migrations/002_hub.sql
 
 # Default compose path: Postgres for core+hub+fe (not memory).
+compose-db-migrate:
+	@chmod +x scripts/compose-db-migrate.sh
+	@./scripts/compose-db-migrate.sh
+
 compose-up:
 	docker compose up -d --build
+	@$(MAKE) compose-db-migrate
+	docker compose restart core hub
 	@echo "waiting for core+hub+fe health..."
 	@ok=0; for i in 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28 29 30; do \
 		if curl -sf http://127.0.0.1:8080/api/v1/health >/dev/null && \
@@ -188,35 +195,44 @@ image-push: image-build
 image-build-push: image-push
 
 compose-release-config-check:
-	@test -n "$${VDP_CORE_IMAGE:-}" || VDP_CORE_IMAGE=example.local/vdp-core:check; \
-	test -n "$${VDP_HUB_IMAGE:-}" || VDP_HUB_IMAGE=example.local/vdp-hub:check; \
-	test -n "$${VDP_FE_IMAGE:-}" || VDP_FE_IMAGE=example.local/vdp-fe:check; \
-	VDP_CORE_IMAGE=$${VDP_CORE_IMAGE} VDP_HUB_IMAGE=$${VDP_HUB_IMAGE} VDP_FE_IMAGE=$${VDP_FE_IMAGE} \
+	VDP_CORE_IMAGE="$${VDP_CORE_IMAGE:-example.local/vdp-core:check}" \
+	VDP_HUB_IMAGE="$${VDP_HUB_IMAGE:-example.local/vdp-hub:check}" \
+	VDP_FE_IMAGE="$${VDP_FE_IMAGE:-example.local/vdp-fe:check}" \
+	JWT_SECRET="$${JWT_SECRET:-config-check}" \
+	HUB_SHARED_SECRET="$${HUB_SHARED_SECRET:-config-check}" \
 	docker compose -f docker-compose.yml -f docker-compose.release.yml --profile prod config >/dev/null
 	@echo "compose release config ok"
 
 compose-release-up:
 	@test -f "$(PIN_FILE)" || (echo "missing $(PIN_FILE); run make image-build first" >&2; exit 1)
-	@set -a && . "$(PIN_FILE)" && set +a && \
+	@set -a && . "$(PIN_FILE)" && test -f .env.deploy && . .env.deploy; set +a; \
 	docker compose -f docker-compose.yml -f docker-compose.release.yml --profile prod \
-		up -d --no-build --pull always --scale fe=0
+		up -d --no-build --scale fe=0
 	@./scripts/wait-release-health.sh
 
-deploy-staging:
+deploy-alpha:
 	@chmod +x scripts/deploy-compose-release.sh
-	ENVIRONMENT=staging PIN_FILE="$(PIN_FILE)" ./scripts/deploy-compose-release.sh
+	ENVIRONMENT=alpha PIN_FILE="$(PIN_FILE)" ./scripts/deploy-compose-release.sh
 
-deploy-prod:
+deploy-beta:
 	@chmod +x scripts/deploy-compose-release.sh
-	ENVIRONMENT=production PIN_FILE="$(PIN_FILE)" ./scripts/deploy-compose-release.sh
+	ENVIRONMENT=beta PIN_FILE="$(PIN_FILE)" ./scripts/deploy-compose-release.sh
 
-rollback-staging:
-	@chmod +x scripts/rollback-compose-release.sh
-	ENVIRONMENT=staging ./scripts/rollback-compose-release.sh
+deploy-gamma:
+	@chmod +x scripts/deploy-compose-release.sh
+	ENVIRONMENT=gamma PIN_FILE="$(PIN_FILE)" ./scripts/deploy-compose-release.sh
 
-rollback-prod:
+rollback-alpha:
 	@chmod +x scripts/rollback-compose-release.sh
-	ENVIRONMENT=production ./scripts/rollback-compose-release.sh
+	ENVIRONMENT=alpha ./scripts/rollback-compose-release.sh
+
+rollback-beta:
+	@chmod +x scripts/rollback-compose-release.sh
+	ENVIRONMENT=beta ./scripts/rollback-compose-release.sh
+
+rollback-gamma:
+	@chmod +x scripts/rollback-compose-release.sh
+	ENVIRONMENT=gamma ./scripts/rollback-compose-release.sh
 
 test-cd-scripts:
 	@chmod +x scripts/test-cd-scripts.sh

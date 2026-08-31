@@ -4,3 +4,5 @@ bin/
 .DS_Store
 .release-images.env
 release-images.env
+.release-images.*.last-good
+.env.deploy

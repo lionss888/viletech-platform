@@ -10,7 +10,8 @@ for script in \
   scripts/image-build-push.sh \
   scripts/deploy-compose-release.sh \
   scripts/wait-release-health.sh \
-  scripts/rollback-compose-release.sh; do
+  scripts/rollback-compose-release.sh \
+  scripts/bootstrap-host.sh; do
   bash -n "$script"
   echo "syntax ok: $script"
 done

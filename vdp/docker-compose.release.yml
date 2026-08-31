@@ -1,14 +1,41 @@
-# Release overlay: immutable images from registry (digest or version tag).
-# Usage (staging/prod, no local build):
-#   export VDP_CORE_IMAGE VDP_HUB_IMAGE VDP_FE_IMAGE
+# Release overlay: immutable images from registry (digest or version tag), host-provided secrets.
+#
+# Usage (alpha/staging/prod, no local build):
+#   set -a; source .env.deploy; source .release-images.env; set +a
 #   docker compose -f docker-compose.yml -f docker-compose.release.yml --profile prod \
-#     up -d --no-build --pull always --scale fe=0
+#     up -d --no-build --scale fe=0
+#
+# Secrets come from .env.deploy on the host and override the dev defaults in docker-compose.yml.
+# Postgres data lives in named volumes so redeploys never drop the alpha dataset.
 services:
+  postgres-core:
+    volumes:
+      - postgres_core_data:/var/lib/postgresql/data
+
+  postgres-hub:
+    volumes:
+      - postgres_hub_data:/var/lib/postgresql/data
+
   hub:
     image: ${VDP_HUB_IMAGE:?set VDP_HUB_IMAGE to registry image@digest or :tag}
+    environment:
+      HUB_SHARED_SECRET: ${HUB_SHARED_SECRET:?set HUB_SHARED_SECRET in .env.deploy}
+      ENVIRONMENT: ${ENVIRONMENT:-staging}
+    restart: unless-stopped
 
   core:
     image: ${VDP_CORE_IMAGE:?set VDP_CORE_IMAGE to registry image@digest or :tag}
+    environment:
+      JWT_SECRET: ${JWT_SECRET:?set JWT_SECRET in .env.deploy}
+      HUB_SHARED_SECRET: ${HUB_SHARED_SECRET:?set HUB_SHARED_SECRET in .env.deploy}
+      ENVIRONMENT: ${ENVIRONMENT:-staging}
+      GATEWAY_RATE_LIMIT: ${GATEWAY_RATE_LIMIT:-2000}
+    restart: unless-stopped
 
   fe-prod:
     image: ${VDP_FE_IMAGE:?set VDP_FE_IMAGE to registry image@digest or :tag}
+    restart: unless-stopped
+
+volumes:
+  postgres_core_data:
+  postgres_hub_data:

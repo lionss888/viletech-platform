@@ -9,7 +9,7 @@ Developer → GitHub PR/MR + GitLab MR (optional)
          → vdp-ci.yml (fast, docs, integration*, playwright*)
          → vdp-release.yml (tag vdp-v* → make release-gate)
          → vdp-images.yml (immutable images → GHCR + copy GitLab registry)
-         → vdp-deploy.yml (staging auto / production manual approve)
+         → vdp-deploy.yml (alpha auto / beta, gamma manual approve)
          → vdp-mirror-gitlab.yml (GitHub → GitLab, no CD on GitLab)
 ```
 
@@ -21,7 +21,11 @@ Release `.github/workflows/vdp-release.yml` — `workflow_dispatch` и теги 
 
 Images `.github/workflows/vdp-images.yml` — после green gate на теге или push в `main`: build/push `vdp-core`, `vdp-hub`, `vdp-fe` (production target) в GHCR по digest; copy digest в GitLab Container Registry.
 
-Deploy `.github/workflows/vdp-deploy.yml` — GitHub Environments `staging` / `production`; `docker compose -f docker-compose.release.yml pull && up -d` **без `--build`**; `staging-smoke.sh` на staging.
+Deploy `.github/workflows/vdp-deploy.yml` — GitHub Environments `alpha` (авто из `main`), `beta`, `gamma` (вручную, approval); `docker compose -f docker-compose.release.yml pull && up -d` **без `--build`**; `staging-smoke.sh` на всех средах кроме `gamma`.
+
+Подготовка хоста: `scripts/bootstrap-host.sh` (Docker CE, пользователь `deploy`, `/opt/vdp`, генерация `.env.deploy` со случайными секретами, ufw 22/80/443, Caddy c автоматическим HTTPS). Порты приложения биндятся на loopback через `*_BIND` из `.env.deploy`; наружу смотрит только Caddy.
+
+Secrets в GitHub Environment (по среде): `DEPLOY_HOST`, `DEPLOY_USER`, `DEPLOY_PATH`, `DEPLOY_SSH_KEY`.
 
 ## Когда блокируется merge
 
@@ -43,13 +47,13 @@ Pre-handover: `make release-gate`.
 
 Release overlay без сборки: `VDP_CORE_IMAGE=... VDP_HUB_IMAGE=... VDP_FE_IMAGE=... docker compose -f docker-compose.yml -f docker-compose.release.yml --profile prod up -d`.
 
-Deploy staging (на VM с SSH): `make deploy-staging DIGEST=<sha>` (см. `scripts/deploy-compose-release.sh`).
+Deploy на VM с SSH: `make deploy-alpha` / `deploy-beta` / `deploy-gamma` (см. `scripts/deploy-compose-release.sh`).
 
 ## GitLab CI
 
 Корневой `.gitlab-ci.yml`: stages fast → docs → integration → playwright. Правила workflow пропускают pipeline от `vdp-mirror-bot` / `[skip mirror-loop]` на default branch. Integration/playwright на MR — manual optional.
 
-GitLab **не** деплоит. Секреты staging/prod только в GitHub Environments.
+GitLab **не** деплоит. Секреты сред только в GitHub Environments.
 
 ## Staging smoke
 
@@ -61,7 +65,7 @@ GitLab **не** деплоит. Секреты staging/prod только в GitH
 
 ## Kubernetes (этап 2)
 
-После зелёного Compose-CD на staging: [k8s-roadmap.md](k8s-roadmap.md). Те же digest-образа, без пересборки.
+После зелёного Compose-CD на `alpha`: [k8s-roadmap.md](k8s-roadmap.md). Те же digest-образа, без пересборки.
 
 ## Честность готовности
 

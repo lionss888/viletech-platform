@@ -1,5 +1,8 @@
 # Default store for core/hub is Postgres (STORE_DRIVER=postgres).
 # Memory driver is for unit tests only (STORE_DRIVER=memory).
+#
+# Published-port bind address is configurable per service so a public VM can keep
+# everything on loopback behind a reverse proxy. Local dev keeps 0.0.0.0 defaults.
 services:
   postgres-core:
     image: postgres:16-alpine
@@ -8,7 +11,7 @@ services:
       POSTGRES_PASSWORD: vdp_core
       POSTGRES_DB: vdp_core
     ports:
-      - "5433:5432"
+      - "${DB_BIND:-0.0.0.0}:5433:5432"
     volumes:
       - ./core/migrations/001_core.sql:/docker-entrypoint-initdb.d/001_core.sql:ro
       - ./core/migrations/002_extended.sql:/docker-entrypoint-initdb.d/002_extended.sql:ro
@@ -22,6 +25,7 @@ services:
       - ./core/migrations/010_r9_extended.sql:/docker-entrypoint-initdb.d/010_r9_extended.sql:ro
       - ./core/migrations/011_r10_bank.sql:/docker-entrypoint-initdb.d/011_r10_bank.sql:ro
       - ./core/migrations/012_b2_org_signer.sql:/docker-entrypoint-initdb.d/012_b2_org_signer.sql:ro
+      - ./core/migrations/013_bank_org_client_type.sql:/docker-entrypoint-initdb.d/013_bank_org_client_type.sql:ro
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U vdp_core -d vdp_core"]
       interval: 3s
@@ -35,7 +39,7 @@ services:
       POSTGRES_PASSWORD: vdp_hub
       POSTGRES_DB: vdp_hub
     ports:
-      - "5434:5432"
+      - "${DB_BIND:-0.0.0.0}:5434:5432"
     volumes:
       - ./hub/migrations/001_hub.sql:/docker-entrypoint-initdb.d/001_hub.sql:ro
       - ./hub/migrations/002_hub.sql:/docker-entrypoint-initdb.d/002_hub.sql:ro
@@ -53,7 +57,7 @@ services:
       PORT: "8090"
       DOCS_PATH: /generate
     ports:
-      - "8090:8090"
+      - "${DOCS_BIND:-0.0.0.0}:8090:8090"
     healthcheck:
       test: ["CMD-SHELL", "wget -qO- http://127.0.0.1:8090/health >/dev/null || exit 1"]
       interval: 5s
@@ -73,7 +77,7 @@ services:
       DOCS_URL: http://docs-service:8090/generate
       DATABASE_URL: postgres://vdp_hub:vdp_hub@postgres-hub:5432/vdp_hub?sslmode=disable
     ports:
-      - "8081:8081"
+      - "${HUB_BIND:-0.0.0.0}:8081:8081"
     depends_on:
       postgres-hub:
         condition: service_healthy
@@ -99,7 +103,7 @@ services:
       GATEWAY_RATE_LIMIT: "2000"
       DATABASE_URL: postgres://vdp_core:vdp_core@postgres-core:5432/vdp_core?sslmode=disable
     ports:
-      - "8080:8080"
+      - "${CORE_BIND:-0.0.0.0}:8080:8080"
     depends_on:
       postgres-core:
         condition: service_healthy
@@ -147,7 +151,7 @@ services:
       PORT: "3000"
       HOST: "0.0.0.0"
     ports:
-      - "3000:3000"
+      - "${FE_PROD_BIND:-0.0.0.0}:3000:3000"
     depends_on:
       core:
         condition: service_healthy
