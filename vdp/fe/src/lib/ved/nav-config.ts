@@ -8,10 +8,10 @@ export const MAIN_NAV: NavItem[] = [
   { segment: "/forms", label: "Входящие заявки", roles: ["internal_compliance_officer", "compliance_officer"] },
   { segment: "/organizations", label: "Проверка организаций", roles: ["internal_compliance_officer", "compliance_officer"] },
   { segment: "/forms/new", label: "Новая заявка", roles: ["user", "manager", "root"] },
-  { segment: "/documents", label: "Документы", roles: ["user", "manager", "provider", "root"] },
 ];
 
 export const REFERENCE_NAV: NavItem[] = [
+  { segment: "/documents", label: "Документы", roles: ["user", "manager", "provider", "root"] },
   { segment: "/counterparties", label: "Контрагенты", roles: ["user", "manager", "root"] },
   { segment: "/organizations", label: "Организации", roles: ["manager", "root"] },
   { segment: "/compliance-tools", label: "Инструменты комплаенс", roles: ["root"] },

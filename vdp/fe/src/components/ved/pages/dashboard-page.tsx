@@ -6,6 +6,7 @@ import { VedFormLink, VedLink } from "@/components/ved/VedLink";
 import { StatusBadge } from "@/components/ved/StatusBadge";
 import { actionsFor } from "@/lib/ved/actions";
 import { isComplianceRole, subjectState } from "@/lib/ved/compliance";
+import { workTotalsByCurrency } from "@/lib/ved/dashboard-totals";
 import { money, relative } from "@/lib/ved/format";
 import { daysIdle, systemStats } from "@/lib/ved/health";
 import { SYSTEM_INCIDENTS, SYSTEM_SERVICES } from "@/lib/ved/reference";
@@ -198,11 +199,9 @@ function RoleDashboard() {
     [scoped],
   );
 
-  const totals = useMemo(() => {
-    const active = scoped.filter((f) => !f.status.startsWith("canceled") && f.status !== "completed");
-    const sum = active.reduce((acc, f) => acc + f.amountMinor, 0);
-    return { active: active.length, sum, currency: active[0]?.currency ?? "USD" };
-  }, [scoped]);
+  const totals = useMemo(() => workTotalsByCurrency(scoped), [scoped]);
+  const primaryTotal = totals.byCurrency[0];
+  const secondaryTotals = totals.byCurrency.slice(1);
 
   const compliance = isComplianceRole(role);
   const orgsPending = organizations.filter((o) => !subjectState(o.status).ok).length;
@@ -228,20 +227,31 @@ function RoleDashboard() {
       )}
 
       <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
-        {[
-          { label: "Требуют вашего действия", value: String(todo.length), search: { mine: true } },
-          {
-            label: "Сделок в работе / закрыто",
-            value: `${totals.active} / ${byStage.get("completed") ?? 0}`,
-            search: {},
-          },
-          { label: "Сумма в работе", value: money(totals.sum, totals.currency), search: {} },
-        ].map((card) => (
-          <VedLink key={card.label} segment="/forms" search={card.search} className="panel block p-4 transition-colors hover:border-accent">
-            <p className="label-caps">{card.label}</p>
-            <p className="mt-1 font-mono text-2xl font-semibold">{card.value}</p>
-          </VedLink>
-        ))}
+        <VedLink segment="/forms" search={{ mine: true }} className="panel block p-4 transition-colors hover:border-accent">
+          <p className="label-caps">Требуют вашего действия</p>
+          <p className="mt-1 font-mono text-2xl font-semibold">{todo.length}</p>
+        </VedLink>
+        <VedLink segment="/forms" search={{}} className="panel block p-4 transition-colors hover:border-accent">
+          <p className="label-caps">Сделок в работе / закрыто</p>
+          <p className="mt-1 font-mono text-2xl font-semibold">
+            {totals.active} / {byStage.get("completed") ?? 0}
+          </p>
+        </VedLink>
+        <VedLink segment="/forms" search={{}} className="panel block p-4 transition-colors hover:border-accent">
+          <p className="label-caps">Сумма в работе</p>
+          <p className="mt-1 font-mono text-2xl font-semibold">
+            {primaryTotal ? money(primaryTotal.sumMinor, primaryTotal.currency) : money(0, "USD")}
+          </p>
+          {secondaryTotals.length > 0 && (
+            <ul className="mt-2 space-y-0.5">
+              {secondaryTotals.map((row) => (
+                <li key={row.currency} className="font-mono text-[11px] text-muted-foreground">
+                  {money(row.sumMinor, row.currency)}
+                </li>
+              ))}
+            </ul>
+          )}
+        </VedLink>
       </div>
       <div className="mt-4 grid gap-4 lg:grid-cols-[minmax(0,3fr)_minmax(0,1fr)]">
 

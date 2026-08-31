@@ -1,4 +1,4 @@
-.PHONY: deps test test-integration test-adapters build db-setup db-migrate compose-db-migrate run-hub run-core run smoke stop compose-up compose-up-prod compose-down compose-ps compose-e2e compose-fe-smoke compose-fe-refresh compose-fe-prod-smoke compose-playwright integration-gate playwright-e2e docs-format-check release-gate image-build image-push image-build-push compose-release-config-check compose-release-up deploy-alpha deploy-beta deploy-gamma rollback-alpha rollback-beta rollback-gamma test-cd-scripts
+.PHONY: deps test test-integration test-adapters build db-setup db-migrate compose-db-migrate run-hub run-core run smoke stop compose-up compose-up-prod compose-down compose-ps compose-e2e compose-fe-smoke compose-fe-refresh compose-fe-prod-smoke compose-playwright lovable-seed-check integration-gate playwright-e2e docs-format-check release-gate image-build image-push image-build-push compose-release-config-check compose-release-up deploy-alpha deploy-beta deploy-gamma rollback-alpha rollback-beta rollback-gamma test-cd-scripts
 
 CORE_DIR := core
 HUB_DIR := hub
@@ -157,8 +157,14 @@ compose-e2e: compose-up
 # RD10: unit gates + compose journey (RD1–RD9 spots on shared stack).
 integration-gate:
 	cd fe && npm test
+	$(MAKE) lovable-seed-check
 	$(MAKE) test
 	$(MAKE) compose-e2e
+
+# Keep fe/src/lib/ved/mock.ts byte-identical to lovable-vdp/dev0; demo patches → demo-seed-overlay.ts.
+lovable-seed-check:
+	@chmod +x scripts/lovable-seed-check.sh
+	@./scripts/lovable-seed-check.sh
 
 # RD11: browser E2E via Docker (Linux browsers; works when host `playwright install` is unsupported).
 compose-playwright:
