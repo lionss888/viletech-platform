@@ -5,8 +5,11 @@ import { useMemo, useState } from "react";
 import { VedAppShell } from "@/components/ved/VedAppShell";
 import { RegistryManager } from "@/components/ved/RegistryManager";
 import { BankSettingsPanel } from "@/components/ved/BankSettingsPanel";
+import { OrgProfileCard } from "@/components/ved/OrgProfileCard";
 import { SubjectReview } from "@/components/ved/SubjectReview";
+import { useAuth } from "@/lib/auth/session";
 import { isComplianceRole, subjectState, type ReviewSubject } from "@/lib/ved/compliance";
+import { usePlatformMode } from "@/lib/ved/platform-mode";
 import { REGISTRIES } from "@/lib/ved/registry";
 import { usePlatformStore } from "@/lib/ved/platform-store";
 import { cn } from "@/lib/utils";
@@ -120,11 +123,20 @@ function ComplianceOrganizations() {
 
 function OrganizationsRegistry() {
   const { organizations, forms, session } = usePlatformStore();
+  const auth = useAuth();
+  const mode = usePlatformMode();
   const def = REGISTRIES.organizations;
   const showBank = session?.role === "root" || session?.role === "manager";
+  const userOrg =
+    organizations.find((o) => o.id === auth.account?.organization_id) ?? organizations[0];
 
   return (
     <VedAppShell title={def.title} subtitle={`${def.subtitle} · записей: ${organizations.length}`}>
+      {mode === "app" && session?.role === "user" && userOrg && (
+        <div className="mb-4">
+          <OrgProfileCard org={userOrg} />
+        </div>
+      )}
       {showBank && organizations.length > 0 && (
         <div className="panel mb-4 p-4">
           <p className="label-caps">Bank API (организации)</p>

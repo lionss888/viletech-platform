@@ -39,7 +39,10 @@ export function FormsList() {
     const statusPreset = STATUS_FILTERS.find((f) => f.value === filter);
     return scoped.filter((form) => {
       if (statusPreset && statusPreset.statuses.length > 0 && !statusPreset.statuses.includes(form.status)) return false;
-      if (stageFilter && statusMeta(form.status).stage !== stageFilter) return false;
+      if (stageFilter === "verification") {
+        const stage = statusMeta(form.status).stage;
+        if (stage !== "organization_verification" && stage !== "form_verification") return false;
+      } else if (stageFilter && statusMeta(form.status).stage !== stageFilter) return false;
       if (onlyMine && actionsFor(role, form.status).length === 0) return false;
       if (onlyStuck && !stuckIds.has(form.id)) return false;
       if (query) {
@@ -76,25 +79,62 @@ export function FormsList() {
       <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
         {[
           role === "root"
-            ? { label: "Зависшие заявки", value: stuck.length }
-            : { label: "Требуют моего действия", value: scoped.filter((f) => actionsFor(role, f.status).length > 0).length },
-          { label: "На комплаенсе", value: (counters.get("organization_verification") ?? 0) + (counters.get("form_verification") ?? 0) },
-          { label: "В платеже", value: counters.get("payment") ?? 0 },
-          { label: "Закрыто", value: counters.get("completed") ?? 0 },
+            ? {
+                label: "Зависшие заявки",
+                value: stuck.length,
+                active: onlyStuck,
+                onClick: () => setOnlyStuck((v) => !v),
+              }
+            : {
+                label: "Требуют моего действия",
+                value: scoped.filter((f) => actionsFor(role, f.status).length > 0).length,
+                active: onlyMine,
+                onClick: () => setOnlyMine((v) => !v),
+              },
+          {
+            label: "На комплаенсе",
+            value: (counters.get("organization_verification") ?? 0) + (counters.get("form_verification") ?? 0),
+            active: stageFilter === "verification",
+            onClick: () => setStageFilter((v) => (v === "verification" ? "" : "verification")),
+          },
+          {
+            label: "В платеже",
+            value: counters.get("payment") ?? 0,
+            active: stageFilter === "payment",
+            onClick: () => setStageFilter((v) => (v === "payment" ? "" : "payment")),
+          },
+          {
+            label: "Закрыто",
+            value: counters.get("completed") ?? 0,
+            active: stageFilter === "completed",
+            onClick: () => setStageFilter((v) => (v === "completed" ? "" : "completed")),
+          },
         ].map((card) => (
-          <div key={card.label} className="panel p-4">
+          <button
+            key={card.label}
+            type="button"
+            onClick={card.onClick}
+            aria-pressed={card.active}
+            className={cn(
+              "panel p-4 text-left transition-colors hover:bg-muted/60",
+              card.active && "shadow-[0_0_0_1px_var(--primary)]",
+            )}
+          >
             <p className="label-caps">{card.label}</p>
             <p className="mt-1 font-mono text-2xl font-semibold">{card.value}</p>
-          </div>
+            {card.active && (
+              <p className="mt-1 text-[11px] font-semibold text-primary">Фильтр включён — нажмите, чтобы снять</p>
+            )}
+          </button>
         ))}
       </div>
 
       <div className="panel mt-4 p-4">
-        <div className="mb-3 flex flex-wrap items-center gap-2 border-b border-border pb-3">
+        <div className="mb-3 flex flex-col items-stretch gap-2 border-b border-border pb-3 sm:flex-row sm:flex-wrap sm:items-center">
           {role !== "provider" && (
             <VedLink
               segment="/forms/new"
-              className="rounded-md bg-primary px-3 py-1.5 text-xs font-semibold text-primary-foreground"
+              className="w-full rounded-md bg-primary px-3 py-2 text-center text-xs font-semibold text-primary-foreground sm:w-auto sm:py-1.5"
             >
               Создать заявку
             </VedLink>
@@ -102,7 +142,7 @@ export function FormsList() {
           <button
             type="button"
             onClick={() => downloadCsv(formsToCsv(rows, organizations, counterparties, role), "zayavki.csv")}
-            className="rounded-md border border-border px-3 py-1.5 text-xs font-semibold"
+            className="w-full rounded-md border border-border px-3 py-2 text-xs font-semibold sm:w-auto sm:py-1.5"
           >
             Скачать заявки ({rows.length})
           </button>
@@ -115,7 +155,7 @@ export function FormsList() {
                 "zayavki-vybrannye.csv",
               )
             }
-            className="rounded-md border border-border px-3 py-1.5 text-xs font-semibold disabled:opacity-40"
+            className="w-full rounded-md border border-border px-3 py-2 text-xs font-semibold disabled:opacity-40 sm:w-auto sm:py-1.5"
           >
             Скачать выбранные ({selected.length})
           </button>
@@ -138,6 +178,7 @@ export function FormsList() {
           </select>
           <select value={stageFilter} onChange={(e) => setStageFilter(e.target.value)} className="field max-w-[180px] text-sm">
             <option value="">Все этапы</option>
+            <option value="verification">Этап: на комплаенсе</option>
             {STAGES.map((s) => (
               <option key={s.id} value={s.id}>
                 Этап: {s.label}
@@ -180,7 +221,51 @@ export function FormsList() {
           </div>
         )}
 
-        <div className="mt-3 overflow-x-auto">
+        {/* Mobile: карточный список */}
+        <div className="mt-3 space-y-2 md:hidden">
+          {rows.map((form) => (
+            <div key={form.id} className="panel p-3">
+              <div className="flex items-start gap-2">
+                <input
+                  type="checkbox"
+                  className="mt-1"
+                  checked={selected.includes(form.id)}
+                  onChange={(e) =>
+                    setSelected((prev) => (e.target.checked ? [...prev, form.id] : prev.filter((id) => id !== form.id)))
+                  }
+                />
+                <div className="min-w-0 flex-1">
+                  <div className="flex flex-wrap items-center justify-between gap-x-2 gap-y-1">
+                    <VedFormLink id={form.id} className="flex min-w-0 items-center gap-2 font-mono text-xs font-semibold hover:underline">
+                      <DirectionTag direction={form.direction} />
+                      <span className="truncate">{form.number}</span>
+                      <ChannelBadge channel={form.channel} />
+                    </VedFormLink>
+                    <StatusBadge status={form.status} />
+                  </div>
+                  <p className="mt-1 truncate text-xs">{cpByIdFrom(counterparties, form.counterpartyId)?.name}</p>
+                  <div className="mt-1 flex flex-wrap items-baseline justify-between gap-x-2 gap-y-0.5">
+                    <span className="font-mono text-xs font-semibold">{money(form.amountMinor, form.currency)}</span>
+                    <span className="font-mono text-[11px] text-muted-foreground">{dateTime(form.updatedAt)}</span>
+                  </div>
+                  <div className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-0.5 text-[11px] text-muted-foreground">
+                    {role !== "provider" && <span className="truncate">{form.ownerName}</span>}
+                    <span className="truncate">{orgByIdFrom(organizations, form.organizationId)?.name}</span>
+                    {role === "root" && (
+                      <span className={cn("font-mono", stuckIds.has(form.id) ? "text-return" : "")}>{daysIdle(form)} дн.</span>
+                    )}
+                  </div>
+                </div>
+              </div>
+            </div>
+          ))}
+          {rows.length === 0 && (
+            <p className="py-10 text-center text-sm text-muted-foreground">Нет заявок под текущий фильтр</p>
+          )}
+        </div>
+
+        {/* Desktop: таблица */}
+        <div className="mt-3 hidden overflow-x-auto md:block">
           <table className="w-full border-collapse text-sm">
             <thead>
               <tr className="border-b border-border text-left">

@@ -1,17 +1,18 @@
 import { Link, type LinkProps } from "@tanstack/react-router";
-import type { ReactNode } from "react";
+import type { AnchorHTMLAttributes, ReactNode } from "react";
 
 import { usePlatformBasePath } from "@/lib/ved/platform-mode";
 
-type VedLinkProps = Omit<LinkProps, "to"> & {
-  segment: string;
-  children: ReactNode;
-};
+type VedLinkProps = Omit<LinkProps, "to"> &
+  Omit<AnchorHTMLAttributes<HTMLAnchorElement>, keyof LinkProps | "children"> & {
+    segment: string;
+    children: ReactNode;
+  };
 
 /** Link with `/demo` prefix in demo mode, root paths in app mode. */
 export function VedLink({ segment, children, ...rest }: VedLinkProps) {
   const base = usePlatformBasePath();
-  const to = `${base}${segment}` as LinkProps["to"];
+  const to = `${base}${segment}` as "/forms";
   return (
     <Link to={to} {...rest}>
       {children}
@@ -30,7 +31,7 @@ export function VedFormLink({
   className?: string;
 }) {
   const base = usePlatformBasePath();
-  const to = `${base}/forms/$id` as LinkProps["to"];
+  const to = `${base}/forms/$id` as "/forms/$id";
   return (
     <Link to={to} params={{ id }} className={className}>
       {children}

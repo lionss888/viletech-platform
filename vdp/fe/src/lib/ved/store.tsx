@@ -1,11 +1,20 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
 
+import { buildAttachedDocuments } from "./document-upload";
 import { COUNTERPARTIES, FORMS, ORGANIZATIONS, USERS } from "./mock";
 import { COMPLIANCE_TOOLS, COUNTRIES, CURRENCIES, HS_CODES, PROVIDERS } from "./reference";
 import type { ComplianceToolRecord, CountryRecord, CurrencyRecord, HsCodeRecord, ProviderRecord } from "./reference";
 import { REGISTRIES, type RefRecord, type RegistryKey } from "./registry";
 import { ROLE_MAP } from "./roles";
-import type { Counterparty, FormAction, Organization, PaymentForm, PlatformUser, VedRole } from "./types";
+import type {
+  AttachedDocument,
+  Counterparty,
+  FormAction,
+  Organization,
+  PaymentForm,
+  PlatformUser,
+  VedRole,
+} from "./types";
 
 const STORAGE_KEY = "ved-demo-state-v2";
 
@@ -43,6 +52,12 @@ type VedStore = State & {
   ) => void | Promise<void>;
   applyBulk: (formIds: string[], action: FormAction, reason?: string) => void;
   createForm: (draft: Partial<PaymentForm>) => PaymentForm | Promise<PaymentForm>;
+  addDocuments: (
+    formId: string,
+    files: { name: string; size: number }[],
+    kind: AttachedDocument["kind"],
+  ) => void | Promise<void>;
+  deleteDocument: (formId: string, docId: string) => void | Promise<void>;
   toggleBlocked: (userId: string) => void;
   createUser: (draft: Omit<PlatformUser, "id" | "createdAt" | "blocked">) => void;
   updateUser: (userId: string, patch: Partial<PlatformUser>) => void;
@@ -229,6 +244,38 @@ export function VedStoreProvider({ children }: { children: ReactNode }) {
         setState((prev) => ({ ...prev, forms: [created, ...prev.forms] }));
         return created;
       },
+      addDocuments: (formId, files, kind) => {
+        const at = new Date().toISOString();
+        setState((prev) => ({
+          ...prev,
+          forms: prev.forms.map((form) => {
+            if (form.id !== formId) return form;
+            const docs = buildAttachedDocuments({ formId: form.id, files, kind, at });
+            return {
+              ...form,
+              updatedAt: at,
+              documents: [...docs, ...form.documents],
+              timeline: [
+                ...form.timeline,
+                {
+                  id: `${form.id}-ev-${form.timeline.length + 1}`,
+                  title: `Загружены документы (${docs.length})`,
+                  at,
+                  actorRole: prev.session?.role ?? "user",
+                  done: true,
+                },
+              ],
+            };
+          }),
+        }));
+      },
+      deleteDocument: (formId, docId) =>
+        setState((prev) => ({
+          ...prev,
+          forms: prev.forms.map((form) =>
+            form.id === formId ? { ...form, documents: form.documents.filter((d) => d.id !== docId) } : form,
+          ),
+        })),
       toggleBlocked: (userId) =>
         setState((prev) => ({
           ...prev,

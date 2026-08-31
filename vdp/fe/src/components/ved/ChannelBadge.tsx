@@ -1,4 +1,4 @@
-import type { PaymentForm } from "./types";
+import type { PaymentForm } from "@/lib/ved/types";
 
 /** Channel marker for registry and detail headers. */
 export function ChannelBadge({ channel, labeled = false }: { channel?: PaymentForm["channel"]; labeled?: boolean }) {

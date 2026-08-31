@@ -96,11 +96,11 @@ function RootDashboard() {
           <h2 className="text-sm font-semibold">Состояние сервисов</h2>
           <ul className="mt-3 divide-y divide-border">
             {SYSTEM_SERVICES.map((s) => (
-              <li key={s.id} className="flex items-center gap-3 py-2.5">
-                <span className="min-w-0 flex-1 truncate text-sm">{s.name}</span>
-                <span className="font-mono text-[11px] text-muted-foreground">{s.latencyMs} мс</span>
-                <span className="font-mono text-[11px] text-muted-foreground">{s.uptime}</span>
-                <span className={cn("rounded px-1.5 py-0.5 text-[11px] font-semibold", STATE[s.state].cls)}>
+              <li key={s.id} className="flex flex-wrap items-center gap-x-3 gap-y-1 py-2.5">
+                <span className="min-w-0 flex-1 basis-32 truncate text-sm">{s.name}</span>
+                <span className="font-mono text-[11px] whitespace-nowrap text-muted-foreground">{s.latencyMs} мс</span>
+                <span className="font-mono text-[11px] whitespace-nowrap text-muted-foreground">{s.uptime}</span>
+                <span className={cn("rounded px-1.5 py-0.5 text-[11px] font-semibold whitespace-nowrap", STATE[s.state].cls)}>
                   {STATE[s.state].text}
                 </span>
               </li>
@@ -227,12 +227,15 @@ function RoleDashboard() {
         </div>
       )}
 
-      <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+      <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
         {[
           { label: "Требуют вашего действия", value: String(todo.length), search: { mine: true } },
-          { label: "Сделок в работе", value: String(totals.active), search: {} },
+          {
+            label: "Сделок в работе / закрыто",
+            value: `${totals.active} / ${byStage.get("completed") ?? 0}`,
+            search: {},
+          },
           { label: "Сумма в работе", value: money(totals.sum, totals.currency), search: {} },
-          { label: "Закрыто", value: String(byStage.get("completed") ?? 0), search: { filter: "completed" } },
         ].map((card) => (
           <VedLink key={card.label} segment="/forms" search={card.search} className="panel block p-4 transition-colors hover:border-accent">
             <p className="label-caps">{card.label}</p>
@@ -240,8 +243,8 @@ function RoleDashboard() {
           </VedLink>
         ))}
       </div>
+      <div className="mt-4 grid gap-4 lg:grid-cols-[minmax(0,3fr)_minmax(0,1fr)]">
 
-      <div className="mt-4 grid gap-4 lg:grid-cols-[1.3fr_1fr]">
         <section className="panel p-4">
           <div className="flex items-center justify-between gap-2">
             <h2 className="text-sm font-semibold">Задачи для вас</h2>
@@ -255,16 +258,20 @@ function RoleDashboard() {
           ) : (
             <ul className="mt-3 divide-y divide-border">
               {todo.slice(0, 7).map((form) => (
-                <li key={form.id} className="flex flex-wrap items-center gap-3 py-2.5">
-                  <VedFormLink id={form.id} className="font-mono text-xs font-semibold hover:underline">
+                <li key={form.id} className="flex flex-wrap items-center gap-x-3 gap-y-1 py-2.5">
+                  <VedFormLink id={form.id} className="shrink-0 font-mono text-xs font-semibold hover:underline">
                     {form.number}
                   </VedFormLink>
-                  <StatusBadge status={form.status} />
-                  <span className="min-w-0 flex-1 truncate text-xs text-muted-foreground">
+                  <span className="shrink-0">
+                    <StatusBadge status={form.status} />
+                  </span>
+                  <span className="min-w-0 flex-1 basis-28 truncate text-xs text-muted-foreground">
                     {cpByIdFrom(counterparties, form.counterpartyId)?.name ?? "—"}
                   </span>
-                  <span className="font-mono text-xs">{money(form.amountMinor, form.currency)}</span>
-                  <span className="text-[11px] text-muted-foreground">{actionsFor(role, form.status)[0]?.label}</span>
+                  <span className="shrink-0 font-mono text-xs whitespace-nowrap">{money(form.amountMinor, form.currency)}</span>
+                  <span className="basis-full text-[11px] text-muted-foreground sm:basis-auto sm:shrink-0 sm:truncate">
+                    {actionsFor(role, form.status)[0]?.label}
+                  </span>
                 </li>
               ))}
             </ul>
@@ -273,6 +280,7 @@ function RoleDashboard() {
 
         <section className="panel p-4">
           <h2 className="text-sm font-semibold">Сделки по этапам</h2>
+
           <ul className="mt-3 space-y-1">
             {STAGES.filter((stage) => (byStage.get(stage.id) ?? 0) > 0).map((stage) => (
               <li key={stage.id}>
@@ -295,16 +303,18 @@ function RoleDashboard() {
         <h2 className="text-sm font-semibold">Последние обновления</h2>
         <ul className="mt-3 divide-y divide-border">
           {recent.map((form) => (
-            <li key={form.id} className="flex flex-wrap items-center gap-3 py-2.5">
+            <li key={form.id} className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-x-3 gap-y-1 py-2.5 sm:flex sm:flex-wrap">
               <VedFormLink id={form.id} className="font-mono text-xs font-semibold hover:underline">
                 {form.number}
               </VedFormLink>
-              <StatusBadge status={form.status} />
-              <span className="min-w-0 flex-1 truncate text-xs text-muted-foreground">
+              <span className="justify-self-end sm:order-none">
+                <StatusBadge status={form.status} />
+              </span>
+              <span className="col-span-2 min-w-0 truncate text-xs text-muted-foreground sm:order-none sm:col-span-1 sm:flex-1">
                 {cpByIdFrom(counterparties, form.counterpartyId)?.name ?? "—"}
               </span>
-              <span className="font-mono text-xs">{money(form.amountMinor, form.currency)}</span>
-              <span className="text-[11px] text-muted-foreground">{relative(form.updatedAt)}</span>
+              <span className="font-mono text-xs whitespace-nowrap">{money(form.amountMinor, form.currency)}</span>
+              <span className="justify-self-end text-[11px] whitespace-nowrap text-muted-foreground">{relative(form.updatedAt)}</span>
             </li>
           ))}
           {recent.length === 0 && <li className="py-2 text-sm text-muted-foreground">Нет данных.</li>}

@@ -15,6 +15,17 @@ export type CreateOrganizationInput = {
   type?: string;
 };
 
+/** Org card fields for generated PDFs — not Account login. */
+export type PatchOrganizationProfileInput = {
+  business_form?: string;
+  phone?: string;
+  email?: string;
+  signer_name?: string;
+  signer_position?: string;
+  signer_other_position?: string;
+  legal_address?: string;
+};
+
 export type CreateCounterpartyInput = {
   name: string;
   country?: string;
@@ -62,7 +73,17 @@ export function createOrganization(input: CreateOrganizationInput): Promise<Core
 }
 
 export function updateOrganization(id: string, input: Partial<CreateOrganizationInput>): Promise<CoreOrganization> {
-  return apiFetch<CoreOrganization>(`/api/v1/organizations/${id}`, {
+  return apiFetch<CoreOrganization>(`/api/v1/organization/${id}`, {
+    method: "PATCH",
+    body: JSON.stringify(input),
+  });
+}
+
+export function patchOrganizationProfile(
+  id: string,
+  input: PatchOrganizationProfileInput,
+): Promise<CoreOrganization> {
+  return apiFetch<CoreOrganization>(`/api/v1/organization/${id}`, {
     method: "PATCH",
     body: JSON.stringify(input),
   });

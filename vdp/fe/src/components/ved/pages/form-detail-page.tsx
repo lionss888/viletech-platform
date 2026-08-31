@@ -203,7 +203,7 @@ export function FormDetail() {
                 {isProvider ? "Подтверждение платежа можно прикрепить через действие на карточке." : "Документы пока не загружены."}
               </p>
             ) : (
-              <DocumentList documents={visibleDocuments} />
+              <DocumentList documents={visibleDocuments} formId={formId} />
             )}
           </div>
         </div>

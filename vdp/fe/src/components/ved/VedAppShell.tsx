@@ -13,6 +13,7 @@ import { Modal, ModalButton } from "@/components/ved/Modal";
 import { useAuth } from "@/lib/auth/session";
 import { actionsFor } from "@/lib/ved/actions";
 import { filterNav, MAIN_NAV, REFERENCE_NAV } from "@/lib/ved/nav-config";
+import { readRefsOpen, writeRefsOpen } from "@/lib/ved/nav-refs-open";
 import { usePlatformBasePath, usePlatformMode } from "@/lib/ved/platform-mode";
 import { usePlatformStore } from "@/lib/ved/platform-store";
 import { ROLES, roleTitle } from "@/lib/ved/roles";
@@ -47,8 +48,16 @@ export function VedAppShell({ children, title, subtitle }: { children: ReactNode
   const displayName = isDemo ? store.session?.name : auth.displayName;
   const email = isDemo ? store.session?.email : auth.email;
 
-  const [refsOpen, setRefsOpen] = useState(false);
+  const [refsOpen, setRefsOpenState] = useState(() => readRefsOpen(false));
   const [supportOpen, setSupportOpen] = useState(false);
+
+  const setRefsOpen = (value: boolean | ((prev: boolean) => boolean)) => {
+    setRefsOpenState((prev) => {
+      const next = typeof value === "function" ? value(prev) : value;
+      writeRefsOpen(next);
+      return next;
+    });
+  };
 
   if (!isDemo && !auth.ready) {
     return (

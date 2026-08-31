@@ -8,6 +8,13 @@ export type CoreOrganization = {
   status?: string;
   blocked?: boolean;
   is_active?: boolean;
+  fields_frozen?: boolean;
+  business_form?: string;
+  phone?: string;
+  email?: string;
+  signer_name?: string;
+  signer_position?: string;
+  signer_other_position?: string;
   client_type?: "ui" | "bank";
   bank_fixed_commission_percent?: string;
   apply_platform_markup?: boolean;

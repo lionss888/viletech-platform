@@ -56,13 +56,14 @@ function LoginPage() {
         <h1 className="mt-8 text-2xl font-semibold tracking-tight">Вход в платформу</h1>
         <p className="mt-2 text-sm text-muted-foreground">Управление сделками, документами и платежами через API.</p>
 
-        <form onSubmit={submit} className="panel mt-6 space-y-4 p-5">
+        <form method="post" onSubmit={submit} className="panel mt-6 space-y-4 p-5">
           <div>
             <label htmlFor="email" className="label-caps">
               E-mail
             </label>
             <input
               id="email"
+              name="email"
               type="email"
               autoComplete="username"
               value={email}
@@ -78,6 +79,7 @@ function LoginPage() {
             </label>
             <input
               id="password"
+              name="password"
               type="password"
               autoComplete="current-password"
               value={password}

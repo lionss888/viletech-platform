@@ -26,10 +26,27 @@ import { Route as StartRouteImport } from './routes/start'
 import { Route as TestingRouteImport } from './routes/testing'
 import { Route as Char91DotmcpChar93ListToolsRouteImport } from './routes/[.mcp]/list-tools'
 import { Route as Char91DotwellKnownChar93OauthProtectedResourceRouteImport } from './routes/[.well-known]/oauth-protected-resource'
+import { Route as DemoIndexRouteImport } from './routes/demo/index'
+import { Route as DemoAdminRouteImport } from './routes/demo/admin'
+import { Route as DemoCodesRouteImport } from './routes/demo/codes'
+import { Route as DemoComplianceToolsRouteImport } from './routes/demo/compliance-tools'
+import { Route as DemoCounterpartiesRouteImport } from './routes/demo/counterparties'
+import { Route as DemoCountriesRouteImport } from './routes/demo/countries'
+import { Route as DemoCurrenciesRouteImport } from './routes/demo/currencies'
+import { Route as DemoDashboardRouteImport } from './routes/demo/dashboard'
+import { Route as DemoDocumentsRouteImport } from './routes/demo/documents'
+import { Route as DemoLoginRouteImport } from './routes/demo/login'
+import { Route as DemoOrganizationsRouteImport } from './routes/demo/organizations'
+import { Route as DemoProvidersRouteImport } from './routes/demo/providers'
+import { Route as DemoStartRouteImport } from './routes/demo/start'
+import { Route as DemoTestingRouteImport } from './routes/demo/testing'
 import { Route as FormsIndexRouteImport } from './routes/forms.index'
 import { Route as FormsIdRouteImport } from './routes/forms.$id'
 import { Route as FormsNewRouteImport } from './routes/forms.new'
 import { Route as Char91DotmcpChar93InvokeToolToolRouteImport } from './routes/[.mcp]/invoke-tool/$tool'
+import { Route as DemoFormsIndexRouteImport } from './routes/demo/forms.index'
+import { Route as DemoFormsIdRouteImport } from './routes/demo/forms.$id'
+import { Route as DemoFormsNewRouteImport } from './routes/demo/forms.new'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -118,6 +135,76 @@ const Char91DotwellKnownChar93OauthProtectedResourceRoute =
     path: '/.well-known/oauth-protected-resource',
     getParentRoute: () => rootRouteImport,
   } as any)
+const DemoIndexRoute = DemoIndexRouteImport.update({
+  id: '/demo/',
+  path: '/demo/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const DemoAdminRoute = DemoAdminRouteImport.update({
+  id: '/demo/admin',
+  path: '/demo/admin',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const DemoCodesRoute = DemoCodesRouteImport.update({
+  id: '/demo/codes',
+  path: '/demo/codes',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const DemoComplianceToolsRoute = DemoComplianceToolsRouteImport.update({
+  id: '/demo/compliance-tools',
+  path: '/demo/compliance-tools',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const DemoCounterpartiesRoute = DemoCounterpartiesRouteImport.update({
+  id: '/demo/counterparties',
+  path: '/demo/counterparties',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const DemoCountriesRoute = DemoCountriesRouteImport.update({
+  id: '/demo/countries',
+  path: '/demo/countries',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const DemoCurrenciesRoute = DemoCurrenciesRouteImport.update({
+  id: '/demo/currencies',
+  path: '/demo/currencies',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const DemoDashboardRoute = DemoDashboardRouteImport.update({
+  id: '/demo/dashboard',
+  path: '/demo/dashboard',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const DemoDocumentsRoute = DemoDocumentsRouteImport.update({
+  id: '/demo/documents',
+  path: '/demo/documents',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const DemoLoginRoute = DemoLoginRouteImport.update({
+  id: '/demo/login',
+  path: '/demo/login',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const DemoOrganizationsRoute = DemoOrganizationsRouteImport.update({
+  id: '/demo/organizations',
+  path: '/demo/organizations',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const DemoProvidersRoute = DemoProvidersRouteImport.update({
+  id: '/demo/providers',
+  path: '/demo/providers',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const DemoStartRoute = DemoStartRouteImport.update({
+  id: '/demo/start',
+  path: '/demo/start',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const DemoTestingRoute = DemoTestingRouteImport.update({
+  id: '/demo/testing',
+  path: '/demo/testing',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const FormsIndexRoute = FormsIndexRouteImport.update({
   id: '/forms/',
   path: '/forms/',
@@ -139,6 +226,21 @@ const Char91DotmcpChar93InvokeToolToolRoute =
     path: '/.mcp/invoke-tool/$tool',
     getParentRoute: () => rootRouteImport,
   } as any)
+const DemoFormsIndexRoute = DemoFormsIndexRouteImport.update({
+  id: '/demo/forms/',
+  path: '/demo/forms/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const DemoFormsIdRoute = DemoFormsIdRouteImport.update({
+  id: '/demo/forms/$id',
+  path: '/demo/forms/$id',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const DemoFormsNewRoute = DemoFormsNewRouteImport.update({
+  id: '/demo/forms/new',
+  path: '/demo/forms/new',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -158,10 +260,27 @@ export interface FileRoutesByFullPath {
   '/testing': typeof TestingRoute
   '/.mcp/list-tools': typeof Char91DotmcpChar93ListToolsRoute
   '/.well-known/oauth-protected-resource': typeof Char91DotwellKnownChar93OauthProtectedResourceRoute
+  '/demo/admin': typeof DemoAdminRoute
+  '/demo/codes': typeof DemoCodesRoute
+  '/demo/compliance-tools': typeof DemoComplianceToolsRoute
+  '/demo/counterparties': typeof DemoCounterpartiesRoute
+  '/demo/countries': typeof DemoCountriesRoute
+  '/demo/currencies': typeof DemoCurrenciesRoute
+  '/demo/dashboard': typeof DemoDashboardRoute
+  '/demo/documents': typeof DemoDocumentsRoute
+  '/demo/login': typeof DemoLoginRoute
+  '/demo/organizations': typeof DemoOrganizationsRoute
+  '/demo/providers': typeof DemoProvidersRoute
+  '/demo/start': typeof DemoStartRoute
+  '/demo/testing': typeof DemoTestingRoute
   '/forms/$id': typeof FormsIdRoute
   '/forms/new': typeof FormsNewRoute
+  '/demo/': typeof DemoIndexRoute
   '/forms/': typeof FormsIndexRoute
   '/.mcp/invoke-tool/$tool': typeof Char91DotmcpChar93InvokeToolToolRoute
+  '/demo/forms/$id': typeof DemoFormsIdRoute
+  '/demo/forms/new': typeof DemoFormsNewRoute
+  '/demo/forms/': typeof DemoFormsIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -181,10 +300,27 @@ export interface FileRoutesByTo {
   '/testing': typeof TestingRoute
   '/.mcp/list-tools': typeof Char91DotmcpChar93ListToolsRoute
   '/.well-known/oauth-protected-resource': typeof Char91DotwellKnownChar93OauthProtectedResourceRoute
+  '/demo/admin': typeof DemoAdminRoute
+  '/demo/codes': typeof DemoCodesRoute
+  '/demo/compliance-tools': typeof DemoComplianceToolsRoute
+  '/demo/counterparties': typeof DemoCounterpartiesRoute
+  '/demo/countries': typeof DemoCountriesRoute
+  '/demo/currencies': typeof DemoCurrenciesRoute
+  '/demo/dashboard': typeof DemoDashboardRoute
+  '/demo/documents': typeof DemoDocumentsRoute
+  '/demo/login': typeof DemoLoginRoute
+  '/demo/organizations': typeof DemoOrganizationsRoute
+  '/demo/providers': typeof DemoProvidersRoute
+  '/demo/start': typeof DemoStartRoute
+  '/demo/testing': typeof DemoTestingRoute
   '/forms/$id': typeof FormsIdRoute
   '/forms/new': typeof FormsNewRoute
+  '/demo': typeof DemoIndexRoute
   '/forms': typeof FormsIndexRoute
   '/.mcp/invoke-tool/$tool': typeof Char91DotmcpChar93InvokeToolToolRoute
+  '/demo/forms/$id': typeof DemoFormsIdRoute
+  '/demo/forms/new': typeof DemoFormsNewRoute
+  '/demo/forms': typeof DemoFormsIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -205,10 +341,27 @@ export interface FileRoutesById {
   '/testing': typeof TestingRoute
   '/.mcp/list-tools': typeof Char91DotmcpChar93ListToolsRoute
   '/.well-known/oauth-protected-resource': typeof Char91DotwellKnownChar93OauthProtectedResourceRoute
+  '/demo/admin': typeof DemoAdminRoute
+  '/demo/codes': typeof DemoCodesRoute
+  '/demo/compliance-tools': typeof DemoComplianceToolsRoute
+  '/demo/counterparties': typeof DemoCounterpartiesRoute
+  '/demo/countries': typeof DemoCountriesRoute
+  '/demo/currencies': typeof DemoCurrenciesRoute
+  '/demo/dashboard': typeof DemoDashboardRoute
+  '/demo/documents': typeof DemoDocumentsRoute
+  '/demo/login': typeof DemoLoginRoute
+  '/demo/organizations': typeof DemoOrganizationsRoute
+  '/demo/providers': typeof DemoProvidersRoute
+  '/demo/start': typeof DemoStartRoute
+  '/demo/testing': typeof DemoTestingRoute
   '/forms/$id': typeof FormsIdRoute
   '/forms/new': typeof FormsNewRoute
+  '/demo/': typeof DemoIndexRoute
   '/forms/': typeof FormsIndexRoute
   '/.mcp/invoke-tool/$tool': typeof Char91DotmcpChar93InvokeToolToolRoute
+  '/demo/forms/$id': typeof DemoFormsIdRoute
+  '/demo/forms/new': typeof DemoFormsNewRoute
+  '/demo/forms/': typeof DemoFormsIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -230,10 +383,27 @@ export interface FileRouteTypes {
     | '/testing'
     | '/.mcp/list-tools'
     | '/.well-known/oauth-protected-resource'
+    | '/demo/admin'
+    | '/demo/codes'
+    | '/demo/compliance-tools'
+    | '/demo/counterparties'
+    | '/demo/countries'
+    | '/demo/currencies'
+    | '/demo/dashboard'
+    | '/demo/documents'
+    | '/demo/login'
+    | '/demo/organizations'
+    | '/demo/providers'
+    | '/demo/start'
+    | '/demo/testing'
     | '/forms/$id'
     | '/forms/new'
+    | '/demo/'
     | '/forms/'
     | '/.mcp/invoke-tool/$tool'
+    | '/demo/forms/$id'
+    | '/demo/forms/new'
+    | '/demo/forms/'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -253,10 +423,27 @@ export interface FileRouteTypes {
     | '/testing'
     | '/.mcp/list-tools'
     | '/.well-known/oauth-protected-resource'
+    | '/demo/admin'
+    | '/demo/codes'
+    | '/demo/compliance-tools'
+    | '/demo/counterparties'
+    | '/demo/countries'
+    | '/demo/currencies'
+    | '/demo/dashboard'
+    | '/demo/documents'
+    | '/demo/login'
+    | '/demo/organizations'
+    | '/demo/providers'
+    | '/demo/start'
+    | '/demo/testing'
     | '/forms/$id'
     | '/forms/new'
+    | '/demo'
     | '/forms'
     | '/.mcp/invoke-tool/$tool'
+    | '/demo/forms/$id'
+    | '/demo/forms/new'
+    | '/demo/forms'
   id:
     | '__root__'
     | '/'
@@ -276,10 +463,27 @@ export interface FileRouteTypes {
     | '/testing'
     | '/.mcp/list-tools'
     | '/.well-known/oauth-protected-resource'
+    | '/demo/admin'
+    | '/demo/codes'
+    | '/demo/compliance-tools'
+    | '/demo/counterparties'
+    | '/demo/countries'
+    | '/demo/currencies'
+    | '/demo/dashboard'
+    | '/demo/documents'
+    | '/demo/login'
+    | '/demo/organizations'
+    | '/demo/providers'
+    | '/demo/start'
+    | '/demo/testing'
     | '/forms/$id'
     | '/forms/new'
+    | '/demo/'
     | '/forms/'
     | '/.mcp/invoke-tool/$tool'
+    | '/demo/forms/$id'
+    | '/demo/forms/new'
+    | '/demo/forms/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -300,10 +504,27 @@ export interface RootRouteChildren {
   TestingRoute: typeof TestingRoute
   Char91DotmcpChar93ListToolsRoute: typeof Char91DotmcpChar93ListToolsRoute
   Char91DotwellKnownChar93OauthProtectedResourceRoute: typeof Char91DotwellKnownChar93OauthProtectedResourceRoute
+  DemoAdminRoute: typeof DemoAdminRoute
+  DemoCodesRoute: typeof DemoCodesRoute
+  DemoComplianceToolsRoute: typeof DemoComplianceToolsRoute
+  DemoCounterpartiesRoute: typeof DemoCounterpartiesRoute
+  DemoCountriesRoute: typeof DemoCountriesRoute
+  DemoCurrenciesRoute: typeof DemoCurrenciesRoute
+  DemoDashboardRoute: typeof DemoDashboardRoute
+  DemoDocumentsRoute: typeof DemoDocumentsRoute
+  DemoLoginRoute: typeof DemoLoginRoute
+  DemoOrganizationsRoute: typeof DemoOrganizationsRoute
+  DemoProvidersRoute: typeof DemoProvidersRoute
+  DemoStartRoute: typeof DemoStartRoute
+  DemoTestingRoute: typeof DemoTestingRoute
   FormsIdRoute: typeof FormsIdRoute
   FormsNewRoute: typeof FormsNewRoute
+  DemoIndexRoute: typeof DemoIndexRoute
   FormsIndexRoute: typeof FormsIndexRoute
   Char91DotmcpChar93InvokeToolToolRoute: typeof Char91DotmcpChar93InvokeToolToolRoute
+  DemoFormsIdRoute: typeof DemoFormsIdRoute
+  DemoFormsNewRoute: typeof DemoFormsNewRoute
+  DemoFormsIndexRoute: typeof DemoFormsIndexRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -427,6 +648,104 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof Char91DotwellKnownChar93OauthProtectedResourceRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/demo/': {
+      id: '/demo/'
+      path: '/demo'
+      fullPath: '/demo/'
+      preLoaderRoute: typeof DemoIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/demo/admin': {
+      id: '/demo/admin'
+      path: '/demo/admin'
+      fullPath: '/demo/admin'
+      preLoaderRoute: typeof DemoAdminRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/demo/codes': {
+      id: '/demo/codes'
+      path: '/demo/codes'
+      fullPath: '/demo/codes'
+      preLoaderRoute: typeof DemoCodesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/demo/compliance-tools': {
+      id: '/demo/compliance-tools'
+      path: '/demo/compliance-tools'
+      fullPath: '/demo/compliance-tools'
+      preLoaderRoute: typeof DemoComplianceToolsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/demo/counterparties': {
+      id: '/demo/counterparties'
+      path: '/demo/counterparties'
+      fullPath: '/demo/counterparties'
+      preLoaderRoute: typeof DemoCounterpartiesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/demo/countries': {
+      id: '/demo/countries'
+      path: '/demo/countries'
+      fullPath: '/demo/countries'
+      preLoaderRoute: typeof DemoCountriesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/demo/currencies': {
+      id: '/demo/currencies'
+      path: '/demo/currencies'
+      fullPath: '/demo/currencies'
+      preLoaderRoute: typeof DemoCurrenciesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/demo/dashboard': {
+      id: '/demo/dashboard'
+      path: '/demo/dashboard'
+      fullPath: '/demo/dashboard'
+      preLoaderRoute: typeof DemoDashboardRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/demo/documents': {
+      id: '/demo/documents'
+      path: '/demo/documents'
+      fullPath: '/demo/documents'
+      preLoaderRoute: typeof DemoDocumentsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/demo/login': {
+      id: '/demo/login'
+      path: '/demo/login'
+      fullPath: '/demo/login'
+      preLoaderRoute: typeof DemoLoginRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/demo/organizations': {
+      id: '/demo/organizations'
+      path: '/demo/organizations'
+      fullPath: '/demo/organizations'
+      preLoaderRoute: typeof DemoOrganizationsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/demo/providers': {
+      id: '/demo/providers'
+      path: '/demo/providers'
+      fullPath: '/demo/providers'
+      preLoaderRoute: typeof DemoProvidersRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/demo/start': {
+      id: '/demo/start'
+      path: '/demo/start'
+      fullPath: '/demo/start'
+      preLoaderRoute: typeof DemoStartRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/demo/testing': {
+      id: '/demo/testing'
+      path: '/demo/testing'
+      fullPath: '/demo/testing'
+      preLoaderRoute: typeof DemoTestingRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/forms/': {
       id: '/forms/'
       path: '/forms'
@@ -455,6 +774,27 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof Char91DotmcpChar93InvokeToolToolRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/demo/forms/': {
+      id: '/demo/forms/'
+      path: '/demo/forms'
+      fullPath: '/demo/forms/'
+      preLoaderRoute: typeof DemoFormsIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/demo/forms/$id': {
+      id: '/demo/forms/$id'
+      path: '/demo/forms/$id'
+      fullPath: '/demo/forms/$id'
+      preLoaderRoute: typeof DemoFormsIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/demo/forms/new': {
+      id: '/demo/forms/new'
+      path: '/demo/forms/new'
+      fullPath: '/demo/forms/new'
+      preLoaderRoute: typeof DemoFormsNewRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -477,10 +817,27 @@ const rootRouteChildren: RootRouteChildren = {
   Char91DotmcpChar93ListToolsRoute: Char91DotmcpChar93ListToolsRoute,
   Char91DotwellKnownChar93OauthProtectedResourceRoute:
     Char91DotwellKnownChar93OauthProtectedResourceRoute,
+  DemoAdminRoute: DemoAdminRoute,
+  DemoCodesRoute: DemoCodesRoute,
+  DemoComplianceToolsRoute: DemoComplianceToolsRoute,
+  DemoCounterpartiesRoute: DemoCounterpartiesRoute,
+  DemoCountriesRoute: DemoCountriesRoute,
+  DemoCurrenciesRoute: DemoCurrenciesRoute,
+  DemoDashboardRoute: DemoDashboardRoute,
+  DemoDocumentsRoute: DemoDocumentsRoute,
+  DemoLoginRoute: DemoLoginRoute,
+  DemoOrganizationsRoute: DemoOrganizationsRoute,
+  DemoProvidersRoute: DemoProvidersRoute,
+  DemoStartRoute: DemoStartRoute,
+  DemoTestingRoute: DemoTestingRoute,
   FormsIdRoute: FormsIdRoute,
   FormsNewRoute: FormsNewRoute,
+  DemoIndexRoute: DemoIndexRoute,
   FormsIndexRoute: FormsIndexRoute,
   Char91DotmcpChar93InvokeToolToolRoute: Char91DotmcpChar93InvokeToolToolRoute,
+  DemoFormsIdRoute: DemoFormsIdRoute,
+  DemoFormsNewRoute: DemoFormsNewRoute,
+  DemoFormsIndexRoute: DemoFormsIndexRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

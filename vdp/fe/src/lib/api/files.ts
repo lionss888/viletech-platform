@@ -7,6 +7,31 @@ export type UploadedFileMeta = {
   original_name?: string;
 };
 
+/** 15 MB — matches core upload limit (B.2). */
+export const MAX_UPLOAD_BYTES = 15 * 1024 * 1024;
+
+export class UploadError extends Error {
+  readonly status: number;
+
+  constructor(status: number, message: string) {
+    super(message);
+    this.name = "UploadError";
+    this.status = status;
+  }
+}
+
+export function formatUploadError(status: number, fallback?: string): string {
+  if (status === 413) return "Файл слишком большой (максимум 15 МБ)";
+  if (status === 415) return "Недопустимый тип файла — загрузите PDF";
+  return fallback ?? "Не удалось загрузить файл";
+}
+
+export function assertFileSize(file: File): void {
+  if (file.size > MAX_UPLOAD_BYTES) {
+    throw new UploadError(413, formatUploadError(413));
+  }
+}
+
 function apiBase(): string {
   const fromEnv = import.meta.env["VITE_API_BASE_URL"] as string | undefined;
   return (fromEnv ?? "").replace(/\/$/, "");
@@ -14,6 +39,7 @@ function apiBase(): string {
 
 /** Multipart upload to file-store; returns file id for docs/attach. */
 export async function uploadFile(formId: string, file: File): Promise<UploadedFileMeta> {
+  assertFileSize(file);
   const formData = new FormData();
   formData.append("file", file);
   formData.append("form_id", formId);
@@ -27,8 +53,7 @@ export async function uploadFile(formId: string, file: File): Promise<UploadedFi
     body: formData,
   });
   if (!response.ok) {
-    const message = response.statusText || "Upload failed";
-    throw new Error(message);
+    throw new UploadError(response.status, formatUploadError(response.status, response.statusText || "Upload failed"));
   }
   return (await response.json()) as UploadedFileMeta;
 }

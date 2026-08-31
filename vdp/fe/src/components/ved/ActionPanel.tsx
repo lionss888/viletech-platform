@@ -3,6 +3,7 @@ import { useMemo, useState } from "react";
 import { Modal, ModalButton } from "@/components/ved/Modal";
 import { actionsFor } from "@/lib/ved/actions";
 import type { ContractType } from "@/lib/api/contract";
+import { assertFileSize, UploadError } from "@/lib/api/files";
 import { marksFor } from "@/lib/ved/compliance";
 import { blocksPaymentStartWithoutProvider, PAYMENT_START_PROVIDER_LOCK } from "@/lib/ved/manager-payment";
 import { usePlatformStore } from "@/lib/ved/platform-store";
@@ -59,6 +60,7 @@ export function ActionPanel({
   const [confirmationHash, setConfirmationHash] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [paymentWarn, setPaymentWarn] = useState<string | null>(null);
 
   const executionProviders = users.filter((u) => u.role === "provider" && !u.blocked);
   const providerOptions =
@@ -102,6 +104,7 @@ export function ActionPanel({
     setRefundAmount("");
     setRefundCurrency(form.currency || "USD");
     setConfirmationHash("");
+    setPaymentWarn(null);
     setError(null);
     setBusy(false);
   }
@@ -134,6 +137,7 @@ export function ActionPanel({
       setRefundAmount(form.amountMinor ? String(form.amountMinor / 100) : "");
       setRefundCurrency(form.currency || "USD");
       setConfirmationHash("");
+      setPaymentWarn(null);
       setError(null);
       setPending(action);
       return;
@@ -143,6 +147,7 @@ export function ActionPanel({
 
   async function runAction(action: FormAction, extra: ActionExtraPayload) {
     setBusy(true);
+    setPaymentWarn(null);
     setError(null);
     try {
       await Promise.resolve(applyAction(form.id, action, extra));
@@ -371,14 +376,37 @@ export function ActionPanel({
             <span className="label-caps">Документ</span>
             <input
               type="file"
+              accept=".pdf,application/pdf,image/*"
               onChange={(e) => {
                 const picked = e.target.files?.[0] ?? null;
-                setFile(picked);
-                setFileName(picked?.name ?? "");
+                if (!picked) {
+                  setFile(null);
+                  setFileName("");
+                  setPaymentWarn(null);
+                  return;
+                }
+                try {
+                  assertFileSize(picked);
+                  setFile(picked);
+                  setFileName(picked.name);
+                  if (pending?.id === "prov_attach_proof") {
+                    setPaymentWarn(
+                      "Проверьте, что сумма и валюта в платёжке совпадают с заявкой — расхождение не блокирует отправку.",
+                    );
+                  }
+                } catch (err) {
+                  setFile(null);
+                  setFileName("");
+                  setPaymentWarn(null);
+                  setError(err instanceof UploadError ? err.message : "Недопустимый файл");
+                }
               }}
               className="mt-1 block w-full text-xs text-muted-foreground"
             />
             {fileName && <span className="mt-1 block font-mono text-[11px] text-muted-foreground">{fileName}</span>}
+            {paymentWarn && (
+              <span className="mt-2 block rounded-md bg-wait-soft px-2 py-1 text-xs text-wait">{paymentWarn}</span>
+            )}
           </label>
         )}
       </Modal>

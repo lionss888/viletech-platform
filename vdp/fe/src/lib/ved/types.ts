@@ -29,6 +29,8 @@ export type FormStatus = string;
 
 export type AttachedDocument = {
   id: string;
+  /** File-store id for preview/download in app mode. */
+  fileId?: string;
   title: string;
   ext: "PDF" | "JPG" | "XLSX" | "DOCX";
   size: string;
@@ -50,6 +52,13 @@ export type Organization = {
   inn: string;
   legalAddress: string;
   status: "approved" | "not_approved" | "waiting_verification" | "blocked";
+  fieldsFrozen?: boolean;
+  businessForm?: string;
+  phone?: string;
+  email?: string;
+  signerName?: string;
+  signerPosition?: string;
+  signerOtherPosition?: string;
   clientType?: "ui" | "bank";
   bankFixedCommissionPercent?: string;
   applyPlatformMarkup?: boolean;

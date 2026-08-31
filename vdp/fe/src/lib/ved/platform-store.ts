@@ -386,6 +386,25 @@ function useApiPlatformStore(): VedStore {
     [auth.displayName, invalidateForms],
   );
 
+  const addDocuments = useCallback(
+    async (formId: string, files: { name: string; size: number }[], kind: string) => {
+      for (const candidate of files) {
+        if (!(candidate instanceof File)) {
+          throw new Error("Загрузка в боевом контуре требует выбранный файл");
+        }
+        const uploaded = await uploadFile(formId, candidate);
+        await attachDocToForm(formId, uploaded.id, kind, candidate.name);
+      }
+      await invalidateForms();
+      await queryClient.invalidateQueries({ queryKey: ["form", formId] });
+    },
+    [invalidateForms, queryClient],
+  );
+
+  const deleteDocument = useCallback(() => {
+    throw new Error("Удаление документов пока не поддерживается core API");
+  }, []);
+
   const saveRefRecord = useCallback(
     async (key: RegistryKey, record: RefRecord, originalId?: string) => {
       const def = REGISTRIES[key];
@@ -589,6 +608,8 @@ function useApiPlatformStore(): VedStore {
       applyAction: applyAction as VedStore["applyAction"],
       applyBulk,
       createForm: createFormLocal as unknown as VedStore["createForm"],
+      addDocuments: addDocuments as VedStore["addDocuments"],
+      deleteDocument: deleteDocument as VedStore["deleteDocument"],
       toggleBlocked: toggleBlocked as VedStore["toggleBlocked"],
       createUser: createUser as VedStore["createUser"],
       updateUser: updateUser as VedStore["updateUser"],
@@ -597,9 +618,11 @@ function useApiPlatformStore(): VedStore {
       resetDemo: (() => undefined) as VedStore["resetDemo"],
     }),
     [
+      addDocuments,
       applyAction,
       applyBulk,
       auth.ready,
+      deleteDocument,
       complianceTools,
       countries,
       createFormLocal,

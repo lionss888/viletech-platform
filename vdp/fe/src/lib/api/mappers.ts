@@ -53,6 +53,7 @@ export function parseDocsJson(raw: string | undefined, formId: string): Attached
     const items = Array.isArray(parsed) ? parsed : (parsed.files ?? []);
     return items.map((item, index) => ({
       id: item.id ?? item.file_id ?? `${formId}-doc-${index}`,
+      fileId: item.file_id ?? item.id,
       title: item.label ?? item.name ?? item.kind ?? "Документ",
       ext: extFromMime(item.mime),
       size: "—",

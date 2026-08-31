@@ -55,15 +55,19 @@ function HomePage() {
             to="/login"
             className="flex-1 rounded-md bg-primary px-5 py-2.5 text-center text-sm font-semibold text-primary-foreground transition-colors hover:bg-primary/90"
           >
-            Войти в платформу
+            Войти в платформу (JWT / API)
           </Link>
           <Link
-            to="/start"
+            to="/demo/start"
             className="flex-1 rounded-md px-5 py-2.5 text-center text-sm font-semibold shadow-[0_0_0_1px_var(--input)] transition-colors hover:bg-muted"
           >
-            Быстрый вход по роли
+            Демо без бэкенда
           </Link>
         </div>
+        <p className="mt-3 text-xs text-muted-foreground">
+          App: <span className="font-mono">user@vdp.local</span> / <span className="font-mono">user</span> · Demo — mock store в{" "}
+          <span className="font-mono">/demo/*</span>
+        </p>
 
         <div className="mt-16 grid gap-4 sm:grid-cols-3">
           {HIGHLIGHTS.map((item) => (

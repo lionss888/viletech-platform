@@ -1,6 +1,8 @@
 import { useState } from "react";
 
+import { downloadPrivateFile } from "@/lib/api/docs";
 import { Modal, ModalButton } from "@/components/ved/Modal";
+import { usePlatformMode } from "@/lib/ved/platform-mode";
 import { dateTime } from "@/lib/ved/format";
 import type { AttachedDocument } from "@/lib/ved/types";
 
@@ -14,12 +16,34 @@ export const KIND_LABEL: Record<AttachedDocument["kind"], string> = {
   other: "Документ",
 };
 
-/** Просмотр вложения — доступен всем ролям. */
-export function DocumentList({ documents }: { documents: AttachedDocument[] }) {
+type DocumentListProps = {
+  documents: AttachedDocument[];
+  formId?: string;
+};
+
+/** Document list with preview/download in app mode when fileId is present. */
+export function DocumentList({ documents, formId: _formId }: DocumentListProps) {
+  const mode = usePlatformMode();
   const [open, setOpen] = useState<AttachedDocument | null>(null);
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  async function handleDownload(doc: AttachedDocument) {
+    if (!doc.fileId || mode !== "app") return;
+    setBusy(true);
+    setError(null);
+    try {
+      await downloadPrivateFile(doc.fileId, doc.title.endsWith(".pdf") ? doc.title : `${doc.title}.pdf`);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Ошибка загрузки");
+    } finally {
+      setBusy(false);
+    }
+  }
 
   return (
     <>
+      {error && <p className="mb-2 rounded-md bg-destructive-soft px-2 py-1 text-xs text-destructive">{error}</p>}
       <ul className="mt-3 divide-y divide-border">
         {documents.map((d) => (
           <li key={d.id} className="flex items-center gap-3 py-2">
@@ -27,13 +51,24 @@ export function DocumentList({ documents }: { documents: AttachedDocument[] }) {
             <span className="min-w-0 flex-1 truncate text-sm">{d.title}</span>
             <span className="hidden font-mono text-[11px] text-muted-foreground sm:inline">{d.size}</span>
             <span className="hidden font-mono text-[11px] text-muted-foreground md:inline">{dateTime(d.uploadedAt)}</span>
-            <button
-              type="button"
-              onClick={() => setOpen(d)}
-              className="rounded-md bg-muted px-2 py-1 text-[11px] font-semibold hover:bg-border"
-            >
-              Просмотр
-            </button>
+            {mode === "app" && d.fileId ? (
+              <button
+                type="button"
+                disabled={busy}
+                onClick={() => void handleDownload(d)}
+                className="rounded-md bg-accent px-2 py-1 text-[11px] font-semibold text-accent-foreground hover:opacity-90"
+              >
+                Скачать
+              </button>
+            ) : (
+              <button
+                type="button"
+                onClick={() => setOpen(d)}
+                className="rounded-md bg-muted px-2 py-1 text-[11px] font-semibold hover:bg-border"
+              >
+                Просмотр
+              </button>
+            )}
           </li>
         ))}
         {documents.length === 0 && <li className="py-3 text-sm text-muted-foreground">Документов пока нет</li>}
@@ -51,7 +86,7 @@ export function DocumentList({ documents }: { documents: AttachedDocument[] }) {
           <div>
             <p className="font-mono text-3xl font-semibold text-muted-foreground">{open?.ext}</p>
             <p className="mt-2 text-xs text-muted-foreground">
-              Предпросмотр документа · загружен {open ? dateTime(open.uploadedAt) : ""}
+              {mode === "demo" ? "Demo: предпросмотр без файла" : "Предпросмотр"} · {open ? dateTime(open.uploadedAt) : ""}
             </p>
           </div>
         </div>

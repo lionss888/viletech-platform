@@ -14,14 +14,14 @@ test.describe("Happy path (app UI)", () => {
     await page.goto(`/forms/${formId}`);
     await expect(page.getByRole("button", { name: "Отправить на проверку" })).toBeVisible();
     await page.getByRole("button", { name: "Отправить на проверку" }).click();
-    await expect(page.getByText("Ожидает проверки комплаенса")).toBeVisible({ timeout: 15_000 });
+    await expect(page.getByTitle("Ожидает проверки комплаенса")).toBeVisible({ timeout: 15_000 });
 
     await logout();
     await loginAs("compliance_officer");
     await page.goto(`/forms/${formId}`);
     await page.getByRole("button", { name: "Взять в проверку" }).click();
     await page.getByRole("button", { name: "Подтвердить заявку" }).click();
-    await expect(page.getByText("Заявка подтверждена")).toBeVisible({ timeout: 15_000 });
+    await expect(page.getByTitle("Заявка подтверждена")).toBeVisible({ timeout: 15_000 });
 
     await logout();
     await loginAs("manager");

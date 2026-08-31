@@ -4,6 +4,7 @@ import { useState } from "react";
 import { VedAppShell } from "@/components/ved/VedAppShell";
 import { usePlatformBasePath, usePlatformMode } from "@/lib/ved/platform-mode";
 import { usePlatformStore } from "@/lib/ved/platform-store";
+import { assertFileSize, UploadError } from "@/lib/api/files";
 import type { FormCondition, FormDirection, FormKind } from "@/lib/ved/types";
 import { cn } from "@/lib/utils";
 
@@ -39,6 +40,21 @@ export function NewForm() {
 
   function set<K extends keyof typeof draft>(key: K, value: (typeof draft)[K]) {
     setDraft((prev) => ({ ...prev, [key]: value }));
+  }
+
+  function onFilePick(key: "invoiceFile" | "contractFile", file: File | null) {
+    if (!file) {
+      set(key, null);
+      return;
+    }
+    try {
+      assertFileSize(file);
+      set(key, file);
+      setError(null);
+    } catch (e) {
+      set(key, null);
+      setError(e instanceof UploadError ? e.message : "Недопустимый файл");
+    }
   }
 
   function validateStep(): string | null {
@@ -270,19 +286,19 @@ export function NewForm() {
             </button>
             {!draft.noDocuments && (
               <>
-                <Field label="Инвойс (PDF)">
+                <Field label="Инвойс (PDF, до 15 МБ)">
                   <input
                     type="file"
                     accept=".pdf,application/pdf"
-                    onChange={(e) => set("invoiceFile", e.target.files?.[0] ?? null)}
+                    onChange={(e) => onFilePick("invoiceFile", e.target.files?.[0] ?? null)}
                     className="text-xs text-muted-foreground"
                   />
                 </Field>
-                <Field label="Контракт (PDF)">
+                <Field label="Контракт (PDF, до 15 МБ)">
                   <input
                     type="file"
                     accept=".pdf,application/pdf"
-                    onChange={(e) => set("contractFile", e.target.files?.[0] ?? null)}
+                    onChange={(e) => onFilePick("contractFile", e.target.files?.[0] ?? null)}
                     className="text-xs text-muted-foreground"
                   />
                 </Field>

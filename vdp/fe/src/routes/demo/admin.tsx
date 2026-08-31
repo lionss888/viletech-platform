@@ -170,9 +170,10 @@ export function AdminPage() {
       <div className="panel mt-4 p-4">
         <div className="flex flex-wrap items-center justify-between gap-2">
           <h2 className="text-sm font-semibold">Учётные записи</h2>
-          <div className="flex flex-wrap items-center gap-2">
+          <div className="flex flex-col items-stretch gap-2 sm:flex-row sm:flex-wrap sm:items-center">
             <ModalButton
               variant="quiet"
+              className="w-full sm:w-auto"
               onClick={() =>
                 download(
                   toCsv(USERS_CSV, users.map((u) => ({ name: u.name, email: u.email, role: roleTitle(u.role), organization: u.organization ?? "" }))),
@@ -193,7 +194,9 @@ export function AdminPage() {
             >
               Загрузить пользователей
             </ModalButton>
-            <ModalButton onClick={openCreate}>Создать пользователя</ModalButton>
+            <ModalButton className="w-full sm:w-auto" onClick={openCreate}>
+              Создать пользователя
+            </ModalButton>
           </div>
         </div>
         {notice && <p className="mt-2 text-xs text-done">{notice}</p>}
@@ -266,6 +269,7 @@ export function AdminPage() {
           <>
             <ModalButton
               variant="quiet"
+              className="w-full sm:w-auto"
               onClick={() => {
                 setCreating(false);
                 setEditing(null);

@@ -6,6 +6,7 @@ import { VedAppShell } from "@/components/ved/VedAppShell";
 import { KIND_LABEL } from "@/components/ved/DocumentViewer";
 import { Modal, ModalButton } from "@/components/ved/Modal";
 import { dateTime } from "@/lib/ved/format";
+import { usePlatformMode } from "@/lib/ved/platform-mode";
 import { usePlatformStore, visibleForms } from "@/lib/ved/platform-store";
 import type { AttachedDocument, PaymentForm } from "@/lib/ved/types";
 
@@ -29,12 +30,20 @@ export const Route = createFileRoute("/demo/documents")({
 });
 
 export function DocumentsPage() {
-  const { forms, session } = usePlatformStore();
+  const { forms, session, addDocuments, deleteDocument } = usePlatformStore();
+  const mode = usePlatformMode();
   const mine = visibleForms(forms, session?.role, session?.name);
+  const canWrite = session?.role === "user" || session?.role === "manager" || session?.role === "root";
+  const canDelete = canWrite && mode === "demo";
 
   const [query, setQuery] = useState("");
   const [kind, setKind] = useState("");
   const [open, setOpen] = useState<DocRow | null>(null);
+  const [uploadOpen, setUploadOpen] = useState(false);
+  const [targetForm, setTargetForm] = useState("");
+  const [uploadKind, setUploadKind] = useState<AttachedDocument["kind"]>("invoice");
+  const [files, setFiles] = useState<File[]>([]);
+  const [error, setError] = useState("");
 
   const rows = useMemo(() => {
     const all: DocRow[] = mine.flatMap((form) => form.documents.map((doc) => ({ doc, form })));
@@ -51,6 +60,33 @@ export function DocumentsPage() {
       })
       .sort((a, b) => b.doc.uploadedAt.localeCompare(a.doc.uploadedAt));
   }, [mine, query, kind]);
+
+  const startUpload = () => {
+    setTargetForm(mine[0]?.id ?? "");
+    setUploadKind("invoice");
+    setFiles([]);
+    setError("");
+    setUploadOpen(true);
+  };
+
+  const submitUpload = async () => {
+    if (!targetForm) return setError("Выберите заявку");
+    if (files.length === 0) return setError("Выберите файлы");
+    try {
+      await addDocuments(targetForm, files, uploadKind);
+      setUploadOpen(false);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Не удалось загрузить документы");
+    }
+  };
+
+  const removeDocument = async (formId: string, docId: string) => {
+    try {
+      await deleteDocument(formId, docId);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Не удалось удалить документ");
+    }
+  };
 
   return (
     <VedAppShell title="Документы" subtitle={`Договоры, поручения и отчёты по вашим сделкам · документов: ${rows.length}`}>
@@ -70,7 +106,17 @@ export function DocumentsPage() {
             ))}
           </select>
           <span className="ml-auto font-mono text-xs text-muted-foreground">{rows.length} документов</span>
+          {canWrite && (
+            <button
+              type="button"
+              onClick={startUpload}
+              className="w-full rounded-md bg-primary px-3 py-2 text-xs font-semibold text-primary-foreground sm:w-auto"
+            >
+              Загрузить документы
+            </button>
+          )}
         </div>
+
 
         <div className="mt-3 overflow-x-auto">
           <table className="w-full text-sm">
@@ -102,14 +148,26 @@ export function DocumentsPage() {
                   <td className="py-2 pr-4 font-mono text-xs text-muted-foreground">{doc.size}</td>
                   <td className="py-2 pr-4 font-mono text-xs text-muted-foreground">{dateTime(doc.uploadedAt)}</td>
                   <td className="py-2 pr-4 text-right">
-                    <button
-                      type="button"
-                      onClick={() => setOpen({ doc, form })}
-                      className="rounded-md bg-muted px-2 py-1 text-[11px] font-semibold hover:bg-border"
-                    >
-                      Просмотр
-                    </button>
+                    <span className="flex justify-end gap-2">
+                      <button
+                        type="button"
+                        onClick={() => setOpen({ doc, form })}
+                        className="rounded-md bg-muted px-2 py-1 text-[11px] font-semibold hover:bg-border"
+                      >
+                        Просмотр
+                      </button>
+                      {canDelete && (
+                        <button
+                          type="button"
+                          onClick={() => void removeDocument(form.id, doc.id)}
+                          className="rounded-md px-2 py-1 text-[11px] font-semibold text-destructive hover:bg-destructive-soft"
+                        >
+                          Удалить
+                        </button>
+                      )}
+                    </span>
                   </td>
+
                 </tr>
               ))}
               {rows.length === 0 && (
@@ -139,6 +197,70 @@ export function DocumentsPage() {
               Предпросмотр документа · загружен {open ? dateTime(open.doc.uploadedAt) : ""}
             </p>
           </div>
+        </div>
+      </Modal>
+
+      <Modal
+        open={uploadOpen}
+        onOpenChange={setUploadOpen}
+        title="Загрузить документы"
+        description="Выберите заявку, тип документа и один или несколько файлов."
+        footer={
+          <>
+            <ModalButton variant="quiet" onClick={() => setUploadOpen(false)}>
+              Отмена
+            </ModalButton>
+            <ModalButton onClick={() => void submitUpload()}>Загрузить</ModalButton>
+          </>
+        }
+      >
+        <div className="space-y-3 text-sm">
+          <div>
+            <p className="label-caps">Заявка</p>
+            <select value={targetForm} onChange={(e) => setTargetForm(e.target.value)} className="field mt-1">
+              <option value="">Выберите заявку</option>
+              {mine.map((f) => (
+                <option key={f.id} value={f.id}>
+                  {f.number} · {f.invoiceNumber}
+                </option>
+              ))}
+            </select>
+          </div>
+          <div>
+            <p className="label-caps">Тип документа</p>
+            <select
+              value={uploadKind}
+              onChange={(e) => setUploadKind(e.target.value as AttachedDocument["kind"])}
+              className="field mt-1"
+            >
+              {Object.entries(KIND_LABEL).map(([value, label]) => (
+                <option key={value} value={value}>
+                  {label}
+                </option>
+              ))}
+            </select>
+          </div>
+          <div>
+            <p className="label-caps">Файлы</p>
+            <input
+              type="file"
+              multiple
+              accept=".pdf,.jpg,.jpeg,.png,.xlsx,.xls,.csv,.doc,.docx"
+              onChange={(e) => {
+                setFiles(Array.from(e.target.files ?? []));
+                setError("");
+              }}
+              className="field mt-1 text-xs"
+            />
+            {files.length > 0 && (
+              <ul className="mt-2 space-y-1 font-mono text-[11px] text-muted-foreground">
+                {files.map((f) => (
+                  <li key={f.name}>{f.name}</li>
+                ))}
+              </ul>
+            )}
+          </div>
+          {error && <p className="text-xs font-semibold text-destructive">{error}</p>}
         </div>
       </Modal>
     </VedAppShell>

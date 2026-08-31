@@ -2,7 +2,7 @@ import { useState } from "react";
 
 import { Modal, ModalButton } from "@/components/ved/Modal";
 import { marksFor, subjectState, type ReviewSubject } from "@/lib/ved/compliance";
-import { usePlatformStore } from "@/lib/ved/platform-store";
+import { useVed } from "@/lib/ved/store";
 import { cn } from "@/lib/utils";
 
 type Verdict = "approved" | "waiting_verification" | "blocked";
@@ -38,7 +38,7 @@ export function SubjectReview({
   readOnly?: boolean;
   compact?: boolean;
 }) {
-  const { complianceTools, saveRefRecord } = usePlatformStore();
+  const { complianceTools, saveRefRecord } = useVed();
   const marks = marksFor(complianceTools, "organization");
   const [pending, setPending] = useState<{ subject: ReviewSubject; verdict: Verdict } | null>(null);
   const [mark, setMark] = useState("");
@@ -73,8 +73,7 @@ export function SubjectReview({
     <div className={cn("panel", compact ? "p-4" : "p-4")}>
       <p className="label-caps">Проверка участников сделки</p>
       <p className="mt-1 text-xs text-muted-foreground">
-        Блокировка организации останавливает отправку новых заявок и согласование текущих. Одобрение участника разблокирует
-        ICO/ECO-путь для заявок этой организации.
+        Решение по участникам не блокирует саму заявку: организацию можно вернуть на доработку отдельно.
       </p>
       <ul className="mt-3 divide-y divide-border">
         {subjects.map((subject) => {
