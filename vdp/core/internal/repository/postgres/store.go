@@ -153,19 +153,26 @@ func (s *Store) SaveOrganization(ctx context.Context, o domain.Organization) err
 	}
 	_, err := s.db.ExecContext(ctx, `
 		INSERT INTO organizations (id, account_id, status, is_active, blocked, rating, inn, name, country, fields_frozen, org_type, subaccounts, invited_ids, organization_card_file_id,
-			client_type, bank_fixed_commission_percent, apply_platform_markup, default_agent_id, bank_webhook_url, bank_webhook_secret, updated_at)
-		VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,NOW())
+			client_type, bank_fixed_commission_percent, apply_platform_markup, default_agent_id, bank_webhook_url, bank_webhook_secret,
+			business_form, phone, email, signer_name, signer_position, signer_other_position, legal_address, full_name, ogrn, kpp, updated_at)
+		VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22,$23,$24,$25,$26,$27,$28,$29,$30,NOW())
 		ON CONFLICT (id) DO UPDATE SET status=EXCLUDED.status, is_active=EXCLUDED.is_active, blocked=EXCLUDED.blocked,
 			rating=EXCLUDED.rating, inn=EXCLUDED.inn, name=EXCLUDED.name, country=EXCLUDED.country,
 			fields_frozen=EXCLUDED.fields_frozen, org_type=EXCLUDED.org_type, subaccounts=EXCLUDED.subaccounts,
 			invited_ids=EXCLUDED.invited_ids, organization_card_file_id=EXCLUDED.organization_card_file_id,
 			client_type=EXCLUDED.client_type, bank_fixed_commission_percent=EXCLUDED.bank_fixed_commission_percent,
 			apply_platform_markup=EXCLUDED.apply_platform_markup, default_agent_id=EXCLUDED.default_agent_id,
-			bank_webhook_url=EXCLUDED.bank_webhook_url, bank_webhook_secret=EXCLUDED.bank_webhook_secret, updated_at=NOW()`,
+			bank_webhook_url=EXCLUDED.bank_webhook_url, bank_webhook_secret=EXCLUDED.bank_webhook_secret,
+			business_form=EXCLUDED.business_form, phone=EXCLUDED.phone, email=EXCLUDED.email,
+			signer_name=EXCLUDED.signer_name, signer_position=EXCLUDED.signer_position,
+			signer_other_position=EXCLUDED.signer_other_position, legal_address=EXCLUDED.legal_address,
+			full_name=EXCLUDED.full_name, ogrn=EXCLUDED.ogrn, kpp=EXCLUDED.kpp, updated_at=NOW()`,
 		o.ID, o.AccountID, string(o.Status), o.IsActive, o.Blocked, string(o.Rating), o.INN, o.Name, o.Country, o.FieldsFrozen,
 		orgType, string(sub), string(inv), nullStr(o.OrganizationCardFileID),
 		clientTypeOr(o.ClientType), nullStr(o.BankFixedCommissionPercent), o.ApplyPlatformMarkup, nullStr(o.DefaultAgentID),
-		nullStr(o.BankWebhookURL), nullStr(o.BankWebhookSecret))
+		nullStr(o.BankWebhookURL), nullStr(o.BankWebhookSecret),
+		string(o.BusinessForm), o.Phone, o.Email, o.SignerName, string(o.SignerPosition), o.SignerOtherPosition,
+		o.LegalAddress, o.FullName, o.OGRN, o.KPP)
 	if err != nil {
 		// fallback without migration 011
 		_, err = s.db.ExecContext(ctx, `
@@ -188,17 +195,22 @@ func (s *Store) DeleteOrganization(ctx context.Context, id string) error {
 
 func (s *Store) OrganizationByID(ctx context.Context, id string) (domain.Organization, error) {
 	var o domain.Organization
-	var status, rating, orgType, clientType string
+	var status, rating, orgType, clientType, signerPos string
 	var sub, inv, card sql.NullString
 	err := s.db.QueryRowContext(ctx, `
 		SELECT id, account_id, status, is_active, blocked, rating, COALESCE(inn,''), COALESCE(name,''), COALESCE(country,''), fields_frozen,
 			COALESCE(org_type,'client'), COALESCE(subaccounts,'[]'), COALESCE(invited_ids,'[]'), organization_card_file_id,
 			COALESCE(client_type,'ui'), COALESCE(bank_fixed_commission_percent,''), COALESCE(apply_platform_markup,false),
-			COALESCE(default_agent_id,''), COALESCE(bank_webhook_url,''), COALESCE(bank_webhook_secret,'')
+			COALESCE(default_agent_id,''), COALESCE(bank_webhook_url,''), COALESCE(bank_webhook_secret,''),
+			COALESCE(business_form,''), COALESCE(phone,''), COALESCE(email,''), COALESCE(signer_name,''),
+			COALESCE(signer_position,''), COALESCE(signer_other_position,''), COALESCE(legal_address,''),
+			COALESCE(full_name,''), COALESCE(ogrn,''), COALESCE(kpp,'')
 		FROM organizations WHERE id=$1`, id).Scan(
 		&o.ID, &o.AccountID, &status, &o.IsActive, &o.Blocked, &rating, &o.INN, &o.Name, &o.Country, &o.FieldsFrozen,
 		&orgType, &sub, &inv, &card,
-		&clientType, &o.BankFixedCommissionPercent, &o.ApplyPlatformMarkup, &o.DefaultAgentID, &o.BankWebhookURL, &o.BankWebhookSecret)
+		&clientType, &o.BankFixedCommissionPercent, &o.ApplyPlatformMarkup, &o.DefaultAgentID, &o.BankWebhookURL, &o.BankWebhookSecret,
+		&o.BusinessForm, &o.Phone, &o.Email, &o.SignerName, &signerPos, &o.SignerOtherPosition, &o.LegalAddress,
+		&o.FullName, &o.OGRN, &o.KPP)
 	if err != nil && err != sql.ErrNoRows {
 		err = s.db.QueryRowContext(ctx, `
 			SELECT id, account_id, status, is_active, blocked, rating, COALESCE(inn,''), COALESCE(name,''), COALESCE(country,''), fields_frozen,
@@ -221,6 +233,7 @@ func (s *Store) OrganizationByID(ctx context.Context, id string) (domain.Organiz
 		o.ClientType = domain.ClientTypeUI
 	}
 	o.OrganizationCardFileID = card.String
+	o.SignerPosition = domain.SignerPosition(signerPos)
 	if sub.Valid {
 		_ = json.Unmarshal([]byte(sub.String), &o.Subaccounts)
 	}
@@ -268,9 +281,10 @@ func (s *Store) SaveForm(ctx context.Context, f formpayment.Form) error {
 			rate_on_provider, execution_deadline, rate_value, rate_currency, rate_source, fee_amount, fee_percent, fee_currency,
 			invoice_amount, currency, counterparty_id, contract_id, payment_method, platform_postpay_mode, sign_method,
 			no_documents, important, client_agreed_provider, confirmation_hash, confirmation_file_id, contract_number, contract_date,
+			payment_purpose, actual_payment_amount, actual_payment_date,
 			invoice_json, docs_json, on_behalf_organization_id, active_order_id, updated_at
 		) VALUES (
-			$1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22,$23,$24,$25,$26,$27,$28,$29,$30,$31,$32,$33,$34,$35,$36,NOW()
+			$1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22,$23,$24,$25,$26,$27,$28,$29,$30,$31,$32,$33,$34,$35,$36,$37,$38,$39,NOW()
 		) ON CONFLICT (id) DO UPDATE SET
 			provider_id=EXCLUDED.provider_id, agent_id=EXCLUDED.agent_id, manager_id=EXCLUDED.manager_id,
 			status=EXCLUDED.status, prev_status=EXCLUDED.prev_status, rate_on_provider=EXCLUDED.rate_on_provider,
@@ -282,6 +296,8 @@ func (s *Store) SaveForm(ctx context.Context, f formpayment.Form) error {
 			important=EXCLUDED.important, client_agreed_provider=EXCLUDED.client_agreed_provider,
 			confirmation_hash=EXCLUDED.confirmation_hash, confirmation_file_id=EXCLUDED.confirmation_file_id,
 			contract_number=EXCLUDED.contract_number, contract_date=EXCLUDED.contract_date,
+			payment_purpose=EXCLUDED.payment_purpose, actual_payment_amount=EXCLUDED.actual_payment_amount,
+			actual_payment_date=EXCLUDED.actual_payment_date,
 			invoice_json=EXCLUDED.invoice_json, docs_json=EXCLUDED.docs_json,
 			on_behalf_organization_id=EXCLUDED.on_behalf_organization_id, active_order_id=EXCLUDED.active_order_id, updated_at=NOW()`,
 		f.ID, f.AccountID, f.OrganizationID, nullStr(f.ProviderID), nullStr(f.AgentID), nullStr(f.ManagerID),
@@ -289,6 +305,7 @@ func (s *Store) SaveForm(ctx context.Context, f formpayment.Form) error {
 		f.Rate.Value, f.Rate.Currency, f.Rate.Source, f.Commission.FeeAmount, f.Commission.FeePercent, f.Commission.FeeCurrency,
 		f.InvoiceAmount, f.Currency, nullStr(f.CounterpartyID), nullStr(f.ContractID), f.PaymentMethod, f.PlatformPostpayMode, f.SignMethod,
 		f.NoDocuments, f.Important, f.ClientAgreedProvider, f.ConfirmationHash, f.ConfirmationFileID, f.ContractNumber, f.ContractDate,
+		f.PaymentPurpose, f.ActualPaymentAmount, f.ActualPaymentDate,
 		stringOr(f.InvoiceJSON, string(raw)), f.DocsJSON, nullStr(f.OnBehalfOrganizationID), nullStr(f.ActiveOrderID),
 	)
 	if err != nil {
@@ -337,7 +354,9 @@ func (s *Store) FormByID(ctx context.Context, id string) (formpayment.Form, erro
 			COALESCE(fee_amount,''), COALESCE(fee_percent,''), COALESCE(fee_currency,''), COALESCE(invoice_amount,''), COALESCE(currency,''),
 			counterparty_id, contract_id, COALESCE(payment_method,''), COALESCE(platform_postpay_mode,''), COALESCE(sign_method,''),
 			no_documents, important, client_agreed_provider, COALESCE(confirmation_hash,''), COALESCE(confirmation_file_id,''),
-			COALESCE(contract_number,''), COALESCE(contract_date,''), COALESCE(invoice_json,''), COALESCE(docs_json,''),
+			COALESCE(contract_number,''), COALESCE(contract_date,''),
+			COALESCE(payment_purpose,''), COALESCE(actual_payment_amount,''), COALESCE(actual_payment_date,''),
+			COALESCE(invoice_json,''), COALESCE(docs_json,''),
 			on_behalf_organization_id, active_order_id, created_at, updated_at
 		FROM form_payments WHERE id=$1`, id).Scan(
 		&f.ID, &f.AccountID, &f.OrganizationID, &provider, &agent, &manager, &status, &prev, &dir, &kind,
@@ -345,7 +364,8 @@ func (s *Store) FormByID(ctx context.Context, id string) (formpayment.Form, erro
 		&f.Commission.FeeAmount, &f.Commission.FeePercent, &f.Commission.FeeCurrency, &f.InvoiceAmount, &f.Currency,
 		&cp, &contract, &f.PaymentMethod, &f.PlatformPostpayMode, &f.SignMethod,
 		&f.NoDocuments, &f.Important, &f.ClientAgreedProvider, &f.ConfirmationHash, &f.ConfirmationFileID,
-		&f.ContractNumber, &f.ContractDate, &f.InvoiceJSON, &f.DocsJSON, &onBehalf, &activeOrder, &f.CreatedAt, &f.UpdatedAt,
+		&f.ContractNumber, &f.ContractDate, &f.PaymentPurpose, &f.ActualPaymentAmount, &f.ActualPaymentDate,
+		&f.InvoiceJSON, &f.DocsJSON, &onBehalf, &activeOrder, &f.CreatedAt, &f.UpdatedAt,
 	)
 	if err != nil && err != sql.ErrNoRows {
 		err = s.db.QueryRowContext(ctx, `

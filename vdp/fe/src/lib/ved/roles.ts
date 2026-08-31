@@ -9,54 +9,54 @@ export type RoleMeta = {
   personName: string;
 };
 
-/** Роли BDUI-контракта + seed-аккаунты из fe-experiment/README.md. */
+/** Роли BDUI-контракта + seed-аккаунты vdp core (docs/development/getting-started.md). */
 export const ROLES: RoleMeta[] = [
   {
     id: "user",
     group: "Личный кабинет",
     title: "Клиент",
-    seedEmail: "user@bdui.local",
-    seedPassword: "BduiUser2024!",
-    personName: "Д. Морозов",
+    seedEmail: "user@vdp.local",
+    seedPassword: "user",
+    personName: "Ivan Petrov",
   },
   {
     id: "internal_compliance_officer",
     group: "Контроль",
     title: "Внутренний комплаенс",
-    seedEmail: "ico@bdui.local",
-    seedPassword: "BduiLifecycle2024!",
+    seedEmail: "ico@vdp.local",
+    seedPassword: "ico",
     personName: "Е. Соколова",
   },
   {
     id: "compliance_officer",
     group: "Проверка",
     title: "Внешний комплаенс",
-    seedEmail: "eco@bdui.local",
-    seedPassword: "BduiLifecycle2024!",
+    seedEmail: "eco@vdp.local",
+    seedPassword: "eco",
     personName: "М. Гаврилов",
   },
   {
     id: "manager",
     group: "Операции",
     title: "Менеджер",
-    seedEmail: "manager@bdui.local",
-    seedPassword: "BduiLifecycle2024!",
+    seedEmail: "manager@vdp.local",
+    seedPassword: "manager",
     personName: "П. Иванов",
   },
   {
     id: "provider",
     group: "Сервис",
     title: "Провайдер",
-    seedEmail: "provider@bdui.local",
-    seedPassword: "BduiLifecycle2024!",
+    seedEmail: "provider@vdp.local",
+    seedPassword: "provider",
     personName: "S. Chen",
   },
   {
     id: "root",
     group: "Система",
     title: "Суперадмин",
-    seedEmail: "root@bdui.local",
-    seedPassword: "BduiLifecycle2024!",
+    seedEmail: "root@vdp.local",
+    seedPassword: "root",
     personName: "А. Константинов",
   },
 ];

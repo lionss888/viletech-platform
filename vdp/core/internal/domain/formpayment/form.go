@@ -39,6 +39,9 @@ type Form struct {
 	ConfirmationFileID     string     `json:"confirmation_file_id,omitempty"`
 	ContractNumber         string     `json:"contract_number,omitempty"`
 	ContractDate           string     `json:"contract_date,omitempty"`
+	PaymentPurpose         string     `json:"payment_purpose,omitempty"`
+	ActualPaymentAmount    string     `json:"actual_payment_amount,omitempty"`
+	ActualPaymentDate      string     `json:"actual_payment_date,omitempty"`
 	InvoiceJSON            string     `json:"invoice_json,omitempty"`
 	DocsJSON               string     `json:"docs_json,omitempty"`
 	POGStatus              string     `json:"pog_status,omitempty"` // idle|pending|success|failed

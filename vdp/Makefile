@@ -1,9 +1,14 @@
-.PHONY: deps test test-integration test-adapters build db-setup db-migrate run-hub run-core run smoke stop compose-up compose-up-prod compose-down compose-ps compose-e2e compose-fe-smoke compose-fe-refresh compose-fe-prod-smoke compose-playwright integration-gate playwright-e2e docs-format-check release-gate
+.PHONY: deps test test-integration test-adapters build db-setup db-migrate run-hub run-core run smoke stop compose-up compose-up-prod compose-down compose-ps compose-e2e compose-fe-smoke compose-fe-refresh compose-fe-prod-smoke compose-playwright integration-gate playwright-e2e docs-format-check release-gate image-build image-push image-build-push compose-release-config-check compose-release-up deploy-staging deploy-prod rollback-staging rollback-prod test-cd-scripts
 
 CORE_DIR := core
 HUB_DIR := hub
 CORE_BIN := bin/vdp-core
 HUB_BIN := bin/vdp-hub
+
+IMAGE_REGISTRY ?= ghcr.io
+IMAGE_NAMESPACE ?= $(shell git -C .. config --get remote.origin.url 2>/dev/null | sed -E 's#.*[:/]([^/]+)/[^/]+(\.git)?$$#\1#' | tr '[:upper:]' '[:lower:]' || echo viletech)
+IMAGE_TAG ?= $(shell git -C .. rev-parse --short HEAD 2>/dev/null || echo local)
+PIN_FILE ?= .release-images.env
 
 export DATABASE_URL_CORE ?= postgres://vdp_core:vdp_core@localhost:5432/vdp_core?sslmode=disable
 export DATABASE_URL_HUB ?= postgres://vdp_hub:vdp_hub@localhost:5432/vdp_hub?sslmode=disable
@@ -53,6 +58,7 @@ db-migrate:
 	PGPASSWORD=vdp_core psql -h localhost -U vdp_core -d vdp_core -v ON_ERROR_STOP=1 -f $(CORE_DIR)/migrations/009_r5_multi_order.sql
 	PGPASSWORD=vdp_core psql -h localhost -U vdp_core -d vdp_core -v ON_ERROR_STOP=1 -f $(CORE_DIR)/migrations/010_r9_extended.sql
 	PGPASSWORD=vdp_core psql -h localhost -U vdp_core -d vdp_core -v ON_ERROR_STOP=1 -f $(CORE_DIR)/migrations/011_r10_bank.sql
+	PGPASSWORD=vdp_core psql -h localhost -U vdp_core -d vdp_core -v ON_ERROR_STOP=1 -f $(CORE_DIR)/migrations/012_b2_org_signer.sql
 	PGPASSWORD=vdp_hub psql -h localhost -U vdp_hub -d vdp_hub -v ON_ERROR_STOP=1 -f $(HUB_DIR)/migrations/001_hub.sql
 	PGPASSWORD=vdp_hub psql -h localhost -U vdp_hub -d vdp_hub -v ON_ERROR_STOP=1 -f $(HUB_DIR)/migrations/002_hub.sql
 
@@ -168,3 +174,50 @@ release-gate:
 	$(MAKE) playwright-e2e
 	$(MAKE) docs-format-check
 	@echo "release-gate green"
+
+image-build:
+	@chmod +x scripts/image-build-push.sh
+	PUSH=0 IMAGE_REGISTRY="$(IMAGE_REGISTRY)" IMAGE_NAMESPACE="$(IMAGE_NAMESPACE)" IMAGE_TAG="$(IMAGE_TAG)" \
+		PIN_FILE="$(PIN_FILE)" ./scripts/image-build-push.sh
+
+image-push: image-build
+	@chmod +x scripts/image-build-push.sh
+	PUSH=1 IMAGE_REGISTRY="$(IMAGE_REGISTRY)" IMAGE_NAMESPACE="$(IMAGE_NAMESPACE)" IMAGE_TAG="$(IMAGE_TAG)" \
+		PIN_FILE="$(PIN_FILE)" ./scripts/image-build-push.sh
+
+image-build-push: image-push
+
+compose-release-config-check:
+	@test -n "$${VDP_CORE_IMAGE:-}" || VDP_CORE_IMAGE=example.local/vdp-core:check; \
+	test -n "$${VDP_HUB_IMAGE:-}" || VDP_HUB_IMAGE=example.local/vdp-hub:check; \
+	test -n "$${VDP_FE_IMAGE:-}" || VDP_FE_IMAGE=example.local/vdp-fe:check; \
+	VDP_CORE_IMAGE=$${VDP_CORE_IMAGE} VDP_HUB_IMAGE=$${VDP_HUB_IMAGE} VDP_FE_IMAGE=$${VDP_FE_IMAGE} \
+	docker compose -f docker-compose.yml -f docker-compose.release.yml --profile prod config >/dev/null
+	@echo "compose release config ok"
+
+compose-release-up:
+	@test -f "$(PIN_FILE)" || (echo "missing $(PIN_FILE); run make image-build first" >&2; exit 1)
+	@set -a && . "$(PIN_FILE)" && set +a && \
+	docker compose -f docker-compose.yml -f docker-compose.release.yml --profile prod \
+		up -d --no-build --pull always --scale fe=0
+	@./scripts/wait-release-health.sh
+
+deploy-staging:
+	@chmod +x scripts/deploy-compose-release.sh
+	ENVIRONMENT=staging PIN_FILE="$(PIN_FILE)" ./scripts/deploy-compose-release.sh
+
+deploy-prod:
+	@chmod +x scripts/deploy-compose-release.sh
+	ENVIRONMENT=production PIN_FILE="$(PIN_FILE)" ./scripts/deploy-compose-release.sh
+
+rollback-staging:
+	@chmod +x scripts/rollback-compose-release.sh
+	ENVIRONMENT=staging ./scripts/rollback-compose-release.sh
+
+rollback-prod:
+	@chmod +x scripts/rollback-compose-release.sh
+	ENVIRONMENT=production ./scripts/rollback-compose-release.sh
+
+test-cd-scripts:
+	@chmod +x scripts/test-cd-scripts.sh
+	./scripts/test-cd-scripts.sh

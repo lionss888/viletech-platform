@@ -13,6 +13,8 @@ import (
 	apperrors "github.com/viletech/vdp/core/pkg/errors"
 )
 
+const maxUploadPDFBytes = 15 * 1024 * 1024 // TZ: invoice/contract PDF up to 15 MB
+
 func (s *Server) registerDocsDomainRoutes() {
 	// Counterparty (Nest: /counterparty/*)
 	s.mux.HandleFunc("GET /api/v1/counterparty/list", s.withAuth(s.handleCPList))
@@ -388,6 +390,15 @@ func (s *Server) handleFileUpload(w http.ResponseWriter, r *http.Request, princi
 			return
 		}
 		mime := header.Header.Get("Content-Type")
+		if strings.Contains(mime, "pdf") || strings.HasSuffix(strings.ToLower(header.Filename), ".pdf") {
+			if len(data) > maxUploadPDFBytes {
+				writeJSON(w, http.StatusRequestEntityTooLarge, map[string]string{
+					"code":    string(apperrors.ErrCodeValidation),
+					"message": "pdf file exceeds 15MB limit",
+				})
+				return
+			}
+		}
 		meta, err := s.catalog.UploadFileBytes(r.Context(), principal, r.FormValue("form_id"), mime, data)
 		if err != nil {
 			writeError(w, err)

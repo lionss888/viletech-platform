@@ -1,0 +1,15 @@
+# Deploy host env (copy to /opt/vdp/.env.deploy on VM — do not commit)
+
+ENVIRONMENT=staging
+
+# Application secrets (rotate for prod; never dev defaults)
+JWT_SECRET=replace-with-rotated-core-secret
+HUB_SHARED_SECRET=replace-with-rotated-s2s-secret
+
+# Optional hub adapters (staging-checklist.md)
+DOCS_URL=
+MAIL_URL=
+BANK_WEBHOOK_URL=
+
+# Prod only
+# ENVIRONMENT=production

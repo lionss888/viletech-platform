@@ -331,12 +331,28 @@ func (s *Server) handleOrgGet(w http.ResponseWriter, r *http.Request, principal 
 
 func (s *Server) handleOrgPatch(w http.ResponseWriter, r *http.Request, principal authz.Principal) {
 	var body struct {
-		Name    string `json:"name"`
-		INN     string `json:"inn"`
-		Country string `json:"country"`
+		Name                string `json:"name"`
+		INN                 string `json:"inn"`
+		Country             string `json:"country"`
+		FullName            string `json:"full_name"`
+		BusinessForm        string `json:"business_form"`
+		Phone               string `json:"phone"`
+		Email               string `json:"email"`
+		SignerName          string `json:"signer_name"`
+		SignerPosition      string `json:"signer_position"`
+		SignerOtherPosition string `json:"signer_other_position"`
+		LegalAddress        string `json:"legal_address"`
+		OGRN                string `json:"ogrn"`
+		KPP                 string `json:"kpp"`
 	}
 	_ = json.NewDecoder(r.Body).Decode(&body)
-	org, err := s.orgs.Update(r.Context(), principal, r.PathValue("id"), body.Name, body.INN, body.Country)
+	org, err := s.orgs.UpdateProfile(r.Context(), principal, r.PathValue("id"), domain.OrgProfilePatch{
+		Name: body.Name, INN: body.INN, Country: body.Country, FullName: body.FullName,
+		BusinessForm: domain.BusinessForm(body.BusinessForm), Phone: body.Phone, Email: body.Email,
+		SignerName: body.SignerName, SignerPosition: domain.SignerPosition(body.SignerPosition),
+		SignerOtherPosition: body.SignerOtherPosition, LegalAddress: body.LegalAddress,
+		OGRN: body.OGRN, KPP: body.KPP,
+	})
 	if err != nil {
 		writeError(w, err)
 		return

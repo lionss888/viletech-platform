@@ -14,9 +14,13 @@ Docs and mail HTTP contract verified in CI via make test-adapters with httptest.
 
 Nest form-payment XLSX and compliance export use real OOXML (`export.MinimalXLSX`). PDF generation payload includes agent template_id per PA (`docs_payload.go`); prod fidelity still depends on external docs service behind DOCS_URL.
 
+## B.2 Documents (2026-08 pilot)
+
+**~75% after B.2 wave 1–2 backend** (real PDF path via `docs-service` + `DOCS_URL` on compose/staging). Blockers closed on machine 1: org signer fields, enriched docs payload, 15MB upload limit, DOCS API contract, reference `docs-service`, compose-e2e docs assert, staging-smoke `storage_key` check. Still open: FE upload/download (machine 2 — `b2-fe-handoff.md`), customer workshop D4/D5 (report N orders, RUB formulas), legal template sign-off per PA. Matrix: `docs/pilot/b2-uat-field-matrix.md`. Diadoc/OCR: manual / optional per `b2-decisions.md`.
+
 ## CI CD in vdp repo
 
-GitHub Actions vdp-ci.yml jobs fast docs integration playwright. Release vdp-release.yml runs make release-gate. GitLab mirror documented in ci.md — **не реализован**; только по явной команде после P1–P5.
+GitHub Actions: `vdp-ci.yml` (fast/docs/integration/playwright), `vdp-release.yml` (release-gate), `vdp-images.yml` (GHCR digest + GitLab registry copy), `vdp-deploy.yml` (staging/production compose by digest), `vdp-mirror-gitlab.yml` (GitHub → GitLab). GitLab CI: root `.gitlab-ci.yml` — parallel regression, **no deploy**. One-time GitLab project + secrets: `docs/operations/gitlab-setup.md`. **Partial (~70% CD):** deploy workflows require configured GitHub Environments + VM; prod promote manual; K8s — этап 2 (`k8s-roadmap.md`). Green pipeline ≠ prod product ready (FE↔API, vendor URLs).
 
 ## Playwright UI coverage
 

@@ -1,0 +1,14 @@
+# Release overlay: immutable images from registry (digest or version tag).
+# Usage (staging/prod, no local build):
+#   export VDP_CORE_IMAGE VDP_HUB_IMAGE VDP_FE_IMAGE
+#   docker compose -f docker-compose.yml -f docker-compose.release.yml --profile prod \
+#     up -d --no-build --pull always --scale fe=0
+services:
+  hub:
+    image: ${VDP_HUB_IMAGE:?set VDP_HUB_IMAGE to registry image@digest or :tag}
+
+  core:
+    image: ${VDP_CORE_IMAGE:?set VDP_CORE_IMAGE to registry image@digest or :tag}
+
+  fe-prod:
+    image: ${VDP_FE_IMAGE:?set VDP_FE_IMAGE to registry image@digest or :tag}

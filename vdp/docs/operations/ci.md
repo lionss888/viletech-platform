@@ -1,39 +1,68 @@
 # CI/CD для VDP
 
-GitHub Actions владеет автоматической регрессией для каталога vdp. Локальные make-цели остаются эквивалентом для разработчика и pre-merge проверки.
+GitHub Actions — **канон**: merge в `main`, теги `vdp-v*`, GHCR, deploy. GitLab (группа sandbox6902635) — **вторичный форж**: зеркало, параллельные MR, тот же тестовый контур. Настройка зеркала: [gitlab-setup.md](gitlab-setup.md).
 
 ## Topology
 
-Workflow файл .github/workflows/vdp-ci.yml. Job fast выполняется на каждом pull request при изменении vdp или workflow. Job docs проверяет формат markdown в vdp/docs. Job integration зависит от fast и запускается на push в main, по расписанию nightly и на pull request с label integration. Job playwright зависит от integration и использует тот же триггер.
+```text
+Developer → GitHub PR/MR + GitLab MR (optional)
+         → vdp-ci.yml (fast, docs, integration*, playwright*)
+         → vdp-release.yml (tag vdp-v* → make release-gate)
+         → vdp-images.yml (immutable images → GHCR + copy GitLab registry)
+         → vdp-deploy.yml (staging auto / production manual approve)
+         → vdp-mirror-gitlab.yml (GitHub → GitLab, no CD on GitLab)
+```
 
-Job fast включает npm test в vdp/fe, make test для Go unit без build tag integration, make test-adapters для hub HTTP-контрактов docs и mail. Job integration поднимает service container postgres:16, выполняет make db-migrate, make test-integration с тегом integration, make compose-up и scripts/compose-e2e.sh без Playwright. Job playwright поднимает compose и make playwright-e2e в отдельном failure domain.
+Workflow `.github/workflows/vdp-ci.yml`. Job **fast** на каждом PR при изменении `vdp/` или workflow. Job **docs** — формат markdown. Job **integration** — postgres + compose-e2e (main, nightly, PR с label `integration`). Job **playwright** — browser E2E после integration.
 
-Release workflow .github/workflows/vdp-release.yml срабатывает на workflow_dispatch и теги vdp-v*. Он выполняет make release-gate с postgres service и полным docker-стеком.
+Job **fast**: `npm test` в `vdp/fe`, `make test`, `make test-adapters`. **integration**: postgres service, `ci-bootstrap-postgres.sh`, `make db-migrate`, `make test-integration`, `make compose-up`, `compose-e2e.sh`. **playwright**: compose + `make playwright-e2e`.
+
+Release `.github/workflows/vdp-release.yml` — `workflow_dispatch` и теги `vdp-v*` → `make release-gate`.
+
+Images `.github/workflows/vdp-images.yml` — после green gate на теге или push в `main`: build/push `vdp-core`, `vdp-hub`, `vdp-fe` (production target) в GHCR по digest; copy digest в GitLab Container Registry.
+
+Deploy `.github/workflows/vdp-deploy.yml` — GitHub Environments `staging` / `production`; `docker compose -f docker-compose.release.yml pull && up -d` **без `--build`**; `staging-smoke.sh` на staging.
 
 ## Когда блокируется merge
 
-Pull request должен проходить job fast и docs. Integration и playwright не обязательны на каждом PR без label integration; рекомендуется branch protection required check fast на main. Перед pilot handover и релизом требуется зелёный release-gate локально или через vdp-release workflow.
+PR на GitHub: **fast** + **docs** (branch protection). Integration/playwright — main / label `integration` / nightly. Перед handover: зелёный `release-gate` локально или `vdp-release` на теге.
+
+Merge в `main` **только на GitHub**. GitLab `main` — mirror-only.
 
 ## Локальные эквиваленты
 
-Быстрый слой. Команда cd vdp/fe && npm test и cd vdp && make test && make test-adapters.
+Быстрый слой: `cd vdp/fe && npm test`, `cd vdp && make test && make test-adapters`.
 
-Integration слой. Команда cd vdp && make db-setup при локальном Postgres, затем make test-integration, make compose-up, ./scripts/compose-e2e.sh.
+Integration: `make db-setup` (локальный Postgres), `make test-integration`, `make compose-up`, `./scripts/compose-e2e.sh`.
 
-Browser слой. Команда cd vdp && make playwright-e2e после compose-up.
+Browser: `make playwright-e2e`.
 
-Pre-handover. Команда cd vdp && make release-gate агрегирует все gate per RH4.
+Pre-handover: `make release-gate`.
 
-Подробнее о слоях тестов см. [testing.md](../development/testing.md).
+Образа: `make image-build IMAGE_TAG=sha-local`, `make image-push` (требует registry login).
 
-## GitLab mirror
+Release overlay без сборки: `VDP_CORE_IMAGE=... VDP_HUB_IMAGE=... VDP_FE_IMAGE=... docker compose -f docker-compose.yml -f docker-compose.release.yml --profile prod up -d`.
 
-В MVP реализован только GitHub Actions. Для GitLab CI рекомендуется stages fast, integration, playwright с docker:dind для compose и postgres service для make test-integration. Переменные DATABASE_URL_CORE и DATABASE_URL_HUB указывают на CI postgres. Secrets staging URL не хранятся в git.
+Deploy staging (на VM с SSH): `make deploy-staging DIGEST=<sha>` (см. `scripts/deploy-compose-release.sh`).
 
-## Staging smoke manual
+## GitLab CI
 
-Опциональный staging smoke: `./scripts/staging-smoke.sh` с `staging-env.example`. Не входит в обязательный PR green.
+Корневой `.gitlab-ci.yml`: stages fast → docs → integration → playwright. Правила workflow пропускают pipeline от `vdp-mirror-bot` / `[skip mirror-loop]` на default branch. Integration/playwright на MR — manual optional.
+
+GitLab **не** деплоит. Секреты staging/prod только в GitHub Environments.
+
+## Staging smoke
+
+`./scripts/staging-smoke.sh` с vars из `staging-env.example`. Входит в deploy workflow после health.
+
+## Rollback
+
+[deploy-rollback.md](deploy-rollback.md) — pin предыдущего digest, `compose pull && up -d`, без SSH-патча контейнеров.
+
+## Kubernetes (этап 2)
+
+После зелёного Compose-CD на staging: [k8s-roadmap.md](k8s-roadmap.md). Те же digest-образа, без пересборки.
 
 ## Честность готовности
 
-Green CI подтверждает автоматическую регрессию unit, postgres integration, compose API E2E и частичный browser suite. Не заменяет prod vendor integrations, security sign-off и operational alerting. См. [known-gaps.md](../pilot/known-gaps.md).
+Green CI/CD подтверждает регрессию и доставку **артефакта**. Не заменяет prod vendor integrations, security sign-off, FE↔API product readiness. См. [known-gaps.md](../pilot/known-gaps.md).

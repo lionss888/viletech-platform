@@ -28,4 +28,6 @@ forms.yaml не описывает все 331 in-scope маршрут Nest parit
 
 ## Swagger UI
 
+См. также hub→DOCS контракт: [docs-generate.md](docs-generate.md) (B.2 generated PDF payload).
+
 Hosted Swagger UI out of scope MVP. Локально можно импортировать forms.yaml в Swagger Editor.

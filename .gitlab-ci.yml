@@ -1,0 +1,153 @@
+# VDP CI on GitLab (secondary forge). Canonical merge: GitHub main only.
+# CD/deploy runs on GitHub Actions — not here.
+
+workflow:
+  rules:
+    # Skip pipeline when GitHub mirror bot pushed to default branch (avoid loop).
+    - if: '$CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH && $CI_COMMIT_MESSAGE =~ /\[skip mirror-loop\]/'
+      when: never
+    - if: '$CI_PIPELINE_SOURCE == "push" && $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH && $CI_COMMIT_AUTHOR =~ /vdp-mirror-bot/'
+      when: never
+    - when: always
+
+default:
+  interruptible: true
+
+variables:
+  FF_NETWORK_PER_BUILD: "true"
+  DOCKER_TLS_CERTDIR: "/certs"
+  GO_VERSION: "1.22"
+  NODE_VERSION: "20"
+  POSTGRES_USER: vdp
+  POSTGRES_PASSWORD: vdp
+  POSTGRES_DB: postgres
+  DATABASE_URL_CORE: postgres://vdp_core:vdp_core@postgres:5432/vdp_core?sslmode=disable
+  DATABASE_URL_HUB: postgres://vdp_hub:vdp_hub@postgres:5432/vdp_hub?sslmode=disable
+
+stages:
+  - fast
+  - docs
+  - integration
+  - playwright
+
+.vdp_changes: &vdp_changes
+  changes:
+    - vdp/**/*
+    - .gitlab-ci.yml
+
+.go_cache: &go_cache
+  cache:
+    key: go-${CI_COMMIT_REF_SLUG}
+    paths:
+      - vdp/core/.cache
+      - vdp/hub/.cache
+
+.node_cache: &node_cache
+  cache:
+    key: npm-${CI_COMMIT_REF_SLUG}
+    paths:
+      - vdp/fe/node_modules/
+
+fast:
+  stage: fast
+  image: golang:${GO_VERSION}
+  <<: *go_cache
+  rules:
+    - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
+    - if: '$CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH'
+    - if: '$CI_PIPELINE_SOURCE == "schedule"'
+    - if: '$CI_PIPELINE_SOURCE == "web"'
+  before_script:
+    - apt-get update -qq && apt-get install -y -qq curl ca-certificates
+    - curl -fsSL https://deb.nodesource.com/setup_${NODE_VERSION}.x | bash -
+    - apt-get install -y -qq nodejs
+  script:
+    - cd vdp/fe && npm ci && npm test
+    - cd "$CI_PROJECT_DIR/vdp" && make test
+    - cd "$CI_PROJECT_DIR/vdp" && make test-adapters
+
+docs:
+  stage: docs
+  image: alpine:3.20
+  rules:
+    - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
+    - if: '$CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH'
+    - if: '$CI_PIPELINE_SOURCE == "schedule"'
+    - if: '$CI_PIPELINE_SOURCE == "web"'
+  script:
+    - apk add --no-cache bash docker-cli compose
+    - cd vdp && make docs-format-check
+    - cd vdp && make test-cd-scripts
+
+integration:
+  stage: integration
+  image: docker:27-cli
+  services:
+    - name: docker:27-dind
+      alias: docker
+    - name: postgres:16
+      alias: postgres
+  variables:
+    DOCKER_HOST: tcp://docker:2376
+    DOCKER_TLS_VERIFY: "1"
+    DOCKER_CERT_PATH: "$DOCKER_TLS_CERTDIR/client"
+  needs: [fast]
+  rules:
+    - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
+      when: manual
+      allow_failure: true
+    - if: '$CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH'
+    - if: '$CI_PIPELINE_SOURCE == "schedule"'
+    - if: '$CI_PIPELINE_SOURCE == "web"'
+  before_script:
+    - apk add --no-cache bash curl postgresql-client go git make
+    - |
+      until pg_isready -h postgres -U "$POSTGRES_USER"; do sleep 1; done
+      PGPASSWORD="$POSTGRES_PASSWORD" psql -h postgres -U "$POSTGRES_USER" -d postgres -v ON_ERROR_STOP=1 <<'SQL'
+      DO $$ BEGIN
+        IF NOT EXISTS (SELECT FROM pg_roles WHERE rolname = 'vdp_core') THEN
+          CREATE ROLE vdp_core LOGIN PASSWORD 'vdp_core';
+        END IF;
+        IF NOT EXISTS (SELECT FROM pg_roles WHERE rolname = 'vdp_hub') THEN
+          CREATE ROLE vdp_hub LOGIN PASSWORD 'vdp_hub';
+        END IF;
+      END $$;
+      SQL
+      PGPASSWORD="$POSTGRES_PASSWORD" psql -h postgres -U "$POSTGRES_USER" -d postgres -tc "SELECT 1 FROM pg_database WHERE datname='vdp_core'" | grep -q 1 || \
+        PGPASSWORD="$POSTGRES_PASSWORD" psql -h postgres -U "$POSTGRES_USER" -d postgres -c "CREATE DATABASE vdp_core OWNER vdp_core;"
+      PGPASSWORD="$POSTGRES_PASSWORD" psql -h postgres -U "$POSTGRES_USER" -d postgres -tc "SELECT 1 FROM pg_database WHERE datname='vdp_hub'" | grep -q 1 || \
+        PGPASSWORD="$POSTGRES_PASSWORD" psql -h postgres -U "$POSTGRES_USER" -d postgres -c "CREATE DATABASE vdp_hub OWNER vdp_hub;"
+    - export DATABASE_URL_CORE="postgres://vdp_core:vdp_core@postgres:5432/vdp_core?sslmode=disable"
+    - export DATABASE_URL_HUB="postgres://vdp_hub:vdp_hub@postgres:5432/vdp_hub?sslmode=disable"
+  script:
+    - cd vdp && make db-migrate
+    - cd vdp && make test-integration
+    - cd vdp && make compose-up
+    - cd vdp && ./scripts/compose-e2e.sh
+  after_script:
+    - cd vdp && make compose-down || true
+
+playwright:
+  stage: playwright
+  image: docker:27-cli
+  services:
+    - name: docker:27-dind
+      alias: docker
+  variables:
+    DOCKER_HOST: tcp://docker:2376
+    DOCKER_TLS_VERIFY: "1"
+    DOCKER_CERT_PATH: "$DOCKER_TLS_CERTDIR/client"
+  needs: [integration]
+  rules:
+    - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
+      when: manual
+      allow_failure: true
+    - if: '$CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH'
+    - if: '$CI_PIPELINE_SOURCE == "schedule"'
+    - if: '$CI_PIPELINE_SOURCE == "web"'
+  script:
+    - apk add --no-cache bash make
+    - cd vdp && make compose-up
+    - cd vdp && make playwright-e2e
+  after_script:
+    - cd vdp && make compose-down || true

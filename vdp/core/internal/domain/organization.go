@@ -51,7 +51,17 @@ type Organization struct {
 	Rating                 ClientRating       `json:"rating,omitempty"`
 	INN                    string             `json:"inn,omitempty"`
 	Name                   string             `json:"name,omitempty"`
+	FullName               string             `json:"full_name,omitempty"`
 	Country                string             `json:"country,omitempty"`
+	BusinessForm           BusinessForm       `json:"business_form,omitempty"`
+	Phone                  string             `json:"phone,omitempty"`
+	Email                  string             `json:"email,omitempty"`
+	SignerName             string             `json:"signer_name,omitempty"`
+	SignerPosition         SignerPosition     `json:"signer_position,omitempty"`
+	SignerOtherPosition    string             `json:"signer_other_position,omitempty"`
+	LegalAddress           string             `json:"legal_address,omitempty"`
+	OGRN                   string             `json:"ogrn,omitempty"`
+	KPP                    string             `json:"kpp,omitempty"`
 	FieldsFrozen           bool               `json:"fields_frozen"`
 	Type                   OrganizationType   `json:"type,omitempty"`
 	OrganizationCardFileID string             `json:"organization_card_file_id,omitempty"`

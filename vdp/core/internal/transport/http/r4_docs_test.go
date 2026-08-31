@@ -33,6 +33,34 @@ func TestR4DocsDomainMatrixAllDone(t *testing.T) {
 	}
 }
 
+func TestR4FileUploadRejectsOversizePDF(t *testing.T) {
+	core, _, _ := newStack(t)
+	user := login(t, core, "user@vdp.local", "user")
+	var body bytes.Buffer
+	w := multipart.NewWriter(&body)
+	part, err := w.CreateFormFile("file", "big.pdf")
+	if err != nil {
+		t.Fatal(err)
+	}
+	oversize := make([]byte, 15*1024*1024+1)
+	oversize[0] = '%'
+	oversize[1] = 'P'
+	oversize[2] = 'D'
+	oversize[3] = 'F'
+	if _, err := part.Write(oversize); err != nil {
+		t.Fatal(err)
+	}
+	_ = w.Close()
+	res := httptest.NewRecorder()
+	req := httptest.NewRequest(http.MethodPost, "/api/v1/file-store/upload", &body)
+	req.Header.Set("Authorization", "Bearer "+user)
+	req.Header.Set("Content-Type", w.FormDataContentType())
+	core.ServeHTTP(res, req)
+	if res.Code != http.StatusRequestEntityTooLarge {
+		t.Fatalf("oversize pdf want 413 got %d body=%s", res.Code, res.Body.String())
+	}
+}
+
 func TestR4CounterpartyCRUDAndBanksRBAC(t *testing.T) {
 	core, _, _ := newStack(t)
 	user := login(t, core, "user@vdp.local", "user")

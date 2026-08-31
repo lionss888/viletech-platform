@@ -81,6 +81,33 @@ auth_post "$MGR_T" "/api/v1/forms/$ID/rate" '{"value":"90","currency":"USD","sou
 auth_post "$MGR_T" "/api/v1/forms/$ID/commission" '{"fee_percent":"1.5","fee_currency":"USD"}' >/dev/null
 auth_post "$MGR_T" "/api/v1/forms/$ID/provider" '{"provider_id":"55555555-5555-5555-5555-555555555555","client_agreed":true}' >/dev/null
 
+echo "== docs generate (B.2) =="
+auth_post "$MGR_T" "/api/v1/forms/$ID/docs/generate" '{"kind":"import_order"}' >/dev/null
+curl -sf -X POST "$BASE/api/v1/internal/outbox/flush" -H "X-VDP-S2S: $S2S" >/dev/null
+export MGR_T ID BASE
+python3 - <<'PY'
+import json, os, sys, urllib.request
+base = os.environ.get("BASE", "http://127.0.0.1:8080")
+token = os.environ["MGR_T"]
+form_id = os.environ["ID"]
+req = urllib.request.Request(
+    f"{base}/api/v1/forms/{form_id}",
+    headers={"Authorization": f"Bearer {token}"},
+)
+with urllib.request.urlopen(req) as resp:
+    form = json.load(resp)
+docs = form.get("docs_json") or ""
+pog_file = form.get("pog_file_id") or ""
+pog_status = form.get("pog_status") or ""
+if pog_status == "success" and pog_file:
+    print(f"docs generate ok pog_file_id={pog_file}")
+elif "success" in docs and (".pdf" in docs or pog_file):
+    print("docs generate ok (docs_json)")
+else:
+    print(f"FAIL docs generate docs_json={docs!r} pog_status={pog_status!r} pog_file_id={pog_file!r}", file=sys.stderr)
+    sys.exit(1)
+PY
+
 auth_put "$MGR_T" "/api/v1/manager/form-payment/$ID/order/signing"
 auth_put "$USER_T" "/api/v1/site/form-payment/$ID/order"
 auth_put "$MGR_T" "/api/v1/manager/form-payment/$ID/order/start"

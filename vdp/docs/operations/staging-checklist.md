@@ -46,4 +46,4 @@ security-signoff-checklist.md. AuthZ every endpoint. Provider DTO audit. Secrets
 
 ## Release gate before pilot handover
 
-make release-gate green locally or vdp-release workflow. Review e2e-coverage-matrix.md and known-gaps with customer.
+make release-gate green locally or vdp-release workflow. Tag `vdp-v*` triggers vdp-images (gate + GHCR digest) and vdp-deploy → staging. Prod: workflow_dispatch VDP Deploy environment production (required reviewers). Review e2e-coverage-matrix.md and known-gaps with customer.

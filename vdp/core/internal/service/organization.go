@@ -197,6 +197,14 @@ func (s *OrganizationService) Block(ctx context.Context, principal authz.Princip
 }
 
 func (s *OrganizationService) Update(ctx context.Context, principal authz.Principal, id string, name, inn, country string) (domain.Organization, error) {
+	return s.UpdateProfile(ctx, principal, id, domain.OrgProfilePatch{Name: name, INN: inn, Country: country})
+}
+
+// UpdateProfile patches organization card fields (B.2 signer/contact parity with Nest).
+func (s *OrganizationService) UpdateProfile(ctx context.Context, principal authz.Principal, id string, patch domain.OrgProfilePatch) (domain.Organization, error) {
+	if err := domain.ValidateOrgProfilePatch(patch); err != nil {
+		return domain.Organization{}, err
+	}
 	org, err := s.Get(ctx, principal, id)
 	if err != nil {
 		return domain.Organization{}, err
@@ -204,14 +212,44 @@ func (s *OrganizationService) Update(ctx context.Context, principal authz.Princi
 	if org.FieldsFrozen && principal.Role == domain.RoleUser {
 		return domain.Organization{}, apperrors.New(apperrors.ErrCodeConflict, "organization fields are immutable after ICO decision")
 	}
-	if name != "" {
-		org.Name = name
+	if patch.Name != "" {
+		org.Name = patch.Name
 	}
-	if inn != "" {
-		org.INN = inn
+	if patch.INN != "" {
+		org.INN = patch.INN
 	}
-	if country != "" {
-		org.Country = country
+	if patch.Country != "" {
+		org.Country = patch.Country
+	}
+	if patch.FullName != "" {
+		org.FullName = patch.FullName
+	}
+	if patch.BusinessForm != "" {
+		org.BusinessForm = patch.BusinessForm
+	}
+	if patch.Phone != "" {
+		org.Phone = patch.Phone
+	}
+	if patch.Email != "" {
+		org.Email = patch.Email
+	}
+	if patch.SignerName != "" {
+		org.SignerName = patch.SignerName
+	}
+	if patch.SignerPosition != "" {
+		org.SignerPosition = patch.SignerPosition
+	}
+	if patch.SignerOtherPosition != "" {
+		org.SignerOtherPosition = patch.SignerOtherPosition
+	}
+	if patch.LegalAddress != "" {
+		org.LegalAddress = patch.LegalAddress
+	}
+	if patch.OGRN != "" {
+		org.OGRN = patch.OGRN
+	}
+	if patch.KPP != "" {
+		org.KPP = patch.KPP
 	}
 	return org, s.store.SaveOrganization(ctx, org)
 }

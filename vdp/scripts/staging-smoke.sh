@@ -21,11 +21,25 @@ if [[ -n "$DOCS_URL" ]]; then
   echo "== DOCS_URL probe =="
   code=$(curl -s -o /tmp/vdp-docs-smoke.json -w '%{http_code}' -X POST "$DOCS_URL" \
     -H 'Content-Type: application/json' \
-    -d '{"form_payment_id":"staging-smoke","kind":"payment_order","probe":true}' || true)
+    -d '{"form_payment_id":"staging-smoke","kind":"import_order","probe":true}' || true)
   if [[ "$code" -lt 200 || "$code" -ge 500 ]]; then
     fail "DOCS_URL POST status=$code"
   fi
-  echo "DOCS_URL ok status=$code"
+  gen_code=$(curl -s -o /tmp/vdp-docs-smoke-gen.json -w '%{http_code}' -X POST "$DOCS_URL" \
+    -H 'Content-Type: application/json' \
+    -d '{"form_payment_id":"staging-smoke","kind":"import_order","organization_name":"Smoke Org"}' || true)
+  if [[ "$gen_code" -lt 200 || "$gen_code" -ge 300 ]]; then
+    fail "DOCS_URL generate status=$gen_code"
+  fi
+  python3 - <<'PY' || fail "DOCS_URL response missing storage_key"
+import json
+with open("/tmp/vdp-docs-smoke-gen.json") as f:
+    d = json.load(f)
+assert d.get("storage_key"), d
+assert d.get("mime") == "application/pdf", d
+print("DOCS_URL storage_key ok")
+PY
+  echo "DOCS_URL ok probe=$code generate=$gen_code"
 else
   echo "SKIP DOCS_URL (empty)"
 fi

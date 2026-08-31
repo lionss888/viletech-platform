@@ -44,23 +44,9 @@ jobs:
           cache: npm
           cache-dependency-path: vdp/fe/package-lock.json
       - name: Bootstrap postgres for integration tests
-        env:
-          PGPASSWORD: vdp
         run: |
-          psql -h localhost -U vdp -d postgres -v ON_ERROR_STOP=1 <<'SQL'
-          DO $$ BEGIN
-            IF NOT EXISTS (SELECT FROM pg_roles WHERE rolname = 'vdp_core') THEN
-              CREATE ROLE vdp_core LOGIN PASSWORD 'vdp_core';
-            END IF;
-            IF NOT EXISTS (SELECT FROM pg_roles WHERE rolname = 'vdp_hub') THEN
-              CREATE ROLE vdp_hub LOGIN PASSWORD 'vdp_hub';
-            END IF;
-          END $$;
-          SQL
-          psql -h localhost -U vdp -d postgres -tc "SELECT 1 FROM pg_database WHERE datname='vdp_core'" | grep -q 1 || \
-            psql -h localhost -U vdp -d postgres -c "CREATE DATABASE vdp_core OWNER vdp_core;"
-          psql -h localhost -U vdp -d postgres -tc "SELECT 1 FROM pg_database WHERE datname='vdp_hub'" | grep -q 1 || \
-            psql -h localhost -U vdp -d postgres -c "CREATE DATABASE vdp_hub OWNER vdp_hub;"
+          chmod +x vdp/scripts/ci-bootstrap-postgres.sh
+          PGHOST=localhost POSTGRES_USER=vdp POSTGRES_PASSWORD=vdp ./vdp/scripts/ci-bootstrap-postgres.sh
       - name: Release gate
         working-directory: vdp
         env:

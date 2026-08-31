@@ -4,6 +4,7 @@ CORE_URL=https://staging-core.example.com
 HUB_URL=https://staging-hub.example.com
 
 # Hub adapters — required for real document/mail path (see staging-checklist.md)
+# Compose dev: http://127.0.0.1:8090/generate (docs-service in docker-compose.yml)
 DOCS_URL=https://docs-service.example.com/generate
 MAIL_URL=https://mail-service.example.com/notify
 
