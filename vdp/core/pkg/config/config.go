@@ -60,22 +60,11 @@ func (c *Config) ValidateProduction() error {
 	if env != "production" && env != "prod" {
 		return nil
 	}
-	checks := map[string]string{
-		"JWT_SECRET":        "vdp-core-dev-secret",
-		"HUB_SHARED_SECRET": "vdp-s2s-dev-secret",
+	if c.JWTSecret == "" || c.JWTSecret == "vdp-core-dev-secret" {
+		return fmt.Errorf("production: set non-default JWT_SECRET")
 	}
-	for key, forbidden := range checks {
-		val := os.Getenv(key)
-		if val == "" {
-			if key == "JWT_SECRET" {
-				val = c.JWTSecret
-			} else {
-				val = c.HubSharedSecret
-			}
-		}
-		if val == forbidden {
-			return fmt.Errorf("production: set non-default %s", key)
-		}
+	if c.HubSharedSecret == "" || c.HubSharedSecret == "vdp-s2s-dev-secret" {
+		return fmt.Errorf("production: set non-default HUB_SHARED_SECRET")
 	}
 	return nil
 }

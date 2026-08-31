@@ -2,6 +2,7 @@ package httpapi_test
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
@@ -105,7 +106,7 @@ func TestR10BankAPIIdempotentCreateWebhookAndRBAC(t *testing.T) {
 	mu.Lock()
 	defer mu.Unlock()
 	if len(hooks) == 0 {
-		pending, _ := box.Pending(t.Context(), 20)
+		pending, _ := box.Pending(context.Background(), 20)
 		t.Fatalf("expected webhook, pending=%d", countBankWebhooks(pending))
 	}
 	if hooks[0]["event"] != "status_changed" {
@@ -123,10 +124,10 @@ func newBankStack(t *testing.T, webhookURL string) (http.Handler, string, outbox
 	t.Cleanup(hub.Close)
 	store := repository.NewStore()
 	seed.Dev(store)
-	org, _ := store.OrganizationByID(t.Context(), seed.BankOrgID)
+	org, _ := store.OrganizationByID(context.Background(), seed.BankOrgID)
 	org.BankWebhookURL = webhookURL
 	org.BankWebhookSecret = "hook-secret"
-	_ = store.SaveOrganization(t.Context(), org)
+	_ = store.SaveOrganization(context.Background(), org)
 	box := outbox.NewMemoryStore()
 	n := 0
 	forms := service.NewFormPaymentService(store, box, func() string {
