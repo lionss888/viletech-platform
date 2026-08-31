@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"strconv"
+	"strings"
 )
 
 type Config struct {
@@ -54,17 +55,26 @@ func getEnvAsInt(key string, defaultValue int) int {
 	return defaultValue
 }
 
-// ValidateProduction rejects well-known dev secrets when ENVIRONMENT is production/prod.
+// isLocalEnvironment allows well-known dev secrets only for local/CI environments.
+func isLocalEnvironment(env string) bool {
+	switch strings.ToLower(strings.TrimSpace(env)) {
+	case "", "development", "dev", "local", "test", "ci":
+		return true
+	}
+	return false
+}
+
+// ValidateProduction rejects well-known dev secrets on any non-local ENVIRONMENT
+// (production, staging, alpha, beta, gamma, etc.).
 func (c *Config) ValidateProduction() error {
-	env := c.Environment
-	if env != "production" && env != "prod" {
+	if isLocalEnvironment(c.Environment) {
 		return nil
 	}
 	if c.JWTSecret == "" || c.JWTSecret == "vdp-core-dev-secret" {
-		return fmt.Errorf("production: set non-default JWT_SECRET")
+		return fmt.Errorf("%s: set non-default JWT_SECRET", c.Environment)
 	}
 	if c.HubSharedSecret == "" || c.HubSharedSecret == "vdp-s2s-dev-secret" {
-		return fmt.Errorf("production: set non-default HUB_SHARED_SECRET")
+		return fmt.Errorf("%s: set non-default HUB_SHARED_SECRET", c.Environment)
 	}
 	return nil
 }

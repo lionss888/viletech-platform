@@ -197,6 +197,7 @@ image-build-push: image-push
 compose-release-config-check:
 	VDP_CORE_IMAGE="$${VDP_CORE_IMAGE:-example.local/vdp-core:check}" \
 	VDP_HUB_IMAGE="$${VDP_HUB_IMAGE:-example.local/vdp-hub:check}" \
+	VDP_DOCS_IMAGE="$${VDP_DOCS_IMAGE:-example.local/vdp-docs:check}" \
 	VDP_FE_IMAGE="$${VDP_FE_IMAGE:-example.local/vdp-fe:check}" \
 	JWT_SECRET="$${JWT_SECRET:-config-check}" \
 	HUB_SHARED_SECRET="$${HUB_SHARED_SECRET:-config-check}" \

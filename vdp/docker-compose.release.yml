@@ -16,6 +16,10 @@ services:
     volumes:
       - postgres_hub_data:/var/lib/postgresql/data
 
+  docs-service:
+    image: ${VDP_DOCS_IMAGE:?set VDP_DOCS_IMAGE to registry image@digest or :tag}
+    restart: unless-stopped
+
   hub:
     image: ${VDP_HUB_IMAGE:?set VDP_HUB_IMAGE to registry image@digest or :tag}
     environment:

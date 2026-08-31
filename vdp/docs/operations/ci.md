@@ -48,7 +48,7 @@ Pre-handover: make release-gate.
 
 Образа: make image-build IMAGE_TAG=sha-local, затем make image-push (требует registry login).
 
-Release overlay без сборки: VDP_CORE_IMAGE=... VDP_HUB_IMAGE=... VDP_FE_IMAGE=... docker compose -f docker-compose.yml -f docker-compose.release.yml --profile prod up -d.
+Release overlay без сборки: VDP_CORE_IMAGE=... VDP_HUB_IMAGE=... VDP_DOCS_IMAGE=... VDP_FE_IMAGE=... docker compose -f docker-compose.yml -f docker-compose.release.yml --profile prod up -d.
 
 Deploy на VM с SSH: make deploy-alpha, make deploy-beta, make deploy-gamma (см. scripts/deploy-compose-release.sh).
 
