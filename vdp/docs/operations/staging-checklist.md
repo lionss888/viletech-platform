@@ -50,8 +50,12 @@ make release-gate green locally or vdp-release workflow. Tag vdp-v* triggers vdp
 
 ## Alpha host bootstrap (one-time)
 
-1. Generate deploy key locally: `ssh-keygen -t ed25519 -f ~/.ssh/vdp_deploy_ed25519 -N '' -C vdp-deploy`.
-2. On Ubuntu VM as root: `DEPLOY_PUBKEY="$(cat ~/.ssh/vdp_deploy_ed25519.pub)" VDP_DOMAIN=alpha.vedy.io ENVIRONMENT=alpha bash /path/to/bootstrap-host.sh` (or copy script first). Without domain, omit `VDP_DOMAIN` for IP-only HTTP demo.
-3. Confirm `/opt/vdp/.env.deploy` has non-dev `JWT_SECRET` / `HUB_SHARED_SECRET` and `*_BIND=127.0.0.1`.
-4. GitHub Environment `alpha` secrets: `DEPLOY_HOST`, `DEPLOY_USER=deploy`, `DEPLOY_PATH=/opt/vdp`, `DEPLOY_SSH_KEY` = private key contents.
-5. Push `d0-1`/`main`, run workflow `VDP Images`, then `VDP Deploy` (environment alpha). Smoke: `scripts/staging-smoke.sh` on host; browser: `https://$VDP_DOMAIN/login`.
+Step 1. Generate the deploy key locally with ssh-keygen, type ed25519, output file ~/.ssh/vdp_deploy_ed25519, empty passphrase, comment vdp-deploy. GitHub Actions cannot type a passphrase, so the CI key must have none.
+
+Step 2. On the Ubuntu VM as root, run bootstrap-host.sh with DEPLOY_PUBKEY set to the contents of the public key, VDP_DOMAIN set to the host name (for example alpha.vedy.io) and ENVIRONMENT set to the environment name. Copy the script to the host first, or pipe it over ssh. Without a domain, omit VDP_DOMAIN for an IP-only HTTP demo.
+
+Step 3. Confirm that /opt/vdp/.env.deploy holds non-default JWT_SECRET and HUB_SHARED_SECRET, and that the variables with suffix _BIND point to 127.0.0.1 so only Caddy is exposed.
+
+Step 4. Fill the GitHub Environment secrets for alpha: DEPLOY_HOST, DEPLOY_USER set to deploy, DEPLOY_PATH set to /opt/vdp, and DEPLOY_SSH_KEY holding the private key contents.
+
+Step 5. Push the branch, run workflow VDP Images, then VDP Deploy against environment alpha. Verify with staging-smoke.sh on the host and by opening the login page over HTTPS on the configured domain.
