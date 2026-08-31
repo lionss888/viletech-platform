@@ -9,54 +9,54 @@ export type RoleMeta = {
   personName: string;
 };
 
-/** Роли BDUI-контракта + seed-аккаунты vdp core (docs/development/getting-started.md). */
+/** Seed-аккаунты для demo-контура (`/demo/login`), не связаны с app JWT. */
 export const ROLES: RoleMeta[] = [
   {
     id: "user",
     group: "Личный кабинет",
     title: "Клиент",
-    seedEmail: "user@vdp.local",
-    seedPassword: "user",
-    personName: "Ivan Petrov",
+    seedEmail: "user@demo.vdp.local",
+    seedPassword: "DemoUser2024!",
+    personName: "Д. Морозов",
   },
   {
     id: "internal_compliance_officer",
     group: "Контроль",
     title: "Внутренний комплаенс",
-    seedEmail: "ico@vdp.local",
-    seedPassword: "ico",
+    seedEmail: "ico@demo.vdp.local",
+    seedPassword: "DemoLifecycle2024!",
     personName: "Е. Соколова",
   },
   {
     id: "compliance_officer",
     group: "Проверка",
     title: "Внешний комплаенс",
-    seedEmail: "eco@vdp.local",
-    seedPassword: "eco",
+    seedEmail: "eco@demo.vdp.local",
+    seedPassword: "DemoLifecycle2024!",
     personName: "М. Гаврилов",
   },
   {
     id: "manager",
     group: "Операции",
     title: "Менеджер",
-    seedEmail: "manager@vdp.local",
-    seedPassword: "manager",
+    seedEmail: "manager@demo.vdp.local",
+    seedPassword: "DemoLifecycle2024!",
     personName: "П. Иванов",
   },
   {
     id: "provider",
     group: "Сервис",
     title: "Провайдер",
-    seedEmail: "provider@vdp.local",
-    seedPassword: "provider",
+    seedEmail: "provider@demo.vdp.local",
+    seedPassword: "DemoLifecycle2024!",
     personName: "S. Chen",
   },
   {
     id: "root",
     group: "Система",
     title: "Суперадмин",
-    seedEmail: "root@vdp.local",
-    seedPassword: "root",
+    seedEmail: "root@demo.vdp.local",
+    seedPassword: "DemoLifecycle2024!",
     personName: "А. Константинов",
   },
 ];

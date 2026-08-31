@@ -64,16 +64,6 @@ export const REGISTRIES: Record<RegistryKey, RegistryDef> = {
           { value: "not_approved", label: "Не одобрена" },
         ],
       },
-      {
-        key: "rating",
-        label: "Рейтинг",
-        type: "select",
-        options: [
-          { value: "", label: "—" },
-          { value: "yellow", label: "Жёлтый" },
-          { value: "red", label: "Красный" },
-        ],
-      },
     ],
   },
   counterparties: {

@@ -11,7 +11,7 @@ import {
   type RefRecord,
   type RegistryDef,
 } from "@/lib/ved/registry";
-import { useVed } from "@/lib/ved/store";
+import { usePlatformStore } from "@/lib/ved/platform-store";
 import type { VedRole } from "@/lib/ved/types";
 import { cn } from "@/lib/utils";
 
@@ -23,16 +23,14 @@ export function RegistryManager({
   extraColumns = [],
   badge,
   writeRoles = [],
-  recordFilter,
 }: {
   def: RegistryDef;
   extraColumns?: Extra[];
   badge?: (record: RefRecord) => { text: string; cls: string } | null;
   /** Роли, которым разрешено добавлять и редактировать записи (удаление и импорт — только суперадмину). */
   writeRoles?: VedRole[];
-  recordFilter?: (record: RefRecord) => boolean;
 }) {
-  const { session, refRecords, saveRefRecord, deleteRefRecord, importRefRecords } = useVed();
+  const { session, refRecords, saveRefRecord, deleteRefRecord, importRefRecords } = usePlatformStore();
   const records = refRecords(def.key);
   const canManage = session?.role === "root";
   const canWrite = canManage || (session != null && writeRoles.includes(session.role));
@@ -50,13 +48,12 @@ export function RegistryManager({
   const fileRef = useRef<HTMLInputElement | null>(null);
 
   const rows = useMemo(() => {
-    const base = recordFilter ? records.filter(recordFilter) : records;
     const q = query.trim().toLowerCase();
-    if (!q) return base;
-    return base.filter((record) =>
+    if (!q) return records;
+    return records.filter((record) =>
       def.fields.some((field) => String(record[field.key] ?? "").toLowerCase().includes(q)),
     );
-  }, [records, query, def.fields, recordFilter]);
+  }, [records, query, def.fields]);
 
   function openCreate() {
     setDraft(emptyRecord(def));
@@ -115,34 +112,32 @@ export function RegistryManager({
             placeholder="Поиск по справочнику"
             className="field max-w-xs"
           />
-          <div className="flex w-full flex-col items-stretch gap-2 sm:w-auto sm:flex-row sm:flex-wrap sm:items-center">
+          <div className="flex flex-wrap items-center gap-2">
             <span className="font-mono text-xs text-muted-foreground">{rows.length} записей</span>
             <button
               type="button"
               onClick={() => download(toCsv(def, records), `${def.key}.csv`)}
-              className="w-full rounded-md bg-card px-3 py-2 text-xs font-semibold shadow-[0_0_0_1px_var(--input)] hover:bg-muted sm:w-auto"
+              className="rounded-md bg-card px-3 py-2 text-xs font-semibold shadow-[0_0_0_1px_var(--input)] hover:bg-muted"
             >
               Скачать CSV
             </button>
-            {canWrite && (
+            {canManage && (
               <button
                 type="button"
                 onClick={() => {
                   setImportOpen(true);
                   setImportError(null);
-                  if (!canManage) setImportMode("append");
                 }}
-                className="w-full rounded-md bg-card px-3 py-2 text-xs font-semibold shadow-[0_0_0_1px_var(--input)] hover:bg-muted sm:w-auto"
+                className="rounded-md bg-card px-3 py-2 text-xs font-semibold shadow-[0_0_0_1px_var(--input)] hover:bg-muted"
               >
-                Загрузить Excel / CSV
+                Загрузить данные
               </button>
             )}
-
             {canWrite && (
               <button
                 type="button"
                 onClick={openCreate}
-                className="w-full rounded-md bg-primary px-3 py-2 text-xs font-semibold text-primary-foreground hover:opacity-90 sm:w-auto"
+                className="rounded-md bg-primary px-3 py-2 text-xs font-semibold text-primary-foreground hover:opacity-90"
               >
                 Добавить
               </button>
@@ -354,30 +349,13 @@ export function RegistryManager({
             <input
               ref={fileRef}
               type="file"
-              accept=".csv,.tsv,.txt,.xlsx,.xls"
+              accept=".csv,.tsv,.txt"
               className="hidden"
               onChange={async (e) => {
                 const file = e.target.files?.[0];
                 if (!file) return;
+                setImportText(await file.text());
                 setImportError(null);
-                try {
-                  if (/\.xlsx?$/i.test(file.name)) {
-                    const XLSX = await import("xlsx");
-                    const book = XLSX.read(await file.arrayBuffer(), { type: "array" });
-                    const first = book.SheetNames[0];
-                    const sheet = first ? book.Sheets[first] : undefined;
-                    if (!sheet) {
-                      setImportError("В файле Excel нет данных");
-                      return;
-                    }
-                    setImportText(XLSX.utils.sheet_to_csv(sheet, { FS: ";" }).trim());
-                  } else {
-                    setImportText(await file.text());
-                  }
-                } catch {
-                  setImportError("Не удалось прочитать файл");
-                }
-                e.target.value = "";
               }}
             />
           </div>
@@ -389,7 +367,7 @@ export function RegistryManager({
             className="field resize-none font-mono text-xs"
           />
           <div className="flex gap-4 text-xs">
-            {(canManage ? (["append", "replace"] as const) : (["append"] as const)).map((mode) => (
+            {(["append", "replace"] as const).map((mode) => (
               <label key={mode} className="flex items-center gap-2">
                 <input type="radio" checked={importMode === mode} onChange={() => setImportMode(mode)} />
                 {mode === "append" ? "Добавить и обновить" : "Заменить справочник"}
@@ -397,10 +375,9 @@ export function RegistryManager({
             ))}
           </div>
           <p className="text-xs text-muted-foreground">
-            Поддерживаются файлы .xlsx, .xls и .csv. Ожидаемые колонки: {def.fields.map((f) => f.label).join(", ")}
+            Ожидаемые колонки: {def.fields.map((f) => f.label).join(", ")}
           </p>
           {importError && <p className="text-xs text-destructive">{importError}</p>}
-
         </div>
       </Modal>
     </div>

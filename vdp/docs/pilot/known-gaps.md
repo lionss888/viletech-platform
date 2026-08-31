@@ -24,7 +24,7 @@ Nest form-payment XLSX and compliance export use real OOXML (export.MinimalXLSX)
 
 ## CI CD in vdp repo
 
-GitHub Actions: vdp-ci.yml (fast/docs/integration/playwright), vdp-release.yml (release-gate), vdp-images.yml (GHCR digest + GitLab registry copy), vdp-deploy.yml (staging/production compose by digest), vdp-mirror-gitlab.yml (GitHub → GitLab). GitLab CI: root .gitlab-ci.yml — parallel regression, no deploy. One-time GitLab project + secrets: docs/operations/gitlab-setup.md. Partial (~75% CD): deploy workflows require configured GitHub Environments + VM; prod promote manual; K8s — этап 2 (k8s-roadmap.md). Staging: vdp-deploy.yml + scripts/staging-smoke.sh + deploy-compose-release.sh / rollback-compose-release.sh documented in docs/operations/deploy-rollback.md. Green pipeline ≠ prod product ready (vendor URLs, security sign-off).
+GitHub Actions: vdp-ci.yml (fast/docs/integration/playwright), vdp-release.yml (release-gate), vdp-images.yml (GHCR digest + GitLab registry copy for core/hub/docs/fe), vdp-deploy.yml (alpha/beta/gamma compose by digest), vdp-mirror-gitlab.yml (GitHub → GitLab). GitLab CI: root .gitlab-ci.yml — parallel regression, no deploy. One-time GitLab project + secrets: docs/operations/gitlab-setup.md. Partial (~75% CD): deploy workflows require configured GitHub Environments alpha/beta/gamma + VM; gamma promote manual; K8s — этап 2 (k8s-roadmap.md). Deploy: vdp-deploy.yml + scripts/staging-smoke.sh + deploy-compose-release.sh / rollback-compose-release.sh documented in docs/operations/deploy-rollback.md. Green pipeline ≠ prod product ready (vendor URLs, security sign-off).
 
 ## Playwright UI coverage
 
