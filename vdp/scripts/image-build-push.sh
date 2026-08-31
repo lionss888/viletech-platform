@@ -1,12 +1,13 @@
 #!/usr/bin/env bash
-# Build and optionally push vdp-core, vdp-hub, vdp-fe (production) images.
+# Build and optionally push vdp-core, vdp-hub, vdp-docs, vdp-fe (production) images.
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 cd "$ROOT"
 
 IMAGE_REGISTRY="${IMAGE_REGISTRY:-ghcr.io}"
-IMAGE_NAMESPACE="${IMAGE_NAMESPACE:-${GITHUB_REPOSITORY_OWNER:-viletech}}"
+# Registries reject uppercase in the namespace, but GitHub owners may contain it.
+IMAGE_NAMESPACE="$(printf '%s' "${IMAGE_NAMESPACE:-${GITHUB_REPOSITORY_OWNER:-viletech}}" | tr '[:upper:]' '[:lower:]')"
 IMAGE_TAG="${IMAGE_TAG:-$(git -C "$ROOT/.." rev-parse --short HEAD 2>/dev/null || echo local)}"
 GIT_REVISION="${GIT_REVISION:-$(git -C "$ROOT/.." rev-parse HEAD 2>/dev/null || echo unknown)}"
 PLATFORM="${PLATFORM:-linux/amd64}"
@@ -15,6 +16,7 @@ PIN_FILE="${PIN_FILE:-$ROOT/.release-images.env}"
 
 core_ref="${IMAGE_REGISTRY}/${IMAGE_NAMESPACE}/vdp-core:${IMAGE_TAG}"
 hub_ref="${IMAGE_REGISTRY}/${IMAGE_NAMESPACE}/vdp-hub:${IMAGE_TAG}"
+docs_ref="${IMAGE_REGISTRY}/${IMAGE_NAMESPACE}/vdp-docs:${IMAGE_TAG}"
 fe_ref="${IMAGE_REGISTRY}/${IMAGE_NAMESPACE}/vdp-fe:${IMAGE_TAG}"
 
 label_args=(
@@ -31,22 +33,38 @@ docker buildx build --platform "$PLATFORM" "${label_args[@]}" \
   -f "$ROOT/hub/Dockerfile" -t "$hub_ref" "$ROOT" --load
 
 docker buildx build --platform "$PLATFORM" "${label_args[@]}" \
+  -f "$ROOT/docs-service/Dockerfile" -t "$docs_ref" "$ROOT/docs-service" --load
+
+docker buildx build --platform "$PLATFORM" "${label_args[@]}" \
   -f "$ROOT/fe/Dockerfile" --target production \
   --build-arg VDP_API_PROXY_TARGET=http://core:8080 \
   -t "$fe_ref" "$ROOT/fe" --load
 
+# Pick the digest belonging to this exact repository: an image may carry several
+# RepoDigests (e.g. previously pulled from another registry), so index 0 is unsafe.
 resolve_digest() {
   local ref="$1"
-  docker inspect --format='{{index .RepoDigests 0}}' "$ref" 2>/dev/null || echo "$ref"
+  local repo="${ref%%:*}"
+  local digest
+  digest=$(docker inspect --format='{{range .RepoDigests}}{{println .}}{{end}}' "$ref" 2>/dev/null \
+    | grep -m1 "^${repo}@" || true)
+  if [ -n "$digest" ]; then
+    printf '%s' "$digest"
+  else
+    echo "warning: no digest found for ${ref}, pinning by tag" >&2
+    printf '%s' "$ref"
+  fi
 }
 
 if [ "$PUSH" = "1" ]; then
-  echo "Pushing ${core_ref} ${hub_ref} ${fe_ref}"
+  echo "Pushing ${core_ref} ${hub_ref} ${docs_ref} ${fe_ref}"
   docker push "$core_ref"
   docker push "$hub_ref"
+  docker push "$docs_ref"
   docker push "$fe_ref"
   core_ref="$(resolve_digest "$core_ref")"
   hub_ref="$(resolve_digest "$hub_ref")"
+  docs_ref="$(resolve_digest "$docs_ref")"
   fe_ref="$(resolve_digest "$fe_ref")"
 fi
 
@@ -56,6 +74,7 @@ IMAGE_TAG=${IMAGE_TAG}
 GIT_REVISION=${GIT_REVISION}
 VDP_CORE_IMAGE=${core_ref}
 VDP_HUB_IMAGE=${hub_ref}
+VDP_DOCS_IMAGE=${docs_ref}
 VDP_FE_IMAGE=${fe_ref}
 EOF
 

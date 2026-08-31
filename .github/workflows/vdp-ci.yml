@@ -36,7 +36,6 @@ jobs:
           cache-dependency-path: |
             vdp/core/go.sum
             vdp/hub/go.sum
-            vdp/shared/go.sum
       - uses: actions/setup-node@v4
         with:
           node-version: "20"
@@ -93,7 +92,6 @@ jobs:
           cache-dependency-path: |
             vdp/core/go.sum
             vdp/hub/go.sum
-            vdp/shared/go.sum
       - name: Bootstrap postgres roles and databases
         env:
           PGPASSWORD: vdp

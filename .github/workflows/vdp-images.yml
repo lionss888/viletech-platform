@@ -49,7 +49,6 @@ jobs:
           cache-dependency-path: |
             vdp/core/go.sum
             vdp/hub/go.sum
-            vdp/shared/go.sum
       - uses: actions/setup-node@v4
         with:
           node-version: "20"
@@ -164,6 +163,7 @@ jobs:
           echo "$GITLAB_MIRROR_TOKEN" | crane auth login registry.gitlab.com -u oauth2 --password-stdin
           crane copy "$VDP_CORE_IMAGE" "${gl}/vdp-core:${IMAGE_TAG}"
           crane copy "$VDP_HUB_IMAGE" "${gl}/vdp-hub:${IMAGE_TAG}"
+          crane copy "$VDP_DOCS_IMAGE" "${gl}/vdp-docs:${IMAGE_TAG}"
           crane copy "$VDP_FE_IMAGE" "${gl}/vdp-fe:${IMAGE_TAG}"
 
   release-compose-check:
