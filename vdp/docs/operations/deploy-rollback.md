@@ -1,54 +1,61 @@
 # Rollback release deploy (Compose, digest pin)
 
-Rollback = выкат **предыдущего digest** без пересборки и без SSH-патча контейнеров.
+Rollback это выкат предыдущего digest без пересборки и без SSH-патча контейнеров.
 
-Среды: `alpha` (демо/разработка, авто-деплой из `main`), `beta` (пред-прод, вручную), `gamma` (прод, вручную + approval).
+Среда alpha. Назначение демо и разработка. Режим авто-деплой из ветки main.
+
+Среда beta. Назначение пред-прод. Режим вручную.
+
+Среда gamma. Назначение прод. Режим вручную с approval.
 
 ## Preconditions
 
-- На хосте есть `.release-images.{alpha|beta|gamma}.last-good` — создаётся успешным deploy (`deploy-compose-release.sh`).
-- Remote `.env.deploy` с секретами не откатывается (только образы приложения).
+На хосте есть pin-файл последнего успешного релиза для нужной среды: .release-images.alpha.last-good, .release-images.beta.last-good или .release-images.gamma.last-good. Такой файл создаётся успешным deploy через deploy-compose-release.sh.
+
+Remote-файл .env.deploy с секретами не откатывается, откатываются только образы приложения.
 
 ## GitHub Actions
 
-1. Найти предыдущий pin в artifact `release-images-pin` (older run) **или** использовать сохранённый `.last-good` на VM.
-2. `workflow_dispatch` → **VDP Deploy** → environment `alpha` / `beta` / `gamma`, поле `images_run_id` = id предыдущего успешного **VDP Images** run.
+Шаг первый. Найти предыдущий pin в artifact release-images-pin у более раннего run, либо использовать сохранённый файл .last-good на VM.
+
+Шаг второй. Запустить workflow_dispatch, workflow VDP Deploy, environment alpha или beta или gamma, поле images_run_id равно id предыдущего успешного run workflow VDP Images.
 
 ## На VM (SSH)
 
-```sh
-cd /opt/vdp
-cp .release-images.alpha.last-good .release-images.env   # или beta / gamma
-set -a && source .env.deploy && source .release-images.env && set +a
-docker compose -f docker-compose.yml -f docker-compose.release.yml --profile prod \
-  pull hub core fe-prod
-docker compose -f docker-compose.yml -f docker-compose.release.yml --profile prod \
-  up -d --no-build --scale fe=0
-./scripts/wait-release-health.sh
-```
+Перейти в каталог развёртывания: cd /opt/vdp.
+
+Скопировать pin последнего хорошего релиза в активный файл: cp .release-images.alpha.last-good .release-images.env. Для других сред подставляется beta или gamma.
+
+Загрузить переменные окружения: set -a && source .env.deploy && source .release-images.env && set +a.
+
+Подтянуть образы: docker compose -f docker-compose.yml -f docker-compose.release.yml --profile prod pull hub core fe-prod.
+
+Поднять сервисы: docker compose -f docker-compose.yml -f docker-compose.release.yml --profile prod up -d --no-build --scale fe=0.
+
+Дождаться health: ./scripts/wait-release-health.sh.
 
 ## Make (с локальной машины)
 
-```sh
-cd vdp
-DEPLOY_HOST=alpha.vedy.io DEPLOY_USER=deploy SSH_KEY_PATH=~/.ssh/vdp_deploy_ed25519 \
-  make rollback-alpha
-```
+Перейти в каталог vdp: cd vdp.
 
-Прод: `make rollback-gamma` с gamma host secrets.
+Запустить откат alpha с переменными DEPLOY_HOST равным alpha.vedy.io, DEPLOY_USER равным deploy и SSH_KEY_PATH равным ~/.ssh/vdp_deploy_ed25519, команда make rollback-alpha.
+
+Аналогично для пред-прода используется make rollback-beta.
+
+Прод откатывается командой make rollback-gamma с gamma host secrets.
 
 ## Verify
 
-Порты приложения на хосте слушают только loopback (`*_BIND=127.0.0.1` в `.env.deploy`), поэтому проверка — по SSH или через домен:
+Порты приложения на хосте слушают только loopback, потому что переменные с суффиксом _BIND в файле .env.deploy заданы в 127.0.0.1. Поэтому проверка выполняется по SSH или через публичный домен.
 
-```sh
-ssh deploy@HOST 'curl -sf http://127.0.0.1:8080/api/v1/health'
-ssh deploy@HOST 'curl -sf http://127.0.0.1:8081/api/v1/health'
-curl -sfI https://alpha.vedy.io/login
-```
+Проверка core по SSH: ssh deploy@HOST 'curl -sf http://127.0.0.1:8080/api/v1/health'.
 
-Не-прод: `./scripts/staging-smoke.sh` на хосте.
+Проверка hub по SSH: ssh deploy@HOST 'curl -sf http://127.0.0.1:8081/api/v1/health'.
+
+Проверка через домен: curl -sfI https://alpha.vedy.io/login.
+
+Не-прод дополнительно проверяется скриптом ./scripts/staging-smoke.sh на хосте.
 
 ## Post-incident
 
-Blameless постмортем per `devops-культура`: timeline, impact (заявки/платежи), action items. Не патчить prod вручную — зафиксировать digest в pin и повторить deploy.
+Blameless постмортем согласно правилу devops-культура: timeline, impact по заявкам и платежам, action items. Не патчить prod вручную, вместо этого зафиксировать digest в pin и повторить deploy.

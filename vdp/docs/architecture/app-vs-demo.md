@@ -33,3 +33,5 @@ Demo не является источником истины. Parity и gate-т�
 ## Lovable sync
 
 Ветка fe связана с Lovable. Не переписывать опубликованную git history force push и rebase/amend pushed commits. См. fe/AGENTS.md.
+
+Post-Lovable recovery (2026-08-31): после sync 4b7259bb app-контур был восстановлен из pre-sync коммита (lib/api, JWT login, /demo/* split). Gate: npm test, make integration-gate, Playwright e2e/*.spec.ts (6 specs).

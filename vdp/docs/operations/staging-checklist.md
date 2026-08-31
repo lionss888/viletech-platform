@@ -2,11 +2,11 @@
 
 Перед UAT или staging go-live с реальными интеграциями проверьте env и контракты. MVP compose работает со stubs без этих URL.
 
-Шаблон env: [staging-env.example](staging-env.example). Smoke: `scripts/staging-smoke.sh` из каталога `vdp`.
+Шаблон env: [staging-env.example](staging-env.example). Smoke: scripts/staging-smoke.sh из каталога vdp.
 
 ## Hub documents DOCS_URL
 
-CI verified. Test docs_http_test.go in make test-adapters asserts POST payload and retry on 503. Staging: export DOCS_URL and run staging-smoke. Dev stub `docs/{id}/stub.pdf` when URL empty. Payload includes template_id per payment agent.
+CI verified. Test docs_http_test.go in make test-adapters asserts POST payload and retry on 503. Staging: export DOCS_URL and run staging-smoke. Dev stub docs/{id}/stub.pdf when URL empty. Payload includes template_id per payment agent.
 
 ## Diadoc
 
@@ -18,7 +18,7 @@ CI verified. Test mail_http_test.go in make test-adapters. Staging: MAIL_URL in 
 
 ## OCR recognition
 
-Policy: optional side-path only. `recognize_complete` in core advances draft without vendor OCR. Staging OCR worker optional — not on payment commit path. If OCR unavailable, user manual entry remains. Do not auto-approve or auto-pay from OCR output.
+Policy: optional side-path only. recognize_complete in core advances draft without vendor OCR. Staging OCR worker optional — not on payment commit path. If OCR unavailable, user manual entry remains. Do not auto-approve or auto-pay from OCR output.
 
 ## Telegram 1C partner
 
@@ -46,4 +46,4 @@ security-signoff-checklist.md. AuthZ every endpoint. Provider DTO audit. Secrets
 
 ## Release gate before pilot handover
 
-make release-gate green locally or vdp-release workflow. Tag `vdp-v*` triggers vdp-images (gate + GHCR digest) and vdp-deploy → staging. Prod: workflow_dispatch VDP Deploy environment production (required reviewers). Review e2e-coverage-matrix.md and known-gaps with customer.
+make release-gate green locally or vdp-release workflow. Tag vdp-v* triggers vdp-images (gate + GHCR digest) and vdp-deploy → staging. Prod: workflow_dispatch VDP Deploy environment production (required reviewers). Review e2e-coverage-matrix.md and known-gaps with customer.

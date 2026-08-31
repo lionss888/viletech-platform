@@ -1,24 +1,29 @@
 # Semantic alerts (baseline)
 
-Рекомендуемые бизнес-сигналы для staging/prod. Пороги настраиваются под SLA пилота.
+Рекомендуемые бизнес-сигналы для staging и prod. Пороги настраиваются под SLA пилота.
 
-| Alert | Условие | Действие |
-|-------|---------|----------|
-| `vdp_forms_stuck_awaiting_provider` | status `payment_received` или `payment_processing` > N минут без `payment_sent` | Runbook stuck-payment |
-| `vdp_forms_stuck_compliance` | `organization_waiting_verification` > N часов | Эскалация ICO |
-| `vdp_hub_inbox_failures` | hub inbox mark_failed rate > threshold | Runbook hub-failure |
-| `vdp_docs_generate_failed` | POG status failed или hub docs 5xx spike | Проверить DOCS_URL / шаблоны ПА |
-| `vdp_bank_webhook_errors` | bank webhook delivery failures | Проверить URL/секрет организации |
+## Перечень алертов
+
+Alert vdp_forms_stuck_awaiting_provider. Условие статус payment_received или payment_processing держится дольше N минут без payment_sent. Действие runbook stuck-payment.
+
+Alert vdp_forms_stuck_compliance. Условие статус organization_waiting_verification держится дольше N часов. Действие эскалация ICO.
+
+Alert vdp_hub_inbox_failures. Условие hub inbox mark_failed rate выше threshold. Действие runbook hub-failure.
+
+Alert vdp_docs_generate_failed. Условие POG status failed или всплеск hub docs 5xx. Действие проверить DOCS_URL и шаблоны ПА.
+
+Alert vdp_bank_webhook_errors. Условие bank webhook delivery failures. Действие проверить URL и секрет организации.
 
 ## Correlation
 
-Все алерты должны включать `form_payment_id` и `correlation_id` из structured logs.
+Все алерты должны включать form_payment_id и correlation_id из structured logs.
 
 ## Пример Prometheus rules
 
-См. `vdp/ops/prometheus-rules.example.yml`.
+См. vdp/ops/prometheus-rules.example.yml.
 
 ## Не алертить
 
-- Dev compose со stub DOCS/MAIL
-- OCR side-path недоступен (деградация на ручной ввод, не блокер заявки)
+Dev compose со stub DOCS и MAIL.
+
+OCR side-path недоступен, это деградация на ручной ввод, а не блокер заявки.

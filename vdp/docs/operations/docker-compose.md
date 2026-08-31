@@ -32,7 +32,7 @@ wget health endpoints for hub core fe. compose-up waits up to 60s for all health
 
 ## Volumes
 
-fe_node_modules named volume for node_modules in dev container. Host `npm install` and image rebuild do not refresh this volume. After branch updates or package.json changes, run `make compose-fe-refresh` (prompts for confirmation).
+fe_node_modules named volume for node_modules in dev container. Host npm install and image rebuild do not refresh this volume. After branch updates or package.json changes, run make compose-fe-refresh (prompts for confirmation).
 
 ## Команды
 

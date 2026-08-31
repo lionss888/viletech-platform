@@ -17,6 +17,9 @@ cd vdp/fe
 npm test
 ```
 
+Post-Lovable (2026-08-31): vitest restored (~93 tests). Credential contract: app `*@vdp.local` vs demo `*@demo.vdp.local`.
+
+Compose applies SQL via `make compose-db-migrate` on every `compose-up` (existing volumes do not re-run initdb mounts).
 ## Backend unit
 
 ```sh

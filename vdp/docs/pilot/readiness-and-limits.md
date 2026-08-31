@@ -1,10 +1,12 @@
 # Готовность и ограничения MVP
 
-Дата оценки 2026-08-30. Правило честности: done в матрице Nest to vdp означает маршрут замаплен и проходит gate test. Не полный продуктовый паритет Nest. Не боевые интеграции без staging config.
+Дата оценки 2026-08-31. Правило честности: done в матрице Nest to vdp означает маршрут замаплен и проходит gate test. Не полный продуктовый паритет Nest. Не боевые интеграции без staging config.
+
+Post-Lovable (2026-08-31): FE app-контур восстановлен после sync-regression; browser UAT ~70–75% на compose seed. B.2 FE org/docs upload ~90% (см. b2-fe-handoff.md). Gates: npm test 93, compose-e2e, playwright 9 tests, test-cd-scripts green. Staging deploy — workflows и rollback docs ready; VM Environments still ops-side.
 
 ## Полнота реализации
 
-Оценка около 78 процентов. Backend R0–R12 закрыт на уровне API и state machine. Интеграции и polish UI copy главные оговорки.
+Оценка около 80 процентов. Backend R0–R12 + B.2 backend закрыт на уровне API. FE app re-integrated; prod observability и vendor hardening — оговорки.
 
 ## Качество MVP
 
@@ -46,6 +48,6 @@ R1 form-payment 148/148 done. R12 matrix 331/331 in-scope done. go test pass cor
 
 ## Следующие шаги prod
 
-Staging: `staging-env.example`, `scripts/staging-smoke.sh`. Security: `security-signoff-checklist.md`. Ops: `semantic-alerts.md`, runbooks. Load testing. Nest data migration out of scope.
+Staging: staging-env.example, scripts/staging-smoke.sh. Security: security-signoff-checklist.md. Ops: semantic-alerts.md, runbooks. Load testing. Nest data migration out of scope.
 
 UAT сценарии: [uat-scenarios.md](uat-scenarios.md). Gaps: [known-gaps.md](known-gaps.md). CI: [ci.md](../operations/ci.md).
