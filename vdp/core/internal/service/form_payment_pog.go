@@ -90,8 +90,12 @@ func (s *FormPaymentService) ApplyDocsGenerateResult(ctx context.Context, formID
 	}
 	sum := sha256.Sum256(content)
 	fileID := s.newID()
+	ownerID := form.AccountID
+	if ownerID == "" {
+		ownerID = formID
+	}
 	meta := domain.FileMeta{
-		ID: fileID, OwnerID: "hub", FormID: formID, StorageKey: storageKey,
+		ID: fileID, OwnerID: ownerID, FormID: formID, StorageKey: storageKey,
 		ContentType: mime, ContentHash: hex.EncodeToString(sum[:]), CreatedAt: time.Now().UTC(),
 	}
 	if err := s.store.SaveFile(ctx, meta); err != nil {

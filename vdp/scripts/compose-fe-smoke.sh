@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
-# Smoke: fe dev + API journey snippets (UI login, bank create when bank token available).
+# Smoke: fe dev page render + API proxy (POST /auth/login via Vite proxy).
+# Browser form login is covered by Playwright login-form.spec.ts (make playwright-e2e).
 set -euo pipefail
 
 FE_URL="${FE_URL:-http://127.0.0.1:5173}"
@@ -11,7 +12,7 @@ echo "$HTML" | grep -qi "Вход" || {
   echo "FAIL: /login page missing expected content" >&2
   exit 1
 }
-echo "fe /login ok"
+echo "fe /login page render ok"
 
 echo "== fe api proxy (user) =="
 USER_JSON=$(curl -sf -X POST "$FE_URL/api/v1/auth/login" \

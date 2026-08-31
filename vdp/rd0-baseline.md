@@ -9,7 +9,7 @@ Product docs: [docs/README.md](docs/README.md).
 | Check | Result |
 |-------|--------|
 | `make compose-up` (+ `compose-fe-smoke`) | green |
-| `cd vdp/fe && npm test` | 88/88 green (RD10 integration-journey) |
+| `cd vdp/fe && npm test` | 93/93 green (post-Lovable RI + B.2 FE helpers) |
 | `make test` (core+hub) | green |
 | `make compose-e2e` / `make integration-gate` | green (main + RD7/8/9 spots) |
 | `/login` (http://127.0.0.1:5173/login) | HTTP 200 |
