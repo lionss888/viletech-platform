@@ -18,6 +18,12 @@ Nest form-payment XLSX and compliance export use real OOXML (`export.MinimalXLSX
 
 GitHub Actions vdp-ci.yml jobs fast docs integration playwright. Release vdp-release.yml runs make release-gate. GitLab mirror documented in ci.md — **не реализован**; только по явной команде после P1–P5.
 
+## FE app vs demo (2026-08-31)
+
+App contour: JWT `vdp-auth-v1`, `lib/api/*`, `action-bridge`, React Query forms read/create. Demo: `/demo/*` + `ved-demo-state-v2` only under demo layout.
+
+Partial: not all 52 UI actions wired to Nest PUT paths; справочники в app — без API (F6). Playwright: smoke + login specs; full journey needs compose-up.
+
 ## Playwright UI coverage
 
 Six specs happy path partial reject provider ACL bank badge completed journey manager payment. Full browser matrix all roles times all statuses not covered. Backend compose-e2e covers API journeys including RH2 ICO reject refund full P5 advance shipment.

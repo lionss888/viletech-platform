@@ -113,7 +113,7 @@ func (s *Server) handleCreateForm(w http.ResponseWriter, r *http.Request, princi
 }
 
 func (s *Server) handleListForms(w http.ResponseWriter, r *http.Request, principal authz.Principal) {
-	writeJSON(w, http.StatusOK, s.forms.List(r.Context(), principal))
+	writeJSON(w, http.StatusOK, s.forms.ListProjected(r.Context(), principal))
 }
 
 func (s *Server) handleGetForm(w http.ResponseWriter, r *http.Request, principal authz.Principal) {

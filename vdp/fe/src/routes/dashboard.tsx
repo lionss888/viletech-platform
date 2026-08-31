@@ -3,6 +3,7 @@ import { useMemo } from "react";
 
 import { AppShell } from "@/components/ved/AppShell";
 import { StatusBadge } from "@/components/ved/StatusBadge";
+import { RequireAuth } from "@/lib/auth/session";
 import { actionsFor } from "@/lib/ved/actions";
 import { isComplianceRole, subjectState } from "@/lib/ved/compliance";
 import { money, relative } from "@/lib/ved/format";
@@ -11,7 +12,8 @@ import { cpById } from "@/lib/ved/mock";
 import { SYSTEM_INCIDENTS, SYSTEM_SERVICES } from "@/lib/ved/reference";
 import { roleTitle } from "@/lib/ved/roles";
 import { STAGES, statusMeta } from "@/lib/ved/statuses";
-import { useVed, visibleForms } from "@/lib/ved/store";
+import { useWorkspaceData } from "@/lib/ved/use-workspace-data";
+import { useVedOptional, visibleForms } from "@/lib/ved/store";
 import type { VedRole } from "@/lib/ved/types";
 import { cn } from "@/lib/utils";
 
@@ -24,7 +26,11 @@ export const Route = createFileRoute("/dashboard")({
       { property: "og:description", content: "Задачи роли, сделки в работе и последние обновления." },
     ],
   }),
-  component: DashboardPage,
+  component: () => (
+    <RequireAuth>
+      <DashboardPage />
+    </RequireAuth>
+  ),
 });
 
 const ROLE_FOCUS: Record<VedRole, string> = {
@@ -36,10 +42,11 @@ const ROLE_FOCUS: Record<VedRole, string> = {
   root: "Состояние системы, критичные ошибки, нагрузка и эффективность команды.",
 };
 
-function DashboardPage() {
-  const { session } = useVed();
-  const role = session?.role ?? "user";
-  return role === "root" ? <RootDashboard /> : <RoleDashboard />;
+export function DashboardPage() {
+  const isDemo = useIsDemoWorkspace();
+  const auth = useAuth();
+  if (!isDemo && auth.session?.role === "root") return <RootDashboard />;
+  return <RoleDashboard />;
 }
 
 /* ------------------------------ Суперадмин ------------------------------ */
@@ -51,7 +58,9 @@ const STATE = {
 };
 
 function RootDashboard() {
-  const { forms, users } = useVed();
+  const { forms } = useWorkspaceData();
+  const demo = useVedOptional();
+  const users = demo?.users ?? [];
   const stats = useMemo(() => systemStats(forms), [forms]);
 
   const critical = SYSTEM_INCIDENTS.filter((i) => i.severity === "critical");
@@ -179,7 +188,7 @@ function RootDashboard() {
 /* -------------------------- Остальные роли -------------------------- */
 
 function RoleDashboard() {
-  const { forms, session, organizations } = useVed();
+  const { forms, session, organizations } = useWorkspaceData();
   const role = session?.role ?? "user";
   const scoped = visibleForms(forms, role, session?.name);
 

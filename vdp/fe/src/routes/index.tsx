@@ -58,10 +58,10 @@ function HomePage() {
             Войти в платформу
           </Link>
           <Link
-            to="/start"
+            to="/demo/login"
             className="flex-1 rounded-md px-5 py-2.5 text-center text-sm font-semibold shadow-[0_0_0_1px_var(--input)] transition-colors hover:bg-muted"
           >
-            Быстрый вход по роли
+            Демо без бэкенда
           </Link>
         </div>
 

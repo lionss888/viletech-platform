@@ -1,8 +1,14 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
+import { toast } from "sonner";
 
 import { AppShell } from "@/components/ved/AppShell";
-import { useVed } from "@/lib/ved/store";
+import { RequireAuth, useAuth } from "@/lib/auth/session";
+import { isApiError } from "@/lib/api/errors";
+import { createPlatformForm } from "@/lib/ved/platform-create";
+import { useInvalidateForms } from "@/lib/ved/use-platform-forms";
+import { useIsDemoWorkspace } from "@/lib/ved/workspace";
+import { useVedOptional } from "@/lib/ved/store";
 import type { FormCondition, FormDirection, FormKind } from "@/lib/ved/types";
 import { cn } from "@/lib/utils";
 
@@ -15,15 +21,25 @@ export const Route = createFileRoute("/forms/new")({
       { property: "og:description", content: "Мастер создания заявки: направление, контрагент, сумма и документы." },
     ],
   }),
-  component: NewForm,
+  component: () => (
+    <RequireAuth>
+      <NewForm />
+    </RequireAuth>
+  ),
 });
 
 const STEPS = ["Направление", "Стороны", "Сумма и инвойс", "Проверка"];
 
-function NewForm() {
-  const { organizations, counterparties, createForm } = useVed();
+export function NewForm() {
+  const isDemo = useIsDemoWorkspace();
+  const demo = useVedOptional();
+  const auth = useAuth();
+  const invalidate = useInvalidateForms();
   const navigate = useNavigate();
+  const organizations = demo?.organizations ?? [];
+  const counterparties = demo?.counterparties ?? [];
   const [step, setStep] = useState(0);
+  const [busy, setBusy] = useState(false);
   const [draft, setDraft] = useState({
     direction: "import" as FormDirection,
     kind: "good" as FormKind,
@@ -41,31 +57,53 @@ function NewForm() {
     setDraft((prev) => ({ ...prev, [key]: value }));
   }
 
-  function submit() {
-    const created = createForm({
-      direction: draft.direction,
-      kind: draft.kind,
-      condition: draft.condition,
-      organizationId: draft.organizationId,
-      counterpartyId: draft.counterpartyId,
-      amountMinor: Math.round(Number(draft.amount || 0) * 100),
-      currency: draft.currency,
-      hsCode: draft.hsCode || "—",
-      invoiceNumber: draft.invoiceNumber || "—",
-      documents: draft.fileName
-        ? [
-            {
-              id: "doc-invoice",
-              title: draft.fileName,
-              ext: "PDF",
-              size: "—",
-              uploadedAt: new Date().toISOString(),
-              kind: "invoice",
-            },
-          ]
-        : [],
-    });
-    navigate({ to: "/forms/$id", params: { id: created.id } });
+  async function submit() {
+    if (isDemo && demo) {
+      const created = demo.createForm({
+        direction: draft.direction,
+        kind: draft.kind,
+        condition: draft.condition,
+        organizationId: draft.organizationId,
+        counterpartyId: draft.counterpartyId,
+        amountMinor: Math.round(Number(draft.amount || 0) * 100),
+        currency: draft.currency,
+        hsCode: draft.hsCode || "—",
+        invoiceNumber: draft.invoiceNumber || "—",
+        documents: draft.fileName
+          ? [
+              {
+                id: "doc-invoice",
+                title: draft.fileName,
+                ext: "PDF",
+                size: "—",
+                uploadedAt: new Date().toISOString(),
+                kind: "invoice",
+              },
+            ]
+          : [],
+      });
+      void navigate({ to: isDemo ? "/demo/forms/$id" : "/forms/$id", params: { id: created.id } });
+      return;
+    }
+    if (!auth.token) return;
+    setBusy(true);
+    try {
+      const created = await createPlatformForm(auth.token, {
+        direction: draft.direction,
+        kind: draft.kind,
+        invoiceAmount: draft.amount || "0",
+        currency: draft.currency,
+        contractNumber: draft.invoiceNumber || "APP-CREATE",
+        contractDate: new Date().toISOString().slice(0, 10),
+        noDocuments: true,
+      });
+      invalidate();
+      void navigate({ to: "/forms/$id", params: { id: created.id } });
+    } catch (err) {
+      toast.error(isApiError(err) ? err.message : "Не удалось создать заявку");
+    } finally {
+      setBusy(false);
+    }
   }
 
   return (

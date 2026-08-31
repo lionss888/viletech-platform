@@ -1,8 +1,9 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
 
-import { ROLES } from "@/lib/ved/roles";
-import { useVed } from "@/lib/ved/store";
+import { isApiError } from "@/lib/api/errors";
+import { useAuth } from "@/lib/auth/session";
+import { useAuth } from "@/lib/auth/session";
 
 export const Route = createFileRoute("/login")({
   head: () => ({
@@ -17,24 +18,29 @@ export const Route = createFileRoute("/login")({
 });
 
 function LoginPage() {
-  const { signIn } = useVed();
+  const { login, session } = useAuth();
   const navigate = useNavigate();
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
+  const [email, setEmail] = useState("user@vdp.local");
+  const [password, setPassword] = useState("user");
   const [error, setError] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
 
-  function submit(e: React.FormEvent) {
+  if (session) {
+    void navigate({ to: "/dashboard" });
+  }
+
+  async function submit(e: React.FormEvent) {
     e.preventDefault();
-    const match = ROLES.find(
-      (r) => r.seedEmail.toLowerCase() === email.trim().toLowerCase() && r.seedPassword === password,
-    );
-    if (!match) {
-      setError("Неверный e-mail или пароль");
-      return;
-    }
+    setLoading(true);
     setError(null);
-    signIn(match.id);
-    navigate({ to: "/dashboard" });
+    try {
+      await login(email.trim(), password);
+      void navigate({ to: "/dashboard" });
+    } catch (err) {
+      setError(isApiError(err) ? err.message : "Неверный e-mail или пароль");
+    } finally {
+      setLoading(false);
+    }
   }
 
   return (
@@ -48,7 +54,9 @@ function LoginPage() {
         </Link>
 
         <h1 className="mt-8 text-2xl font-semibold tracking-tight">Вход в платформу</h1>
-        <p className="mt-2 text-sm text-muted-foreground">Управление сделками, документами и платежами.</p>
+        <p className="mt-2 text-sm text-muted-foreground">
+          Seed: <span className="font-mono">*@vdp.local</span>, пароль = часть до @ (например user / manager).
+        </p>
 
         <form onSubmit={submit} className="panel mt-6 space-y-4 p-5">
           <div>
@@ -62,7 +70,7 @@ function LoginPage() {
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               className="field mt-1"
-              placeholder="name@company.com"
+              placeholder="user@vdp.local"
               required
             />
           </div>
@@ -85,15 +93,16 @@ function LoginPage() {
 
           <button
             type="submit"
-            className="w-full rounded-md bg-primary px-4 py-2.5 text-sm font-semibold text-primary-foreground transition-colors hover:bg-primary/90"
+            disabled={loading}
+            className="w-full rounded-md bg-primary px-4 py-2.5 text-sm font-semibold text-primary-foreground transition-colors hover:bg-primary/90 disabled:opacity-60"
           >
-            Войти
+            {loading ? "Вход…" : "Войти"}
           </button>
         </form>
 
         <p className="mt-4 text-center text-xs text-muted-foreground">
-          <Link to="/start" className="font-semibold text-foreground hover:underline">
-            Быстрый вход по роли
+          <Link to="/demo/login" className="font-semibold text-foreground hover:underline">
+            Демо без бэкенда
           </Link>
         </p>
       </div>

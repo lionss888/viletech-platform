@@ -6,12 +6,15 @@ import { StageStepper } from "@/components/ved/StageStepper";
 import { DocumentList } from "@/components/ved/DocumentViewer";
 import { DirectionTag, StatusBadge } from "@/components/ved/StatusBadge";
 import { SubjectReview } from "@/components/ved/SubjectReview";
+import { RequireAuth } from "@/lib/auth/session";
 import { isComplianceRole, subjectState, subjectsCleared, subjectsOf } from "@/lib/ved/compliance";
 import { dateTime, money } from "@/lib/ved/format";
 import { cpById, orgById } from "@/lib/ved/mock";
 import { roleTitle } from "@/lib/ved/roles";
 import { statusMeta } from "@/lib/ved/statuses";
-import { useVed } from "@/lib/ved/store";
+import { usePlatformForm } from "@/lib/ved/use-platform-forms";
+import { useWorkspaceData } from "@/lib/ved/use-workspace-data";
+import { useIsDemoWorkspace, useWorkspaceBasePath } from "@/lib/ved/workspace";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/forms/$id")({
@@ -23,21 +26,30 @@ export const Route = createFileRoute("/forms/$id")({
       { property: "og:description", content: "Стадии, документы, хронология и доступные действия по заявке." },
     ],
   }),
-  component: FormDetail,
+  component: () => (
+    <RequireAuth>
+      <FormDetail />
+    </RequireAuth>
+  ),
 });
 
-function FormDetail() {
+export function FormDetail() {
   const { id } = Route.useParams();
-  const { forms, session, organizations, counterparties } = useVed();
-  const form = forms.find((f) => f.id === id);
-  const role = session?.role ?? "user";
+  const isDemo = useIsDemoWorkspace();
+  const basePath = useWorkspaceBasePath();
+  const workspace = useWorkspaceData();
+  const platformForm = usePlatformForm(isDemo ? "" : id);
+  const form = isDemo ? workspace.forms.find((f) => f.id === id) : platformForm.data;
+  const role = workspace.session?.role ?? "user";
+  const organizations = workspace.organizations;
+  const counterparties = workspace.counterparties;
 
   if (!form) {
     return (
       <AppShell title="Заявка не найдена">
         <div className="panel p-6 text-sm text-muted-foreground">
-          Заявка удалена или сброшены тестовые данные.{" "}
-          <Link to="/forms" search={{}} className="font-semibold text-accent hover:underline">
+          {!isDemo && platformForm.isLoading ? "Загрузка…" : "Заявка удалена или недоступна."}{" "}
+          <Link to={`${basePath}/forms`} search={{}} className="font-semibold text-accent hover:underline">
             Вернуться в реестр
           </Link>
         </div>

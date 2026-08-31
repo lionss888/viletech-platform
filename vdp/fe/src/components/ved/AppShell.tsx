@@ -10,9 +10,13 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Modal, ModalButton } from "@/components/ved/Modal";
+import { useAuth } from "@/lib/auth/session";
 import { ROLES } from "@/lib/ved/roles";
-import { useVed, visibleForms } from "@/lib/ved/store";
+import { useVedOptional } from "@/lib/ved/store";
 import { actionsFor } from "@/lib/ved/actions";
+import { useWorkspaceData } from "@/lib/ved/use-workspace-data";
+import { useIsDemoWorkspace, useWorkspaceBasePath } from "@/lib/ved/workspace";
+import { visibleForms } from "@/lib/ved/store";
 import { cn } from "@/lib/utils";
 import type { VedRole } from "@/lib/ved/types";
 
@@ -44,13 +48,19 @@ const allowed = (items: NavItem[], role: VedRole | undefined) =>
   items.filter((item) => item.roles === "all" || (role && item.roles.includes(role)));
 
 export function AppShell({ children, title, subtitle }: { children: ReactNode; title: string; subtitle?: string }) {
-  const { session, signIn, signOut, forms, resetDemo } = useVed();
+  const isDemo = useIsDemoWorkspace();
+  const basePath = useWorkspaceBasePath();
+  const demoStore = useVedOptional();
+  const auth = useAuth();
+  const { session, forms } = useWorkspaceData();
   const navigate = useNavigate();
   const pathname = useRouterState({ select: (s) => s.location.pathname });
 
   const role = session?.role;
   const mine = visibleForms(forms, role, session?.name);
   const todo = mine.filter((f) => actionsFor(role ?? "user", f.status).length > 0).length;
+
+  const path = (to: string) => (basePath ? `${basePath}${to}` : to) as "/dashboard" | "/forms" | "/forms/new" | "/documents" | "/counterparties" | "/organizations" | "/compliance-tools" | "/admin" | "/providers" | "/codes" | "/currencies" | "/countries";
 
   const refs = allowed(REFERENCES, role);
   // Развёрнутое состояние «Справочники» хранится в localStorage и не сбрасывается при навигации/смене роли
@@ -83,7 +93,7 @@ export function AppShell({ children, title, subtitle }: { children: ReactNode; t
   return (
     <div className="flex h-screen overflow-hidden bg-background">
       <aside className="hidden w-64 shrink-0 flex-col overflow-y-auto border-r border-border bg-sidebar p-4 lg:flex">
-        <Link to="/dashboard" className="flex items-center gap-2">
+        <Link to={path("/dashboard")} className="flex items-center gap-2">
           <span className="grid size-8 place-items-center rounded-md bg-primary font-mono text-sm font-bold text-primary-foreground">
             V
           </span>
@@ -99,9 +109,9 @@ export function AppShell({ children, title, subtitle }: { children: ReactNode; t
               <DropdownMenuContent align="start" className="w-56">
                 <DropdownMenuLabel>Что нужно создать?</DropdownMenuLabel>
                 <DropdownMenuSeparator />
-                <DropdownMenuItem onSelect={() => navigate({ to: "/forms/new" })}>Новая заявка</DropdownMenuItem>
-                <DropdownMenuItem onSelect={() => navigate({ to: "/documents" })}>Добавить документ</DropdownMenuItem>
-                <DropdownMenuItem onSelect={() => navigate({ to: "/counterparties" })}>Добавить компанию</DropdownMenuItem>
+                <DropdownMenuItem onSelect={() => navigate({ to: path("/forms/new") })}>Новая заявка</DropdownMenuItem>
+                <DropdownMenuItem onSelect={() => navigate({ to: path("/documents") })}>Добавить документ</DropdownMenuItem>
+                <DropdownMenuItem onSelect={() => navigate({ to: path("/counterparties") })}>Добавить компанию</DropdownMenuItem>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem onSelect={() => setSupportOpen(true)}>Поддержка и консультация</DropdownMenuItem>
               </DropdownMenuContent>
@@ -111,7 +121,7 @@ export function AppShell({ children, title, subtitle }: { children: ReactNode; t
 
         <nav className="mt-6 flex flex-col gap-1">
           {allowed(NAV, role).map((item) => (
-            <Link key={item.label} to={item.to} className={linkCls(pathname === item.to)}>
+            <Link key={item.label} to={path(item.to)} className={linkCls(pathname === path(item.to))}>
               {item.label}
               {item.to === "/forms" && todo > 0 && (
                 <span className="ml-2 rounded bg-accent px-1.5 py-0.5 font-mono text-[11px] text-accent-foreground">{todo}</span>
@@ -133,7 +143,7 @@ export function AppShell({ children, title, subtitle }: { children: ReactNode; t
               {refsOpen && (
                 <div className="mt-1 ml-3 flex flex-col gap-1 border-l border-border pl-2">
                   {refs.map((item) => (
-                    <Link key={item.to} to={item.to} className={cn(linkCls(pathname === item.to), "text-[13px]")}>
+                    <Link key={item.to} to={path(item.to)} className={cn(linkCls(pathname === path(item.to)), "text-[13px]")}>
                       {item.label}
                     </Link>
                   ))}
@@ -144,30 +154,37 @@ export function AppShell({ children, title, subtitle }: { children: ReactNode; t
         </nav>
 
         <div className="mt-auto space-y-3">
-          <div>
-            <p className="label-caps">Роль</p>
-            <select
-              value={role ?? ""}
-              onChange={(e) => signIn(e.target.value as VedRole)}
-              className="field mt-1 text-xs"
-            >
-              {ROLES.map((r) => (
-                <option key={r.id} value={r.id}>
-                  {r.title} — {r.personName}
-                </option>
-              ))}
-            </select>
-          </div>
-          {role === "root" && (
-            <button type="button" onClick={resetDemo} className="w-full rounded-md px-3 py-2 text-xs font-semibold text-muted-foreground hover:bg-muted">
+          {isDemo && demoStore && (
+            <div>
+              <p className="label-caps">Роль (демо)</p>
+              <select
+                value={role ?? ""}
+                onChange={(e) => demoStore.signIn(e.target.value as VedRole)}
+                className="field mt-1 text-xs"
+              >
+                {ROLES.map((r) => (
+                  <option key={r.id} value={r.id}>
+                    {r.title} — {r.personName}
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
+          {isDemo && role === "root" && demoStore && (
+            <button type="button" onClick={demoStore.resetDemo} className="w-full rounded-md px-3 py-2 text-xs font-semibold text-muted-foreground hover:bg-muted">
               Сбросить данные
             </button>
           )}
           <button
             type="button"
             onClick={() => {
-              signOut();
-              navigate({ to: "/login" });
+              if (isDemo && demoStore) {
+                demoStore.signOut();
+                void navigate({ to: "/demo/login" });
+                return;
+              }
+              void auth.logout();
+              void navigate({ to: "/login" });
             }}
             className="w-full rounded-md px-3 py-2 text-xs font-semibold text-destructive hover:bg-destructive-soft"
           >
@@ -195,7 +212,7 @@ export function AppShell({ children, title, subtitle }: { children: ReactNode; t
 
         <nav className="flex shrink-0 gap-1 overflow-x-auto border-b border-border bg-card px-4 py-2 lg:hidden">
           {[...allowed(NAV, role), ...refs].map((item) => (
-            <Link key={item.label} to={item.to} className="rounded-md px-2 py-1 text-xs font-medium whitespace-nowrap text-muted-foreground">
+            <Link key={item.label} to={path(item.to)} className="rounded-md px-2 py-1 text-xs font-medium whitespace-nowrap text-muted-foreground">
               {item.label}
             </Link>
           ))}

@@ -10,7 +10,10 @@ import { daysIdle, stuckForms } from "@/lib/ved/health";
 import { cpById, orgById } from "@/lib/ved/mock";
 import { roleTitle } from "@/lib/ved/roles";
 import { STAGES, STATUS_FILTERS, statusMeta } from "@/lib/ved/statuses";
-import { useVed, visibleForms } from "@/lib/ved/store";
+import { RequireAuth } from "@/lib/auth/session";
+import { useWorkspaceData } from "@/lib/ved/use-workspace-data";
+import { useVedOptional, visibleForms } from "@/lib/ved/store";
+import { useIsDemoWorkspace } from "@/lib/ved/workspace";
 import { dateTime } from "@/lib/ved/format";
 import { cn } from "@/lib/utils";
 import type { FormAction } from "@/lib/ved/types";
@@ -39,11 +42,18 @@ export const Route = createFileRoute("/forms/")({
       { property: "og:description", content: "Фильтры по стадиям жизненного цикла, массовые действия и очереди по роли." },
     ],
   }),
-  component: FormsList,
+  component: () => (
+    <RequireAuth>
+      <FormsList />
+    </RequireAuth>
+  ),
 });
 
-function FormsList() {
-  const { forms, session, applyBulk } = useVed();
+export function FormsList() {
+  const isDemo = useIsDemoWorkspace();
+  const demo = useVedOptional();
+  const { forms, session } = useWorkspaceData();
+  const applyBulk = demo?.applyBulk;
   const preset = Route.useSearch();
   const [filter, setFilter] = useState(preset.filter ?? "all");
   const [query, setQuery] = useState(preset.q ?? "");
@@ -364,7 +374,7 @@ function FormsList() {
               variant={bulkPending?.tone === "danger" ? "danger" : "primary"}
               disabled={!!bulkPending?.requiresReason && bulkReason.trim().length < 3}
               onClick={() => {
-                if (!bulkPending) return;
+                if (!bulkPending || !applyBulk) return;
                 applyBulk(selected, bulkPending, bulkPending.requiresReason ? bulkReason : undefined);
                 setSelected([]);
                 setBulkPending(null);

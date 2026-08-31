@@ -63,6 +63,10 @@ const initialState: State = { session: null, forms: FORMS, users: USERS, refs: i
 
 const StoreContext = createContext<Store | null>(null);
 
+export function useVedOptional(): Store | null {
+  return useContext(StoreContext);
+}
+
 export function VedStoreProvider({ children }: { children: ReactNode }) {
   const [state, setState] = useState<State>(initialState);
   const [ready, setReady] = useState(false);

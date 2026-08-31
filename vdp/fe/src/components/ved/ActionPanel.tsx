@@ -1,9 +1,14 @@
 import { useState } from "react";
+import { toast } from "sonner";
 
 import { Modal, ModalButton } from "@/components/ved/Modal";
+import { useAuth } from "@/lib/auth/session";
+import { appActionsFor } from "@/lib/ved/app-actions";
 import { actionsFor } from "@/lib/ved/actions";
 import { marksFor } from "@/lib/ved/compliance";
-import { useVed } from "@/lib/ved/store";
+import { useVedOptional } from "@/lib/ved/store";
+import { usePlatformAction } from "@/lib/ved/use-platform-forms";
+import { useIsDemoWorkspace } from "@/lib/ved/workspace";
 import type { ActionTone, FormAction, PaymentForm } from "@/lib/ved/types";
 import { cn } from "@/lib/utils";
 
@@ -22,18 +27,23 @@ export function ActionPanel({
 }: {
   form: PaymentForm;
   title?: string;
-  /** Информационная подсказка над кнопками. */
   note?: string | undefined;
-  /** Пояснение, почему одобрение заявки временно недоступно (например не проверены участники). */
   lockNote?: string | undefined;
 }) {
-  const { session, applyAction, complianceTools } = useVed();
+  const isDemo = useIsDemoWorkspace();
+  const demo = useVedOptional();
+  const auth = useAuth();
+  const platformAction = usePlatformAction(isDemo ? "" : form.id);
   const [pending, setPending] = useState<FormAction | null>(null);
   const [reason, setReason] = useState("");
   const [mark, setMark] = useState("");
   const [fileName, setFileName] = useState("");
+  const [file, setFile] = useState<File | null>(null);
+  const [busy, setBusy] = useState(false);
 
-  const actions = actionsFor(session?.role ?? "user", form.status);
+  const activeRole = isDemo ? demo?.session?.role ?? "user" : auth.session?.role ?? "user";
+  const actions = isDemo ? actionsFor(activeRole, form.status) : appActionsFor(activeRole, form.status);
+  const complianceTools = demo?.complianceTools ?? [];
   const marks = marksFor(complianceTools, "form");
 
   if (actions.length === 0) {
@@ -52,6 +62,31 @@ export function ActionPanel({
     setReason("");
     setMark("");
     setFileName("");
+    setFile(null);
+  }
+
+  async function run(action: FormAction, extras?: { reason?: string; fileName?: string; mark?: string; file?: File }) {
+    if (isDemo && demo) {
+      demo.applyAction(form.id, action, extras);
+      return;
+    }
+    const appAction = appActionsFor(activeRole, form.status).find((a) => a.id === action.id);
+    if (!appAction) return;
+    setBusy(true);
+    try {
+      await platformAction.mutateAsync({
+        action: appAction,
+        extras: {
+          comment: extras?.reason || extras?.mark,
+          file: extras?.file,
+        },
+      });
+      toast.success("Действие выполнено");
+    } catch (err) {
+      toast.error(isApiError(err) ? err.message : "Не удалось выполнить действие");
+    } finally {
+      setBusy(false);
+    }
   }
 
   function start(action: FormAction) {
@@ -59,22 +94,23 @@ export function ActionPanel({
       setReason("");
       setMark("");
       setFileName("");
+      setFile(null);
       setPending(action);
       return;
     }
-    applyAction(form.id, action, {});
+    void run(action, {});
   }
 
   function confirm() {
     if (!pending) return;
-    applyAction(form.id, pending, { reason, fileName, mark });
+    void run(pending, { reason, fileName, mark, file: file ?? undefined });
     close();
   }
 
   const blocked =
     !!pending &&
     ((pending.requiresReason && reason.trim().length < 3) ||
-      (pending.requiresFile && !fileName) ||
+      (pending.requiresFile && !fileName && !file) ||
       (pending.requiresMark && !mark));
 
   const isApproval = (action: FormAction) => action.id.includes("accept") || action.id.includes("start");
@@ -91,9 +127,9 @@ export function ActionPanel({
             <button
               key={action.id}
               type="button"
-              disabled={disabled}
+              disabled={disabled || busy}
               title={disabled ? lockNote : action.label}
-              onClick={() => start(action)}
+              onClick={() => start(action as FormAction)}
               className={cn(
                 "w-full rounded-md px-3 py-2 text-sm font-semibold transition-colors disabled:cursor-not-allowed disabled:opacity-40",
                 TONE[action.tone],
@@ -106,65 +142,49 @@ export function ActionPanel({
       </div>
 
       <Modal
-        open={pending !== null}
-        onOpenChange={(v) => !v && close()}
+        open={!!pending}
+        onOpenChange={(open) => !open && close()}
         title={pending?.label ?? ""}
-        description={pending?.confirm ?? `Заявка ${form.number}. Подтвердите действие.`}
+        description={pending?.confirm}
         footer={
           <>
             <ModalButton variant="quiet" onClick={close}>
               Отмена
             </ModalButton>
-            <ModalButton
-              variant={pending?.tone === "danger" ? "danger" : "primary"}
-              onClick={confirm}
-              disabled={blocked}
-            >
+            <ModalButton disabled={blocked || busy} onClick={confirm}>
               Подтвердить
             </ModalButton>
           </>
         }
       >
-        {pending?.requiresMark && (
-          <label className="block">
-            <span className="label-caps">Отметка комплаенс</span>
-            <select value={mark} onChange={(e) => setMark(e.target.value)} className="field mt-1">
-              <option value="">Выберите отметку</option>
-              {marks.map((tool) => (
-                <option key={tool.id} value={tool.title}>
-                  {tool.code} — {tool.title}
-                </option>
-              ))}
-            </select>
-            {marks.find((t) => t.title === mark) && (
-              <span className="mt-1 block text-xs text-muted-foreground">
-                Клиент увидит: {marks.find((t) => t.title === mark)?.instruction}
-              </span>
-            )}
-          </label>
-        )}
         {pending?.requiresReason && (
-          <label className="block">
-            <span className="label-caps">Комментарий для клиента</span>
-            <textarea
-              value={reason}
-              onChange={(e) => setReason(e.target.value)}
-              placeholder="Что именно нужно исправить или предоставить"
-              rows={3}
-              className="field mt-1 resize-none"
-            />
-          </label>
+          <textarea
+            value={reason}
+            onChange={(e) => setReason(e.target.value)}
+            className="field min-h-24 w-full"
+            placeholder="Причина (минимум 3 символа)"
+          />
+        )}
+        {pending?.requiresMark && (
+          <select value={mark} onChange={(e) => setMark(e.target.value)} className="field mt-2 w-full">
+            <option value="">Выберите отметку</option>
+            {marks.map((m) => (
+              <option key={m.id} value={m.id}>
+                {m.title}
+              </option>
+            ))}
+          </select>
         )}
         {pending?.requiresFile && (
-          <label className="block">
-            <span className="label-caps">Документ</span>
-            <input
-              type="file"
-              onChange={(e) => setFileName(e.target.files?.[0]?.name ?? "")}
-              className="mt-1 block w-full text-xs text-muted-foreground"
-            />
-            {fileName && <span className="mt-1 block font-mono text-[11px] text-muted-foreground">{fileName}</span>}
-          </label>
+          <input
+            type="file"
+            className="field mt-2 w-full"
+            onChange={(e) => {
+              const picked = e.target.files?.[0];
+              setFile(picked ?? null);
+              setFileName(picked?.name ?? "");
+            }}
+          />
         )}
       </Modal>
     </div>

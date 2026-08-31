@@ -3,6 +3,7 @@ package service
 import (
 	"context"
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/viletech/vdp/core/internal/authz"
@@ -235,6 +236,41 @@ func (s *FormPaymentService) List(ctx context.Context, principal authz.Principal
 		if formpayment.CanSeeForm(principal.Role, principal.AccountID, form) {
 			out = append(out, form)
 		}
+	}
+	return out
+}
+
+// FormListProjection enriches list rows for cabinet UI (B3).
+type FormListProjection struct {
+	formpayment.Form
+	Number           string `json:"number"`
+	OrganizationName string `json:"organization_name,omitempty"`
+	CounterpartyName string `json:"counterparty_name,omitempty"`
+}
+
+func formDisplayNumber(id string) string {
+	if len(id) >= 8 {
+		return "ВЭД-" + strings.ToUpper(id[:8])
+	}
+	return "ВЭД-" + strings.ToUpper(id)
+}
+
+func (s *FormPaymentService) ListProjected(ctx context.Context, principal authz.Principal) []FormListProjection {
+	forms := s.List(ctx, principal)
+	out := make([]FormListProjection, 0, len(forms))
+	for _, form := range forms {
+		item := FormListProjection{Form: form, Number: formDisplayNumber(form.ID)}
+		if form.OrganizationID != "" {
+			if org, err := s.store.OrganizationByID(ctx, form.OrganizationID); err == nil {
+				item.OrganizationName = org.Name
+			}
+		}
+		if form.CounterpartyID != "" {
+			if cp, err := s.store.CounterpartyByID(ctx, form.CounterpartyID); err == nil {
+				item.CounterpartyName = cp.Name
+			}
+		}
+		out = append(out, item)
 	}
 	return out
 }

@@ -1,18 +1,19 @@
-# RD0 baseline (2026-08-29)
+# RD0 baseline (2026-08-31)
 
 Internal gate notes for role-debug program RD1–RD11. Do not treat as product documentation.
 
 Product docs: [docs/README.md](docs/README.md).
 
+**FE-App foundation re-executed:** see [fe/PLAN-RECONCILE.md](fe/PLAN-RECONCILE.md). Baseline commit after implementation: `c2e68c728` (+ local changes).
+
 ## Gate status
 
 | Check | Result |
 |-------|--------|
-| `make compose-up` (+ `compose-fe-smoke`) | green |
-| `cd vdp/fe && npm test` | 88/88 green (RD10 integration-journey) |
 | `make test` (core+hub) | green |
-| `make compose-e2e` / `make integration-gate` | green (main + RD7/8/9 spots) |
-| `/login` (http://127.0.0.1:5173/login) | HTTP 200 |
+| `cd vdp/fe && npm test` | run after `npm install` / compose-fe-refresh (vitest added) |
+| `make compose-up` + `make integration-gate` | run on machine with Docker |
+| App `/login` + `/demo/login` | implemented (API vs mock split) |
 
 ## Stack
 
