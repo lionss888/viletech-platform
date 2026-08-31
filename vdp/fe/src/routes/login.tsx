@@ -1,8 +1,13 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
 
+<<<<<<< Updated upstream
 import { ROLES } from "@/lib/ved/roles";
 import { useVed } from "@/lib/ved/store";
+=======
+import { isApiError } from "@/lib/api/errors";
+import { useAuth } from "@/lib/auth/session";
+>>>>>>> Stashed changes
 
 export const Route = createFileRoute("/login")({
   head: () => ({
@@ -50,7 +55,7 @@ function LoginPage() {
         <h1 className="mt-8 text-2xl font-semibold tracking-tight">Вход в платформу</h1>
         <p className="mt-2 text-sm text-muted-foreground">Управление сделками, документами и платежами.</p>
 
-        <form onSubmit={submit} className="panel mt-6 space-y-4 p-5">
+        <form onSubmit={submit} method="post" action="#" className="panel mt-6 space-y-4 p-5">
           <div>
             <label htmlFor="email" className="label-caps">
               E-mail
