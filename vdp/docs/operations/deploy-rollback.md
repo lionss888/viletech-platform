@@ -1,0 +1,61 @@
+# Rollback release deploy (Compose, digest pin)
+
+Rollback это выкат предыдущего digest без пересборки и без SSH-патча контейнеров.
+
+Среда alpha. Назначение демо и разработка. Режим авто-деплой из ветки main.
+
+Среда beta. Назначение пред-прод. Режим вручную.
+
+Среда gamma. Назначение прод. Режим вручную с approval.
+
+## Preconditions
+
+На хосте есть pin-файл последнего успешного релиза для нужной среды: .release-images.alpha.last-good, .release-images.beta.last-good или .release-images.gamma.last-good. Такой файл создаётся успешным deploy через deploy-compose-release.sh.
+
+Remote-файл .env.deploy с секретами не откатывается, откатываются только образы приложения.
+
+## GitHub Actions
+
+Шаг первый. Найти предыдущий pin в artifact release-images-pin у более раннего run, либо использовать сохранённый файл .last-good на VM.
+
+Шаг второй. Запустить workflow_dispatch, workflow VDP Deploy, environment alpha или beta или gamma, поле images_run_id равно id предыдущего успешного run workflow VDP Images.
+
+## На VM (SSH)
+
+Перейти в каталог развёртывания: cd /opt/vdp.
+
+Скопировать pin последнего хорошего релиза в активный файл: cp .release-images.alpha.last-good .release-images.env. Для других сред подставляется beta или gamma.
+
+Загрузить переменные окружения: set -a && source .env.deploy && source .release-images.env && set +a.
+
+Подтянуть образы: docker compose -f docker-compose.yml -f docker-compose.release.yml --profile prod pull hub core fe-prod.
+
+Поднять сервисы: docker compose -f docker-compose.yml -f docker-compose.release.yml --profile prod up -d --no-build --scale fe=0.
+
+Дождаться health: ./scripts/wait-release-health.sh.
+
+## Make (с локальной машины)
+
+Перейти в каталог vdp: cd vdp.
+
+Запустить откат alpha с переменными DEPLOY_HOST равным alpha.vedy.io, DEPLOY_USER равным deploy и SSH_KEY_PATH равным ~/.ssh/vdp_deploy_ed25519, команда make rollback-alpha.
+
+Аналогично для пред-прода используется make rollback-beta.
+
+Прод откатывается командой make rollback-gamma с gamma host secrets.
+
+## Verify
+
+Порты приложения на хосте слушают только loopback, потому что переменные с суффиксом _BIND в файле .env.deploy заданы в 127.0.0.1. Поэтому проверка выполняется по SSH или через публичный домен.
+
+Проверка core по SSH: ssh deploy@HOST 'curl -sf http://127.0.0.1:8080/api/v1/health'.
+
+Проверка hub по SSH: ssh deploy@HOST 'curl -sf http://127.0.0.1:8081/api/v1/health'.
+
+Проверка через домен: curl -sfI https://alpha.vedy.io/login.
+
+Не-прод дополнительно проверяется скриптом ./scripts/staging-smoke.sh на хосте.
+
+## Post-incident
+
+Blameless постмортем согласно правилу devops-культура: timeline, impact по заявкам и платежам, action items. Не патчить prod вручную, вместо этого зафиксировать digest в pin и повторить deploy.

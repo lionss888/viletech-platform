@@ -1,0 +1,21 @@
+# Deploy host env — copy to /opt/vdp/.env.deploy on the VM, chmod 0600, never commit.
+# scripts/bootstrap-host.sh generates this file with random secrets automatically.
+
+ENVIRONMENT=alpha
+
+# Application secrets. Generate with: openssl rand -hex 32
+JWT_SECRET=replace-with-rotated-core-secret
+HUB_SHARED_SECRET=replace-with-rotated-s2s-secret
+GATEWAY_RATE_LIMIT=2000
+
+# Keep published ports on loopback; Caddy terminates TLS and proxies to fe-prod/core.
+FE_PROD_BIND=127.0.0.1
+CORE_BIND=127.0.0.1
+HUB_BIND=127.0.0.1
+DOCS_BIND=127.0.0.1
+DB_BIND=127.0.0.1
+
+# Optional hub adapters (see staging-checklist.md)
+DOCS_URL=
+MAIL_URL=
+BANK_WEBHOOK_URL=

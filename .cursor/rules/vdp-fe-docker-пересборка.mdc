@@ -1,0 +1,45 @@
+---
+description: Спрашивать пользователя перед пересборкой/обновлением Docker FE (fe_node_modules)
+alwaysApply: true
+---
+
+# VDP FE: пересборка в Docker — только после вопроса пользователю
+
+Dev-фронт (`vdp-fe`, порт 5173) монтирует исходники, но **`node_modules` живут в named volume `fe_node_modules`**. `npm install` на хосте и даже `docker compose up --build` **не обновляют** зависимости в этом volume. После смены `package.json` / sync Lovable / pull ветки UI может отдавать 500 (`Cannot find module …`).
+
+## MUST: спросить пользователя
+
+**Не** запускай пересборку / `npm install` в контейнере fe / `make compose-fe-refresh` молча.
+
+Спроси явно (одним коротким вопросом) и дождись ответа **да / нет**:
+
+> Обновить зависимости фронта в Docker (`make compose-fe-refresh` / `npm install` в `fe` + restart)?
+
+### Когда спрашивать
+
+1. **Старт проекта / подъём стека** — пользователь просит запустить VDP, `compose-up`, «подними фронт», «старт».
+2. **Обновление веток** — `git pull` / `fetch`+merge / `checkout` / `switch` / sync Lovable → `vdp/fe`, любая смена кода fe с зависимостями.
+3. После правок `vdp/fe/package.json` / lockfile, если compose fe уже запущен.
+
+### Когда можно без повторного вопроса
+
+- Пользователь **уже ответил «да»** в этом же ходе диалога.
+- Пользователь явно сказал «пересобери fe» / «сделай compose-fe-refresh» без развилки.
+
+### Как выполнять при «да»
+
+Из каталога `vdp`:
+
+```sh
+make compose-fe-refresh
+```
+
+или эквивалент: `docker compose exec fe npm install` → `docker compose restart fe` → проверка `http://localhost:5173` (ожидай 200).
+
+Prod (`fe-prod`, порт 3000) — **отдельно** и тоже только после явного согласия: `docker compose --profile prod up -d --build fe-prod`.
+
+### Анти-паттерны
+
+- Тихий `npm install` в контейнере «на всякий случай».
+- Считать `docker compose up --build` достаточным для обновления `fe_node_modules`.
+- Путать host `npm run build` с рабочим Docker-dev на 5173.

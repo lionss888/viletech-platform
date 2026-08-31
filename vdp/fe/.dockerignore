@@ -1,0 +1,9 @@
+node_modules
+dist
+.nitro
+.output
+coverage
+*.log
+.DS_Store
+.git
+.gitignore

@@ -1,0 +1,161 @@
+{
+  "version": 1,
+  "sdk_version": "0.28.0",
+  "path": "/mcp",
+  "auth": {
+    "type": "none"
+  },
+  "mcp": {
+    "server": {
+      "name": "vdp",
+      "version": "0.1.0",
+      "title": "VDP"
+    },
+    "tools": [
+      {
+        "name": "list_deals",
+        "title": "Список сделок ВЭД",
+        "description": "Список платёжных заявок (сделок) с фильтрами по этапу, направлению, валюте и текстовому поиску. Возвращает номер, статус, этап, стороны и сумму.",
+        "annotations": {
+          "readOnlyHint": true,
+          "idempotentHint": true,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "type": "object",
+          "properties": {
+            "stage": {
+              "description": "Этап жизненного цикла сделки.",
+              "type": "string",
+              "enum": [
+                "new",
+                "organization_verification",
+                "form_verification",
+                "agency_contract",
+                "signing_order",
+                "payment",
+                "agent_report",
+                "shipment",
+                "completed"
+              ]
+            },
+            "direction": {
+              "description": "Направление сделки.",
+              "type": "string",
+              "enum": [
+                "import",
+                "export"
+              ]
+            },
+            "currency": {
+              "description": "Код валюты, например USD или CNY.",
+              "type": "string"
+            },
+            "query": {
+              "description": "Поиск по номеру заявки, инвойсу, организации или контрагенту.",
+              "type": "string"
+            },
+            "limit": {
+              "description": "Максимум записей в ответе (по умолчанию 25).",
+              "type": "integer",
+              "minimum": -9007199254740991,
+              "maximum": 9007199254740991
+            }
+          }
+        },
+        "outputSchema": null
+      },
+      {
+        "name": "get_deal",
+        "title": "Карточка сделки",
+        "description": "Полная карточка одной платёжной заявки по её номеру: стороны, сумма, статус, комментарии комплаенс, документы и хронология событий.",
+        "annotations": {
+          "readOnlyHint": true,
+          "idempotentHint": true,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "type": "object",
+          "properties": {
+            "number": {
+              "type": "string",
+              "description": "Номер заявки, например ВЭД-2026-0107."
+            }
+          },
+          "required": [
+            "number"
+          ]
+        },
+        "outputSchema": null
+      },
+      {
+        "name": "list_reference",
+        "title": "Справочники платформы",
+        "description": "Записи справочника платформы: организации, контрагенты, провайдеры, валюты, коды ТН ВЭД, страны с уровнем риска или инструменты комплаенс.",
+        "annotations": {
+          "readOnlyHint": true,
+          "idempotentHint": true,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "type": "object",
+          "properties": {
+            "registry": {
+              "type": "string",
+              "enum": [
+                "organizations",
+                "counterparties",
+                "providers",
+                "currencies",
+                "hs_codes",
+                "countries",
+                "compliance_tools"
+              ],
+              "description": "Какой справочник вернуть."
+            }
+          },
+          "required": [
+            "registry"
+          ]
+        },
+        "outputSchema": null
+      },
+      {
+        "name": "describe_workflow",
+        "title": "Процесс сделки ВЭД",
+        "description": "Описание процесса: этапы жизненного цикла сделки, все статусы с этапами и роли платформы. Опционально — какие действия доступны роли на конкретном статусе.",
+        "annotations": {
+          "readOnlyHint": true,
+          "idempotentHint": true,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "type": "object",
+          "properties": {
+            "role": {
+              "description": "Роль, для которой нужно показать доступные действия.",
+              "type": "string",
+              "enum": [
+                "user",
+                "internal_compliance_officer",
+                "compliance_officer",
+                "manager",
+                "provider",
+                "root"
+              ]
+            },
+            "status": {
+              "description": "Статус сделки, для которого нужны действия роли.",
+              "type": "string"
+            }
+          }
+        },
+        "outputSchema": null
+      }
+    ]
+  }
+}

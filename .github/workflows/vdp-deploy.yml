@@ -1,0 +1,121 @@
+name: VDP Deploy
+
+# Environments: alpha (auto from main), beta (pre-prod, manual), gamma (prod, manual + approval).
+# Deploy never builds: it promotes the exact digests pinned by the VDP Images run.
+on:
+  workflow_run:
+    workflows: [VDP Images]
+    types: [completed]
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: Target environment
+        required: true
+        type: choice
+        options:
+          - alpha
+          - beta
+          - gamma
+      images_run_id:
+        description: Images workflow run id (empty = latest successful run on main)
+        required: false
+        default: ""
+
+concurrency:
+  group: vdp-deploy-${{ github.event.inputs.environment || 'alpha' }}
+  cancel-in-progress: false
+
+permissions:
+  actions: read
+  contents: read
+  packages: read
+
+jobs:
+  resolve-pin:
+    name: resolve image pin
+    runs-on: ubuntu-latest
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      github.event.workflow_run.conclusion == 'success'
+    outputs:
+      target_env: ${{ steps.meta.outputs.target_env }}
+    steps:
+      - name: Resolve target environment
+        id: meta
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            echo "target_env=${{ github.event.inputs.environment }}" >> "$GITHUB_OUTPUT"
+          else
+            echo "target_env=alpha" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Resolve images workflow run id
+        id: runid
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_REPO: ${{ github.repository }}
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_run" ]; then
+            echo "id=${{ github.event.workflow_run.id }}" >> "$GITHUB_OUTPUT"
+          elif [ -n "${{ github.event.inputs.images_run_id }}" ]; then
+            echo "id=${{ github.event.inputs.images_run_id }}" >> "$GITHUB_OUTPUT"
+          else
+            rid=$(gh run list --workflow=vdp-images.yml --branch=main --status=success \
+              --limit=1 --json databaseId --jq '.[0].databaseId')
+            if [ -z "$rid" ] || [ "$rid" = "null" ]; then
+              echo "no successful VDP Images run found on main" >&2
+              exit 1
+            fi
+            echo "id=${rid}" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Download release-images-pin artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: release-images-pin
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          run-id: ${{ steps.runid.outputs.id }}
+
+      - name: Show resolved digests
+        run: cat release-images.env
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: deploy-pin
+          path: release-images.env
+          retention-days: 7
+
+  deploy:
+    name: deploy ${{ needs.resolve-pin.outputs.target_env }}
+    needs: [resolve-pin]
+    runs-on: ubuntu-latest
+    environment: ${{ needs.resolve-pin.outputs.target_env }}
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/download-artifact@v4
+        with:
+          name: deploy-pin
+          path: pin
+
+      - name: Install SSH key
+        run: |
+          mkdir -p ~/.ssh
+          printf '%s\n' "${{ secrets.DEPLOY_SSH_KEY }}" > ~/.ssh/deploy_key
+          chmod 600 ~/.ssh/deploy_key
+
+      - name: Promote pinned digests (compose pull, no build)
+        env:
+          DEPLOY_HOST: ${{ secrets.DEPLOY_HOST }}
+          DEPLOY_USER: ${{ secrets.DEPLOY_USER }}
+          DEPLOY_PATH: ${{ secrets.DEPLOY_PATH }}
+          SSH_KEY_PATH: /home/runner/.ssh/deploy_key
+          PIN_FILE: pin/release-images.env
+          ENVIRONMENT: ${{ needs.resolve-pin.outputs.target_env }}
+          REGISTRY_HOST: ghcr.io
+          REGISTRY_USER: ${{ github.actor }}
+          REGISTRY_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          chmod +x vdp/scripts/deploy-compose-release.sh
+          ./vdp/scripts/deploy-compose-release.sh

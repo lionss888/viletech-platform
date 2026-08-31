@@ -1,0 +1,139 @@
+name: VDP CI
+
+on:
+  push:
+    branches: [main, master]
+    paths:
+      - "vdp/**"
+      - ".github/workflows/vdp-*.yml"
+      - ".gitlab-ci.yml"
+  pull_request:
+    paths:
+      - "vdp/**"
+      - ".github/workflows/vdp-*.yml"
+      - ".gitlab-ci.yml"
+  schedule:
+    - cron: "0 3 * * *"
+  workflow_dispatch:
+
+concurrency:
+  group: vdp-ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  fast:
+    name: fast (unit)
+    if: >-
+      github.actor != 'vdp-mirror-bot' &&
+      (github.event_name != 'push' || !contains(github.event.head_commit.message, '[skip mirror-loop]'))
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: "1.22"
+          cache-dependency-path: |
+            vdp/core/go.sum
+            vdp/hub/go.sum
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: npm
+          cache-dependency-path: vdp/fe/package-lock.json
+      - name: FE unit tests
+        working-directory: vdp/fe
+        run: npm ci && npm test
+      - name: Go unit tests
+        working-directory: vdp
+        run: make test
+      - name: Hub adapter tests
+        working-directory: vdp
+        run: make test-adapters
+
+  docs:
+    name: docs format
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - name: Docs format check
+        working-directory: vdp
+        run: make docs-format-check
+      - name: CD scripts smoke
+        working-directory: vdp
+        run: make test-cd-scripts
+
+  integration:
+    name: integration (postgres + compose-e2e)
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    if: github.event_name != 'pull_request' || contains(github.event.pull_request.labels.*.name, 'integration')
+    needs: [fast]
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: vdp
+          POSTGRES_PASSWORD: vdp
+          POSTGRES_DB: postgres
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U vdp"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: "1.22"
+          cache-dependency-path: |
+            vdp/core/go.sum
+            vdp/hub/go.sum
+      - name: Bootstrap postgres roles and databases
+        env:
+          PGPASSWORD: vdp
+        run: |
+          chmod +x vdp/scripts/ci-bootstrap-postgres.sh
+          PGHOST=localhost POSTGRES_USER=vdp POSTGRES_PASSWORD=vdp ./vdp/scripts/ci-bootstrap-postgres.sh
+      - name: Migrate postgres (CI service)
+        working-directory: vdp
+        env:
+          DATABASE_URL_CORE: postgres://vdp_core:vdp_core@localhost:5432/vdp_core?sslmode=disable
+          DATABASE_URL_HUB: postgres://vdp_hub:vdp_hub@localhost:5432/vdp_hub?sslmode=disable
+        run: make db-migrate
+      - name: Go postgres integration tests
+        working-directory: vdp
+        env:
+          DATABASE_URL_CORE: postgres://vdp_core:vdp_core@localhost:5432/vdp_core?sslmode=disable
+          DATABASE_URL_HUB: postgres://vdp_hub:vdp_hub@localhost:5432/vdp_hub?sslmode=disable
+        run: make test-integration
+      - name: Compose stack + API E2E
+        working-directory: vdp
+        run: |
+          make compose-up
+          ./scripts/compose-e2e.sh
+      - name: Compose down
+        if: always()
+        working-directory: vdp
+        run: make compose-down
+
+  playwright:
+    name: playwright (browser E2E)
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    if: github.event_name != 'pull_request' || contains(github.event.pull_request.labels.*.name, 'integration')
+    needs: [integration]
+    steps:
+      - uses: actions/checkout@v4
+      - name: Compose up + Playwright
+        working-directory: vdp
+        run: |
+          make compose-up
+          make playwright-e2e
+      - name: Compose down
+        if: always()
+        working-directory: vdp
+        run: make compose-down

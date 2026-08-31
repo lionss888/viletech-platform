@@ -1,0 +1,68 @@
+name: VDP Mirror to GitLab
+
+on:
+  push:
+    branches: [main, master]
+    tags: ["vdp-v*"]
+    paths-ignore:
+      - "**.md"
+      - "заметки/**"
+      - "вводные/**"
+  workflow_dispatch:
+    inputs:
+      branch:
+        description: Branch to mirror (default main)
+        required: false
+        default: main
+
+concurrency:
+  group: vdp-mirror-gitlab
+  cancel-in-progress: false
+
+jobs:
+  mirror:
+    name: push to GitLab sandbox
+    runs-on: ubuntu-latest
+    if: >-
+      github.actor != 'vdp-mirror-bot' &&
+      !contains(github.event.head_commit.message, '[skip mirror-loop]')
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          ref: ${{ github.event_name == 'workflow_dispatch' && inputs.branch || github.ref }}
+
+      - name: Configure GitLab remote
+        env:
+          GITLAB_MIRROR_URL: ${{ secrets.GITLAB_MIRROR_URL }}
+          GITLAB_MIRROR_TOKEN: ${{ secrets.GITLAB_MIRROR_TOKEN }}
+        run: |
+          if [ -z "$GITLAB_MIRROR_URL" ] || [ -z "$GITLAB_MIRROR_TOKEN" ]; then
+            echo "GITLAB_MIRROR_URL or GITLAB_MIRROR_TOKEN not set — skip mirror (configure secrets to enable)."
+            exit 0
+          fi
+          host=$(echo "$GITLAB_MIRROR_URL" | sed -E 's#https?://##; s#/.*##')
+          path=$(echo "$GITLAB_MIRROR_URL" | sed -E 's#https?://[^/]+/##')
+          git remote remove gitlab 2>/dev/null || true
+          git remote add gitlab "https://oauth2:${GITLAB_MIRROR_TOKEN}@${host}/${path}.git"
+
+      - name: Push branches and tags to GitLab
+        env:
+          GITLAB_MIRROR_URL: ${{ secrets.GITLAB_MIRROR_URL }}
+          GITLAB_MIRROR_TOKEN: ${{ secrets.GITLAB_MIRROR_TOKEN }}
+        run: |
+          if [ -z "$GITLAB_MIRROR_URL" ] || [ -z "$GITLAB_MIRROR_TOKEN" ]; then
+            exit 0
+          fi
+          git config user.name "vdp-mirror-bot"
+          git config user.email "vdp-mirror-bot@users.noreply.github.com"
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            BR="${{ inputs.branch }}"
+            git push gitlab "HEAD:refs/heads/${BR}" --force-with-lease
+          elif [[ "${{ github.ref }}" == refs/tags/* ]]; then
+            git push gitlab "${{ github.ref }}:${{ github.ref }}" --force
+            git push gitlab "HEAD:refs/heads/main" --force-with-lease
+          else
+            git push gitlab "HEAD:refs/heads/${{ github.ref_name }}" --force-with-lease
+          fi

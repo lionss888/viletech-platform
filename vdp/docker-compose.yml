@@ -1,0 +1,166 @@
+# Default store for core/hub is Postgres (STORE_DRIVER=postgres).
+# Memory driver is for unit tests only (STORE_DRIVER=memory).
+#
+# Published-port bind address is configurable per service so a public VM can keep
+# everything on loopback behind a reverse proxy. Local dev keeps 0.0.0.0 defaults.
+services:
+  postgres-core:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: vdp_core
+      POSTGRES_PASSWORD: vdp_core
+      POSTGRES_DB: vdp_core
+    ports:
+      - "${DB_BIND:-0.0.0.0}:5433:5432"
+    volumes:
+      - ./core/migrations/001_core.sql:/docker-entrypoint-initdb.d/001_core.sql:ro
+      - ./core/migrations/002_extended.sql:/docker-entrypoint-initdb.d/002_extended.sql:ro
+      - ./core/migrations/003_seed.sql:/docker-entrypoint-initdb.d/003_seed.sql:ro
+      - ./core/migrations/004_auth_org_r2.sql:/docker-entrypoint-initdb.d/004_auth_org_r2.sql:ro
+      - ./core/migrations/005_r4_docs_domain.sql:/docker-entrypoint-initdb.d/005_r4_docs_domain.sql:ro
+      - ./core/migrations/006_r6_rate_docs.sql:/docker-entrypoint-initdb.d/006_r6_rate_docs.sql:ro
+      - ./core/migrations/007_r3_contracts.sql:/docker-entrypoint-initdb.d/007_r3_contracts.sql:ro
+      - ./core/migrations/008_r4_docs_parity.sql:/docker-entrypoint-initdb.d/008_r4_docs_parity.sql:ro
+      - ./core/migrations/009_r5_multi_order.sql:/docker-entrypoint-initdb.d/009_r5_multi_order.sql:ro
+      - ./core/migrations/010_r9_extended.sql:/docker-entrypoint-initdb.d/010_r9_extended.sql:ro
+      - ./core/migrations/011_r10_bank.sql:/docker-entrypoint-initdb.d/011_r10_bank.sql:ro
+      - ./core/migrations/012_b2_org_signer.sql:/docker-entrypoint-initdb.d/012_b2_org_signer.sql:ro
+      - ./core/migrations/013_bank_org_client_type.sql:/docker-entrypoint-initdb.d/013_bank_org_client_type.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U vdp_core -d vdp_core"]
+      interval: 3s
+      timeout: 3s
+      retries: 20
+
+  postgres-hub:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: vdp_hub
+      POSTGRES_PASSWORD: vdp_hub
+      POSTGRES_DB: vdp_hub
+    ports:
+      - "${DB_BIND:-0.0.0.0}:5434:5432"
+    volumes:
+      - ./hub/migrations/001_hub.sql:/docker-entrypoint-initdb.d/001_hub.sql:ro
+      - ./hub/migrations/002_hub.sql:/docker-entrypoint-initdb.d/002_hub.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U vdp_hub -d vdp_hub"]
+      interval: 3s
+      timeout: 3s
+      retries: 20
+
+  docs-service:
+    build:
+      context: ./docs-service
+      dockerfile: Dockerfile
+    environment:
+      PORT: "8090"
+      DOCS_PATH: /generate
+    ports:
+      - "${DOCS_BIND:-0.0.0.0}:8090:8090"
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://127.0.0.1:8090/health >/dev/null || exit 1"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+      start_period: 5s
+
+  hub:
+    build:
+      context: .
+      dockerfile: hub/Dockerfile
+    environment:
+      PORT: "8081"
+      STORE_DRIVER: postgres
+      HUB_SHARED_SECRET: vdp-s2s-dev-secret
+      CORE_URL: http://core:8080
+      DOCS_URL: http://docs-service:8090/generate
+      DATABASE_URL: postgres://vdp_hub:vdp_hub@postgres-hub:5432/vdp_hub?sslmode=disable
+    ports:
+      - "${HUB_BIND:-0.0.0.0}:8081:8081"
+    depends_on:
+      postgres-hub:
+        condition: service_healthy
+      docs-service:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://127.0.0.1:8081/api/v1/health >/dev/null || exit 1"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+      start_period: 10s
+
+  core:
+    build:
+      context: .
+      dockerfile: core/Dockerfile
+    environment:
+      PORT: "8080"
+      STORE_DRIVER: postgres
+      HUB_URL: http://hub:8081
+      HUB_SHARED_SECRET: vdp-s2s-dev-secret
+      JWT_SECRET: vdp-core-dev-secret
+      GATEWAY_RATE_LIMIT: "2000"
+      DATABASE_URL: postgres://vdp_core:vdp_core@postgres-core:5432/vdp_core?sslmode=disable
+    ports:
+      - "${CORE_BIND:-0.0.0.0}:8080:8080"
+    depends_on:
+      postgres-core:
+        condition: service_healthy
+      hub:
+        condition: service_started
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://127.0.0.1:8080/api/v1/health >/dev/null || exit 1"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+      start_period: 15s
+
+  fe:
+    build:
+      context: ./fe
+      dockerfile: Dockerfile
+      target: development
+    environment:
+      VDP_API_PROXY_TARGET: http://core:8080
+    ports:
+      - "5173:5173"
+    depends_on:
+      core:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://127.0.0.1:5173/ >/dev/null || exit 1"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+      start_period: 30s
+    volumes:
+      - ./fe:/app
+      - fe_node_modules:/app/node_modules
+
+  fe-prod:
+    profiles: ["prod"]
+    build:
+      context: ./fe
+      dockerfile: Dockerfile
+      target: production
+      args:
+        VDP_API_PROXY_TARGET: http://core:8080
+    environment:
+      VDP_API_PROXY_TARGET: http://core:8080
+      PORT: "3000"
+      HOST: "0.0.0.0"
+    ports:
+      - "${FE_PROD_BIND:-0.0.0.0}:3000:3000"
+    depends_on:
+      core:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://127.0.0.1:3000/login >/dev/null || exit 1"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+      start_period: 30s
+
+volumes:
+  fe_node_modules:

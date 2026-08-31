@@ -1,0 +1,178 @@
+@import "tailwindcss" source(none);
+@source "../src";
+@import "tw-animate-css";
+
+@custom-variant dark (&:is(.dark *));
+
+/*
+ * Design system — «Fintech precision registry».
+ * Плотная финансовая операционка: zinc-нейтрали, emerald-акцент,
+ * Instrument Sans + JetBrains Mono для числовых данных.
+ * Все цвета — oklch, только семантические токены.
+ */
+
+@theme inline {
+  --font-sans: "Instrument Sans", ui-sans-serif, system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, monospace;
+
+  --radius-sm: calc(var(--radius) - 6px);
+  --radius-md: calc(var(--radius) - 4px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+  --radius-2xl: calc(var(--radius) + 8px);
+  --radius-3xl: calc(var(--radius) + 12px);
+
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-subtle-foreground: var(--subtle-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-accent-soft: var(--accent-soft);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-destructive-soft: var(--destructive-soft);
+  --color-border: var(--border);
+  --color-hairline: var(--hairline);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-sidebar: var(--sidebar);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+
+  /* Семантика жизненного цикла заявки */
+  --color-wait: var(--wait);
+  --color-wait-soft: var(--wait-soft);
+  --color-work: var(--work);
+  --color-work-soft: var(--work-soft);
+  --color-return: var(--return);
+  --color-return-soft: var(--return-soft);
+  --color-done: var(--done);
+  --color-done-soft: var(--done-soft);
+  --color-neutral-tone: var(--neutral-tone);
+  --color-neutral-tone-soft: var(--neutral-tone-soft);
+  --color-export-tone: var(--export-tone);
+  --color-export-tone-soft: var(--export-tone-soft);
+
+  --shadow-panel: 0 1px 2px 0 oklch(0 0 0 / 0.04), 0 1px 3px 0 oklch(0 0 0 / 0.04);
+  --shadow-float: 0 24px 48px -12px oklch(0 0 0 / 0.18);
+}
+
+:root {
+  --radius: 0.75rem;
+
+  --background: oklch(0.9646 0.0013 286.375);
+  --foreground: oklch(0.2103 0.0059 285.885);
+  --card: oklch(1 0 0);
+  --card-foreground: oklch(0.2103 0.0059 285.885);
+  --popover: oklch(1 0 0);
+  --popover-foreground: oklch(0.2103 0.0059 285.885);
+
+  --primary: oklch(0.2103 0.0059 285.885);
+  --primary-foreground: oklch(0.9848 0 0);
+  --secondary: oklch(0.9848 0 0);
+  --secondary-foreground: oklch(0.2103 0.0059 285.885);
+
+  --muted: oklch(0.9674 0.0013 286.375);
+  --muted-foreground: oklch(0.5519 0.0137 285.938);
+  --subtle-foreground: oklch(0.7118 0.0129 286.068);
+
+  --accent: oklch(0.596 0.1274 163.225);
+  --accent-foreground: oklch(0.9848 0 0);
+  --accent-soft: oklch(0.9622 0.0439 166.113);
+
+  --destructive: oklch(0.5771 0.2152 27.325);
+  --destructive-foreground: oklch(0.9848 0 0);
+  --destructive-soft: oklch(0.9689 0.0209 17.38);
+
+  --border: oklch(0.9199 0.004 286.32);
+  --hairline: oklch(0.2103 0.0059 285.885 / 0.06);
+  --input: oklch(0.2103 0.0059 285.885 / 0.1);
+  --ring: oklch(0.596 0.1274 163.225);
+
+  --sidebar: oklch(0.9848 0 0);
+  --sidebar-foreground: oklch(0.2103 0.0059 285.885);
+
+  --wait: oklch(0.5534 0.1216 66.44);
+  --wait-soft: oklch(0.9761 0.0339 89.876);
+  --work: oklch(0.4882 0.2172 264.376);
+  --work-soft: oklch(0.9698 0.0186 259.826);
+  --return: oklch(0.5054 0.1905 27.518);
+  --return-soft: oklch(0.9689 0.0209 17.38);
+  --done: oklch(0.5081 0.0995 163.152);
+  --done-soft: oklch(0.9622 0.0439 166.113);
+  --neutral-tone: oklch(0.4419 0.0146 285.786);
+  --neutral-tone-soft: oklch(0.9674 0.0013 286.375);
+  --export-tone: oklch(0.4936 0.2266 303.9);
+  --export-tone-soft: oklch(0.9694 0.0164 293.756);
+}
+
+@layer base {
+  * {
+    border-color: var(--color-border);
+  }
+
+  html {
+    -webkit-font-smoothing: antialiased;
+  }
+
+  body {
+    background-color: var(--color-background);
+    color: var(--color-foreground);
+    font-family: var(--font-sans);
+  }
+
+  /* Табличные цифры во всём числовом наборе */
+  .font-mono {
+    font-variant-numeric: tabular-nums;
+  }
+
+  input[type="checkbox"] {
+    accent-color: var(--accent);
+  }
+}
+
+@utility panel {
+  background-color: var(--color-card);
+  border-radius: var(--radius-lg);
+  box-shadow:
+    0 0 0 1px var(--hairline),
+    var(--shadow-panel);
+}
+
+@utility label-caps {
+  font-size: 0.6875rem;
+  line-height: 1rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--color-muted-foreground);
+}
+
+@utility field {
+  width: 100%;
+  border-radius: var(--radius-md);
+  background-color: var(--color-card);
+  padding: 0.625rem 0.75rem;
+  font-size: 0.875rem;
+  color: var(--color-foreground);
+  box-shadow: 0 0 0 1px var(--input);
+  outline: none;
+  transition: box-shadow 150ms ease;
+
+  &::placeholder {
+    color: var(--color-subtle-foreground);
+  }
+
+  &:focus {
+    box-shadow: 0 0 0 1.5px var(--color-accent);
+  }
+}

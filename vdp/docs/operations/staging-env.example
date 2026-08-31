@@ -1,0 +1,19 @@
+# Staging environment example (copy to secret store / .env.staging — do not commit secrets)
+
+CORE_URL=https://staging-core.example.com
+HUB_URL=https://staging-hub.example.com
+
+# Hub adapters — required for real document/mail path (see staging-checklist.md)
+# Compose dev: http://127.0.0.1:8090/generate (docs-service in docker-compose.yml)
+DOCS_URL=https://docs-service.example.com/generate
+MAIL_URL=https://mail-service.example.com/notify
+
+# Optional bank channel webhook receiver for RD9 manual smoke
+BANK_WEBHOOK_URL=https://bank-receiver.example.com/vdp/events
+
+ENVIRONMENT=staging
+JWT_SECRET=replace-with-rotated-core-secret
+HUB_SHARED_SECRET=replace-with-rotated-s2s-secret
+
+DATABASE_URL=postgres://vdp_core:***@db.example.com:5432/vdp_core?sslmode=require
+HUB_DATABASE_URL=postgres://vdp_hub:***@db.example.com:5432/vdp_hub?sslmode=require

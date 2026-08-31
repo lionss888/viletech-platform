@@ -1,0 +1,22 @@
+# Example Prometheus alert rules (adjust thresholds per environment)
+
+groups:
+  - name: vdp_semantic
+    rules:
+      - alert: VdpFormsStuckAwaitingProvider
+        expr: vdp_forms_stuck{status=~"payment_received|payment_processing"} > 0
+        for: 30m
+        labels:
+          severity: warning
+        annotations:
+          summary: "VDP forms stuck before payment_sent"
+          description: "Check runbooks/stuck-payment.md"
+
+      - alert: VdpHubInboxFailures
+        expr: rate(vdp_hub_inbox_failed_total[5m]) > 0.1
+        for: 10m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Hub inbox processing failures"
+          description: "Check runbooks/hub-failure.md"

@@ -1,0 +1,187 @@
+name: VDP Images
+
+on:
+  push:
+    branches: [main, master]
+    tags: ["vdp-v*"]
+    paths:
+      - "vdp/**"
+      - ".github/workflows/vdp-images.yml"
+  workflow_dispatch:
+
+concurrency:
+  group: vdp-images-${{ github.ref }}
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+  packages: write
+
+env:
+  IMAGE_REGISTRY: ghcr.io
+  IMAGE_NAMESPACE: ${{ github.repository_owner }}
+
+jobs:
+  release-gate:
+    name: release-gate (tags only)
+    if: startsWith(github.ref, 'refs/tags/vdp-v')
+    runs-on: ubuntu-latest
+    timeout-minutes: 75
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: vdp
+          POSTGRES_PASSWORD: vdp
+          POSTGRES_DB: postgres
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U vdp"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: "1.22"
+          cache-dependency-path: |
+            vdp/core/go.sum
+            vdp/hub/go.sum
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: npm
+          cache-dependency-path: vdp/fe/package-lock.json
+      - name: Bootstrap postgres
+        run: |
+          chmod +x vdp/scripts/ci-bootstrap-postgres.sh
+          PGHOST=localhost POSTGRES_USER=vdp POSTGRES_PASSWORD=vdp ./vdp/scripts/ci-bootstrap-postgres.sh
+      - name: Release gate
+        working-directory: vdp
+        env:
+          DATABASE_URL_CORE: postgres://vdp_core:vdp_core@localhost:5432/vdp_core?sslmode=disable
+          DATABASE_URL_HUB: postgres://vdp_hub:vdp_hub@localhost:5432/vdp_hub?sslmode=disable
+        run: |
+          make db-migrate
+          make release-gate
+      - name: Compose down
+        if: always()
+        working-directory: vdp
+        run: make compose-down
+
+  build-push:
+    name: build and push images
+    needs: [release-gate]
+    if: >-
+      always() &&
+      (needs.release-gate.result == 'success' || needs.release-gate.result == 'skipped')
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    outputs:
+      pin_file: ${{ steps.pin.outputs.pin_file }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Resolve image tag
+        id: tag
+        run: |
+          if [[ "${{ github.ref }}" == refs/tags/vdp-v* ]]; then
+            echo "tag=${{ github.ref_name }}" >> "$GITHUB_OUTPUT"
+          else
+            echo "tag=sha-${GITHUB_SHA::7}" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Build and push
+        working-directory: vdp
+        env:
+          IMAGE_REGISTRY: ghcr.io
+          IMAGE_NAMESPACE: ${{ github.repository_owner }}
+          IMAGE_TAG: ${{ steps.tag.outputs.tag }}
+          GITHUB_REPOSITORY: ${{ github.repository }}
+          GIT_REVISION: ${{ github.sha }}
+          PUSH: "1"
+          PIN_FILE: release-images.env
+        run: |
+          chmod +x scripts/image-build-push.sh
+          ./scripts/image-build-push.sh
+
+      - name: Export pin artifact
+        id: pin
+        working-directory: vdp
+        run: |
+          echo "pin_file=release-images.env" >> "$GITHUB_OUTPUT"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: release-images-pin
+          path: vdp/release-images.env
+          retention-days: 30
+
+  copy-gitlab-registry:
+    name: copy digests to GitLab registry
+    needs: [build-push]
+    runs-on: ubuntu-latest
+    if: needs.build-push.result == 'success'
+    timeout-minutes: 20
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: release-images-pin
+          path: pin
+
+      - name: Install crane
+        run: |
+          curl -sL https://github.com/google/go-containerregistry/releases/download/v0.20.2/go-containerregistry_Linux_x86_64.tar.gz \
+            | tar -xz -C /usr/local/bin crane
+
+      - name: Copy images to GitLab Container Registry
+        env:
+          GITLAB_REGISTRY_PROJECT: ${{ secrets.GITLAB_REGISTRY_PROJECT }}
+          GITLAB_MIRROR_TOKEN: ${{ secrets.GITLAB_MIRROR_TOKEN }}
+        run: |
+          if [ -z "$GITLAB_REGISTRY_PROJECT" ] || [ -z "$GITLAB_MIRROR_TOKEN" ]; then
+            echo "GITLAB_REGISTRY_PROJECT or GITLAB_MIRROR_TOKEN not set — skip copy"
+            exit 0
+          fi
+          set -a
+          # shellcheck disable=SC1091
+          source pin/release-images.env
+          set +a
+          gl="registry.gitlab.com/${GITLAB_REGISTRY_PROJECT}"
+          echo "$GITLAB_MIRROR_TOKEN" | crane auth login registry.gitlab.com -u oauth2 --password-stdin
+          crane copy "$VDP_CORE_IMAGE" "${gl}/vdp-core:${IMAGE_TAG}"
+          crane copy "$VDP_HUB_IMAGE" "${gl}/vdp-hub:${IMAGE_TAG}"
+          crane copy "$VDP_DOCS_IMAGE" "${gl}/vdp-docs:${IMAGE_TAG}"
+          crane copy "$VDP_FE_IMAGE" "${gl}/vdp-fe:${IMAGE_TAG}"
+
+  release-compose-check:
+    name: release compose config (no build)
+    needs: [build-push]
+    runs-on: ubuntu-latest
+    if: startsWith(github.ref, 'refs/tags/vdp-v') || github.event_name == 'workflow_dispatch'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          name: release-images-pin
+          path: pin
+      - name: Validate release overlay
+        run: |
+          set -a
+          # shellcheck disable=SC1091
+          source pin/release-images.env
+          set +a
+          cd vdp
+          make compose-release-config-check
