@@ -11,6 +11,7 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AdminRouteImport } from './routes/admin'
+import { Route as ChatsRouteImport } from './routes/chats'
 import { Route as CodesRouteImport } from './routes/codes'
 import { Route as ComplianceToolsRouteImport } from './routes/compliance-tools'
 import { Route as CounterpartiesRouteImport } from './routes/counterparties'
@@ -21,6 +22,7 @@ import { Route as DocumentsRouteImport } from './routes/documents'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as McpRouteImport } from './routes/mcp'
 import { Route as OrganizationsRouteImport } from './routes/organizations'
+import { Route as ProfileRouteImport } from './routes/profile'
 import { Route as ProvidersRouteImport } from './routes/providers'
 import { Route as StartRouteImport } from './routes/start'
 import { Route as TestingRouteImport } from './routes/testing'
@@ -28,6 +30,7 @@ import { Route as Char91DotmcpChar93ListToolsRouteImport } from './routes/[.mcp]
 import { Route as Char91DotwellKnownChar93OauthProtectedResourceRouteImport } from './routes/[.well-known]/oauth-protected-resource'
 import { Route as DemoIndexRouteImport } from './routes/demo/index'
 import { Route as DemoAdminRouteImport } from './routes/demo/admin'
+import { Route as DemoChatsRouteImport } from './routes/demo/chats'
 import { Route as DemoCodesRouteImport } from './routes/demo/codes'
 import { Route as DemoComplianceToolsRouteImport } from './routes/demo/compliance-tools'
 import { Route as DemoCounterpartiesRouteImport } from './routes/demo/counterparties'
@@ -37,6 +40,7 @@ import { Route as DemoDashboardRouteImport } from './routes/demo/dashboard'
 import { Route as DemoDocumentsRouteImport } from './routes/demo/documents'
 import { Route as DemoLoginRouteImport } from './routes/demo/login'
 import { Route as DemoOrganizationsRouteImport } from './routes/demo/organizations'
+import { Route as DemoProfileRouteImport } from './routes/demo/profile'
 import { Route as DemoProvidersRouteImport } from './routes/demo/providers'
 import { Route as DemoStartRouteImport } from './routes/demo/start'
 import { Route as DemoTestingRouteImport } from './routes/demo/testing'
@@ -56,6 +60,11 @@ const IndexRoute = IndexRouteImport.update({
 const AdminRoute = AdminRouteImport.update({
   id: '/admin',
   path: '/admin',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ChatsRoute = ChatsRouteImport.update({
+  id: '/chats',
+  path: '/chats',
   getParentRoute: () => rootRouteImport,
 } as any)
 const CodesRoute = CodesRouteImport.update({
@@ -108,6 +117,11 @@ const OrganizationsRoute = OrganizationsRouteImport.update({
   path: '/organizations',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ProfileRoute = ProfileRouteImport.update({
+  id: '/profile',
+  path: '/profile',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ProvidersRoute = ProvidersRouteImport.update({
   id: '/providers',
   path: '/providers',
@@ -143,6 +157,11 @@ const DemoIndexRoute = DemoIndexRouteImport.update({
 const DemoAdminRoute = DemoAdminRouteImport.update({
   id: '/demo/admin',
   path: '/demo/admin',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const DemoChatsRoute = DemoChatsRouteImport.update({
+  id: '/demo/chats',
+  path: '/demo/chats',
   getParentRoute: () => rootRouteImport,
 } as any)
 const DemoCodesRoute = DemoCodesRouteImport.update({
@@ -188,6 +207,11 @@ const DemoLoginRoute = DemoLoginRouteImport.update({
 const DemoOrganizationsRoute = DemoOrganizationsRouteImport.update({
   id: '/demo/organizations',
   path: '/demo/organizations',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const DemoProfileRoute = DemoProfileRouteImport.update({
+  id: '/demo/profile',
+  path: '/demo/profile',
   getParentRoute: () => rootRouteImport,
 } as any)
 const DemoProvidersRoute = DemoProvidersRouteImport.update({
@@ -245,6 +269,7 @@ const DemoFormsNewRoute = DemoFormsNewRouteImport.update({
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/admin': typeof AdminRoute
+  '/chats': typeof ChatsRoute
   '/codes': typeof CodesRoute
   '/compliance-tools': typeof ComplianceToolsRoute
   '/counterparties': typeof CounterpartiesRoute
@@ -255,12 +280,14 @@ export interface FileRoutesByFullPath {
   '/login': typeof LoginRoute
   '/mcp': typeof McpRoute
   '/organizations': typeof OrganizationsRoute
+  '/profile': typeof ProfileRoute
   '/providers': typeof ProvidersRoute
   '/start': typeof StartRoute
   '/testing': typeof TestingRoute
   '/.mcp/list-tools': typeof Char91DotmcpChar93ListToolsRoute
   '/.well-known/oauth-protected-resource': typeof Char91DotwellKnownChar93OauthProtectedResourceRoute
   '/demo/admin': typeof DemoAdminRoute
+  '/demo/chats': typeof DemoChatsRoute
   '/demo/codes': typeof DemoCodesRoute
   '/demo/compliance-tools': typeof DemoComplianceToolsRoute
   '/demo/counterparties': typeof DemoCounterpartiesRoute
@@ -270,6 +297,7 @@ export interface FileRoutesByFullPath {
   '/demo/documents': typeof DemoDocumentsRoute
   '/demo/login': typeof DemoLoginRoute
   '/demo/organizations': typeof DemoOrganizationsRoute
+  '/demo/profile': typeof DemoProfileRoute
   '/demo/providers': typeof DemoProvidersRoute
   '/demo/start': typeof DemoStartRoute
   '/demo/testing': typeof DemoTestingRoute
@@ -285,6 +313,7 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/admin': typeof AdminRoute
+  '/chats': typeof ChatsRoute
   '/codes': typeof CodesRoute
   '/compliance-tools': typeof ComplianceToolsRoute
   '/counterparties': typeof CounterpartiesRoute
@@ -295,12 +324,14 @@ export interface FileRoutesByTo {
   '/login': typeof LoginRoute
   '/mcp': typeof McpRoute
   '/organizations': typeof OrganizationsRoute
+  '/profile': typeof ProfileRoute
   '/providers': typeof ProvidersRoute
   '/start': typeof StartRoute
   '/testing': typeof TestingRoute
   '/.mcp/list-tools': typeof Char91DotmcpChar93ListToolsRoute
   '/.well-known/oauth-protected-resource': typeof Char91DotwellKnownChar93OauthProtectedResourceRoute
   '/demo/admin': typeof DemoAdminRoute
+  '/demo/chats': typeof DemoChatsRoute
   '/demo/codes': typeof DemoCodesRoute
   '/demo/compliance-tools': typeof DemoComplianceToolsRoute
   '/demo/counterparties': typeof DemoCounterpartiesRoute
@@ -310,6 +341,7 @@ export interface FileRoutesByTo {
   '/demo/documents': typeof DemoDocumentsRoute
   '/demo/login': typeof DemoLoginRoute
   '/demo/organizations': typeof DemoOrganizationsRoute
+  '/demo/profile': typeof DemoProfileRoute
   '/demo/providers': typeof DemoProvidersRoute
   '/demo/start': typeof DemoStartRoute
   '/demo/testing': typeof DemoTestingRoute
@@ -326,6 +358,7 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/admin': typeof AdminRoute
+  '/chats': typeof ChatsRoute
   '/codes': typeof CodesRoute
   '/compliance-tools': typeof ComplianceToolsRoute
   '/counterparties': typeof CounterpartiesRoute
@@ -336,12 +369,14 @@ export interface FileRoutesById {
   '/login': typeof LoginRoute
   '/mcp': typeof McpRoute
   '/organizations': typeof OrganizationsRoute
+  '/profile': typeof ProfileRoute
   '/providers': typeof ProvidersRoute
   '/start': typeof StartRoute
   '/testing': typeof TestingRoute
   '/.mcp/list-tools': typeof Char91DotmcpChar93ListToolsRoute
   '/.well-known/oauth-protected-resource': typeof Char91DotwellKnownChar93OauthProtectedResourceRoute
   '/demo/admin': typeof DemoAdminRoute
+  '/demo/chats': typeof DemoChatsRoute
   '/demo/codes': typeof DemoCodesRoute
   '/demo/compliance-tools': typeof DemoComplianceToolsRoute
   '/demo/counterparties': typeof DemoCounterpartiesRoute
@@ -351,6 +386,7 @@ export interface FileRoutesById {
   '/demo/documents': typeof DemoDocumentsRoute
   '/demo/login': typeof DemoLoginRoute
   '/demo/organizations': typeof DemoOrganizationsRoute
+  '/demo/profile': typeof DemoProfileRoute
   '/demo/providers': typeof DemoProvidersRoute
   '/demo/start': typeof DemoStartRoute
   '/demo/testing': typeof DemoTestingRoute
@@ -368,6 +404,7 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/admin'
+    | '/chats'
     | '/codes'
     | '/compliance-tools'
     | '/counterparties'
@@ -378,12 +415,14 @@ export interface FileRouteTypes {
     | '/login'
     | '/mcp'
     | '/organizations'
+    | '/profile'
     | '/providers'
     | '/start'
     | '/testing'
     | '/.mcp/list-tools'
     | '/.well-known/oauth-protected-resource'
     | '/demo/admin'
+    | '/demo/chats'
     | '/demo/codes'
     | '/demo/compliance-tools'
     | '/demo/counterparties'
@@ -393,6 +432,7 @@ export interface FileRouteTypes {
     | '/demo/documents'
     | '/demo/login'
     | '/demo/organizations'
+    | '/demo/profile'
     | '/demo/providers'
     | '/demo/start'
     | '/demo/testing'
@@ -408,6 +448,7 @@ export interface FileRouteTypes {
   to:
     | '/'
     | '/admin'
+    | '/chats'
     | '/codes'
     | '/compliance-tools'
     | '/counterparties'
@@ -418,12 +459,14 @@ export interface FileRouteTypes {
     | '/login'
     | '/mcp'
     | '/organizations'
+    | '/profile'
     | '/providers'
     | '/start'
     | '/testing'
     | '/.mcp/list-tools'
     | '/.well-known/oauth-protected-resource'
     | '/demo/admin'
+    | '/demo/chats'
     | '/demo/codes'
     | '/demo/compliance-tools'
     | '/demo/counterparties'
@@ -433,6 +476,7 @@ export interface FileRouteTypes {
     | '/demo/documents'
     | '/demo/login'
     | '/demo/organizations'
+    | '/demo/profile'
     | '/demo/providers'
     | '/demo/start'
     | '/demo/testing'
@@ -448,6 +492,7 @@ export interface FileRouteTypes {
     | '__root__'
     | '/'
     | '/admin'
+    | '/chats'
     | '/codes'
     | '/compliance-tools'
     | '/counterparties'
@@ -458,12 +503,14 @@ export interface FileRouteTypes {
     | '/login'
     | '/mcp'
     | '/organizations'
+    | '/profile'
     | '/providers'
     | '/start'
     | '/testing'
     | '/.mcp/list-tools'
     | '/.well-known/oauth-protected-resource'
     | '/demo/admin'
+    | '/demo/chats'
     | '/demo/codes'
     | '/demo/compliance-tools'
     | '/demo/counterparties'
@@ -473,6 +520,7 @@ export interface FileRouteTypes {
     | '/demo/documents'
     | '/demo/login'
     | '/demo/organizations'
+    | '/demo/profile'
     | '/demo/providers'
     | '/demo/start'
     | '/demo/testing'
@@ -489,6 +537,7 @@ export interface FileRouteTypes {
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AdminRoute: typeof AdminRoute
+  ChatsRoute: typeof ChatsRoute
   CodesRoute: typeof CodesRoute
   ComplianceToolsRoute: typeof ComplianceToolsRoute
   CounterpartiesRoute: typeof CounterpartiesRoute
@@ -499,12 +548,14 @@ export interface RootRouteChildren {
   LoginRoute: typeof LoginRoute
   McpRoute: typeof McpRoute
   OrganizationsRoute: typeof OrganizationsRoute
+  ProfileRoute: typeof ProfileRoute
   ProvidersRoute: typeof ProvidersRoute
   StartRoute: typeof StartRoute
   TestingRoute: typeof TestingRoute
   Char91DotmcpChar93ListToolsRoute: typeof Char91DotmcpChar93ListToolsRoute
   Char91DotwellKnownChar93OauthProtectedResourceRoute: typeof Char91DotwellKnownChar93OauthProtectedResourceRoute
   DemoAdminRoute: typeof DemoAdminRoute
+  DemoChatsRoute: typeof DemoChatsRoute
   DemoCodesRoute: typeof DemoCodesRoute
   DemoComplianceToolsRoute: typeof DemoComplianceToolsRoute
   DemoCounterpartiesRoute: typeof DemoCounterpartiesRoute
@@ -514,6 +565,7 @@ export interface RootRouteChildren {
   DemoDocumentsRoute: typeof DemoDocumentsRoute
   DemoLoginRoute: typeof DemoLoginRoute
   DemoOrganizationsRoute: typeof DemoOrganizationsRoute
+  DemoProfileRoute: typeof DemoProfileRoute
   DemoProvidersRoute: typeof DemoProvidersRoute
   DemoStartRoute: typeof DemoStartRoute
   DemoTestingRoute: typeof DemoTestingRoute
@@ -541,6 +593,13 @@ declare module '@tanstack/react-router' {
       path: '/admin'
       fullPath: '/admin'
       preLoaderRoute: typeof AdminRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/chats': {
+      id: '/chats'
+      path: '/chats'
+      fullPath: '/chats'
+      preLoaderRoute: typeof ChatsRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/codes': {
@@ -613,6 +672,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof OrganizationsRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/profile': {
+      id: '/profile'
+      path: '/profile'
+      fullPath: '/profile'
+      preLoaderRoute: typeof ProfileRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/providers': {
       id: '/providers'
       path: '/providers'
@@ -660,6 +726,13 @@ declare module '@tanstack/react-router' {
       path: '/demo/admin'
       fullPath: '/demo/admin'
       preLoaderRoute: typeof DemoAdminRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/demo/chats': {
+      id: '/demo/chats'
+      path: '/demo/chats'
+      fullPath: '/demo/chats'
+      preLoaderRoute: typeof DemoChatsRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/demo/codes': {
@@ -723,6 +796,13 @@ declare module '@tanstack/react-router' {
       path: '/demo/organizations'
       fullPath: '/demo/organizations'
       preLoaderRoute: typeof DemoOrganizationsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/demo/profile': {
+      id: '/demo/profile'
+      path: '/demo/profile'
+      fullPath: '/demo/profile'
+      preLoaderRoute: typeof DemoProfileRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/demo/providers': {
@@ -801,6 +881,7 @@ declare module '@tanstack/react-router' {
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AdminRoute: AdminRoute,
+  ChatsRoute: ChatsRoute,
   CodesRoute: CodesRoute,
   ComplianceToolsRoute: ComplianceToolsRoute,
   CounterpartiesRoute: CounterpartiesRoute,
@@ -811,6 +892,7 @@ const rootRouteChildren: RootRouteChildren = {
   LoginRoute: LoginRoute,
   McpRoute: McpRoute,
   OrganizationsRoute: OrganizationsRoute,
+  ProfileRoute: ProfileRoute,
   ProvidersRoute: ProvidersRoute,
   StartRoute: StartRoute,
   TestingRoute: TestingRoute,
@@ -818,6 +900,7 @@ const rootRouteChildren: RootRouteChildren = {
   Char91DotwellKnownChar93OauthProtectedResourceRoute:
     Char91DotwellKnownChar93OauthProtectedResourceRoute,
   DemoAdminRoute: DemoAdminRoute,
+  DemoChatsRoute: DemoChatsRoute,
   DemoCodesRoute: DemoCodesRoute,
   DemoComplianceToolsRoute: DemoComplianceToolsRoute,
   DemoCounterpartiesRoute: DemoCounterpartiesRoute,
@@ -827,6 +910,7 @@ const rootRouteChildren: RootRouteChildren = {
   DemoDocumentsRoute: DemoDocumentsRoute,
   DemoLoginRoute: DemoLoginRoute,
   DemoOrganizationsRoute: DemoOrganizationsRoute,
+  DemoProfileRoute: DemoProfileRoute,
   DemoProvidersRoute: DemoProvidersRoute,
   DemoStartRoute: DemoStartRoute,
   DemoTestingRoute: DemoTestingRoute,

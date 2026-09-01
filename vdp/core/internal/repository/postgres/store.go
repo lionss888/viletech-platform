@@ -26,15 +26,18 @@ var _ repository.Store = (*Store)(nil)
 
 func (s *Store) SaveAccount(ctx context.Context, a domain.Account) error {
 	_, err := s.db.ExecContext(ctx, `
-		INSERT INTO accounts (id, email, password_hash, role, organization_id, blocked, full_name, phone, passport, refresh_token, active, lang, rate_settings, bank_rate_readonly)
-		VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14)
+		INSERT INTO accounts (id, email, password_hash, role, organization_id, blocked, full_name, phone, passport, refresh_token, active, lang, rate_settings, bank_rate_readonly, telegram_chat_id, telegram_notify_enabled, sms_notify_enabled)
+		VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17)
 		ON CONFLICT (id) DO UPDATE SET email=EXCLUDED.email, password_hash=EXCLUDED.password_hash,
 			role=EXCLUDED.role, organization_id=EXCLUDED.organization_id, blocked=EXCLUDED.blocked,
 			full_name=EXCLUDED.full_name, phone=EXCLUDED.phone, passport=EXCLUDED.passport,
 			refresh_token=EXCLUDED.refresh_token, active=EXCLUDED.active, lang=EXCLUDED.lang,
-			rate_settings=EXCLUDED.rate_settings, bank_rate_readonly=EXCLUDED.bank_rate_readonly`,
+			rate_settings=EXCLUDED.rate_settings, bank_rate_readonly=EXCLUDED.bank_rate_readonly,
+			telegram_chat_id=EXCLUDED.telegram_chat_id, telegram_notify_enabled=EXCLUDED.telegram_notify_enabled,
+			sms_notify_enabled=EXCLUDED.sms_notify_enabled`,
 		a.ID, a.Email, a.PasswordHash, string(a.Role), nullStr(a.OrganizationID), a.Blocked, a.FullName, a.Phone, a.Passport,
-		nullStr(a.RefreshToken), a.Active, a.Lang, a.RateSettingsJSON, a.BankRateReadonly)
+		nullStr(a.RefreshToken), a.Active, a.Lang, a.RateSettingsJSON, a.BankRateReadonly,
+		nullStr(a.TelegramChatID), a.TelegramNotifyEnabled, a.SMSNotifyEnabled)
 	return err
 }
 
@@ -47,11 +50,12 @@ func (s *Store) AccountByID(ctx context.Context, id string) (domain.Account, err
 		SELECT id, email, password_hash, role, organization_id, blocked,
 			COALESCE(full_name,''), COALESCE(phone,''), COALESCE(passport,''),
 			COALESCE(refresh_token,''), COALESCE(active, TRUE), COALESCE(lang,''),
-			COALESCE(rate_settings,''), COALESCE(bank_rate_readonly, FALSE)
+			COALESCE(rate_settings,''), COALESCE(bank_rate_readonly, FALSE),
+			COALESCE(telegram_chat_id,''), COALESCE(telegram_notify_enabled, TRUE), COALESCE(sms_notify_enabled, FALSE)
 		FROM accounts WHERE id=$1`, id).Scan(
 		&a.ID, &a.Email, &a.PasswordHash, &role, &org, &a.Blocked,
 		&a.FullName, &a.Phone, &a.Passport, &a.RefreshToken, &a.Active, &a.Lang,
-		&rateSettings, &a.BankRateReadonly)
+		&rateSettings, &a.BankRateReadonly, &a.TelegramChatID, &a.TelegramNotifyEnabled, &a.SMSNotifyEnabled)
 	if err == sql.ErrNoRows {
 		return domain.Account{}, apperrors.ErrResourceNotFound
 	}

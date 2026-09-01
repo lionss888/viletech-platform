@@ -53,3 +53,19 @@ func TestDiadocSignAndCoreCallback(t *testing.T) {
 		t.Fatalf("%#v", out)
 	}
 }
+
+func TestDiadocTimeout(t *testing.T) {
+	t.Parallel()
+	provider := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		time.Sleep(200 * time.Millisecond)
+		w.WriteHeader(http.StatusOK)
+	}))
+	t.Cleanup(provider.Close)
+	log := slog.New(slog.NewJSONHandler(os.Stdout, &slog.HandlerOptions{Level: slog.LevelError}))
+	plugin := diadoc.New(40*time.Millisecond, 1, log).WithBaseURL(provider.URL)
+	if _, err := plugin.Execute(context.Background(), "sign", map[string]any{
+		"event_id": "e-to", "form_payment_id": "f1",
+	}); err == nil {
+		t.Fatal("timeout expected")
+	}
+}

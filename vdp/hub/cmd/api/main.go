@@ -13,6 +13,7 @@ import (
 	"github.com/viletech/vdp/hub/internal/adapters/ocr"
 	"github.com/viletech/vdp/hub/internal/adapters/onec"
 	"github.com/viletech/vdp/hub/internal/adapters/partner"
+	"github.com/viletech/vdp/hub/internal/adapters/sms"
 	"github.com/viletech/vdp/hub/internal/adapters/telegram"
 	"github.com/viletech/vdp/hub/internal/dispatcher"
 	"github.com/viletech/vdp/hub/internal/inbox"
@@ -48,6 +49,7 @@ func main() {
 	_ = plugins.Register(partner.New(timeout, cfg.MaxRetries, log))
 	_ = plugins.Register(docs.New(timeout, cfg.MaxRetries, log))
 	_ = plugins.Register(mail.New(timeout, cfg.MaxRetries, log))
+	_ = plugins.Register(sms.New(timeout, cfg.MaxRetries, log))
 	dispatch := dispatcher.New(inboxStore, plugins, log)
 	server := httpapi.New(cfg, dispatch, plugins)
 	addr := cfg.Host + ":" + cfg.Port

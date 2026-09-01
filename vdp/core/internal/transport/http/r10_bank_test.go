@@ -142,8 +142,9 @@ func newBankStack(t *testing.T, webhookURL string) (http.Handler, string, outbox
 	cfg := &config.Config{JWTSecret: "test-jwt", JWTExpirationHours: 1, HubSharedSecret: secret, HubURL: hub.URL, RateLimitPerMinute: 1000, GatewayTimeoutSec: 2}
 	auth := service.NewAuthService(store, cfg.JWTSecret, cfg.JWTExpirationHours)
 	accounts := service.NewAccountService(store)
+	notify := service.NewNotificationService(store)
 	publisher := service.NewHubPublisher(box, hub.URL, secret, 2*time.Second)
-	return httpapi.NewServer(cfg, auth, accounts, forms, orgs, catalog, publisher).Handler(), secret, box
+	return httpapi.NewServer(cfg, auth, accounts, forms, orgs, catalog, publisher, notify).Handler(), secret, box
 }
 
 func putJSON(t *testing.T, h http.Handler, token, path string, body any) map[string]any {

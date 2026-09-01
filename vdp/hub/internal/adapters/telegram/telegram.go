@@ -12,24 +12,31 @@ import (
 )
 
 type Plugin struct {
-	baseURL string
-	timeout time.Duration
-	retries int
-	log     *slog.Logger
-	Sent    []map[string]any
+	baseURL  string
+	botToken string
+	timeout  time.Duration
+	retries  int
+	log      *slog.Logger
+	Sent     []map[string]any
 }
 
 func New(timeout time.Duration, retries int, log *slog.Logger) *Plugin {
 	return &Plugin{
-		baseURL: os.Getenv("TELEGRAM_URL"),
-		timeout: timeout,
-		retries: retries,
-		log:     log,
+		baseURL:  os.Getenv("TELEGRAM_URL"),
+		botToken: os.Getenv("TELEGRAM_BOT_TOKEN"),
+		timeout:  timeout,
+		retries:  retries,
+		log:      log,
 	}
 }
 
 func (p *Plugin) WithBaseURL(url string) *Plugin {
 	p.baseURL = url
+	return p
+}
+
+func (p *Plugin) WithBotToken(token string) *Plugin {
+	p.botToken = token
 	return p
 }
 
@@ -78,6 +85,27 @@ func (p *Plugin) Execute(ctx context.Context, action string, params map[string]a
 	contract := BuildNotifyPayload(params)
 	var result map[string]any
 	err := resilience.Do(ctx, p.retries, 20*time.Millisecond, func() error {
+		if p.botToken != "" {
+			chatID, _ := contract["chat_id"].(string)
+			if chatID == "" {
+				p.Sent = append(p.Sent, contract)
+				result = map[string]any{"status": "skipped", "channel": "telegram", "mode": "bot", "reason": "no_chat_id"}
+				return nil
+			}
+			api := "https://api.telegram.org/bot" + p.botToken + "/sendMessage"
+			out, err := remote.PostJSON(ctx, api, p.timeout, map[string]any{"chat_id": chatID, "text": contract["text"]})
+			if err != nil {
+				return err
+			}
+			p.Sent = append(p.Sent, contract)
+			result = out
+			result["channel"] = "telegram"
+			result["mode"] = "bot"
+			if result["status"] == nil {
+				result["status"] = "accepted"
+			}
+			return nil
+		}
 		if p.baseURL == "" {
 			p.Sent = append(p.Sent, contract)
 			p.log.Info("telegram notify fixture", "form_payment_id", contract["form_payment_id"], "action", action)

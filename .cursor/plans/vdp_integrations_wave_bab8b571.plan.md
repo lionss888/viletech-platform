@@ -4,28 +4,28 @@ overview: "Расширить уведомления и внешние конт�
 todos:
   - id: w0-catalog
     content: "Волна 0: каталог уведомлений, модель подписок/чатов, контракт POST /notify для gateway"
-    status: in_progress
+    status: completed
   - id: w1-tg-personal
     content: "Волна 1: TelegramChatID в domain, link/unlink API, webhook бота в hub, chat_id в notify, FE профиль"
-    status: pending
+    status: completed
   - id: w2-mail-gateway
     content: "Волна 2: сервис mail-gateway (local+SMTP), MAIL_URL в compose/release/images, тесты идемпотентности"
-    status: pending
+    status: completed
   - id: w3-bank-research
     content: "Волна 3: отчёт Bank API (разрывы vs bank.go/§5), без реализации партнёра"
-    status: pending
+    status: completed
   - id: w4-tg-chats
     content: "Волна 4: рабочие чаты, join-request, approve admin/manager, FE список"
-    status: pending
+    status: completed
   - id: w5-sms-gateway
     content: "Волна 6 → 5: sms.notify + sms-gateway (local+порт провайдера), узкий каталог событий"
-    status: pending
+    status: completed
   - id: w6-onec-staging
     content: "Волна 6: 1С cover/fee smart stub, идемпотентность, staging checklist, без нового сервиса"
-    status: pending
+    status: completed
   - id: w7-diadoc-contract
     content: "Волна 7: Diadoc контракт + callback + UI статус; manual path сохранить; вендор опционален"
-    status: pending
+    status: completed
 isProject: false
 ---
 

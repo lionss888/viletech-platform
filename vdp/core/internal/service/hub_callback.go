@@ -27,6 +27,8 @@ func (s *FormPaymentService) ApplyHubCallback(ctx context.Context, formID, actio
 		return s.ApplyOCRRecognized(ctx, principal, formID, body)
 	case "diadoc_signed", "diadoc.signed":
 		return s.ApplyDiadocSigned(ctx, principal, formID, body)
+	case "diadoc_rejected", "diadoc.rejected":
+		return s.ApplyDiadocRejected(ctx, principal, formID, body)
 	case "onec_cover", "onec_fee", "onec_result":
 		return s.ApplyOneCResult(ctx, principal, formID, action, body)
 	default:
@@ -111,6 +113,58 @@ func (s *FormPaymentService) ApplyDiadocSigned(ctx context.Context, principal au
 		return form, nil
 	}
 	return s.Transition(ctx, principal, formID, action)
+}
+
+func (s *FormPaymentService) ApplyDiadocRejected(ctx context.Context, principal authz.Principal, formID string, body map[string]any) (formpayment.Form, error) {
+	form, err := s.store.FormByID(ctx, formID)
+	if err != nil {
+		return formpayment.Form{}, err
+	}
+	reason, _ := body["reason"].(string)
+	comment := "diadoc_rejected"
+	if reason != "" {
+		comment = comment + ":" + reason
+	}
+	logger.FromContext(ctx, nil).Info("diadoc rejected without status change", "status", form.Status)
+	_ = s.store.AppendHistory(ctx, formpayment.ComplianceHistoryEntry{
+		ID: s.newID(), FormPaymentID: formID, ActorID: principal.AccountID,
+		FromStatus: form.Status, ToStatus: form.Status,
+		Comment: comment, CreatedAt: time.Now().UTC(),
+	})
+	return form, nil
+}
+
+type DiadocStatusView struct {
+	Status     string `json:"status"`
+	Kind       string `json:"kind,omitempty"`
+	ManualPath bool   `json:"manual_path"`
+}
+
+func (s *FormPaymentService) DiadocStatus(ctx context.Context, principal authz.Principal, formID string) (DiadocStatusView, error) {
+	form, err := s.Get(ctx, principal, formID)
+	if err != nil {
+		return DiadocStatusView{}, err
+	}
+	view := DiadocStatusView{Status: "idle", ManualPath: true}
+	switch form.Status {
+	case formpayment.StatusReportWaitingDiadoc:
+		view.Status = "queued"
+		view.Kind = "report"
+	case formpayment.StatusSigningOrder, formpayment.StatusAdvanceSigningOrder:
+		if form.SignMethod == "diadoc" {
+			view.Status = "queued"
+			view.Kind = "payment_order"
+		}
+	}
+	for _, h := range s.store.HistoryByForm(ctx, formID) {
+		if strings.Contains(h.Comment, "diadoc_signed") {
+			view.Status = "signed"
+		}
+		if strings.Contains(h.Comment, "diadoc_rejected") {
+			view.Status = "failed"
+		}
+	}
+	return view, nil
 }
 
 // ApplyOneCResult stores cover/fee snapshot idempotently without payment auto-execution.

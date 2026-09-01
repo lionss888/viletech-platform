@@ -4,11 +4,11 @@
 
 ## deps
 
-Загрузка Go-модулей core, hub и shared. Команда make deps.
+Загрузка Go-модулей core, hub, shared, mail-gateway и sms-gateway. Команда make deps.
 
 ## test
 
-Unit-тесты Go в core и hub без build tag integration. Команда make test.
+Unit-тесты Go в core, hub, shared, mail-gateway и sms-gateway без build tag integration. Команда make test.
 
 ## test-integration
 
@@ -16,7 +16,7 @@ Postgres integration tests с тегом integration в core store outbox и hub
 
 ## test-adapters
 
-Hub adapter HTTP tests docs mail. Команда make test-adapters. Входит в CI job fast.
+Hub adapter HTTP tests docs mail sms telegram diadoc onec. Команда make test-adapters. Входит в CI job fast.
 
 ## build
 

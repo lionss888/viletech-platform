@@ -23,7 +23,7 @@ const (
 func Dev(store repository.Store) {
 	ctx := context.Background()
 	accounts := []domain.Account{
-		{ID: UserID, Email: "user@vdp.local", PasswordHash: service.HashPassword("user"), Role: domain.RoleUser, OrganizationID: OrgID, FullName: "Ivan Petrov", Phone: "+79990000000", Passport: "4510 123456", Active: true},
+		{ID: UserID, Email: "user@vdp.local", PasswordHash: service.HashPassword("user"), Role: domain.RoleUser, OrganizationID: OrgID, FullName: "Ivan Petrov", Phone: "+79990000000", Passport: "4510 123456", Active: true, TelegramNotifyEnabled: true},
 		{ID: ManagerID, Email: "manager@vdp.local", PasswordHash: service.HashPassword("manager"), Role: domain.RoleManager, Active: true},
 		{ID: ICOID, Email: "ico@vdp.local", PasswordHash: service.HashPassword("ico"), Role: domain.RoleInternalComplianceOfficer, Active: true},
 		{ID: ECOID, Email: "eco@vdp.local", PasswordHash: service.HashPassword("eco"), Role: domain.RoleComplianceOfficer, Active: true},
@@ -56,4 +56,6 @@ func Dev(store repository.Store) {
 		BankFixedCommissionPercent: "1.5",
 		ApplyPlatformMarkup:        false,
 	})
+	_ = store.SaveWorkChat(ctx, domain.WorkChat{ID: "wc-ops", Title: "Операционка", ChatID: "ops-chat", Kind: "ops", Active: true})
+	_ = store.SaveWorkChat(ctx, domain.WorkChat{ID: "wc-compliance", Title: "Комплаенс", ChatID: "compliance-chat", Kind: "compliance", Active: true})
 }

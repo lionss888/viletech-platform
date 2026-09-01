@@ -36,6 +36,9 @@ type MemoryStore struct {
 	templates       map[string]domain.Template
 	orders          map[string]formpayment.Order
 	bankIdempotency map[string]string // scope+"\x00"+key -> formID
+	workChats       map[string]domain.WorkChat
+	chatJoins       map[string]domain.ChatJoin
+	tgLinks         map[string]domain.TelegramLinkCode
 }
 
 func NewMemoryStore() *MemoryStore {
@@ -57,6 +60,9 @@ func NewMemoryStore() *MemoryStore {
 		templates:       map[string]domain.Template{},
 		orders:          map[string]formpayment.Order{},
 		bankIdempotency: map[string]string{},
+		workChats:       map[string]domain.WorkChat{},
+		chatJoins:       map[string]domain.ChatJoin{},
+		tgLinks:         map[string]domain.TelegramLinkCode{},
 	}
 }
 
@@ -707,5 +713,110 @@ func (s *MemoryStore) FormIDByBankIdempotency(_ context.Context, scope, key stri
 		return "", apperrors.ErrResourceNotFound
 	}
 	return id, nil
+}
+
+func (s *MemoryStore) AccountByTelegramChatID(_ context.Context, chatID string) (domain.Account, error) {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+	if chatID == "" {
+		return domain.Account{}, apperrors.ErrResourceNotFound
+	}
+	for _, a := range s.accounts {
+		if a.TelegramChatID == chatID {
+			return a, nil
+		}
+	}
+	return domain.Account{}, apperrors.ErrResourceNotFound
+}
+
+func (s *MemoryStore) SaveWorkChat(_ context.Context, chat domain.WorkChat) error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	s.workChats[chat.ID] = chat
+	return nil
+}
+
+func (s *MemoryStore) WorkChatByID(_ context.Context, id string) (domain.WorkChat, error) {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+	c, ok := s.workChats[id]
+	if !ok {
+		return domain.WorkChat{}, apperrors.ErrResourceNotFound
+	}
+	return c, nil
+}
+
+func (s *MemoryStore) ListWorkChats(_ context.Context) ([]domain.WorkChat, error) {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+	out := make([]domain.WorkChat, 0, len(s.workChats))
+	for _, c := range s.workChats {
+		out = append(out, c)
+	}
+	return out, nil
+}
+
+func (s *MemoryStore) SaveChatJoin(_ context.Context, join domain.ChatJoin) error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	s.chatJoins[join.ID] = join
+	return nil
+}
+
+func (s *MemoryStore) ChatJoinByID(_ context.Context, id string) (domain.ChatJoin, error) {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+	j, ok := s.chatJoins[id]
+	if !ok {
+		return domain.ChatJoin{}, apperrors.ErrResourceNotFound
+	}
+	return j, nil
+}
+
+func (s *MemoryStore) ChatJoinByAccountChat(_ context.Context, accountID, chatID string) (domain.ChatJoin, error) {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+	for _, j := range s.chatJoins {
+		if j.AccountID == accountID && j.ChatID == chatID {
+			return j, nil
+		}
+	}
+	return domain.ChatJoin{}, apperrors.ErrResourceNotFound
+}
+
+func (s *MemoryStore) ListChatJoins(_ context.Context, status domain.JoinStatus) ([]domain.ChatJoin, error) {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+	out := make([]domain.ChatJoin, 0)
+	for _, j := range s.chatJoins {
+		if status == "" || j.Status == status {
+			out = append(out, j)
+		}
+	}
+	return out, nil
+}
+
+func (s *MemoryStore) SaveTelegramLink(_ context.Context, link domain.TelegramLinkCode) error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	s.tgLinks[link.Code] = link
+	return nil
+}
+
+func (s *MemoryStore) TelegramLinkByCode(_ context.Context, code string) (domain.TelegramLinkCode, error) {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+	l, ok := s.tgLinks[code]
+	if !ok {
+		return domain.TelegramLinkCode{}, apperrors.ErrResourceNotFound
+	}
+	return l, nil
+}
+
+func (s *MemoryStore) DeleteTelegramLink(_ context.Context, code string) error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	delete(s.tgLinks, code)
+	return nil
 }
 

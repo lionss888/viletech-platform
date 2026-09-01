@@ -1,6 +1,7 @@
 package telegram_test
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"log/slog"
@@ -61,5 +62,48 @@ func TestTelegramRetryOn5xx(t *testing.T) {
 	}
 	if n < 2 {
 		t.Fatalf("retries=%d", n)
+	}
+}
+
+func TestWebhookStartCodeBindsCore(t *testing.T) {
+	t.Parallel()
+	var got map[string]any
+	core := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path != "/api/v1/internal/telegram/bind" {
+			t.Errorf("path %s", r.URL.Path)
+		}
+		if r.Header.Get("X-VDP-S2S") != "s2s" {
+			w.WriteHeader(http.StatusUnauthorized)
+			return
+		}
+		_ = json.NewDecoder(r.Body).Decode(&got)
+		w.WriteHeader(http.StatusOK)
+		_, _ = w.Write([]byte(`{"status":"linked"}`))
+	}))
+	t.Cleanup(core.Close)
+	body, _ := json.Marshal(map[string]any{
+		"message": map[string]any{"text": "/start abc123", "chat": map[string]any{"id": 99}},
+	})
+	req := httptest.NewRequest(http.MethodPost, "/telegram/webhook", bytes.NewReader(body))
+	rec := httptest.NewRecorder()
+	telegram.HandleWebhook(rec, req, core.URL, "s2s", time.Second)
+	if rec.Code != http.StatusOK {
+		t.Fatalf("%d %s", rec.Code, rec.Body.String())
+	}
+	if got["code"] != "abc123" || got["chat_id"] != "99" {
+		t.Fatalf("%#v", got)
+	}
+}
+
+func TestBotModeSkipsWithoutChatID(t *testing.T) {
+	t.Parallel()
+	log := slog.New(slog.NewJSONHandler(os.Stdout, &slog.HandlerOptions{Level: slog.LevelError}))
+	plugin := telegram.New(time.Second, 1, log).WithBotToken("token")
+	out, err := plugin.Execute(context.Background(), "notify", map[string]any{"event_id": "e", "form_payment_id": "f"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if out["status"] != "skipped" {
+		t.Fatalf("%#v", out)
 	}
 }

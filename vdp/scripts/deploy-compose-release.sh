@@ -29,6 +29,8 @@ source "$PIN_FILE"
 : "${VDP_CORE_IMAGE:?VDP_CORE_IMAGE required in pin file}"
 : "${VDP_HUB_IMAGE:?VDP_HUB_IMAGE required in pin file}"
 : "${VDP_DOCS_IMAGE:?VDP_DOCS_IMAGE required in pin file}"
+: "${VDP_MAIL_IMAGE:?VDP_MAIL_IMAGE required in pin file}"
+: "${VDP_SMS_IMAGE:?VDP_SMS_IMAGE required in pin file}"
 : "${VDP_FE_IMAGE:?VDP_FE_IMAGE required in pin file}"
 
 SSH_OPTS=(-o StrictHostKeyChecking=accept-new -o BatchMode=yes)
@@ -43,6 +45,8 @@ echo "Deploying ${ENVIRONMENT} to ${DEPLOY_HOST}:${DEPLOY_PATH}"
 echo "  core: ${VDP_CORE_IMAGE}"
 echo "  hub:  ${VDP_HUB_IMAGE}"
 echo "  docs: ${VDP_DOCS_IMAGE}"
+echo "  mail: ${VDP_MAIL_IMAGE}"
+echo "  sms:  ${VDP_SMS_IMAGE}"
 echo "  fe:   ${VDP_FE_IMAGE}"
 
 # Sync compose + scripts + migrations. Host-side secrets and pins must survive --delete.
@@ -84,7 +88,7 @@ fi
 
 chmod +x scripts/*.sh || true
 
-docker compose $COMPOSE_FILES --profile prod pull docs-service hub core fe-prod
+docker compose $COMPOSE_FILES --profile prod pull docs-service mail-gateway sms-gateway hub core fe-prod
 docker compose $COMPOSE_FILES --profile prod up -d --no-build --scale fe=0
 ./scripts/wait-release-health.sh
 

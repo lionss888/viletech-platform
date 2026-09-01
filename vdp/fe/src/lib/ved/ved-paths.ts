@@ -20,6 +20,8 @@ export function useVedPaths() {
       countries: `${base}/countries`,
       complianceTools: `${base}/compliance-tools`,
       testing: `${base}/testing`,
+      profile: `${base}/profile`,
+      chats: `${base}/chats`,
       formDetail: (id: string) => `${base}/forms/${id}`,
     }),
     [base],

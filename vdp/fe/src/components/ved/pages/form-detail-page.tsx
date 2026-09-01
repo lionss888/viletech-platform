@@ -3,6 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import { useMemo } from "react";
 
 import { getComplianceHistory, getForm } from "@/lib/api/forms";
+import { getFormDiadocStatus } from "@/lib/api/notifications";
 import { mapComplianceHistory, mapCoreFormToPaymentForm, rejectFromHistory } from "@/lib/api/mappers";
 import { ActionPanel } from "@/components/ved/ActionPanel";
 import { DocumentList } from "@/components/ved/DocumentViewer";
@@ -48,6 +49,11 @@ export function FormDetail() {
   const historyQuery = useQuery({
     queryKey: ["form-history", formId],
     queryFn: () => getComplianceHistory(formId),
+    enabled: mode === "app" && Boolean(formId),
+  });
+  const diadocQuery = useQuery({
+    queryKey: ["form-diadoc", formId],
+    queryFn: () => getFormDiadocStatus(formId),
     enabled: mode === "app" && Boolean(formId),
   });
 
@@ -145,6 +151,22 @@ export function FormDetail() {
         )}
         <span className="ml-auto font-mono text-lg font-semibold">{money(form.amountMinor, form.currency)}</span>
       </div>
+
+      {mode === "app" && diadocQuery.data && diadocQuery.data.status !== "idle" && (
+        <div className="panel mt-4 p-4">
+          <p className="label-caps">Электронный документооборот</p>
+          <p className="mt-2 text-sm">
+            {diadocQuery.data.status === "queued" && "Документ в очереди ЭДО — ожидайте подпись."}
+            {diadocQuery.data.status === "signed" && "Документ подписан в ЭДО."}
+            {diadocQuery.data.status === "failed" && "ЭДО не принял документ. Используйте ручной путь."}
+          </p>
+          {diadocQuery.data.manual_path && (
+            <p className="mt-2 text-sm text-muted-foreground">
+              Запасной путь: скачайте документ в блоке «Документы» и загрузите подписанный файл вручную. Пилот D1 (ручная подпись) сохранён.
+            </p>
+          )}
+        </div>
+      )}
 
       <div className="panel mt-4 p-4">
         <p className="label-caps">Жизненный цикл</p>

@@ -22,10 +22,15 @@ deps:
 	cd $(CORE_DIR) && go mod download
 	cd $(HUB_DIR) && go mod download
 	cd shared && go mod download
+	cd mail-gateway && go mod download
+	cd sms-gateway && go mod download
 
 test:
 	cd $(CORE_DIR) && go test ./...
 	cd $(HUB_DIR) && go test ./...
+	cd shared && go test ./...
+	cd mail-gateway && go test ./...
+	cd sms-gateway && go test ./...
 
 test-integration:
 	cd $(CORE_DIR) && go test -tags=integration ./...
@@ -60,6 +65,7 @@ db-migrate:
 	PGPASSWORD=vdp_core psql -h localhost -U vdp_core -d vdp_core -v ON_ERROR_STOP=1 -f $(CORE_DIR)/migrations/011_r10_bank.sql
 	PGPASSWORD=vdp_core psql -h localhost -U vdp_core -d vdp_core -v ON_ERROR_STOP=1 -f $(CORE_DIR)/migrations/012_b2_org_signer.sql
 	PGPASSWORD=vdp_core psql -h localhost -U vdp_core -d vdp_core -v ON_ERROR_STOP=1 -f $(CORE_DIR)/migrations/013_bank_org_client_type.sql
+	PGPASSWORD=vdp_core psql -h localhost -U vdp_core -d vdp_core -v ON_ERROR_STOP=1 -f $(CORE_DIR)/migrations/014_notifications.sql
 	PGPASSWORD=vdp_hub psql -h localhost -U vdp_hub -d vdp_hub -v ON_ERROR_STOP=1 -f $(HUB_DIR)/migrations/001_hub.sql
 	PGPASSWORD=vdp_hub psql -h localhost -U vdp_hub -d vdp_hub -v ON_ERROR_STOP=1 -f $(HUB_DIR)/migrations/002_hub.sql
 
@@ -204,6 +210,8 @@ compose-release-config-check:
 	VDP_CORE_IMAGE="$${VDP_CORE_IMAGE:-example.local/vdp-core:check}" \
 	VDP_HUB_IMAGE="$${VDP_HUB_IMAGE:-example.local/vdp-hub:check}" \
 	VDP_DOCS_IMAGE="$${VDP_DOCS_IMAGE:-example.local/vdp-docs:check}" \
+	VDP_MAIL_IMAGE="$${VDP_MAIL_IMAGE:-example.local/vdp-mail:check}" \
+	VDP_SMS_IMAGE="$${VDP_SMS_IMAGE:-example.local/vdp-sms:check}" \
 	VDP_FE_IMAGE="$${VDP_FE_IMAGE:-example.local/vdp-fe:check}" \
 	JWT_SECRET="$${JWT_SECRET:-config-check}" \
 	HUB_SHARED_SECRET="$${HUB_SHARED_SECRET:-config-check}" \

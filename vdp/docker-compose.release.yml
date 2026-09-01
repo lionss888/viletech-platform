@@ -20,6 +20,14 @@ services:
     image: ${VDP_DOCS_IMAGE:?set VDP_DOCS_IMAGE to registry image@digest or :tag}
     restart: unless-stopped
 
+  mail-gateway:
+    image: ${VDP_MAIL_IMAGE:?set VDP_MAIL_IMAGE to registry image@digest or :tag}
+    restart: unless-stopped
+
+  sms-gateway:
+    image: ${VDP_SMS_IMAGE:?set VDP_SMS_IMAGE to registry image@digest or :tag}
+    restart: unless-stopped
+
   hub:
     image: ${VDP_HUB_IMAGE:?set VDP_HUB_IMAGE to registry image@digest or :tag}
     environment:

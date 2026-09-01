@@ -10,6 +10,12 @@ Alert vdp_forms_stuck_compliance. Условие статус organization_waiti
 
 Alert vdp_hub_inbox_failures. Условие hub inbox mark_failed rate выше threshold. Действие runbook hub-failure.
 
+Alert vdp_mail_gateway_unhealthy. Условие mail-gateway /health не 200 или всплеск 5xx на POST /notify. Действие runbook hub-failure.
+
+Alert vdp_sms_gateway_unhealthy. Условие sms-gateway /health не 200 или rate-limit 429 выше порога. Действие runbook hub-failure.
+
+Alert vdp_onec_callback_stale. Условие cover/fee requested без callback с external_id дольше N минут. Действие проверить ONEC_URL / fixture; заявка остаётся в ожидаемом статусе.
+
 Alert vdp_docs_generate_failed. Условие POG status failed или всплеск hub docs 5xx. Действие проверить DOCS_URL и шаблоны ПА.
 
 Alert vdp_bank_webhook_errors. Условие bank webhook delivery failures. Действие проверить URL и секрет организации.
@@ -24,6 +30,6 @@ Alert vdp_bank_webhook_errors. Условие bank webhook delivery failures. Д
 
 ## Не алертить
 
-Dev compose со stub DOCS и MAIL.
+Dev compose со stub DOCS, MAIL и SMS.
 
 OCR side-path недоступен, это деградация на ручной ввод, а не блокер заявки.

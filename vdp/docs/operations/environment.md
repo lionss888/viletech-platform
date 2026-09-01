@@ -58,6 +58,22 @@ Default 120 per minute.
 
 Default 15 seconds.
 
+## MAIL_URL hub
+
+Compose: http://mail-gateway:8091/notify. Empty → hub stub. Gateway provider via MAIL_PROVIDER.
+
+## SMS_URL hub
+
+Compose: http://sms-gateway:8092/notify. Empty → hub stub.
+
+## TELEGRAM_BOT_TOKEN / TELEGRAM_BOT_USERNAME
+
+Optional. Empty token → telegram fixture. Username used for personal deep-link.
+
+## ONEC_URL / DIADOC_URL
+
+Optional vendor URLs. Empty → fixture. Gateway must not change form status.
+
 ## VDP_API_PROXY_TARGET fe
 
 Default http://core:8080 in compose. Local dev http://localhost:8080.

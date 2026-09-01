@@ -164,6 +164,8 @@ jobs:
           crane copy "$VDP_CORE_IMAGE" "${gl}/vdp-core:${IMAGE_TAG}"
           crane copy "$VDP_HUB_IMAGE" "${gl}/vdp-hub:${IMAGE_TAG}"
           crane copy "$VDP_DOCS_IMAGE" "${gl}/vdp-docs:${IMAGE_TAG}"
+          crane copy "$VDP_MAIL_IMAGE" "${gl}/vdp-mail:${IMAGE_TAG}"
+          crane copy "$VDP_SMS_IMAGE" "${gl}/vdp-sms:${IMAGE_TAG}"
           crane copy "$VDP_FE_IMAGE" "${gl}/vdp-fe:${IMAGE_TAG}"
 
   release-compose-check:

@@ -4,11 +4,23 @@
 
 ## Сервис postgres-core
 
-Image postgres 16 alpine. Host port 5433 to container 5432. Migrations 001–011 mounted to initdb.
+Image postgres 16 alpine. Host port 5433 to container 5432. Migrations 001–014 mounted to initdb.
 
 ## Сервис postgres-hub
 
 Host port 5434. Migrations 001_hub 002_hub.
+
+## Сервис docs-service
+
+Port 8090. PDF generate reference. Hub DOCS_URL.
+
+## Сервис mail-gateway
+
+Port 8091. POST /notify. MAIL_PROVIDER=local|smtp. Hub MAIL_URL. Empty MAIL_URL still stubs in hub.
+
+## Сервис sms-gateway
+
+Port 8092. POST /notify. SMS_PROVIDER=local|http. Hub SMS_URL. OTP and critical events only.
 
 ## Сервис hub
 

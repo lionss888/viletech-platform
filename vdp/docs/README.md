@@ -10,7 +10,7 @@
 
 Команды Makefile: [development/makefile-reference.md](development/makefile-reference.md).
 
-Архитектура системы: [architecture/overview.md](architecture/overview.md), [architecture/contexts-and-data.md](architecture/contexts-and-data.md), [architecture/app-vs-demo.md](architecture/app-vs-demo.md).
+Архитектура системы: [architecture/overview.md](architecture/overview.md), [architecture/contexts-and-data.md](architecture/contexts-and-data.md), [architecture/app-vs-demo.md](architecture/app-vs-demo.md), [architecture/notifications.md](architecture/notifications.md).
 
 Бизнес-логика и роли: [domain/roles-and-authz.md](domain/roles-and-authz.md), [domain/form-lifecycle.md](domain/form-lifecycle.md), [domain/documents-and-uploads.md](domain/documents-and-uploads.md).
 

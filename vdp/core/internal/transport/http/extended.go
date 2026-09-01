@@ -20,6 +20,7 @@ func (s *Server) registerExtendedRoutes() {
 	s.registerRefundRoutes()
 	s.registerR9ExtendedRoutes()
 	s.registerBankRoutes()
+	s.registerNotificationRoutes()
 	s.mux.HandleFunc("POST /api/v1/counterparties", s.withAuth(s.handleCreateCounterparty))
 	s.mux.HandleFunc("GET /api/v1/counterparties", s.withAuth(s.handleListCounterparties))
 	s.mux.HandleFunc("POST /api/v1/comments", s.withAuth(s.handleCreateComment))
