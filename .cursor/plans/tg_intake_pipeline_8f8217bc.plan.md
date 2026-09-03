@@ -15,16 +15,16 @@ todos:
     content: "Table-driven tests + job в .gitlab-ci.yml (changes: инструменты/поток-вводных); не трогать vdp/hub"
     status: pending
   - id: w0-botfather
-    content: "Сгенерировать список команд (vvod, help) и отдать инструкцию для BotFather /setcommands — без лишнего README"
+    content: Сгенерировать список команд (vvod, help) и отдать инструкцию для BotFather /setcommands — без лишнего README
     status: pending
   - id: w1-later
     content: "W1: шаблон 6 полей в /help уже в W0; затем soft-parse + накопление свободных /vvod, потом ужесточение"
     status: pending
   - id: w2-later
-    content: "Интерпретация → карточка; уточнение одним вопросом бота в тот же чат; low confidence не в wave"
+    content: Интерпретация → карточка; уточнение одним вопросом бота в тот же чат; low confidence не в wave
     status: pending
   - id: w3-later
-    content: "P0–P3 / WSJF-lite → draft plan; утверждает всегда человек; 2–3 дня режут scope не gate"
+    content: P0–P3 / WSJF-lite → draft plan; утверждает всегда человек; 2–3 дня режут scope не gate
     status: pending
 isProject: false
 ---
