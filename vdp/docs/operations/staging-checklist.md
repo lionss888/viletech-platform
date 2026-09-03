@@ -60,6 +60,8 @@ security-signoff-checklist.md. AuthZ every endpoint. Provider DTO audit. Secrets
 
 make release-gate green locally or vdp-release workflow. Tag vdp-v* triggers vdp-images (gate + GHCR digest for core/hub/docs/fe) and vdp-deploy → alpha (auto after Images on main). beta/gamma: workflow_dispatch VDP Deploy with GitHub Environment (gamma: required reviewers). Review e2e-coverage-matrix.md and known-gaps with customer.
 
+Before customer transfer complete handover-secrets-checklist.md (PAT rotation, deploy SSH keys, .env.deploy secrets, cloud and DNS ownership). Gate starts when the team agrees it is time to hand over to the customer.
+
 ## Alpha host bootstrap (one-time)
 
 Step 1. Generate the deploy key locally with ssh-keygen, type ed25519, output file ~/.ssh/vdp_deploy_ed25519, empty passphrase, comment vdp-deploy. GitHub Actions cannot type a passphrase, so the CI key must have none.
