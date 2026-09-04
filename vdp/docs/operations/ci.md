@@ -26,7 +26,7 @@ Job fast: npm test в vdp/fe, make test, make test-adapters. Job integration: po
 
 Images .github/workflows/vdp-images.yml — после green gate на теге или push в main, либо dispatch с ref: build и push образов vdp-core, vdp-hub, vdp-docs, vdp-mail, vdp-sms, vdp-fe (production target) в GHCR по digest; copy digest в GitLab Container Registry.
 
-Deploy .github/workflows/vdp-deploy.yml — GitHub Environments alpha, beta, gamma, demo, test; docker compose overlay pull, затем up -d, без флага --build.
+Deploy .github/workflows/vdp-deploy.yml — GitHub Environments alpha, beta, gamma, demo, test; docker compose overlay pull, затем postgres → `compose-db-migrate` → up -d → restart core/hub, без флага --build. Initdb mounts alone are not enough on existing VM volumes.
 
 Подготовка хоста: scripts/bootstrap-host.sh (Docker CE, пользователь deploy, каталог /opt/vdp, генерация .env.deploy со случайными секретами, ufw 22/80/443, Caddy c автоматическим HTTPS, каталог preview.d). Порты приложения биндятся на loopback через переменные с суффиксом BIND из .env.deploy; наружу смотрит только Caddy.
 
@@ -64,7 +64,7 @@ Deploy на VM с SSH: make deploy-alpha, make deploy-beta, make deploy-gamma (�
 
 ## Staging smoke
 
-Скрипт ./scripts/staging-smoke.sh с vars из staging-env.example. Входит в deploy workflow после health.
+Скрипт ./scripts/staging-smoke.sh с vars из staging-env.example. Входит в deploy workflow после health: кроме core/hub health проверяет seed login (`user@vdp.local` / `user`), чтобы schema drift не маскировался зелёным health.
 
 ## Rollback
 

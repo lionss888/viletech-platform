@@ -18,7 +18,7 @@ func TestOrganizationProfilePatchSignerFields(t *testing.T) {
 	t.Parallel()
 	ctx := context.Background()
 	store := repository.NewMemoryStore()
-	seed.Dev(store)
+	seed.MustDev(t, store)
 	orgs := service.NewOrganizationService(store)
 	user := authz.Principal{AccountID: seed.UserID, Role: domain.RoleUser, OrganizationID: seed.OrgID}
 
@@ -48,7 +48,7 @@ func TestDocsGeneratePayloadMatrixKeys(t *testing.T) {
 	t.Parallel()
 	ctx := context.Background()
 	store := repository.NewMemoryStore()
-	seed.Dev(store)
+	seed.MustDev(t, store)
 	box := outbox.NewMemoryStore()
 	forms := service.NewFormPaymentService(store, box, seqID())
 	catalog := service.NewCatalogService(store, box, seqID())

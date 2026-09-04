@@ -67,7 +67,7 @@ func TestR8Hub5xxOutboxRetryFormStatusUnchanged(t *testing.T) {
 	t.Parallel()
 	ctx := context.Background()
 	store := repository.NewStore()
-	seed.Dev(store)
+	seed.MustDev(t, store)
 	box := outbox.NewMemoryStore()
 	forms := service.NewFormPaymentService(store, box, func() string { return "f-fail" })
 	user := authz.Principal{AccountID: seed.UserID, Role: domain.RoleUser, OrganizationID: seed.OrgID}

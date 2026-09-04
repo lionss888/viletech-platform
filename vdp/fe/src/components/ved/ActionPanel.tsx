@@ -1,11 +1,13 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 
 import { Modal, ModalButton } from "@/components/ved/Modal";
 import { actionsFor } from "@/lib/ved/actions";
 import type { ContractType } from "@/lib/api/contract";
+import { getProcessRoles, type ProcessRoleRow } from "@/lib/api/process-roles";
 import { assertFileSize, UploadError } from "@/lib/api/files";
 import { marksFor } from "@/lib/ved/compliance";
 import { blocksPaymentStartWithoutProvider, PAYMENT_START_PROVIDER_LOCK } from "@/lib/ved/manager-payment";
+import { usePlatformMode } from "@/lib/ved/platform-mode";
 import { usePlatformStore } from "@/lib/ved/platform-store";
 import type { ActionTone, FormAction, PaymentForm } from "@/lib/ved/types";
 import { cn } from "@/lib/utils";
@@ -46,6 +48,8 @@ export function ActionPanel({
   lockAcceptNote?: string | undefined;
 }) {
   const { session, applyAction, complianceTools, providers, paymentAgents, users } = usePlatformStore();
+  const mode = usePlatformMode();
+  const [processRoles, setProcessRoles] = useState<ProcessRoleRow[] | undefined>();
   const [pending, setPending] = useState<FormAction | null>(null);
   const [reason, setReason] = useState("");
   const [mark, setMark] = useState("");
@@ -69,7 +73,24 @@ export function ActionPanel({
       : providers;
 
   const role = session?.role ?? "user";
-  const actions = actionsFor(role, form.status);
+  useEffect(() => {
+    if (mode !== "app") {
+      setProcessRoles(undefined);
+      return;
+    }
+    let cancelled = false;
+    void getProcessRoles()
+      .then((data) => {
+        if (!cancelled) setProcessRoles(data.roles);
+      })
+      .catch(() => {
+        if (!cancelled) setProcessRoles(undefined);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [mode]);
+  const actions = actionsFor(role, form.status, processRoles);
   const { operationalActions, rootCancelAction } = useMemo(() => {
     if (role !== "root") {
       return { operationalActions: actions, rootCancelAction: null as FormAction | null };

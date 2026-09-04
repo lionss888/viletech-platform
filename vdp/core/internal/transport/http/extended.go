@@ -13,6 +13,7 @@ import (
 func (s *Server) registerExtendedRoutes() {
 	s.registerNestFormPaymentRoutes()
 	s.registerAuthAccountOrgRoutes()
+	s.registerProcessRoleRoutes()
 	s.registerDocsDomainRoutes()
 	s.registerRateDocsRoutes()
 	s.registerContractRoutes()

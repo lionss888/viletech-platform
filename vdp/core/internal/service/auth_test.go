@@ -13,7 +13,7 @@ import (
 func TestLoginAndParse(t *testing.T) {
 	t.Parallel()
 	store := repository.NewStore()
-	seed.Dev(store)
+	seed.MustDev(t, store)
 	auth := service.NewAuthService(store, "secret", 1)
 	session, err := auth.Login(context.Background(), "eco@vdp.local", "eco")
 	if err != nil {

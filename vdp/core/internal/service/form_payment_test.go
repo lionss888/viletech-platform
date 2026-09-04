@@ -18,7 +18,7 @@ func TestAssignDeadlineAndProvider(t *testing.T) {
 	t.Parallel()
 	ctx := context.Background()
 	store := repository.NewStore()
-	seed.Dev(store)
+	seed.MustDev(t, store)
 	svc := service.NewFormPaymentService(store, outbox.NewMemoryStore(), seqID())
 	user := authz.Principal{AccountID: seed.UserID, Role: domain.RoleUser, OrganizationID: seed.OrgID}
 	manager := authz.Principal{AccountID: seed.ManagerID, Role: domain.RoleManager}
@@ -55,7 +55,7 @@ func TestAwaitingRatingQueue(t *testing.T) {
 	t.Parallel()
 	ctx := context.Background()
 	store := repository.NewStore()
-	seed.Dev(store)
+	seed.MustDev(t, store)
 	orgs := service.NewOrganizationService(store)
 	manager := authz.Principal{AccountID: seed.ManagerID, Role: domain.RoleManager}
 	_, err := orgs.SetRating(ctx, manager, seed.OrgID, domain.RatingRed)
@@ -75,7 +75,7 @@ func TestCreateToICOPath(t *testing.T) {
 	t.Parallel()
 	ctx := context.Background()
 	store := repository.NewStore()
-	seed.Dev(store)
+	seed.MustDev(t, store)
 	svc := service.NewFormPaymentService(store, outbox.NewMemoryStore(), seqID())
 	user := authz.Principal{AccountID: seed.UserID, Role: domain.RoleUser, OrganizationID: seed.OrgID}
 	ico := authz.Principal{AccountID: seed.ICOID, Role: domain.RoleInternalComplianceOfficer}

@@ -38,10 +38,23 @@ source .env.deploy
 source .release-images.env
 set +a
 export ENVIRONMENT
+export COMPOSE_FILES
 
+chmod +x scripts/*.sh || true
+# shellcheck disable=SC2086
 docker compose $COMPOSE_FILES --profile prod pull hub core fe-prod
-docker compose $COMPOSE_FILES --profile prod up -d --no-build --scale fe=0
-./scripts/wait-release-health.sh
+if [ -x ./scripts/vdp-compose-up.sh ]; then
+  ./scripts/vdp-compose-up.sh
+else
+  # shellcheck disable=SC2086
+  docker compose $COMPOSE_FILES --profile prod up -d --no-build postgres-core postgres-hub
+  ./scripts/compose-db-migrate.sh
+  # shellcheck disable=SC2086
+  docker compose $COMPOSE_FILES --profile prod up -d --no-build --scale fe=0
+  # shellcheck disable=SC2086
+  docker compose $COMPOSE_FILES --profile prod restart core hub
+  ./scripts/wait-release-health.sh
+fi
 echo "rollback $ENVIRONMENT ok (tag=${IMAGE_TAG:-unknown})"
 EOS
 )

@@ -21,15 +21,27 @@ type FormPaymentService struct {
 	box   outbox.Store
 	newID IDFunc
 	bus   *FormEventBus
+	roles *ProcessRoleService
 }
 
 func NewFormPaymentService(store repository.Store, box outbox.Store, newID IDFunc) *FormPaymentService {
-	return &FormPaymentService{store: store, box: box, newID: newID}
+	return &FormPaymentService{store: store, box: box, newID: newID, roles: NewProcessRoleService(store)}
 }
 
 func (s *FormPaymentService) WithEventBus(bus *FormEventBus) *FormPaymentService {
 	s.bus = bus
 	return s
+}
+
+func (s *FormPaymentService) WithProcessRoles(roles *ProcessRoleService) *FormPaymentService {
+	if roles != nil {
+		s.roles = roles
+	}
+	return s
+}
+
+func (s *FormPaymentService) ProcessRoles() *ProcessRoleService {
+	return s.roles
 }
 
 type CreateInput struct {
@@ -53,23 +65,30 @@ func (s *FormPaymentService) Create(ctx context.Context, principal authz.Princip
 		input.Kind = formpayment.KindGood
 	}
 	now := time.Now().UTC()
+	policyVersion := 1
+	if s.roles != nil {
+		if snap, err := s.roles.GetSnapshot(ctx); err == nil {
+			policyVersion = snap.Version
+		}
+	}
 	form := formpayment.Form{
-		ID:             s.newID(),
-		AccountID:      principal.AccountID,
-		OrganizationID: principal.OrganizationID,
-		Status:         formpayment.StatusCreating,
-		Channel:        formpayment.ChannelUI,
-		Direction:      input.Direction,
-		Kind:           input.Kind,
-		InvoiceAmount:  input.InvoiceAmount,
-		Currency:       input.Currency,
-		NoDocuments:    input.NoDocuments,
-		ContractNumber: input.ContractNumber,
-		ContractDate:   input.ContractDate,
-		CreatedAt:      now,
-		UpdatedAt:      now,
-		Rate:           formpayment.Rate{Value: "0", Currency: input.Currency, Source: "manual"},
-		Commission:     formpayment.Commission{FeeAmount: "0", FeePercent: "0", FeeCurrency: input.Currency},
+		ID:                   s.newID(),
+		AccountID:            principal.AccountID,
+		OrganizationID:       principal.OrganizationID,
+		Status:               formpayment.StatusCreating,
+		Channel:              formpayment.ChannelUI,
+		Direction:            input.Direction,
+		Kind:                 input.Kind,
+		InvoiceAmount:        input.InvoiceAmount,
+		Currency:             input.Currency,
+		NoDocuments:          input.NoDocuments,
+		ContractNumber:       input.ContractNumber,
+		ContractDate:         input.ContractDate,
+		ProcessPolicyVersion: policyVersion,
+		CreatedAt:            now,
+		UpdatedAt:            now,
+		Rate:                 formpayment.Rate{Value: "0", Currency: input.Currency, Source: "manual"},
+		Commission:           formpayment.Commission{FeeAmount: "0", FeePercent: "0", FeeCurrency: input.Currency},
 	}
 	if err := s.store.SaveForm(ctx, form); err != nil {
 		return formpayment.Form{}, err
@@ -107,11 +126,18 @@ func (s *FormPaymentService) TransitionWithComment(ctx context.Context, principa
 	if err != nil {
 		return formpayment.Form{}, err
 	}
+	var policy *formpayment.ProcessPolicySnapshot
+	if s.roles != nil {
+		if snap, err := s.roles.GetSnapshot(ctx); err == nil {
+			policy = &snap
+		}
+	}
 	next, err := formpayment.Apply(formpayment.Command{
 		Form:        form,
 		Action:      action,
 		Role:        principal.Role,
 		OrgApproved: org.IsClientActive(),
+		Policy:      policy,
 	})
 	if err != nil {
 		return formpayment.Form{}, err

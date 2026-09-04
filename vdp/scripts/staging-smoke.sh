@@ -18,6 +18,21 @@ curl -sf "$BASE/api/v1/health" >/dev/null || fail "core health"
 echo "== hub health =="
 curl -sf "$HUB/api/v1/health" >/dev/null || fail "hub health"
 
+echo "== seed login =="
+login_body=$(curl -sS -o /tmp/vdp-staging-login.json -w '%{http_code}' -X POST "$BASE/api/v1/auth/login" \
+  -H 'Content-Type: application/json' \
+  -d '{"email":"user@vdp.local","password":"user"}' || true)
+if [[ "$login_body" -lt 200 || "$login_body" -ge 300 ]]; then
+  fail "seed login status=$login_body body=$(cat /tmp/vdp-staging-login.json 2>/dev/null || true)"
+fi
+python3 - <<'PY' || fail "seed login response missing token"
+import json
+with open("/tmp/vdp-staging-login.json") as f:
+    d = json.load(f)
+assert d.get("token") or d.get("access_token"), d
+print("seed login ok")
+PY
+
 if [[ -n "$DOCS_URL" ]]; then
   echo "== DOCS_URL probe =="
   code=$(curl -s -o /tmp/vdp-docs-smoke.json -w '%{http_code}' -X POST "$DOCS_URL" \

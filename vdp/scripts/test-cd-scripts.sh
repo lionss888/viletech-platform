@@ -14,7 +14,10 @@ for script in \
   scripts/rollback-compose-release.sh \
   scripts/bootstrap-host.sh \
   scripts/deploy-preview.sh \
-  scripts/gitlab-promote.sh; do
+  scripts/gitlab-promote.sh \
+  scripts/compose-db-migrate.sh \
+  scripts/vdp-compose-up.sh \
+  scripts/staging-smoke.sh; do
   bash -n "$script"
   echo "syntax ok: $script"
 done
@@ -86,6 +89,53 @@ if DEPLOY_HOST=deploy.invalid PIN_FILE="$TMP/absent.env" \
   bash scripts/deploy-compose-release.sh >/dev/null 2>&1; then
   fail "deploy must reject a missing pin file"
 fi
+
+# One path: UI changes leave lionss888/vdp, land in this repo via PR into vdp/fe,
+# then Images builds the whole product and Deploy promotes digests to the VM
+# without rebuilding on the host.
+echo "== path: lionss888/vdp → viletech-platform → server build =="
+REPO_ROOT="$(cd "$ROOT/.." && pwd)"
+WF_SYNC="$REPO_ROOT/.github/workflows/vdp-lovable-sync.yml"
+WF_IMAGES="$REPO_ROOT/.github/workflows/vdp-images.yml"
+WF_DEPLOY="$REPO_ROOT/.github/workflows/vdp-deploy.yml"
+[ -f "$WF_SYNC" ] || fail "missing $WF_SYNC"
+[ -f "$WF_IMAGES" ] || fail "missing $WF_IMAGES"
+[ -f "$WF_DEPLOY" ] || fail "missing $WF_DEPLOY"
+grep -q "lionss888/vdp" "$WF_SYNC" \
+  || fail "lovable sync must default to github.com/lionss888/vdp"
+grep -q 'vdp/fe/' "$WF_SYNC" \
+  || fail "lovable sync must copy UI into vdp/fe"
+grep -q 'gh pr create' "$WF_SYNC" \
+  || fail "lovable sync must open a PR into viletech-platform (not push straight to main)"
+grep -q -- '--base main' "$WF_SYNC" \
+  || fail "lovable sync PR must target main"
+grep -q 'image-build-push.sh' "$WF_IMAGES" \
+  || fail "vdp-images must build the project via image-build-push.sh"
+grep -q 'workflow_run' "$WF_DEPLOY" \
+  || fail "vdp-deploy must auto-run after Images (server promote)"
+grep -q -- '--no-build' scripts/deploy-compose-release.sh \
+  || fail "server promote must pull digests without docker build on the host"
+grep -q 'compose pull\|docker compose .* pull' scripts/deploy-compose-release.sh \
+  || grep -q 'vdp-compose-up.sh' scripts/deploy-compose-release.sh \
+  || fail "server promote must pull/up release images on the host"
+
+echo "== promote always applies SQL migrations (existing volumes skip initdb) =="
+grep -q 'compose-db-migrate' scripts/vdp-compose-up.sh \
+  || fail "vdp-compose-up must run compose-db-migrate"
+grep -q 'compose-db-migrate' scripts/deploy-compose-release.sh \
+  || fail "deploy-compose-release must invoke compose-db-migrate (via up or fallback)"
+grep -q 'compose-db-migrate' scripts/rollback-compose-release.sh \
+  || fail "rollback must run compose-db-migrate"
+grep -q 'compose-db-migrate' scripts/deploy-preview.sh \
+  || fail "preview deploy must run compose-db-migrate"
+grep -q 'COMPOSE_FILES' scripts/compose-db-migrate.sh \
+  || fail "compose-db-migrate must honor COMPOSE_FILES for release/preview"
+
+echo "== staging-smoke must exercise seed login (schema drift → 401) =="
+grep -q '/api/v1/auth/login' scripts/staging-smoke.sh \
+  || fail "staging-smoke must POST /api/v1/auth/login"
+grep -q 'user@vdp.local' scripts/staging-smoke.sh \
+  || fail "staging-smoke must use seed user@vdp.local"
 
 make compose-release-config-check
 echo "test-cd-scripts passed"

@@ -19,12 +19,14 @@ type POGState struct {
 }
 
 type DocsBundle struct {
-	Files          []DocFileRef `json:"files,omitempty"`
-	POG            *POGState    `json:"pog,omitempty"`
-	Refund         *RefundState `json:"refund,omitempty"`
-	Channel        string       `json:"channel,omitempty"`
-	CorrelationID  string       `json:"correlation_id,omitempty"`
-	IdempotencyKey string       `json:"idempotency_key,omitempty"`
+	Files                []DocFileRef `json:"files,omitempty"`
+	POG                  *POGState    `json:"pog,omitempty"`
+	Refund               *RefundState `json:"refund,omitempty"`
+	Channel              string       `json:"channel,omitempty"`
+	CorrelationID        string       `json:"correlation_id,omitempty"`
+	IdempotencyKey       string       `json:"idempotency_key,omitempty"`
+	ProcessPolicyVersion int          `json:"process_policy_version,omitempty"`
+	ReferredByAccountID  string       `json:"referred_by_account_id,omitempty"`
 }
 
 // PackDocsJSON merges file refs + POG + refund fields into DocsJSON.
@@ -44,6 +46,8 @@ func (f *Form) PackDocsJSON() {
 	bundle.Channel = f.Channel
 	bundle.CorrelationID = f.CorrelationID
 	bundle.IdempotencyKey = f.IdempotencyKey
+	bundle.ProcessPolicyVersion = f.ProcessPolicyVersion
+	bundle.ReferredByAccountID = f.ReferredByAccountID
 	raw, err := json.Marshal(bundle)
 	if err != nil {
 		return
@@ -77,6 +81,12 @@ func (f *Form) UnpackDocsJSON() {
 		}
 		if bundle.Channel != "" {
 			f.Channel = bundle.Channel
+		}
+		if bundle.ProcessPolicyVersion > 0 {
+			f.ProcessPolicyVersion = bundle.ProcessPolicyVersion
+		}
+		if bundle.ReferredByAccountID != "" {
+			f.ReferredByAccountID = bundle.ReferredByAccountID
 		}
 		if bundle.CorrelationID != "" {
 			f.CorrelationID = bundle.CorrelationID

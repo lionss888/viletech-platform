@@ -37,7 +37,10 @@ func main() {
 		log.Error("store init failed", "error", err)
 		os.Exit(1)
 	}
-	seed.Dev(store)
+	if err := seed.Dev(store); err != nil {
+		log.Error("dev seed failed", "error", err)
+		os.Exit(1)
+	}
 	forms := service.NewFormPaymentService(store, box, newID)
 	orgs := service.NewOrganizationService(store).WithOutbox(box)
 	catalog := service.NewCatalogService(store, box, newID)

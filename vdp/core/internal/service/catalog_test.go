@@ -31,7 +31,7 @@ func TestCatalogUnblockAndLiquidity(t *testing.T) {
 	t.Parallel()
 	ctx := context.Background()
 	store := repository.NewStore()
-	seed.Dev(store)
+	seed.MustDev(t, store)
 	catalog := service.NewCatalogService(store, outbox.NewMemoryStore(), func() string { return "x1" })
 	orgs := service.NewOrganizationService(store)
 	ico := authz.Principal{AccountID: seed.ICOID, Role: domain.RoleInternalComplianceOfficer}
@@ -64,7 +64,7 @@ func TestImmutableOrgFieldsAfterICO(t *testing.T) {
 	t.Parallel()
 	ctx := context.Background()
 	store := repository.NewStore()
-	seed.Dev(store)
+	seed.MustDev(t, store)
 	orgs := service.NewOrganizationService(store)
 	ico := authz.Principal{AccountID: seed.ICOID, Role: domain.RoleInternalComplianceOfficer}
 	user := authz.Principal{AccountID: seed.UserID, Role: domain.RoleUser, OrganizationID: seed.OrgID}

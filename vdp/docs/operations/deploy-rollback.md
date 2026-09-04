@@ -34,7 +34,9 @@ Remote-файл .env.deploy с секретами не откатывается,
 
 Подтянуть образы: docker compose -f docker-compose.yml -f docker-compose.release.yml --profile prod pull hub core fe-prod.
 
-Поднять сервисы: docker compose -f docker-compose.yml -f docker-compose.release.yml --profile prod up -d --no-build --scale fe=0.
+Накатить SQL на существующие volumes: `COMPOSE_FILES="-f docker-compose.yml -f docker-compose.release.yml" ./scripts/compose-db-migrate.sh` (или через `./scripts/vdp-compose-up.sh`, который делает migrate сам).
+
+Поднять сервисы: docker compose -f docker-compose.yml -f docker-compose.release.yml --profile prod up -d --no-build --scale fe=0; затем restart core hub после migrate.
 
 Дождаться health: ./scripts/wait-release-health.sh.
 

@@ -27,6 +27,7 @@ services:
       - ./core/migrations/012_b2_org_signer.sql:/docker-entrypoint-initdb.d/012_b2_org_signer.sql:ro
       - ./core/migrations/013_bank_org_client_type.sql:/docker-entrypoint-initdb.d/013_bank_org_client_type.sql:ro
       - ./core/migrations/014_notifications.sql:/docker-entrypoint-initdb.d/014_notifications.sql:ro
+      - ./core/migrations/015_role_process_config.sql:/docker-entrypoint-initdb.d/015_role_process_config.sql:ro
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U vdp_core -d vdp_core"]
       interval: 3s
