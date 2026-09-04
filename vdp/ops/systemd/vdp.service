@@ -1,0 +1,20 @@
+[Unit]
+Description=VDP compose stack (alpha/beta/gamma)
+Documentation=file:///opt/vdp/README.md
+After=docker.service network-online.target
+Wants=network-online.target
+Requires=docker.service
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+User=deploy
+Group=deploy
+WorkingDirectory=/opt/vdp
+Environment=DEPLOY_PATH=/opt/vdp
+ExecStart=/opt/vdp/scripts/vdp-compose-up.sh
+ExecStop=/usr/bin/docker compose -f /opt/vdp/docker-compose.yml -f /opt/vdp/docker-compose.release.yml --profile prod stop
+TimeoutStartSec=300
+
+[Install]
+WantedBy=multi-user.target

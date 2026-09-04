@@ -149,6 +149,23 @@ EOF
   echo "    Caddy serving ${VDP_DOMAIN} (certificate issues on first HTTPS request)"
 fi
 
+echo "==> [7/7] systemd: compose autostart + uptime timer"
+install -d -m 0755 -o "$DEPLOY_USER" -g "$DEPLOY_USER" "${DEPLOY_PATH}/ops/systemd" "${DEPLOY_PATH}/scripts"
+install -d -m 0755 /var/lib/vdp-uptime
+chown "${DEPLOY_USER}:${DEPLOY_USER}" /var/lib/vdp-uptime
+if [ -f "${DEPLOY_PATH}/ops/systemd/vdp.service" ]; then
+  install -m 0644 "${DEPLOY_PATH}/ops/systemd/vdp.service" /etc/systemd/system/vdp.service
+  install -m 0644 "${DEPLOY_PATH}/ops/systemd/vdp-uptime.service" /etc/systemd/system/vdp-uptime.service
+  install -m 0644 "${DEPLOY_PATH}/ops/systemd/vdp-uptime.timer" /etc/systemd/system/vdp-uptime.timer
+  systemctl daemon-reload
+  systemctl enable vdp.service
+  systemctl enable --now vdp-uptime.timer
+  echo "    enabled vdp.service + vdp-uptime.timer"
+  echo "    create ${DEPLOY_PATH}/.env.uptime (UPTIME_BOT_TOKEN, UPTIME_CHAT_ID) for Telegram alerts"
+else
+  echo "    skip: copy ops/systemd/* into ${DEPLOY_PATH} then re-run this block"
+fi
+
 cat <<EOF
 
 Host is ready.
@@ -156,6 +173,8 @@ Host is ready.
   deploy path : ${DEPLOY_PATH}
   secrets     : ${DEPLOY_PATH}/.env.deploy (0600, host-only)
   domain      : ${VDP_DOMAIN:-<not configured>}
+  autostart   : systemctl enable vdp.service (compose up after reboot)
+  uptime      : vdp-uptime.timer → Telegram (@vdp_uptime_bot)
 
 GitHub Environment secrets to set:
   DEPLOY_HOST = $(curl -fsS --max-time 5 https://api.ipify.org 2>/dev/null || echo '<server public ip>')
