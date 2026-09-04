@@ -16,7 +16,7 @@ func TestTelegramLinkBindUnlinkAuthZ(t *testing.T) {
 	t.Parallel()
 	ctx := context.Background()
 	store := repository.NewStore()
-	seed.Dev(store)
+	seed.MustDev(t, store)
 	svc := service.NewNotificationService(store)
 	user := authz.Principal{AccountID: seed.UserID, Role: domain.RoleUser}
 	other := authz.Principal{AccountID: seed.ManagerID, Role: domain.RoleManager}
@@ -52,7 +52,7 @@ func TestWorkChatJoinIdempotentAndUserCannotApprove(t *testing.T) {
 	t.Parallel()
 	ctx := context.Background()
 	store := repository.NewStore()
-	seed.Dev(store)
+	seed.MustDev(t, store)
 	svc := service.NewNotificationService(store)
 	user := authz.Principal{AccountID: seed.UserID, Role: domain.RoleUser}
 	manager := authz.Principal{AccountID: seed.ManagerID, Role: domain.RoleManager}
@@ -78,7 +78,7 @@ func TestNotifyPrefsSMSDefaultOff(t *testing.T) {
 	t.Parallel()
 	ctx := context.Background()
 	store := repository.NewStore()
-	seed.Dev(store)
+	seed.MustDev(t, store)
 	svc := service.NewNotificationService(store)
 	user := authz.Principal{AccountID: seed.UserID, Role: domain.RoleUser}
 	on := true
@@ -92,7 +92,7 @@ func TestExpiredTelegramLink(t *testing.T) {
 	t.Parallel()
 	ctx := context.Background()
 	store := repository.NewStore()
-	seed.Dev(store)
+	seed.MustDev(t, store)
 	_ = store.SaveTelegramLink(ctx, domain.TelegramLinkCode{
 		Code: "dead", AccountID: seed.UserID, ExpiresAt: time.Now().UTC().Add(-time.Minute),
 	})

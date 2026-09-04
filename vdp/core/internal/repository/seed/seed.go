@@ -2,6 +2,8 @@ package seed
 
 import (
 	"context"
+	"fmt"
+	"testing"
 
 	"github.com/viletech/vdp/core/internal/domain"
 	"github.com/viletech/vdp/core/internal/repository"
@@ -20,7 +22,9 @@ const (
 	RootID     = "99999999-9999-9999-9999-999999999999"
 )
 
-func Dev(store repository.Store) {
+// Dev upserts demo accounts/orgs. Errors must not be ignored — schema drift
+// previously surfaced only as login 401 while health stayed green.
+func Dev(store repository.Store) error {
 	ctx := context.Background()
 	accounts := []domain.Account{
 		{ID: UserID, Email: "user@vdp.local", PasswordHash: service.HashPassword("user"), Role: domain.RoleUser, OrganizationID: OrgID, FullName: "Ivan Petrov", Phone: "+79990000000", Passport: "4510 123456", Active: true, TelegramNotifyEnabled: true},
@@ -32,19 +36,22 @@ func Dev(store repository.Store) {
 		{ID: BankID, Email: "bank@vdp.local", PasswordHash: service.HashPassword("bank"), Role: domain.RoleBank, OrganizationID: BankOrgID, Active: true, BankRateReadonly: true},
 	}
 	for _, account := range accounts {
-		// SaveAccount is upsert — safe to re-run on every process start.
-		_ = store.SaveAccount(ctx, account)
+		if err := store.SaveAccount(ctx, account); err != nil {
+			return fmt.Errorf("seed account %s: %w", account.Email, err)
+		}
 	}
-	_ = store.SaveOrganization(ctx, domain.Organization{
-		ID:        OrgID,
-		AccountID: UserID,
-		Status:    domain.OrgNotApproved,
-		Name:      "ООО Пример",
-		INN:       "7700000000",
-		Country:   "RU",
+	if err := store.SaveOrganization(ctx, domain.Organization{
+		ID:         OrgID,
+		AccountID:  UserID,
+		Status:     domain.OrgNotApproved,
+		Name:       "ООО Пример",
+		INN:        "7700000000",
+		Country:    "RU",
 		ClientType: domain.ClientTypeUI,
-	})
-	_ = store.SaveOrganization(ctx, domain.Organization{
+	}); err != nil {
+		return fmt.Errorf("seed org: %w", err)
+	}
+	if err := store.SaveOrganization(ctx, domain.Organization{
 		ID:                         BankOrgID,
 		AccountID:                  BankID,
 		Status:                     domain.OrgApproved,
@@ -55,7 +62,22 @@ func Dev(store repository.Store) {
 		ClientType:                 domain.ClientTypeBank,
 		BankFixedCommissionPercent: "1.5",
 		ApplyPlatformMarkup:        false,
-	})
-	_ = store.SaveWorkChat(ctx, domain.WorkChat{ID: "wc-ops", Title: "Операционка", ChatID: "ops-chat", Kind: "ops", Active: true})
-	_ = store.SaveWorkChat(ctx, domain.WorkChat{ID: "wc-compliance", Title: "Комплаенс", ChatID: "compliance-chat", Kind: "compliance", Active: true})
+	}); err != nil {
+		return fmt.Errorf("seed bank org: %w", err)
+	}
+	if err := store.SaveWorkChat(ctx, domain.WorkChat{ID: "wc-ops", Title: "Операционка", ChatID: "ops-chat", Kind: "ops", Active: true}); err != nil {
+		return fmt.Errorf("seed work chat ops: %w", err)
+	}
+	if err := store.SaveWorkChat(ctx, domain.WorkChat{ID: "wc-compliance", Title: "Комплаенс", ChatID: "compliance-chat", Kind: "compliance", Active: true}); err != nil {
+		return fmt.Errorf("seed work chat compliance: %w", err)
+	}
+	return nil
+}
+
+// MustDev seeds or fails the test immediately.
+func MustDev(t testing.TB, store repository.Store) {
+	t.Helper()
+	if err := Dev(store); err != nil {
+		t.Fatalf("seed.Dev: %v", err)
+	}
 }

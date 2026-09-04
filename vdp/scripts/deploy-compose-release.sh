@@ -86,8 +86,18 @@ if [ -n "${REGISTRY_TOKEN:-}" ] && [ -n "${REGISTRY_USER:-}" ]; then
 fi
 
 chmod +x scripts/*.sh || true
+export COMPOSE_FILES
 
 if [ -x ./scripts/vdp-compose-up.sh ]; then
+  # Pull digests first, then bring-up (postgres → migrate → stack → restart → health).
+  PROFILES=(--profile prod)
+  PULL_SVCS=(docs-service hub core fe-prod)
+  if [ -n "${VDP_MAIL_IMAGE:-}" ] || [ -n "${VDP_SMS_IMAGE:-}" ]; then
+    PROFILES+=(--profile gateways)
+    PULL_SVCS+=(mail-gateway sms-gateway)
+  fi
+  # shellcheck disable=SC2086
+  docker compose $COMPOSE_FILES "${PROFILES[@]}" pull "${PULL_SVCS[@]}"
   ./scripts/vdp-compose-up.sh
 else
   PROFILES=(--profile prod)
@@ -96,8 +106,15 @@ else
     PROFILES+=(--profile gateways)
     PULL_SVCS+=(mail-gateway sms-gateway)
   fi
+  # shellcheck disable=SC2086
   docker compose $COMPOSE_FILES "${PROFILES[@]}" pull "${PULL_SVCS[@]}"
+  # shellcheck disable=SC2086
+  docker compose $COMPOSE_FILES "${PROFILES[@]}" up -d --no-build postgres-core postgres-hub
+  ./scripts/compose-db-migrate.sh
+  # shellcheck disable=SC2086
   docker compose $COMPOSE_FILES "${PROFILES[@]}" up -d --no-build --scale fe=0
+  # shellcheck disable=SC2086
+  docker compose $COMPOSE_FILES "${PROFILES[@]}" restart core hub
   ./scripts/wait-release-health.sh
 fi
 

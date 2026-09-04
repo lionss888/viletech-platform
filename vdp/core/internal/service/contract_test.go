@@ -19,7 +19,7 @@ func TestR3ThreeContractTypes(t *testing.T) {
 	t.Parallel()
 	ctx := context.Background()
 	store := repository.NewStore()
-	seed.Dev(store)
+	seed.MustDev(t, store)
 	catalog := service.NewCatalogService(store, outbox.NewMemoryStore(), r3ID("ct"))
 	manager := authz.Principal{AccountID: seed.ManagerID, Role: domain.RoleManager}
 	user := authz.Principal{AccountID: seed.UserID, Role: domain.RoleUser, OrganizationID: seed.OrgID}
@@ -57,7 +57,7 @@ func TestR3TemplatesBoundToAgent(t *testing.T) {
 	t.Parallel()
 	ctx := context.Background()
 	store := repository.NewStore()
-	seed.Dev(store)
+	seed.MustDev(t, store)
 	catalog := service.NewCatalogService(store, outbox.NewMemoryStore(), r3ID("tpl"))
 	manager := authz.Principal{AccountID: seed.ManagerID, Role: domain.RoleManager}
 	agent, err := catalog.SaveAgent(ctx, domain.Agent{Name: "PA-1", INN: "7701"})
@@ -85,7 +85,7 @@ func TestR3ManualAttachAutoConfirm(t *testing.T) {
 	t.Parallel()
 	ctx := context.Background()
 	store := repository.NewStore()
-	seed.Dev(store)
+	seed.MustDev(t, store)
 	box := outbox.NewMemoryStore()
 	forms := service.NewFormPaymentService(store, box, r3ID("f"))
 	catalog := service.NewCatalogService(store, box, r3ID("c"))
@@ -123,7 +123,7 @@ func TestR3OnBehalfVisibility(t *testing.T) {
 	t.Parallel()
 	ctx := context.Background()
 	store := repository.NewStore()
-	seed.Dev(store)
+	seed.MustDev(t, store)
 	box := outbox.NewMemoryStore()
 	forms := service.NewFormPaymentService(store, box, r3ID("ob"))
 	catalog := service.NewCatalogService(store, box, r3ID("obc"))
@@ -177,7 +177,7 @@ func TestR3ResolveBranchNoContractGoesWaiting(t *testing.T) {
 	t.Parallel()
 	ctx := context.Background()
 	store := repository.NewStore()
-	seed.Dev(store)
+	seed.MustDev(t, store)
 	forms := service.NewFormPaymentService(store, outbox.NewMemoryStore(), r3ID("br"))
 	catalog := service.NewCatalogService(store, outbox.NewMemoryStore(), r3ID("bra"))
 	manager := authz.Principal{AccountID: seed.ManagerID, Role: domain.RoleManager}
@@ -200,7 +200,7 @@ func TestR3AdminChangeTypeHistory(t *testing.T) {
 	t.Parallel()
 	ctx := context.Background()
 	store := repository.NewStore()
-	seed.Dev(store)
+	seed.MustDev(t, store)
 	catalog := service.NewCatalogService(store, outbox.NewMemoryStore(), r3ID("ch"))
 	manager := authz.Principal{AccountID: seed.ManagerID, Role: domain.RoleManager}
 	c, err := catalog.CreateContractFull(ctx, manager, domain.Contract{

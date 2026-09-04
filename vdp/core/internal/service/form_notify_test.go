@@ -18,7 +18,7 @@ func TestTelegramNotifyGetsChatIDWithoutPII(t *testing.T) {
 	t.Parallel()
 	ctx := context.Background()
 	store := repository.NewStore()
-	seed.Dev(store)
+	seed.MustDev(t, store)
 	acc, _ := store.AccountByID(ctx, seed.UserID)
 	acc.TelegramChatID = "42"
 	acc.TelegramNotifyEnabled = true

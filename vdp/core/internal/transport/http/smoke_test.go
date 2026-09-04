@@ -98,7 +98,7 @@ func newStack(t *testing.T) (http.Handler, string, *inboxProbe) {
 	}))
 	t.Cleanup(hub.Close)
 	store := repository.NewStore()
-	seed.Dev(store)
+	seed.MustDev(t, store)
 	box := outbox.NewMemoryStore()
 	n := 0
 	forms := service.NewFormPaymentService(store, box, func() string {

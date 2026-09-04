@@ -24,6 +24,8 @@
 
 На хосте не использовать docker compose build и флаг --build.
 
+Новая SQL-миграция в `core/migrations` или `hub/migrations`: достаточно merge и следующего VDP Deploy (или Images→Deploy). Promote всегда вызывает `compose-db-migrate` на существующих Postgres volumes; initdb при повторном up не срабатывает.
+
 ## Откат
 
 Откат равен повторному выкату предыдущего pin. Найти более ранний GitHub Release или artifact release-images-pin, взять run id Images, запустить VDP Deploy с этим images_run_id. Подробности: [deploy-rollback.md](deploy-rollback.md).

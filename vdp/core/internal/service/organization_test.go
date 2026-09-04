@@ -14,7 +14,7 @@ import (
 func TestOrganizationVIClientStatuses(t *testing.T) {
 	t.Parallel()
 	store := repository.NewStore()
-	seed.Dev(store)
+	seed.MustDev(t, store)
 	orgs := service.NewOrganizationService(store)
 	ico := authz.Principal{AccountID: seed.ICOID, Role: domain.RoleInternalComplianceOfficer}
 	manager := authz.Principal{AccountID: seed.ManagerID, Role: domain.RoleManager}
@@ -74,7 +74,7 @@ func TestOrganizationVIClientStatuses(t *testing.T) {
 func TestOrganizationListFilteredByRating(t *testing.T) {
 	t.Parallel()
 	store := repository.NewStore()
-	seed.Dev(store)
+	seed.MustDev(t, store)
 	orgs := service.NewOrganizationService(store)
 	manager := authz.Principal{AccountID: seed.ManagerID, Role: domain.RoleManager}
 	if _, err := orgs.SetRating(context.Background(), manager, seed.OrgID, domain.RatingRed); err != nil {
@@ -103,7 +103,7 @@ func TestOrganizationListFilteredByRating(t *testing.T) {
 func TestAccountRBACAdminCreateForbiddenForUser(t *testing.T) {
 	t.Parallel()
 	store := repository.NewStore()
-	seed.Dev(store)
+	seed.MustDev(t, store)
 	accounts := service.NewAccountService(store)
 	user := authz.Principal{AccountID: seed.UserID, Role: domain.RoleUser}
 	if _, err := accounts.CreateAdmin(context.Background(), user, "x@vdp.local", "pass", domain.RoleManager); err == nil {

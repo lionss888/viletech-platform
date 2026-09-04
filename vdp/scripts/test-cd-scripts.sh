@@ -14,7 +14,10 @@ for script in \
   scripts/rollback-compose-release.sh \
   scripts/bootstrap-host.sh \
   scripts/deploy-preview.sh \
-  scripts/gitlab-promote.sh; do
+  scripts/gitlab-promote.sh \
+  scripts/compose-db-migrate.sh \
+  scripts/vdp-compose-up.sh \
+  scripts/staging-smoke.sh; do
   bash -n "$script"
   echo "syntax ok: $script"
 done
@@ -115,6 +118,24 @@ grep -q -- '--no-build' scripts/deploy-compose-release.sh \
 grep -q 'compose pull\|docker compose .* pull' scripts/deploy-compose-release.sh \
   || grep -q 'vdp-compose-up.sh' scripts/deploy-compose-release.sh \
   || fail "server promote must pull/up release images on the host"
+
+echo "== promote always applies SQL migrations (existing volumes skip initdb) =="
+grep -q 'compose-db-migrate' scripts/vdp-compose-up.sh \
+  || fail "vdp-compose-up must run compose-db-migrate"
+grep -q 'compose-db-migrate' scripts/deploy-compose-release.sh \
+  || fail "deploy-compose-release must invoke compose-db-migrate (via up or fallback)"
+grep -q 'compose-db-migrate' scripts/rollback-compose-release.sh \
+  || fail "rollback must run compose-db-migrate"
+grep -q 'compose-db-migrate' scripts/deploy-preview.sh \
+  || fail "preview deploy must run compose-db-migrate"
+grep -q 'COMPOSE_FILES' scripts/compose-db-migrate.sh \
+  || fail "compose-db-migrate must honor COMPOSE_FILES for release/preview"
+
+echo "== staging-smoke must exercise seed login (schema drift → 401) =="
+grep -q '/api/v1/auth/login' scripts/staging-smoke.sh \
+  || fail "staging-smoke must POST /api/v1/auth/login"
+grep -q 'user@vdp.local' scripts/staging-smoke.sh \
+  || fail "staging-smoke must use seed user@vdp.local"
 
 make compose-release-config-check
 echo "test-cd-scripts passed"

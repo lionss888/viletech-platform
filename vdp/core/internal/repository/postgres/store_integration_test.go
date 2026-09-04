@@ -29,7 +29,7 @@ func TestPostgresStoreAndOutbox(t *testing.T) {
 	t.Cleanup(func() { _ = db.Close() })
 	store := postgres.NewStore(db)
 	box := outbox.NewPostgresStore(db)
-	seed.Dev(store)
+	seed.MustDev(t, store)
 	formID := fmt.Sprintf("%032x", time.Now().UnixNano())
 	formID = formID[len(formID)-32:]
 	form := formpayment.Form{
@@ -94,7 +94,7 @@ func TestPostgresFormStatusTransition(t *testing.T) {
 	}
 	t.Cleanup(func() { _ = db.Close() })
 	store := postgres.NewStore(db)
-	seed.Dev(store)
+	seed.MustDev(t, store)
 	formID := fmt.Sprintf("%032x", time.Now().UnixNano())
 	formID = formID[len(formID)-32:]
 	form := formpayment.Form{

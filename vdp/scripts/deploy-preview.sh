@@ -89,12 +89,18 @@ services:
       - "127.0.0.1:${FE_PORT}:3000"
 YAML
 
-docker compose -p "$PROJECT" \
-  -f docker-compose.yml -f docker-compose.release.yml -f "docker-compose.preview.${PROJECT}.yml" \
-  --profile prod pull
-docker compose -p "$PROJECT" \
-  -f docker-compose.yml -f docker-compose.release.yml -f "docker-compose.preview.${PROJECT}.yml" \
-  --profile prod up -d --no-build --scale fe=0
+export COMPOSE_PROJECT_NAME="$PROJECT"
+export COMPOSE_FILES="-f docker-compose.yml -f docker-compose.release.yml -f docker-compose.preview.${PROJECT}.yml"
+# shellcheck disable=SC2086
+docker compose -p "$PROJECT" $COMPOSE_FILES --profile prod pull
+# shellcheck disable=SC2086
+docker compose -p "$PROJECT" $COMPOSE_FILES --profile prod up -d --no-build postgres-core postgres-hub
+chmod +x ./scripts/compose-db-migrate.sh
+./scripts/compose-db-migrate.sh
+# shellcheck disable=SC2086
+docker compose -p "$PROJECT" $COMPOSE_FILES --profile prod up -d --no-build --scale fe=0
+# shellcheck disable=SC2086
+docker compose -p "$PROJECT" $COMPOSE_FILES --profile prod restart core hub
 
 if command -v caddy >/dev/null 2>&1; then
   snippet="/etc/caddy/preview.d/${PROJECT}.caddy"

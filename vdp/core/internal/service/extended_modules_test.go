@@ -20,7 +20,7 @@ func TestR9LiquidityMatchAndVAAdjust(t *testing.T) {
 	t.Parallel()
 	ctx := context.Background()
 	store := repository.NewStore()
-	seed.Dev(store)
+	seed.MustDev(t, store)
 	n := 0
 	catalog := service.NewCatalogService(store, outbox.NewMemoryStore(), func() string {
 		n++
@@ -74,7 +74,7 @@ func TestR9TreasurerTaskAgentHsAndMailSSE(t *testing.T) {
 	t.Parallel()
 	ctx := context.Background()
 	store := repository.NewStore()
-	seed.Dev(store)
+	seed.MustDev(t, store)
 	box := outbox.NewMemoryStore()
 	bus := service.NewFormEventBus()
 	id := 0

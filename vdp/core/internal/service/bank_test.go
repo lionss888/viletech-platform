@@ -23,7 +23,7 @@ func TestBankCreateIdempotentAutoskipAndWebhook(t *testing.T) {
 	t.Parallel()
 	ctx := context.Background()
 	store := repository.NewStore()
-	seed.Dev(store)
+	seed.MustDev(t, store)
 	box := outbox.NewMemoryStore()
 	n := 0
 	newID := func() string {
@@ -128,7 +128,7 @@ func TestBankRBACCannotSeeOtherOrgOrUIForms(t *testing.T) {
 	t.Parallel()
 	ctx := context.Background()
 	store := repository.NewStore()
-	seed.Dev(store)
+	seed.MustDev(t, store)
 	box := outbox.NewMemoryStore()
 	forms := service.NewFormPaymentService(store, box, func() string { return "x" })
 	bank := authz.Principal{AccountID: seed.BankID, Role: domain.RoleBank, OrganizationID: seed.BankOrgID}
@@ -170,7 +170,7 @@ func TestBankWebhookSignRequestOnSigningOrder(t *testing.T) {
 	t.Parallel()
 	ctx := context.Background()
 	store := repository.NewStore()
-	seed.Dev(store)
+	seed.MustDev(t, store)
 	box := outbox.NewMemoryStore()
 	forms := service.NewFormPaymentService(store, box, func() string { return "sign1" })
 	bank := authz.Principal{AccountID: seed.BankID, Role: domain.RoleBank, OrganizationID: seed.BankOrgID}
