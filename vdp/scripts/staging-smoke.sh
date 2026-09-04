@@ -7,6 +7,7 @@ BASE="${CORE_URL:-http://127.0.0.1:8080}"
 HUB="${HUB_URL:-http://127.0.0.1:8081}"
 DOCS_URL="${DOCS_URL:-}"
 MAIL_URL="${MAIL_URL:-}"
+SMS_URL="${SMS_URL:-}"
 BANK_WEBHOOK_URL="${BANK_WEBHOOK_URL:-}"
 
 fail() { echo "FAIL: $*" >&2; exit 1; }
@@ -55,6 +56,19 @@ if [[ -n "$MAIL_URL" ]]; then
   echo "MAIL_URL ok status=$code"
 else
   echo "SKIP MAIL_URL (empty)"
+fi
+
+if [[ -n "$SMS_URL" ]]; then
+  echo "== SMS_URL probe =="
+  code=$(curl -s -o /tmp/vdp-sms-smoke.json -w '%{http_code}' -X POST "$SMS_URL" \
+    -H 'Content-Type: application/json' \
+    -d '{"form_payment_id":"staging-smoke","channel":"sms","probe":true}' || true)
+  if [[ "$code" -lt 200 || "$code" -ge 500 ]]; then
+    fail "SMS_URL POST status=$code"
+  fi
+  echo "SMS_URL ok status=$code"
+else
+  echo "SKIP SMS_URL (empty)"
 fi
 
 if [[ -n "$BANK_WEBHOOK_URL" ]]; then

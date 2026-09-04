@@ -6,7 +6,18 @@ HUB_URL=https://staging-hub.example.com
 # Hub adapters — required for real document/mail path (see staging-checklist.md)
 # Compose dev: http://127.0.0.1:8090/generate (docs-service in docker-compose.yml)
 DOCS_URL=https://docs-service.example.com/generate
-MAIL_URL=https://mail-service.example.com/notify
+# Compose dev: http://127.0.0.1:8091/notify (mail-gateway local provider)
+MAIL_URL=https://mail-gateway.example.com/notify
+# Compose dev: http://127.0.0.1:8092/notify (sms-gateway local provider)
+SMS_URL=https://sms-gateway.example.com/notify
+
+# Telegram platform bot (optional). Empty token → hub fixture.
+TELEGRAM_BOT_TOKEN=
+TELEGRAM_BOT_USERNAME=vdp_notify_bot
+
+# 1C / Diadoc — optional. Empty URL → hub fixture / smart stub. Do not claim vendor-ready.
+# ONEC_URL=https://1c.example.com/vdp
+# DIADOC_URL=https://diadoc.example.com/vdp
 
 # Optional bank channel webhook receiver for RD9 manual smoke
 BANK_WEBHOOK_URL=https://bank-receiver.example.com/vdp/events

@@ -1,0 +1,27 @@
+services:
+  release-gate:
+    build:
+      context: ./release-gate
+    environment:
+      RELEASE_GATE_LISTEN: ":8090"
+      RELEASE_GATE_JWT_SECRET: ${RELEASE_GATE_JWT_SECRET:-release-gate-dev-secret}
+      GITHUB_TOKEN: ${RELEASE_GATE_GITHUB_TOKEN:-}
+      GITHUB_REPOSITORY: ${GITHUB_REPOSITORY:-viletech/viletech-platform}
+      RELEASE_GATE_GITLAB_TOKEN: ${RELEASE_GATE_GITLAB_TOKEN:-}
+      GITLAB_PROJECT_ID: ${GITLAB_PROJECT_ID:-sandbox6902635/viletech-platform}
+      GITHUB_OAUTH_CLIENT_ID: ${GITHUB_OAUTH_CLIENT_ID:-}
+      GITHUB_OAUTH_CLIENT_SECRET: ${GITHUB_OAUTH_CLIENT_SECRET:-}
+      GITHUB_OAUTH_REDIRECT: ${GITHUB_OAUTH_REDIRECT:-https://delivery.vedy.io/api/v1/auth/github/callback}
+      GITLAB_OAUTH_CLIENT_ID: ${GITLAB_OAUTH_CLIENT_ID:-}
+      GITLAB_OAUTH_CLIENT_SECRET: ${GITLAB_OAUTH_CLIENT_SECRET:-}
+      GITLAB_OAUTH_REDIRECT: ${GITLAB_OAUTH_REDIRECT:-https://delivery.vedy.io/api/v1/auth/gitlab/callback}
+    ports:
+      - "${RELEASE_GATE_BIND:-127.0.0.1}:8090:8090"
+
+  release-gate-console:
+    build:
+      context: ./release-gate-console
+    depends_on:
+      - release-gate
+    ports:
+      - "${RELEASE_GATE_CONSOLE_BIND:-127.0.0.1}:5180:80"

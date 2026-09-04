@@ -113,9 +113,10 @@ func newStack(t *testing.T) (http.Handler, string, *inboxProbe) {
 	cfg := &config.Config{JWTSecret: "test-jwt", JWTExpirationHours: 1, HubSharedSecret: secret, HubURL: hub.URL, RateLimitPerMinute: 1000, GatewayTimeoutSec: 2}
 	auth := service.NewAuthService(store, cfg.JWTSecret, cfg.JWTExpirationHours)
 	accounts := service.NewAccountService(store)
+	notify := service.NewNotificationService(store)
 	publisher := service.NewHubPublisher(box, hub.URL, secret, 2*time.Second).
 		WithDocsHandler(service.NewDocsAttachAdapter(forms))
-	return httpapi.NewServer(cfg, auth, accounts, forms, orgs, catalog, publisher).Handler(), secret, probe
+	return httpapi.NewServer(cfg, auth, accounts, forms, orgs, catalog, publisher, notify).Handler(), secret, probe
 }
 
 func login(t *testing.T, h http.Handler, email, password string) string {

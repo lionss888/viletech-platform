@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Build and optionally push vdp-core, vdp-hub, vdp-docs, vdp-fe (production) images.
+# Build and optionally push vdp-core, vdp-hub, vdp-docs, vdp-mail, vdp-sms, vdp-fe (production) images.
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
@@ -17,7 +17,11 @@ PIN_FILE="${PIN_FILE:-$ROOT/.release-images.env}"
 core_ref="${IMAGE_REGISTRY}/${IMAGE_NAMESPACE}/vdp-core:${IMAGE_TAG}"
 hub_ref="${IMAGE_REGISTRY}/${IMAGE_NAMESPACE}/vdp-hub:${IMAGE_TAG}"
 docs_ref="${IMAGE_REGISTRY}/${IMAGE_NAMESPACE}/vdp-docs:${IMAGE_TAG}"
+mail_ref="${IMAGE_REGISTRY}/${IMAGE_NAMESPACE}/vdp-mail:${IMAGE_TAG}"
+sms_ref="${IMAGE_REGISTRY}/${IMAGE_NAMESPACE}/vdp-sms:${IMAGE_TAG}"
 fe_ref="${IMAGE_REGISTRY}/${IMAGE_NAMESPACE}/vdp-fe:${IMAGE_TAG}"
+release_gate_ref="${IMAGE_REGISTRY}/${IMAGE_NAMESPACE}/vdp-release-gate:${IMAGE_TAG}"
+release_gate_console_ref="${IMAGE_REGISTRY}/${IMAGE_NAMESPACE}/vdp-release-gate-console:${IMAGE_TAG}"
 
 label_args=(
   "--label" "org.opencontainers.image.revision=${GIT_REVISION}"
@@ -36,9 +40,23 @@ docker buildx build --platform "$PLATFORM" "${label_args[@]}" \
   -f "$ROOT/docs-service/Dockerfile" -t "$docs_ref" "$ROOT/docs-service" --load
 
 docker buildx build --platform "$PLATFORM" "${label_args[@]}" \
+  -f "$ROOT/mail-gateway/Dockerfile" -t "$mail_ref" "$ROOT/mail-gateway" --load
+
+docker buildx build --platform "$PLATFORM" "${label_args[@]}" \
+  -f "$ROOT/sms-gateway/Dockerfile" -t "$sms_ref" "$ROOT/sms-gateway" --load
+
+docker buildx build --platform "$PLATFORM" "${label_args[@]}" \
   -f "$ROOT/fe/Dockerfile" --target production \
   --build-arg VDP_API_PROXY_TARGET=http://core:8080 \
   -t "$fe_ref" "$ROOT/fe" --load
+
+BUILD_RELEASE_GATE="${BUILD_RELEASE_GATE:-1}"
+if [ "$BUILD_RELEASE_GATE" = "1" ] && [ -d "$ROOT/release-gate" ] && [ -d "$ROOT/release-gate-console" ]; then
+  docker buildx build --platform "$PLATFORM" "${label_args[@]}" \
+    -f "$ROOT/release-gate/Dockerfile" -t "$release_gate_ref" "$ROOT/release-gate" --load
+  docker buildx build --platform "$PLATFORM" "${label_args[@]}" \
+    -f "$ROOT/release-gate-console/Dockerfile" -t "$release_gate_console_ref" "$ROOT/release-gate-console" --load
+fi
 
 # Pick the digest belonging to this exact repository: an image may carry several
 # RepoDigests (e.g. previously pulled from another registry), so index 0 is unsafe.
@@ -57,15 +75,25 @@ resolve_digest() {
 }
 
 if [ "$PUSH" = "1" ]; then
-  echo "Pushing ${core_ref} ${hub_ref} ${docs_ref} ${fe_ref}"
+  echo "Pushing ${core_ref} ${hub_ref} ${docs_ref} ${mail_ref} ${sms_ref} ${fe_ref}"
   docker push "$core_ref"
   docker push "$hub_ref"
   docker push "$docs_ref"
+  docker push "$mail_ref"
+  docker push "$sms_ref"
   docker push "$fe_ref"
   core_ref="$(resolve_digest "$core_ref")"
   hub_ref="$(resolve_digest "$hub_ref")"
   docs_ref="$(resolve_digest "$docs_ref")"
+  mail_ref="$(resolve_digest "$mail_ref")"
+  sms_ref="$(resolve_digest "$sms_ref")"
   fe_ref="$(resolve_digest "$fe_ref")"
+  if [ "$BUILD_RELEASE_GATE" = "1" ] && [ -d "$ROOT/release-gate" ]; then
+    docker push "$release_gate_ref"
+    docker push "$release_gate_console_ref"
+    release_gate_ref="$(resolve_digest "$release_gate_ref")"
+    release_gate_console_ref="$(resolve_digest "$release_gate_console_ref")"
+  fi
 fi
 
 cat >"$PIN_FILE" <<EOF
@@ -75,8 +103,17 @@ GIT_REVISION=${GIT_REVISION}
 VDP_CORE_IMAGE=${core_ref}
 VDP_HUB_IMAGE=${hub_ref}
 VDP_DOCS_IMAGE=${docs_ref}
+VDP_MAIL_IMAGE=${mail_ref}
+VDP_SMS_IMAGE=${sms_ref}
 VDP_FE_IMAGE=${fe_ref}
 EOF
+
+if [ "$BUILD_RELEASE_GATE" = "1" ] && [ -d "$ROOT/release-gate" ]; then
+  {
+    echo "VDP_RELEASE_GATE_IMAGE=${release_gate_ref}"
+    echo "VDP_RELEASE_GATE_CONSOLE_IMAGE=${release_gate_console_ref}"
+  } >>"$PIN_FILE"
+fi
 
 echo "Pin file: $PIN_FILE"
 cat "$PIN_FILE"

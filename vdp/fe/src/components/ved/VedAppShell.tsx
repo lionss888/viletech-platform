@@ -33,7 +33,11 @@ type AppRoute =
   | "/documents"
   | "/demo/documents"
   | "/counterparties"
-  | "/demo/counterparties";
+  | "/demo/counterparties"
+  | "/profile"
+  | "/demo/profile"
+  | "/chats"
+  | "/demo/chats";
 
 export function VedAppShell({ children, title, subtitle }: { children: ReactNode; title: string; subtitle?: string }) {
   const mode = usePlatformMode();
@@ -250,9 +254,13 @@ export function VedAppShell({ children, title, subtitle }: { children: ReactNode
               <p className="text-xs font-semibold">{displayName}</p>
               <p className="font-mono text-[11px] text-muted-foreground">{email}</p>
             </div>
-            <span className="grid size-8 place-items-center rounded-full bg-muted text-xs font-semibold">
+            <Link
+              to={`${base}/profile` as AppRoute}
+              className="grid size-8 place-items-center rounded-full bg-muted text-xs font-semibold hover:bg-border"
+              title="Профиль"
+            >
               {(displayName ?? "?").slice(0, 1)}
-            </span>
+            </Link>
           </div>
         </header>
 

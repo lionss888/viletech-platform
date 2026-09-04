@@ -1,0 +1,93 @@
+name: VDP Preview
+
+# Ephemeral PR stack on the test VM. Same public IP as *.preview.vedy.io. No docker build on the host.
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, labeled]
+    paths:
+      - "vdp/**"
+      - ".github/workflows/vdp-preview.yml"
+  workflow_dispatch:
+    inputs:
+      pr_number:
+        description: Pull request number to preview
+        required: true
+
+concurrency:
+  group: vdp-preview-${{ github.event.pull_request.number || github.event.inputs.pr_number }}
+  cancel-in-progress: true
+
+permissions:
+  actions: read
+  contents: read
+  packages: write
+  pull-requests: write
+
+jobs:
+  preview:
+    name: preview on test VM
+    runs-on: ubuntu-latest
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      contains(github.event.pull_request.labels.*.name, 'preview')
+    environment: test
+    timeout-minutes: 50
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build and push branch images
+        working-directory: vdp
+        env:
+          IMAGE_REGISTRY: ghcr.io
+          IMAGE_NAMESPACE: ${{ github.repository_owner }}
+          GITHUB_REPOSITORY: ${{ github.repository }}
+          GIT_REVISION: ${{ github.sha }}
+          PUSH: "1"
+          PIN_FILE: release-images.env
+        run: |
+          IMAGE_TAG="pr-${{ github.event.pull_request.number || github.event.inputs.pr_number }}-${GITHUB_SHA::7}"
+          export IMAGE_TAG
+          chmod +x scripts/image-build-push.sh
+          ./scripts/image-build-push.sh
+
+      - name: Install SSH key
+        run: |
+          mkdir -p ~/.ssh
+          printf '%s\n' "${{ secrets.DEPLOY_SSH_KEY }}" > ~/.ssh/deploy_key
+          chmod 600 ~/.ssh/deploy_key
+
+      - name: Deploy isolated compose project
+        env:
+          DEPLOY_HOST: ${{ secrets.DEPLOY_HOST }}
+          DEPLOY_USER: ${{ secrets.DEPLOY_USER }}
+          DEPLOY_PATH: ${{ secrets.DEPLOY_PATH }}
+          SSH_KEY_PATH: /home/runner/.ssh/deploy_key
+          PIN_FILE: vdp/release-images.env
+          PR_NUMBER: ${{ github.event.pull_request.number || github.event.inputs.pr_number }}
+          PREVIEW_DOMAIN: preview.vedy.io
+          REGISTRY_HOST: ghcr.io
+          REGISTRY_USER: ${{ github.actor }}
+          REGISTRY_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          chmod +x vdp/scripts/deploy-preview.sh
+          ./vdp/scripts/deploy-preview.sh
+
+      - name: Comment preview URL
+        if: github.event_name == 'pull_request'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PR: ${{ github.event.pull_request.number }}
+        run: |
+          gh pr comment "$PR" --body "Preview: https://pr-${PR}.preview.vedy.io (digest pin from this run; no host build)."

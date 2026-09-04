@@ -1,0 +1,12 @@
+[Unit]
+Description=VDP uptime probe (Telegram alert)
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+User=deploy
+Group=deploy
+Environment=UPTIME_ENV_FILE=/opt/vdp/.env.uptime
+Environment=UPTIME_STATE_FILE=/var/lib/vdp-uptime/state
+ExecStart=/opt/vdp/ops/uptime-check.sh

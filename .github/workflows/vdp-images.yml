@@ -8,13 +8,18 @@ on:
       - "vdp/**"
       - ".github/workflows/vdp-images.yml"
   workflow_dispatch:
+    inputs:
+      ref:
+        description: Branch, tag, or SHA to build (empty = this workflow revision)
+        required: false
+        default: ""
 
 concurrency:
-  group: vdp-images-${{ github.ref }}
+  group: vdp-images-${{ github.event.inputs.ref || github.ref }}
   cancel-in-progress: false
 
 permissions:
-  contents: read
+  contents: write
   packages: write
 
 env:
@@ -22,9 +27,55 @@ env:
   IMAGE_NAMESPACE: ${{ github.repository_owner }}
 
 jobs:
+  prepare:
+    name: resolve build ref
+    runs-on: ubuntu-latest
+    outputs:
+      build_ref: ${{ steps.meta.outputs.build_ref }}
+      image_tag: ${{ steps.meta.outputs.image_tag }}
+      is_release: ${{ steps.meta.outputs.is_release }}
+      revision: ${{ steps.meta.outputs.revision }}
+    steps:
+      - name: Resolve ref
+        id: pick
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ] && [ -n "${{ github.event.inputs.ref }}" ]; then
+            echo "build_ref=${{ github.event.inputs.ref }}" >> "$GITHUB_OUTPUT"
+          else
+            echo "build_ref=${{ github.sha }}" >> "$GITHUB_OUTPUT"
+          fi
+
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ steps.pick.outputs.build_ref }}
+          fetch-depth: 0
+
+      - name: Resolve image tag
+        id: meta
+        run: |
+          echo "build_ref=${{ steps.pick.outputs.build_ref }}" >> "$GITHUB_OUTPUT"
+          rev=$(git rev-parse HEAD)
+          echo "revision=${rev}" >> "$GITHUB_OUTPUT"
+          exact=$(git describe --exact-match --tags 2>/dev/null || true)
+          input="${{ github.event.inputs.ref }}"
+          if [[ "$exact" == vdp-v* ]]; then
+            echo "image_tag=${exact}" >> "$GITHUB_OUTPUT"
+            echo "is_release=true" >> "$GITHUB_OUTPUT"
+          elif [[ "$input" == vdp-v* ]]; then
+            echo "image_tag=${input}" >> "$GITHUB_OUTPUT"
+            echo "is_release=true" >> "$GITHUB_OUTPUT"
+          elif [[ "${{ github.ref }}" == refs/tags/vdp-v* ]]; then
+            echo "image_tag=${{ github.ref_name }}" >> "$GITHUB_OUTPUT"
+            echo "is_release=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "image_tag=sha-${rev:0:7}" >> "$GITHUB_OUTPUT"
+            echo "is_release=false" >> "$GITHUB_OUTPUT"
+          fi
+
   release-gate:
     name: release-gate (tags only)
-    if: startsWith(github.ref, 'refs/tags/vdp-v')
+    needs: [prepare]
+    if: needs.prepare.outputs.is_release == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 75
     services:
@@ -43,6 +94,8 @@ jobs:
           --health-retries 10
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: ${{ needs.prepare.outputs.build_ref }}
       - uses: actions/setup-go@v5
         with:
           go-version: "1.22"
@@ -73,16 +126,20 @@ jobs:
 
   build-push:
     name: build and push images
-    needs: [release-gate]
+    needs: [prepare, release-gate]
     if: >-
       always() &&
+      needs.prepare.result == 'success' &&
       (needs.release-gate.result == 'success' || needs.release-gate.result == 'skipped')
     runs-on: ubuntu-latest
     timeout-minutes: 45
     outputs:
       pin_file: ${{ steps.pin.outputs.pin_file }}
+      image_tag: ${{ needs.prepare.outputs.image_tag }}
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: ${{ needs.prepare.outputs.build_ref }}
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
@@ -94,23 +151,14 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Resolve image tag
-        id: tag
-        run: |
-          if [[ "${{ github.ref }}" == refs/tags/vdp-v* ]]; then
-            echo "tag=${{ github.ref_name }}" >> "$GITHUB_OUTPUT"
-          else
-            echo "tag=sha-${GITHUB_SHA::7}" >> "$GITHUB_OUTPUT"
-          fi
-
       - name: Build and push
         working-directory: vdp
         env:
           IMAGE_REGISTRY: ghcr.io
           IMAGE_NAMESPACE: ${{ github.repository_owner }}
-          IMAGE_TAG: ${{ steps.tag.outputs.tag }}
+          IMAGE_TAG: ${{ needs.prepare.outputs.image_tag }}
           GITHUB_REPOSITORY: ${{ github.repository }}
-          GIT_REVISION: ${{ github.sha }}
+          GIT_REVISION: ${{ needs.prepare.outputs.revision }}
           PUSH: "1"
           PIN_FILE: release-images.env
         run: |
@@ -128,6 +176,45 @@ jobs:
           name: release-images-pin
           path: vdp/release-images.env
           retention-days: 30
+
+  catalog-release:
+    name: publish update catalog (GitHub Release)
+    needs: [prepare, build-push]
+    if: needs.build-push.result == 'success'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: release-images-pin
+          path: pin
+      - name: Create or update GitHub Release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_REPO: ${{ github.repository }}
+          TAG: ${{ needs.prepare.outputs.image_tag }}
+          REV: ${{ needs.prepare.outputs.revision }}
+          RUN_ID: ${{ github.run_id }}
+        run: |
+          body="$(mktemp)"
+          {
+            echo "Update ${TAG}"
+            echo
+            echo "Images run: ${RUN_ID}"
+            echo "Revision: ${REV}"
+            echo
+            echo "Pinned digests:"
+            echo
+            cat pin/release-images.env
+          } > "$body"
+          if gh release view "$TAG" >/dev/null 2>&1; then
+            gh release upload "$TAG" pin/release-images.env --clobber
+            gh release edit "$TAG" --notes-file "$body" --title "VDP ${TAG}"
+          else
+            gh release create "$TAG" pin/release-images.env \
+              --title "VDP ${TAG}" \
+              --notes-file "$body" \
+              --target "$REV"
+          fi
 
   copy-gitlab-registry:
     name: copy digests to GitLab registry
@@ -164,15 +251,19 @@ jobs:
           crane copy "$VDP_CORE_IMAGE" "${gl}/vdp-core:${IMAGE_TAG}"
           crane copy "$VDP_HUB_IMAGE" "${gl}/vdp-hub:${IMAGE_TAG}"
           crane copy "$VDP_DOCS_IMAGE" "${gl}/vdp-docs:${IMAGE_TAG}"
+          crane copy "$VDP_MAIL_IMAGE" "${gl}/vdp-mail:${IMAGE_TAG}"
+          crane copy "$VDP_SMS_IMAGE" "${gl}/vdp-sms:${IMAGE_TAG}"
           crane copy "$VDP_FE_IMAGE" "${gl}/vdp-fe:${IMAGE_TAG}"
 
   release-compose-check:
     name: release compose config (no build)
-    needs: [build-push]
+    needs: [prepare, build-push]
     runs-on: ubuntu-latest
-    if: startsWith(github.ref, 'refs/tags/vdp-v') || github.event_name == 'workflow_dispatch'
+    if: needs.build-push.result == 'success' && (needs.prepare.outputs.is_release == 'true' || github.event_name == 'workflow_dispatch')
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: ${{ needs.prepare.outputs.build_ref }}
       - uses: actions/download-artifact@v4
         with:
           name: release-images-pin

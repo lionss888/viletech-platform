@@ -23,13 +23,18 @@ docker run --rm --network "${COMPOSE_NETWORK}" curlimages/curl:latest \
 }
 
 echo "== playwright (docker ${PLAYWRIGHT_IMAGE}) =="
+# CI: always reinstall linux node_modules. Host darwin node_modules break the Linux image.
+# PLAYWRIGHT_ARGS limits the required journey (login + User top-task) on the main gate.
+PLAYWRIGHT_ARGS="${PLAYWRIGHT_ARGS:-}"
 docker run --rm \
   --network "${COMPOSE_NETWORK}" \
   -v "${ROOT}/fe:/app" \
   -w /app \
   -e PLAYWRIGHT_BASE_URL="${E2E_FE_URL}" \
   -e CORE_URL="${E2E_CORE_URL}" \
+  -e CI="${CI:-}" \
+  -e PLAYWRIGHT_ARGS="${PLAYWRIGHT_ARGS}" \
   "${PLAYWRIGHT_IMAGE}" \
-  bash -lc 'if [ ! -d node_modules/@playwright/test ]; then npm ci --ignore-scripts; fi && npx playwright test'
+  bash -lc 'if [ "${CI}" = "true" ] || [ ! -d node_modules/@playwright/test ]; then npm ci --ignore-scripts; fi && npx playwright test ${PLAYWRIGHT_ARGS}'
 
 echo "playwright e2e green"

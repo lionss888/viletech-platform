@@ -96,4 +96,19 @@ type Store interface {
 
 	SaveBankIdempotency(ctx context.Context, scope, key, formID string) error
 	FormIDByBankIdempotency(ctx context.Context, scope, key string) (string, error)
+
+	AccountByTelegramChatID(ctx context.Context, chatID string) (domain.Account, error)
+
+	SaveWorkChat(ctx context.Context, chat domain.WorkChat) error
+	WorkChatByID(ctx context.Context, id string) (domain.WorkChat, error)
+	ListWorkChats(ctx context.Context) ([]domain.WorkChat, error)
+
+	SaveChatJoin(ctx context.Context, join domain.ChatJoin) error
+	ChatJoinByID(ctx context.Context, id string) (domain.ChatJoin, error)
+	ChatJoinByAccountChat(ctx context.Context, accountID, chatID string) (domain.ChatJoin, error)
+	ListChatJoins(ctx context.Context, status domain.JoinStatus) ([]domain.ChatJoin, error)
+
+	SaveTelegramLink(ctx context.Context, link domain.TelegramLinkCode) error
+	TelegramLinkByCode(ctx context.Context, code string) (domain.TelegramLinkCode, error)
+	DeleteTelegramLink(ctx context.Context, code string) error
 }

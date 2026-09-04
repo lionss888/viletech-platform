@@ -4,11 +4,11 @@
 
 ## deps
 
-Загрузка Go-модулей core, hub и shared. Команда make deps.
+Загрузка Go-модулей core, hub, shared, mail-gateway, sms-gateway и каталога vdp/release-gate. Команда make deps.
 
 ## test
 
-Unit-тесты Go в core и hub без build tag integration. Команда make test.
+Unit-тесты Go в core, hub, shared, mail-gateway, sms-gateway и каталоге vdp/release-gate без build tag integration. Команда make test.
 
 ## test-integration
 
@@ -16,7 +16,7 @@ Postgres integration tests с тегом integration в core store outbox и hub
 
 ## test-adapters
 
-Hub adapter HTTP tests docs mail. Команда make test-adapters. Входит в CI job fast.
+Hub adapter HTTP tests docs mail sms telegram diadoc onec. Команда make test-adapters. Входит в CI job fast.
 
 ## build
 
@@ -68,4 +68,4 @@ Browser E2E через Docker. Команды make playwright-e2e, make compose-
 
 ## release-gate
 
-Pre-handover агрегат RH4. Последовательность make test-integration, make test-adapters, make integration-gate, make playwright-e2e, make docs-format-check. Требует docker postgres для compose и playwright. Команда make release-gate. CI эквивалент workflow vdp-release.yml.
+Pre-handover агрегат RH4. Последовательность make test-integration, make test-adapters, make integration-gate, make playwright-e2e, make docs-format-check. Требует docker postgres для compose и playwright. Команда make release-gate. CI эквивалент workflow vdp-release.yml. Не путать с каталогом vdp/release-gate — это Go API политики промоута, не эта Makefile-цель.

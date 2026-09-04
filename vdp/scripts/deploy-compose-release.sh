@@ -30,6 +30,7 @@ source "$PIN_FILE"
 : "${VDP_HUB_IMAGE:?VDP_HUB_IMAGE required in pin file}"
 : "${VDP_DOCS_IMAGE:?VDP_DOCS_IMAGE required in pin file}"
 : "${VDP_FE_IMAGE:?VDP_FE_IMAGE required in pin file}"
+# VDP_MAIL_IMAGE / VDP_SMS_IMAGE optional — enable compose profile gateways when set.
 
 SSH_OPTS=(-o StrictHostKeyChecking=accept-new -o BatchMode=yes)
 if [ -n "$SSH_KEY_PATH" ]; then
@@ -43,6 +44,8 @@ echo "Deploying ${ENVIRONMENT} to ${DEPLOY_HOST}:${DEPLOY_PATH}"
 echo "  core: ${VDP_CORE_IMAGE}"
 echo "  hub:  ${VDP_HUB_IMAGE}"
 echo "  docs: ${VDP_DOCS_IMAGE}"
+echo "  mail: ${VDP_MAIL_IMAGE:-<skip>}"
+echo "  sms:  ${VDP_SMS_IMAGE:-<skip>}"
 echo "  fe:   ${VDP_FE_IMAGE}"
 
 # Sync compose + scripts + migrations. Host-side secrets and pins must survive --delete.
@@ -84,9 +87,19 @@ fi
 
 chmod +x scripts/*.sh || true
 
-docker compose $COMPOSE_FILES --profile prod pull docs-service hub core fe-prod
-docker compose $COMPOSE_FILES --profile prod up -d --no-build --scale fe=0
-./scripts/wait-release-health.sh
+if [ -x ./scripts/vdp-compose-up.sh ]; then
+  ./scripts/vdp-compose-up.sh
+else
+  PROFILES=(--profile prod)
+  PULL_SVCS=(docs-service hub core fe-prod)
+  if [ -n "${VDP_MAIL_IMAGE:-}" ] || [ -n "${VDP_SMS_IMAGE:-}" ]; then
+    PROFILES+=(--profile gateways)
+    PULL_SVCS+=(mail-gateway sms-gateway)
+  fi
+  docker compose $COMPOSE_FILES "${PROFILES[@]}" pull "${PULL_SVCS[@]}"
+  docker compose $COMPOSE_FILES "${PROFILES[@]}" up -d --no-build --scale fe=0
+  ./scripts/wait-release-health.sh
+fi
 
 # Smoke writes test data, so it runs on non-production environments only.
 if [ "$ENVIRONMENT" != "gamma" ] && [ "${SKIP_SMOKE:-0}" != "1" ]; then

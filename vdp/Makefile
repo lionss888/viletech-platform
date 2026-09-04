@@ -1,4 +1,4 @@
-.PHONY: deps test test-integration test-adapters build db-setup db-migrate compose-db-migrate run-hub run-core run smoke stop compose-up compose-up-prod compose-down compose-ps compose-e2e compose-fe-smoke compose-fe-refresh compose-fe-prod-smoke compose-playwright integration-gate playwright-e2e docs-format-check release-gate image-build image-push image-build-push compose-release-config-check compose-release-up deploy-alpha deploy-beta deploy-gamma rollback-alpha rollback-beta rollback-gamma test-cd-scripts
+.PHONY: deps test test-integration test-adapters build db-setup db-migrate compose-db-migrate run-hub run-core run smoke stop compose-up compose-up-prod compose-down compose-ps compose-e2e compose-fe-smoke compose-fe-refresh compose-fe-prod-smoke compose-playwright lovable-seed-check integration-gate playwright-e2e docs-format-check release-gate image-build image-push image-build-push compose-release-config-check compose-release-up deploy-alpha deploy-beta deploy-gamma rollback-alpha rollback-beta rollback-gamma test-cd-scripts
 
 CORE_DIR := core
 HUB_DIR := hub
@@ -22,10 +22,17 @@ deps:
 	cd $(CORE_DIR) && go mod download
 	cd $(HUB_DIR) && go mod download
 	cd shared && go mod download
+	cd mail-gateway && go mod download
+	cd sms-gateway && go mod download
+	cd release-gate && go mod download
 
 test:
 	cd $(CORE_DIR) && go test ./...
 	cd $(HUB_DIR) && go test ./...
+	cd shared && go test ./...
+	cd mail-gateway && go test ./...
+	cd sms-gateway && go test ./...
+	cd release-gate && go test ./...
 
 test-integration:
 	cd $(CORE_DIR) && go test -tags=integration ./...
@@ -60,6 +67,7 @@ db-migrate:
 	PGPASSWORD=vdp_core psql -h localhost -U vdp_core -d vdp_core -v ON_ERROR_STOP=1 -f $(CORE_DIR)/migrations/011_r10_bank.sql
 	PGPASSWORD=vdp_core psql -h localhost -U vdp_core -d vdp_core -v ON_ERROR_STOP=1 -f $(CORE_DIR)/migrations/012_b2_org_signer.sql
 	PGPASSWORD=vdp_core psql -h localhost -U vdp_core -d vdp_core -v ON_ERROR_STOP=1 -f $(CORE_DIR)/migrations/013_bank_org_client_type.sql
+	PGPASSWORD=vdp_core psql -h localhost -U vdp_core -d vdp_core -v ON_ERROR_STOP=1 -f $(CORE_DIR)/migrations/014_notifications.sql
 	PGPASSWORD=vdp_hub psql -h localhost -U vdp_hub -d vdp_hub -v ON_ERROR_STOP=1 -f $(HUB_DIR)/migrations/001_hub.sql
 	PGPASSWORD=vdp_hub psql -h localhost -U vdp_hub -d vdp_hub -v ON_ERROR_STOP=1 -f $(HUB_DIR)/migrations/002_hub.sql
 
@@ -157,8 +165,14 @@ compose-e2e: compose-up
 # RD10: unit gates + compose journey (RD1–RD9 spots on shared stack).
 integration-gate:
 	cd fe && npm test
+	$(MAKE) lovable-seed-check
 	$(MAKE) test
 	$(MAKE) compose-e2e
+
+# Keep fe/src/lib/ved/mock.ts byte-identical to lovable-vdp/dev0; demo patches → demo-seed-overlay.ts.
+lovable-seed-check:
+	@chmod +x scripts/lovable-seed-check.sh
+	@./scripts/lovable-seed-check.sh
 
 # RD11: browser E2E via Docker (Linux browsers; works when host `playwright install` is unsupported).
 compose-playwright:
@@ -198,6 +212,8 @@ compose-release-config-check:
 	VDP_CORE_IMAGE="$${VDP_CORE_IMAGE:-example.local/vdp-core:check}" \
 	VDP_HUB_IMAGE="$${VDP_HUB_IMAGE:-example.local/vdp-hub:check}" \
 	VDP_DOCS_IMAGE="$${VDP_DOCS_IMAGE:-example.local/vdp-docs:check}" \
+	VDP_MAIL_IMAGE="$${VDP_MAIL_IMAGE:-example.local/vdp-mail:check}" \
+	VDP_SMS_IMAGE="$${VDP_SMS_IMAGE:-example.local/vdp-sms:check}" \
 	VDP_FE_IMAGE="$${VDP_FE_IMAGE:-example.local/vdp-fe:check}" \
 	JWT_SECRET="$${JWT_SECRET:-config-check}" \
 	HUB_SHARED_SECRET="$${HUB_SHARED_SECRET:-config-check}" \
