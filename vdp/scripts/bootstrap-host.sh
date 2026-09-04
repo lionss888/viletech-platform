@@ -137,8 +137,12 @@ ${VDP_DOMAIN} {
 		output file /var/log/caddy/${VDP_DOMAIN}.log
 	}
 }
+
+import /etc/caddy/preview.d/*
 EOF
   install -d -m 0755 -o caddy -g caddy /var/log/caddy
+  install -d -m 0755 /etc/caddy/preview.d
+  printf '# preview site snippets from deploy-preview.sh\n' > /etc/caddy/preview.d/.keep.caddy
   caddy validate --config /etc/caddy/Caddyfile
   systemctl enable --now caddy
   systemctl reload caddy || systemctl restart caddy

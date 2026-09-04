@@ -1,0 +1,77 @@
+name: VDP Deploy Schedule
+
+# Reads GitHub Variables DEPLOY_MODE_* (defaults in the job). Does not build images.
+on:
+  schedule:
+    - cron: "15 * * * *"
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: Environment to evaluate (empty = all scheduled modes)
+        required: false
+        default: ""
+
+concurrency:
+  group: vdp-deploy-schedule
+  cancel-in-progress: false
+
+permissions:
+  actions: write
+  contents: read
+
+jobs:
+  evaluate:
+    name: evaluate deploy modes
+    runs-on: ubuntu-latest
+    steps:
+      - name: Dispatch promote when policy allows
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_REPO: ${{ github.repository }}
+          MODE_ALPHA: ${{ vars.DEPLOY_MODE_ALPHA || 'on_ready' }}
+          MODE_BETA: ${{ vars.DEPLOY_MODE_BETA || 'button_or_window' }}
+          MODE_GAMMA: ${{ vars.DEPLOY_MODE_GAMMA || 'button' }}
+          MODE_DEMO: ${{ vars.DEPLOY_MODE_DEMO || 'button' }}
+          MODE_TEST: ${{ vars.DEPLOY_MODE_TEST || 'button' }}
+          WINDOW_BETA: ${{ vars.DEPLOY_WINDOW_BETA || '02:00-04:00' }}
+          ONLY: ${{ github.event.inputs.environment }}
+        run: |
+          hour=$(date -u +%H:%M)
+          in_window() {
+            local win="$1"
+            local start="${win%-*}"
+            local end="${win#*-}"
+            [ "$hour" \> "$start" ] || [ "$hour" = "$start" ] || return 1
+            [ "$hour" \< "$end" ] || [ "$hour" = "$end" ]
+          }
+          maybe() {
+            local env_name="$1"
+            local mode="$2"
+            if [ -n "$ONLY" ] && [ "$ONLY" != "$env_name" ]; then
+              return 0
+            fi
+            case "$mode" in
+              on_ready)
+                echo "skip $env_name: on_ready is vdp-deploy workflow_run after Images on main"
+                ;;
+              button_or_window)
+                if in_window "$WINDOW_BETA"; then
+                  echo "dispatch $env_name (window $WINDOW_BETA, now $hour UTC)"
+                  gh workflow run vdp-deploy.yml -f environment="$env_name"
+                else
+                  echo "skip $env_name: outside window $WINDOW_BETA (now $hour UTC)"
+                fi
+                ;;
+              button)
+                echo "skip $env_name: mode=button"
+                ;;
+              *)
+                echo "skip $env_name: unknown mode $mode"
+                ;;
+            esac
+          }
+          maybe alpha "$MODE_ALPHA"
+          maybe beta "$MODE_BETA"
+          maybe gamma "$MODE_GAMMA"
+          maybe demo "$MODE_DEMO"
+          maybe test "$MODE_TEST"

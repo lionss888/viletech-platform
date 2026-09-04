@@ -1,6 +1,6 @@
 name: VDP Deploy
 
-# Environments: alpha (auto from main), beta (pre-prod, manual), gamma (prod, manual + approval).
+# Environments: alpha (auto from main Images), beta/gamma (manual), demo/test (dispatch).
 # Deploy never builds: it promotes the exact digests pinned by the VDP Images run.
 on:
   workflow_run:
@@ -16,6 +16,8 @@ on:
           - alpha
           - beta
           - gamma
+          - demo
+          - test
       images_run_id:
         description: Images workflow run id (empty = latest successful run on main)
         required: false
@@ -36,7 +38,9 @@ jobs:
     runs-on: ubuntu-latest
     if: >-
       github.event_name == 'workflow_dispatch' ||
-      github.event.workflow_run.conclusion == 'success'
+      (github.event.workflow_run.conclusion == 'success' &&
+       (github.event.workflow_run.head_branch == 'main' ||
+        github.event.workflow_run.head_branch == 'master'))
     outputs:
       target_env: ${{ steps.meta.outputs.target_env }}
     steps:

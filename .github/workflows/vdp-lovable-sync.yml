@@ -1,0 +1,70 @@
+name: VDP Lovable Sync
+
+# Lovable is UI source. This repo owns domain, JWT, API. Sync opens a PR into vdp/fe — never merge to main here.
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "0 6 * * 1"
+
+concurrency:
+  group: vdp-lovable-sync
+  cancel-in-progress: false
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  open-pr:
+    name: open PR with Lovable UI tree
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Fetch Lovable remote and open PR
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          LOVABLE_REPO: ${{ vars.LOVABLE_REPO || 'lionss888/vdp' }}
+          LOVABLE_REF: ${{ vars.LOVABLE_REF || 'dev0' }}
+        run: |
+          set -euo pipefail
+          git config user.name "vdp-lovable-sync"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git remote remove lovable-vdp 2>/dev/null || true
+          git remote add lovable-vdp "https://github.com/${LOVABLE_REPO}.git"
+          if ! git fetch lovable-vdp "$LOVABLE_REF" --depth=1; then
+            echo "Cannot fetch ${LOVABLE_REPO}@${LOVABLE_REF} (private or missing). Skip."
+            exit 0
+          fi
+          SHA=$(git rev-parse "lovable-vdp/${LOVABLE_REF}")
+          BRANCH="chore/lovable-sync-${SHA:0:7}"
+          git checkout -B "$BRANCH"
+          tmp=$(mktemp -d)
+          git archive "lovable-vdp/${LOVABLE_REF}" | tar -x -C "$tmp"
+          rsync -a --delete \
+            --exclude 'src/lib/api/' \
+            --exclude 'src/lib/auth/' \
+            --exclude 'src/lib/ved/platform-store.ts' \
+            --exclude 'src/lib/ved/action-bridge.ts' \
+            --exclude 'src/lib/ved/app-actions.ts' \
+            --exclude 'src/lib/ved/demo-seed-overlay.ts' \
+            --exclude 'vitest.config.ts' \
+            --exclude 'e2e/' \
+            --exclude 'playwright.config.ts' \
+            --exclude 'node_modules/' \
+            --exclude 'src/**/*.test.ts' \
+            "$tmp/" vdp/fe/
+          rm -rf "$tmp"
+          if git diff --quiet -- vdp/fe; then
+            echo "No UI delta versus ${SHA}"
+            exit 0
+          fi
+          git add vdp/fe
+          git commit -m "chore(fe): Lovable sync from ${LOVABLE_REPO}@${LOVABLE_REF} (${SHA:0:7})"
+          git push -u origin "$BRANCH"
+          gh pr create --base main --head "$BRANCH" \
+            --title "chore(fe): Lovable UI sync ${SHA:0:7}" \
+            --body "Automated sync from ${LOVABLE_REPO}@${LOVABLE_REF} (${SHA}). Domain files under src/lib/api, auth, platform-store, e2e are excluded. Review UI only; do not merge without make integration-gate."
