@@ -87,5 +87,34 @@ if DEPLOY_HOST=deploy.invalid PIN_FILE="$TMP/absent.env" \
   fail "deploy must reject a missing pin file"
 fi
 
+# One path: UI changes leave lionss888/vdp, land in this repo via PR into vdp/fe,
+# then Images builds the whole product and Deploy promotes digests to the VM
+# without rebuilding on the host.
+echo "== path: lionss888/vdp → viletech-platform → server build =="
+REPO_ROOT="$(cd "$ROOT/.." && pwd)"
+WF_SYNC="$REPO_ROOT/.github/workflows/vdp-lovable-sync.yml"
+WF_IMAGES="$REPO_ROOT/.github/workflows/vdp-images.yml"
+WF_DEPLOY="$REPO_ROOT/.github/workflows/vdp-deploy.yml"
+[ -f "$WF_SYNC" ] || fail "missing $WF_SYNC"
+[ -f "$WF_IMAGES" ] || fail "missing $WF_IMAGES"
+[ -f "$WF_DEPLOY" ] || fail "missing $WF_DEPLOY"
+grep -q "lionss888/vdp" "$WF_SYNC" \
+  || fail "lovable sync must default to github.com/lionss888/vdp"
+grep -q 'vdp/fe/' "$WF_SYNC" \
+  || fail "lovable sync must copy UI into vdp/fe"
+grep -q 'gh pr create' "$WF_SYNC" \
+  || fail "lovable sync must open a PR into viletech-platform (not push straight to main)"
+grep -q -- '--base main' "$WF_SYNC" \
+  || fail "lovable sync PR must target main"
+grep -q 'image-build-push.sh' "$WF_IMAGES" \
+  || fail "vdp-images must build the project via image-build-push.sh"
+grep -q 'workflow_run' "$WF_DEPLOY" \
+  || fail "vdp-deploy must auto-run after Images (server promote)"
+grep -q -- '--no-build' scripts/deploy-compose-release.sh \
+  || fail "server promote must pull digests without docker build on the host"
+grep -q 'compose pull\|docker compose .* pull' scripts/deploy-compose-release.sh \
+  || grep -q 'vdp-compose-up.sh' scripts/deploy-compose-release.sh \
+  || fail "server promote must pull/up release images on the host"
+
 make compose-release-config-check
 echo "test-cd-scripts passed"
