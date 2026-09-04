@@ -4,28 +4,28 @@ overview: "Три волны поставки VDP: сначала понятны
 todos:
   - id: w0-hygiene
     content: "Волна 0: отозвать PAT; починить playwright и сделать required на main"
-    status: pending
+    status: completed
   - id: w1-branch-images
     content: "Волна 1: vdp-images workflow_dispatch с ref; Releases как каталог обновлений"
-    status: pending
+    status: completed
   - id: w1-envs-schedule
     content: "Волна 1: Environments demo/test + schedule modes; preview на VM test"
-    status: pending
+    status: completed
   - id: w1-lovable-pr
     content: "Волна 1: Lovable sync только через PR в vdp/fe"
-    status: pending
+    status: completed
   - id: w1-docs-runbook
     content: "Волна 1: памятка обновления/отката под docs-format-check"
-    status: pending
+    status: completed
   - id: w2-delivery-api
     content: "Волна 2: vdp/delivery Go API + матрица ролей; GitHub App, без SSH на VM"
-    status: pending
+    status: completed
   - id: w2-delivery-console
     content: "Волна 2: vdp/delivery-console UI как VDP; OAuth GitHub затем GitLab и локальные учётки"
-    status: pending
+    status: completed
   - id: w3-gitlab-cd
     content: "Волна 3: GitLab Environments и promote того же digest; второй адаптер консоли"
-    status: pending
+    status: completed
 isProject: false
 ---
 

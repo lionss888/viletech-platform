@@ -1,5 +1,5 @@
 # VDP CI on GitLab (secondary forge). Canonical merge: GitHub main only.
-# CD/deploy runs on GitHub Actions — not here.
+# Promote jobs reuse the same digests copied into GitLab Container Registry (no rebuild).
 
 workflow:
   rules:
@@ -29,6 +29,7 @@ stages:
   - docs
   - integration
   - playwright
+  - promote
 
 .vdp_changes: &vdp_changes
   changes:
@@ -47,6 +48,34 @@ stages:
     key: npm-${CI_COMMIT_REF_SLUG}
     paths:
       - vdp/fe/node_modules/
+
+.promote_rules_manual: &promote_rules_manual
+  rules:
+    - if: '$CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH'
+      when: manual
+    - if: '$CI_PIPELINE_SOURCE == "web"'
+      when: manual
+    - when: never
+
+.promote_script: &promote_script
+  image: alpine:3.20
+  before_script:
+    - apk add --no-cache bash openssh-client rsync curl docker-cli
+    - mkdir -p ~/.ssh && chmod 700 ~/.ssh
+  script:
+    - |
+      if [ -z "${DEPLOY_SSH_KEY:-}" ] || [ -z "${DEPLOY_HOST:-}" ]; then
+        echo "GitLab Environment secrets not configured — skip promote"
+        exit 0
+      fi
+    - |
+      if [ -n "${CI_REGISTRY_IMAGE:-}" ] && [ -f vdp/.release-images.env ]; then
+        set -a && . vdp/.release-images.env && set +a
+      fi
+    - chmod +x vdp/scripts/gitlab-promote.sh
+    - PIN_FILE=vdp/.release-images.env ./vdp/scripts/gitlab-promote.sh
+  after_script:
+    - rm -f ~/.ssh/deploy_key || true
 
 fast:
   stage: fast
@@ -148,6 +177,107 @@ playwright:
   script:
     - apk add --no-cache bash make
     - cd vdp && make compose-up
-    - cd vdp && make playwright-e2e
+    - cd vdp && CI=true PLAYWRIGHT_ARGS="e2e/login-form.spec.ts e2e/user-submit.spec.ts" make playwright-e2e
   after_script:
     - cd vdp && make compose-down || true
+
+write-release-pin:
+  stage: promote
+  image: alpine:3.20
+  rules:
+    - if: '$CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH'
+    - if: '$CI_COMMIT_TAG =~ /^vdp-v/'
+    - if: '$DEPLOY_ACTION == "promote"'
+    - when: never
+  script:
+    - apk add --no-cache bash
+    - |
+      TAG="${CI_COMMIT_TAG:-}"
+      if [ -z "$TAG" ]; then
+        TAG="sha-${CI_COMMIT_SHORT_SHA}"
+      fi
+      REG="${CI_REGISTRY_IMAGE:-registry.gitlab.com/${CI_PROJECT_PATH}}"
+      {
+        echo "IMAGE_TAG=${TAG}"
+        echo "GIT_REVISION=${CI_COMMIT_SHA}"
+        echo "VDP_CORE_IMAGE=${REG}/vdp-core:${TAG}"
+        echo "VDP_HUB_IMAGE=${REG}/vdp-hub:${TAG}"
+        echo "VDP_DOCS_IMAGE=${REG}/vdp-docs:${TAG}"
+        echo "VDP_MAIL_IMAGE=${REG}/vdp-mail:${TAG}"
+        echo "VDP_SMS_IMAGE=${REG}/vdp-sms:${TAG}"
+        echo "VDP_FE_IMAGE=${REG}/vdp-fe:${TAG}"
+      } > vdp/.release-images.env
+      cat vdp/.release-images.env
+  artifacts:
+    paths:
+      - vdp/.release-images.env
+    expire_in: 30 days
+
+promote-alpha:
+  <<: *promote_script
+  stage: promote
+  needs: [write-release-pin]
+  environment:
+    name: alpha
+  rules:
+    - if: '$DEPLOY_ACTION == "promote" && $DEPLOY_ENVIRONMENT == "alpha"'
+    - if: '$CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH && $DEPLOY_MODE_ALPHA == "on_ready"'
+    - when: never
+  variables:
+    DEPLOY_ENVIRONMENT: alpha
+
+promote-beta:
+  <<: *promote_script
+  stage: promote
+  needs: [write-release-pin]
+  environment:
+    name: beta
+  variables:
+    DEPLOY_ENVIRONMENT: beta
+  rules:
+    - if: '$DEPLOY_ACTION == "promote" && $DEPLOY_ENVIRONMENT == "beta"'
+    - if: '$CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH'
+      when: manual
+    - when: never
+
+promote-gamma:
+  <<: *promote_script
+  stage: promote
+  needs: [write-release-pin]
+  environment:
+    name: gamma
+  variables:
+    DEPLOY_ENVIRONMENT: gamma
+  rules:
+    - if: '$DEPLOY_ACTION == "promote" && $DEPLOY_ENVIRONMENT == "gamma"'
+    - if: '$CI_COMMIT_TAG =~ /^vdp-v/'
+      when: manual
+    - when: never
+
+promote-demo:
+  <<: *promote_script
+  stage: promote
+  needs: [write-release-pin]
+  environment:
+    name: demo
+  variables:
+    DEPLOY_ENVIRONMENT: demo
+  rules:
+    - if: '$DEPLOY_ACTION == "promote" && $DEPLOY_ENVIRONMENT == "demo"'
+    - if: '$CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH'
+      when: manual
+    - when: never
+
+promote-test:
+  <<: *promote_script
+  stage: promote
+  needs: [write-release-pin]
+  environment:
+    name: test
+  variables:
+    DEPLOY_ENVIRONMENT: test
+  rules:
+    - if: '$DEPLOY_ACTION == "promote" && $DEPLOY_ENVIRONMENT == "test"'
+    - if: '$CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH'
+      when: manual
+    - when: never

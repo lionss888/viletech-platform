@@ -1,0 +1,27 @@
+services:
+  delivery:
+    build:
+      context: ./delivery
+    environment:
+      DELIVERY_LISTEN: ":8090"
+      DELIVERY_JWT_SECRET: ${DELIVERY_JWT_SECRET:-delivery-dev-secret}
+      GITHUB_TOKEN: ${DELIVERY_GITHUB_TOKEN:-}
+      GITHUB_REPOSITORY: ${GITHUB_REPOSITORY:-viletech/viletech-platform}
+      DELIVERY_GITLAB_TOKEN: ${DELIVERY_GITLAB_TOKEN:-}
+      GITLAB_PROJECT_ID: ${GITLAB_PROJECT_ID:-sandbox6902635/viletech-platform}
+      GITHUB_OAUTH_CLIENT_ID: ${GITHUB_OAUTH_CLIENT_ID:-}
+      GITHUB_OAUTH_CLIENT_SECRET: ${GITHUB_OAUTH_CLIENT_SECRET:-}
+      GITHUB_OAUTH_REDIRECT: ${GITHUB_OAUTH_REDIRECT:-https://delivery.vedy.io/api/v1/auth/github/callback}
+      GITLAB_OAUTH_CLIENT_ID: ${GITLAB_OAUTH_CLIENT_ID:-}
+      GITLAB_OAUTH_CLIENT_SECRET: ${GITLAB_OAUTH_CLIENT_SECRET:-}
+      GITLAB_OAUTH_REDIRECT: ${GITLAB_OAUTH_REDIRECT:-https://delivery.vedy.io/api/v1/auth/gitlab/callback}
+    ports:
+      - "${DELIVERY_BIND:-127.0.0.1}:8090:8090"
+
+  delivery-console:
+    build:
+      context: ./delivery-console
+    depends_on:
+      - delivery
+    ports:
+      - "${DELIVERY_CONSOLE_BIND:-127.0.0.1}:5180:80"

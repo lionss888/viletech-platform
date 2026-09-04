@@ -20,6 +20,8 @@ docs_ref="${IMAGE_REGISTRY}/${IMAGE_NAMESPACE}/vdp-docs:${IMAGE_TAG}"
 mail_ref="${IMAGE_REGISTRY}/${IMAGE_NAMESPACE}/vdp-mail:${IMAGE_TAG}"
 sms_ref="${IMAGE_REGISTRY}/${IMAGE_NAMESPACE}/vdp-sms:${IMAGE_TAG}"
 fe_ref="${IMAGE_REGISTRY}/${IMAGE_NAMESPACE}/vdp-fe:${IMAGE_TAG}"
+delivery_ref="${IMAGE_REGISTRY}/${IMAGE_NAMESPACE}/vdp-delivery:${IMAGE_TAG}"
+delivery_console_ref="${IMAGE_REGISTRY}/${IMAGE_NAMESPACE}/vdp-delivery-console:${IMAGE_TAG}"
 
 label_args=(
   "--label" "org.opencontainers.image.revision=${GIT_REVISION}"
@@ -47,6 +49,14 @@ docker buildx build --platform "$PLATFORM" "${label_args[@]}" \
   -f "$ROOT/fe/Dockerfile" --target production \
   --build-arg VDP_API_PROXY_TARGET=http://core:8080 \
   -t "$fe_ref" "$ROOT/fe" --load
+
+BUILD_DELIVERY="${BUILD_DELIVERY:-1}"
+if [ "$BUILD_DELIVERY" = "1" ] && [ -d "$ROOT/delivery" ] && [ -d "$ROOT/delivery-console" ]; then
+  docker buildx build --platform "$PLATFORM" "${label_args[@]}" \
+    -f "$ROOT/delivery/Dockerfile" -t "$delivery_ref" "$ROOT/delivery" --load
+  docker buildx build --platform "$PLATFORM" "${label_args[@]}" \
+    -f "$ROOT/delivery-console/Dockerfile" -t "$delivery_console_ref" "$ROOT/delivery-console" --load
+fi
 
 # Pick the digest belonging to this exact repository: an image may carry several
 # RepoDigests (e.g. previously pulled from another registry), so index 0 is unsafe.
@@ -78,6 +88,12 @@ if [ "$PUSH" = "1" ]; then
   mail_ref="$(resolve_digest "$mail_ref")"
   sms_ref="$(resolve_digest "$sms_ref")"
   fe_ref="$(resolve_digest "$fe_ref")"
+  if [ "$BUILD_DELIVERY" = "1" ] && [ -d "$ROOT/delivery" ]; then
+    docker push "$delivery_ref"
+    docker push "$delivery_console_ref"
+    delivery_ref="$(resolve_digest "$delivery_ref")"
+    delivery_console_ref="$(resolve_digest "$delivery_console_ref")"
+  fi
 fi
 
 cat >"$PIN_FILE" <<EOF
@@ -91,6 +107,13 @@ VDP_MAIL_IMAGE=${mail_ref}
 VDP_SMS_IMAGE=${sms_ref}
 VDP_FE_IMAGE=${fe_ref}
 EOF
+
+if [ "$BUILD_DELIVERY" = "1" ] && [ -d "$ROOT/delivery" ]; then
+  {
+    echo "VDP_DELIVERY_IMAGE=${delivery_ref}"
+    echo "VDP_DELIVERY_CONSOLE_IMAGE=${delivery_console_ref}"
+  } >>"$PIN_FILE"
+fi
 
 echo "Pin file: $PIN_FILE"
 cat "$PIN_FILE"

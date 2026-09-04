@@ -4,11 +4,11 @@
 
 ## deps
 
-Загрузка Go-модулей core, hub, shared, mail-gateway и sms-gateway. Команда make deps.
+Загрузка Go-модулей core, hub, shared, mail-gateway, sms-gateway и delivery. Команда make deps.
 
 ## test
 
-Unit-тесты Go в core, hub, shared, mail-gateway и sms-gateway без build tag integration. Команда make test.
+Unit-тесты Go в core, hub, shared, mail-gateway, sms-gateway и delivery без build tag integration. Команда make test.
 
 ## test-integration
 

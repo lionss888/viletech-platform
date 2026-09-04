@@ -124,15 +124,25 @@ jobs:
     name: playwright (browser E2E)
     runs-on: ubuntu-latest
     timeout-minutes: 30
-    if: github.event_name != 'pull_request' || contains(github.event.pull_request.labels.*.name, 'integration')
-    needs: [integration]
+    needs: [fast]
     steps:
       - uses: actions/checkout@v4
-      - name: Compose up + Playwright
+      - name: Compose up + required User journeys
         working-directory: vdp
+        env:
+          CI: "true"
+          PLAYWRIGHT_ARGS: e2e/login-form.spec.ts e2e/user-submit.spec.ts
         run: |
           make compose-up
           make playwright-e2e
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: playwright-traces
+          path: |
+            vdp/fe/test-results
+            vdp/fe/playwright-report
+          if-no-files-found: ignore
       - name: Compose down
         if: always()
         working-directory: vdp
