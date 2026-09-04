@@ -30,7 +30,7 @@ Deploy .github/workflows/vdp-deploy.yml — GitHub Environments alpha, beta, gam
 
 Подготовка хоста: scripts/bootstrap-host.sh (Docker CE, пользователь deploy, каталог /opt/vdp, генерация .env.deploy со случайными секретами, ufw 22/80/443, Caddy c автоматическим HTTPS, каталог preview.d). Порты приложения биндятся на loopback через переменные с суффиксом BIND из .env.deploy; наружу смотрит только Caddy.
 
-Секреты в GitHub Environment задаются по среде: DEPLOY_HOST, DEPLOY_USER, DEPLOY_PATH, DEPLOY_SSH_KEY. Консоль delivery (волна 2) эти ключи в браузер не кладёт.
+Секреты в GitHub Environment задаются по среде: DEPLOY_HOST, DEPLOY_USER, DEPLOY_PATH, DEPLOY_SSH_KEY. Консоль release-gate (волна 2) эти ключи в браузер не кладёт.
 
 ## Когда блокируется merge
 

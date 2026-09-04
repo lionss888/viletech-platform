@@ -30,7 +30,7 @@
 
 ## Расписание
 
-Workflow VDP Deploy Schedule раз в час читает Variables DEPLOY_MODE_ALPHA, DEPLOY_MODE_BETA, DEPLOY_MODE_GAMMA, DEPLOY_MODE_DEMO, DEPLOY_MODE_TEST. Значения: on_ready (alpha уже закрыт workflow_run), button_or_window, button. Позже те же режимы задаёт консоль delivery.
+Workflow VDP Deploy Schedule раз в час читает Variables DEPLOY_MODE_ALPHA, DEPLOY_MODE_BETA, DEPLOY_MODE_GAMMA, DEPLOY_MODE_DEMO, DEPLOY_MODE_TEST. Значения: on_ready (alpha уже закрыт workflow_run), button_or_window, button. Позже те же режимы задаёт консоль release-gate.
 
 ## Честность
 

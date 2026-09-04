@@ -20,8 +20,8 @@ docs_ref="${IMAGE_REGISTRY}/${IMAGE_NAMESPACE}/vdp-docs:${IMAGE_TAG}"
 mail_ref="${IMAGE_REGISTRY}/${IMAGE_NAMESPACE}/vdp-mail:${IMAGE_TAG}"
 sms_ref="${IMAGE_REGISTRY}/${IMAGE_NAMESPACE}/vdp-sms:${IMAGE_TAG}"
 fe_ref="${IMAGE_REGISTRY}/${IMAGE_NAMESPACE}/vdp-fe:${IMAGE_TAG}"
-delivery_ref="${IMAGE_REGISTRY}/${IMAGE_NAMESPACE}/vdp-delivery:${IMAGE_TAG}"
-delivery_console_ref="${IMAGE_REGISTRY}/${IMAGE_NAMESPACE}/vdp-delivery-console:${IMAGE_TAG}"
+release_gate_ref="${IMAGE_REGISTRY}/${IMAGE_NAMESPACE}/vdp-release-gate:${IMAGE_TAG}"
+release_gate_console_ref="${IMAGE_REGISTRY}/${IMAGE_NAMESPACE}/vdp-release-gate-console:${IMAGE_TAG}"
 
 label_args=(
   "--label" "org.opencontainers.image.revision=${GIT_REVISION}"
@@ -50,12 +50,12 @@ docker buildx build --platform "$PLATFORM" "${label_args[@]}" \
   --build-arg VDP_API_PROXY_TARGET=http://core:8080 \
   -t "$fe_ref" "$ROOT/fe" --load
 
-BUILD_DELIVERY="${BUILD_DELIVERY:-1}"
-if [ "$BUILD_DELIVERY" = "1" ] && [ -d "$ROOT/delivery" ] && [ -d "$ROOT/delivery-console" ]; then
+BUILD_RELEASE_GATE="${BUILD_RELEASE_GATE:-1}"
+if [ "$BUILD_RELEASE_GATE" = "1" ] && [ -d "$ROOT/release-gate" ] && [ -d "$ROOT/release-gate-console" ]; then
   docker buildx build --platform "$PLATFORM" "${label_args[@]}" \
-    -f "$ROOT/delivery/Dockerfile" -t "$delivery_ref" "$ROOT/delivery" --load
+    -f "$ROOT/release-gate/Dockerfile" -t "$release_gate_ref" "$ROOT/release-gate" --load
   docker buildx build --platform "$PLATFORM" "${label_args[@]}" \
-    -f "$ROOT/delivery-console/Dockerfile" -t "$delivery_console_ref" "$ROOT/delivery-console" --load
+    -f "$ROOT/release-gate-console/Dockerfile" -t "$release_gate_console_ref" "$ROOT/release-gate-console" --load
 fi
 
 # Pick the digest belonging to this exact repository: an image may carry several
@@ -88,11 +88,11 @@ if [ "$PUSH" = "1" ]; then
   mail_ref="$(resolve_digest "$mail_ref")"
   sms_ref="$(resolve_digest "$sms_ref")"
   fe_ref="$(resolve_digest "$fe_ref")"
-  if [ "$BUILD_DELIVERY" = "1" ] && [ -d "$ROOT/delivery" ]; then
-    docker push "$delivery_ref"
-    docker push "$delivery_console_ref"
-    delivery_ref="$(resolve_digest "$delivery_ref")"
-    delivery_console_ref="$(resolve_digest "$delivery_console_ref")"
+  if [ "$BUILD_RELEASE_GATE" = "1" ] && [ -d "$ROOT/release-gate" ]; then
+    docker push "$release_gate_ref"
+    docker push "$release_gate_console_ref"
+    release_gate_ref="$(resolve_digest "$release_gate_ref")"
+    release_gate_console_ref="$(resolve_digest "$release_gate_console_ref")"
   fi
 fi
 
@@ -108,10 +108,10 @@ VDP_SMS_IMAGE=${sms_ref}
 VDP_FE_IMAGE=${fe_ref}
 EOF
 
-if [ "$BUILD_DELIVERY" = "1" ] && [ -d "$ROOT/delivery" ]; then
+if [ "$BUILD_RELEASE_GATE" = "1" ] && [ -d "$ROOT/release-gate" ]; then
   {
-    echo "VDP_DELIVERY_IMAGE=${delivery_ref}"
-    echo "VDP_DELIVERY_CONSOLE_IMAGE=${delivery_console_ref}"
+    echo "VDP_RELEASE_GATE_IMAGE=${release_gate_ref}"
+    echo "VDP_RELEASE_GATE_CONSOLE_IMAGE=${release_gate_console_ref}"
   } >>"$PIN_FILE"
 fi
 

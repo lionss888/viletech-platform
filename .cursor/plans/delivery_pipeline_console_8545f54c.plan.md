@@ -17,10 +17,10 @@ todos:
   - id: w1-docs-runbook
     content: "Волна 1: памятка обновления/отката под docs-format-check"
     status: completed
-  - id: w2-delivery-api
+  - id: w2-delivery-gate-api
     content: "Волна 2: vdp/delivery Go API + матрица ролей; GitHub App, без SSH на VM"
     status: completed
-  - id: w2-delivery-console
+  - id: w2-delivery-gate-console
     content: "Волна 2: vdp/delivery-console UI как VDP; OAuth GitHub затем GitLab и локальные учётки"
     status: completed
   - id: w3-gitlab-cd
@@ -31,7 +31,7 @@ isProject: false
 
 # Поставка VDP и клиент управления
 
-Интерпретация ответов 1–8: шесть именованных VM (консоль + alpha/beta/gamma + demo + test); PR-preview — эфемерные контейнеры на VM `test` (тот же IP, что `*.preview.vedy.io`); DNS только предложенные имена, консоль `delivery.vedy.io`; в волне 2 сначала GitHub OAuth, в том же эпике GitLab OAuth и свои учётки; gamma — только пронумерованный тег и тот же digest; расписание с умолчаниями по среде; до handover владелец delivery — текущая команда разработки; UI консоли как у VDP (шелл, токены, статусы), но **отдельное приложение**, не кабинет заявки. Self-hosted git — холд.
+Интерпретация ответов 1–8: шесть именованных VM (консоль + alpha/beta/gamma + demo + test); PR-preview — эфемерные контейнеры на VM `test` (тот же IP, что `*.preview.vedy.io`); DNS только предложенные имена, консоль `delivery.vedy.io`; в волне 2 сначала GitHub OAuth, в том же эпике GitLab OAuth и свои учётки; gamma — только пронумерованный тег и тот же digest; расписание с умолчаниями по среде; до handover владелец delivery-gate — текущая команда разработки; UI консоли как у VDP (шелл, токены, статусы), но **отдельное приложение**, не кабинет заявки. Self-hosted git — холд.
 
 RH0 ([`.cursor/plans/rh0_ci_pipeline.plan.md`](.cursor/plans/rh0_ci_pipeline.plan.md)) и текущие workflow уже дают CI + Images + Deploy на GitHub; этот план **не дублирует RH0**, а закрывает пробелы: сборка с ветки, каталог обновлений, расписание, Playwright как гейт, консоль, GitLab CD.
 
@@ -54,7 +54,7 @@ flowchart LR
 
 Вне scope: `машинное-обучение` (модель не жмёт gamma), `serverless-и-faas` как носитель статуса релиза, `nestjs-modules`, Kubernetes ([`vdp/docs/operations/k8s-roadmap.md`](vdp/docs/operations/k8s-roadmap.md)), self-hosted git.
 
-Gate/DoD из rules: CI ≠ CD ≠ автовыкат в прод; на хосте нет `--build`; промоут digest; AuthZ на API и GitHub/GitLab Environments; секреты деплоя не в браузере; unit на «кто катит куда»; Playwright — узкие journey; нет `admin/test`; после выката health; консоль — контекст delivery, UI не оркестрирует заявку.
+Gate/DoD из rules: CI ≠ CD ≠ автовыкат в прод; на хосте нет `--build`; промоут digest; AuthZ на API и GitHub/GitLab Environments; секреты деплоя не в браузере; unit на «кто катит куда»; Playwright — узкие journey; нет `admin/test`; после выката health; консоль — контекст delivery-gate, UI не оркестрирует заявку.
 
 Политика gamma (продуктовый текст): на прод попадает только обновление с тегом `vdp-v*`, уже собранное; кнопка не собирает код заново; по желанию digest уже стоит на beta.
 
@@ -100,8 +100,8 @@ DoD волны 1: Images с выбранной ветки; Release с имене
 
 Предлагаемые пакеты (screaming):
 
-- `vdp/delivery/` — Go API: use cases listReleases, getEnvironment, promote, rollback, setSchedule, setApprovers. Порты: GitHub Actions/Releases (адаптер), позже GitLab. Секреты: GitHub App с `actions:write` / `contents:read`, **без** `DEPLOY_SSH_KEY` (ключ остаётся в GitHub Environments).
-- `vdp/delivery-console/` — Vite UI «как VDP»: список сред и текущий digest; перечень обновлений + primary «Обновить»; откат; расписание; кто approver на gamma. Disabled CTA с причиной. Один primary на экран.
+- `vdp/delivery-gate/` — Go API: use cases listReleases, getEnvironment, promote, rollback, setSchedule, setApprovers. Порты: GitHub Actions/Releases (адаптер), позже GitLab. Секреты: GitHub App с `actions:write` / `contents:read`, **без** `DEPLOY_SSH_KEY` (ключ остаётся в GitHub Environments).
+- `vdp/delivery-gate-console/` — Vite UI «как VDP»: список сред и текущий digest; перечень обновлений + primary «Обновить»; откат; расписание; кто approver на gamma. Disabled CTA с причиной. Один primary на экран.
 
 Auth волны 2 (порядок внутри эпика): (1) GitHub OAuth; (2) GitLab OAuth; (3) локальные учётки консоли. Роли консоли: viewer, deployer-alpha-preview, deployer-beta, deployer-gamma, policy-admin. Проверка на API, не только скрытие кнопки.
 

@@ -120,10 +120,14 @@ services:
         condition: service_healthy
       docs-service:
         condition: service_healthy
+      # Release overlay keeps the gateways behind the "gateways" profile, so the
+      # dependency must stay optional: hub falls back to notify stubs without them.
       mail-gateway:
         condition: service_healthy
+        required: false
       sms-gateway:
         condition: service_healthy
+        required: false
     healthcheck:
       test: ["CMD-SHELL", "wget -qO- http://127.0.0.1:8081/api/v1/health >/dev/null || exit 1"]
       interval: 5s
