@@ -4,6 +4,7 @@ import (
 	"context"
 	"log/slog"
 	"os"
+	"strings"
 	"sync"
 	"time"
 
@@ -117,6 +118,12 @@ func (p *Plugin) Execute(ctx context.Context, action string, params map[string]a
 		} else {
 			out, err := remote.PostJSON(ctx, p.baseURL, p.timeout, contract)
 			if err != nil {
+				if strings.Contains(err.Error(), "http status 409") {
+					result = map[string]any{
+						"status": "accepted", "mode": "http", "idempotent": true, "idempotency_key": idemKey,
+					}
+					return nil
+				}
 				return err
 			}
 			result = out

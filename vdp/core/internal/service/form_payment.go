@@ -153,7 +153,7 @@ func (s *FormPaymentService) TransitionWithComment(ctx context.Context, principa
 	if err := s.enqueue(ctx, next, events.TypeFormPaymentStatusChanged, payload); err != nil {
 		return formpayment.Form{}, err
 	}
-	if err := s.enqueue(ctx, next, events.TypeTelegramNotify, payload); err != nil {
+	if err := s.enqueueTelegram(ctx, next, payload); err != nil {
 		return formpayment.Form{}, err
 	}
 	if err := s.afterStatusChanged(ctx, form, next, action, payload); err != nil {
@@ -168,10 +168,19 @@ func (s *FormPaymentService) afterStatusChanged(ctx context.Context, prev, next 
 		s.bus.Publish(next.ID, "status_changed", payload)
 	}
 	if tpl := mailTemplateForStatus(next.Status); tpl != "" {
-		mailPayload := map[string]any{"template": tpl, "from": string(prev.Status), "to": string(next.Status)}
+		mailPayload := map[string]any{"template": tpl, "from": string(prev.Status), "status_to": string(next.Status)}
+		if acc, err := s.store.AccountByID(ctx, next.AccountID); err == nil && acc.Email != "" {
+			mailPayload["to"] = acc.Email
+		}
 		if err := s.enqueue(ctx, next, events.TypeMailNotify, mailPayload); err != nil {
 			return err
 		}
+	}
+	if err := s.enqueueSMSIfNeeded(ctx, next, action); err != nil {
+		return err
+	}
+	if next.Status == formpayment.StatusPaymentSent {
+		_ = s.enqueue(ctx, next, events.TypeOneCPaymentRequested, map[string]any{"operation": "cover"})
 	}
 	if action == formpayment.ActionRefundInit {
 		task := domain.TreasurerTask{

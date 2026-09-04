@@ -6,6 +6,9 @@ export type AccountView = {
   role: string;
   full_name?: string;
   organization_id?: string;
+  telegram_linked?: boolean;
+  telegram_notify_enabled?: boolean;
+  sms_notify_enabled?: boolean;
 };
 
 export async function login(email: string, password: string): Promise<AuthTokens> {

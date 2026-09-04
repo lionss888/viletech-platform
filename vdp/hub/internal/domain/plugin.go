@@ -20,6 +20,7 @@ const (
 	TypePartner       Type = "partner"
 	TypeDocs          Type = "docs"
 	TypeMail          Type = "mail"
+	TypeSMS           Type = "sms"
 )
 
 type Plugin interface {

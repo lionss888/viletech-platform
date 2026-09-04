@@ -1,7 +1,8 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
 
 import { buildAttachedDocuments } from "./document-upload";
-import { COUNTERPARTIES, FORMS, ORGANIZATIONS, USERS } from "./mock";
+import { demoSeedForms, demoSeedUsers } from "./demo-seed-overlay";
+import { COUNTERPARTIES, ORGANIZATIONS } from "./mock";
 import { COMPLIANCE_TOOLS, COUNTRIES, CURRENCIES, HS_CODES, PROVIDERS } from "./reference";
 import type { ComplianceToolRecord, CountryRecord, CurrencyRecord, HsCodeRecord, ProviderRecord } from "./reference";
 import { REGISTRIES, type RefRecord, type RegistryKey } from "./registry";
@@ -77,7 +78,12 @@ const initialRefs: Refs = {
   complianceTools: COMPLIANCE_TOOLS as unknown as RefRecord[],
 };
 
-const initialState: State = { session: null, forms: FORMS, users: USERS, refs: initialRefs };
+const initialState: State = {
+  session: null,
+  forms: demoSeedForms(),
+  users: demoSeedUsers(),
+  refs: initialRefs,
+};
 
 const StoreContext = createContext<Store | null>(null);
 

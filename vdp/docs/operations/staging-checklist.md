@@ -10,11 +10,23 @@ CI verified. Test docs_http_test.go in make test-adapters asserts POST payload a
 
 ## Diadoc
 
-CI not verified. Staging manual only. Контракт и callback есть. Prod signing требует Diadoc credentials и webhook. Manual signing path доступен без Diadoc в MVP UI.
+CI contract plus smart stub timeout. Staging manual. Prod signing requires Diadoc credentials and webhook. Manual download/upload path remains in UI. Empty DIADOC_URL uses fixture. Do not claim 100 percent Diadoc.
 
 ## Mail notify
 
-CI verified. Test mail_http_test.go in make test-adapters. Staging: MAIL_URL in staging-smoke. Hub mail adapter stub when URL empty.
+CI verified. Test mail_http_test.go in make test-adapters plus mail-gateway unit tests. Staging: MAIL_URL in staging-smoke (health + probe). Compose: mail-gateway local provider at http://mail-gateway:8091/notify. Empty MAIL_URL still stubs in hub (dev without gateway). Switch SMTP with MAIL_PROVIDER=smtp and host secrets — not a core change.
+
+## SMS notify
+
+CI verified on HTTP contract (sms-gateway + hub sms adapter). Catalog: OTP and critical events only. Compose: sms-gateway local provider. Staging: SMS_URL optional in staging-smoke. External SMSC: SMS_PROVIDER=http + SMS_PROVIDER_URL.
+
+## Telegram
+
+CI partial (bind AuthZ plus fixture notify). Staging: TELEGRAM_BOT_TOKEN and TELEGRAM_BOT_USERNAME. Empty token uses hub fixture. One platform bot; personal link plus work-chat join (approve: admin/manager).
+
+## 1C
+
+CI adapter tests (cover/fee, 409 idempotent, timeout). Not a new service. Staging: ONEC_URL in env when a stand exists. Empty URL uses fixture. Do not claim 1C ready without URL.
 
 ## OCR recognition
 
@@ -47,6 +59,8 @@ security-signoff-checklist.md. AuthZ every endpoint. Provider DTO audit. Secrets
 ## Release gate before pilot handover
 
 make release-gate green locally or vdp-release workflow. Tag vdp-v* triggers vdp-images (gate + GHCR digest for core/hub/docs/fe) and vdp-deploy → alpha (auto after Images on main). beta/gamma: workflow_dispatch VDP Deploy with GitHub Environment (gamma: required reviewers). Review e2e-coverage-matrix.md and known-gaps with customer.
+
+Before customer transfer complete handover-secrets-checklist.md (PAT rotation, deploy SSH keys, .env.deploy secrets, cloud and DNS ownership). Gate starts when the team agrees it is time to hand over to the customer.
 
 ## Alpha host bootstrap (one-time)
 

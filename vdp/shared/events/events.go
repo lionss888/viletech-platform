@@ -11,6 +11,7 @@ const (
 	TypePartnerDispatch          = "partner.dispatch"
 	TypeDocsGenerate             = "docs.generate"
 	TypeMailNotify               = "mail.notify"
+	TypeSMSNotify                = "sms.notify"
 	TypeSocketPush               = "socket.push"
 	TypeBankWebhook              = "bank.webhook"
 )

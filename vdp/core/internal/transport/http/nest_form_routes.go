@@ -367,7 +367,12 @@ func (s *Server) handleNestFormGETPath(w http.ResponseWriter, r *http.Request, p
 	case "sign-method":
 		writeJSON(w, http.StatusOK, map[string]string{"sign_method": form.SignMethod})
 	case "payment-order/diadoc-status", "report/diadoc-status":
-		writeJSON(w, http.StatusOK, map[string]string{"status": "idle"})
+		view, err := s.forms.DiadocStatus(r.Context(), principal, id)
+		if err != nil {
+			writeError(w, err)
+			return
+		}
+		writeJSON(w, http.StatusOK, view)
 	default:
 		writeJSON(w, http.StatusOK, form)
 	}

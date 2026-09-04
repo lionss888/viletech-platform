@@ -9,15 +9,28 @@
 # Postgres data lives in named volumes so redeploys never drop the alpha dataset.
 services:
   postgres-core:
+    restart: unless-stopped
     volumes:
       - postgres_core_data:/var/lib/postgresql/data
 
   postgres-hub:
+    restart: unless-stopped
     volumes:
       - postgres_hub_data:/var/lib/postgresql/data
 
   docs-service:
     image: ${VDP_DOCS_IMAGE:?set VDP_DOCS_IMAGE to registry image@digest or :tag}
+    restart: unless-stopped
+
+  # Optional notify gateways — enable with --profile gateways when VDP_MAIL_IMAGE / VDP_SMS_IMAGE are pinned.
+  mail-gateway:
+    profiles: ["gateways"]
+    image: ${VDP_MAIL_IMAGE:-ghcr.io/lionss888/vdp-mail:unused}
+    restart: unless-stopped
+
+  sms-gateway:
+    profiles: ["gateways"]
+    image: ${VDP_SMS_IMAGE:-ghcr.io/lionss888/vdp-sms:unused}
     restart: unless-stopped
 
   hub:

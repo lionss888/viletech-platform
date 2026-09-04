@@ -39,14 +39,15 @@ func main() {
 	}
 	seed.Dev(store)
 	forms := service.NewFormPaymentService(store, box, newID)
-	orgs := service.NewOrganizationService(store)
+	orgs := service.NewOrganizationService(store).WithOutbox(box)
 	catalog := service.NewCatalogService(store, box, newID)
 	auth := service.NewAuthService(store, cfg.JWTSecret, cfg.JWTExpirationHours)
 	accounts := service.NewAccountService(store)
+	notify := service.NewNotificationService(store)
 	publisher := service.NewHubPublisher(box, cfg.HubURL, cfg.HubSharedSecret, time.Duration(cfg.GatewayTimeoutSec)*time.Second).
 		WithDocsHandler(service.NewDocsAttachAdapter(forms))
 	go pollOutbox(ctx, publisher, log)
-	server := httpapi.NewServer(cfg, auth, accounts, forms, orgs, catalog, publisher)
+	server := httpapi.NewServer(cfg, auth, accounts, forms, orgs, catalog, publisher, notify)
 	addr := cfg.Host + ":" + cfg.Port
 	log.Info("vdp-core listening", "addr", addr, "store_driver", storeDriver())
 	if err := http.ListenAndServe(addr, server.Handler()); err != nil {

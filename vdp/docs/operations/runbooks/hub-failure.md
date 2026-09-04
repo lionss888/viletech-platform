@@ -2,7 +2,7 @@
 
 ## Симптомы
 
-Outbox core растёт, события docs.generate / mail.notify не доставляются.
+Outbox core растёт, события docs.generate / mail.notify / sms.notify не доставляются.
 
 Hub /api/v1/health не 200.
 
@@ -14,7 +14,7 @@ Inbox failures в логах hub.
 
 Шаг 2. Логи hub: plugin name, form_payment_id, HTTP status внешних URL.
 
-Шаг 3. Проверить DOCS_URL, MAIL_URL через scripts/staging-smoke.sh.
+Шаг 3. Проверить DOCS_URL, MAIL_URL, SMS_URL через scripts/staging-smoke.sh. Для compose: curl mail-gateway:8091/health и sms-gateway:8092/health.
 
 ## Деградация (ожидаемое поведение)
 
@@ -22,7 +22,9 @@ Inbox failures в логах hub.
 
 Docs dev stub: docs/{id}/stub.pdf только без DOCS_URL — не считать prod success.
 
-Mail stub: accepted без реальной отправки.
+Mail stub: accepted без реальной отправки, если MAIL_URL пуст. Compose local provider пишет лог, не SMTP.
+
+SMS stub: accepted без SMSC, если SMS_URL пуст. Gateway не меняет статус заявки.
 
 ## Восстановление
 

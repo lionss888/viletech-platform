@@ -12,23 +12,29 @@ type Account struct {
 	Blocked          bool   `json:"blocked"`
 	Active           bool   `json:"active"`
 	RefreshToken     string `json:"-"`
-	Lang             string `json:"lang,omitempty"`
-	RateSettingsJSON string `json:"rate_settings,omitempty"` // JSON []rate.Settings
-	BankRateReadonly bool   `json:"bank_rate_readonly,omitempty"`
+	Lang                   string `json:"lang,omitempty"`
+	RateSettingsJSON       string `json:"rate_settings,omitempty"` // JSON []rate.Settings
+	BankRateReadonly       bool   `json:"bank_rate_readonly,omitempty"`
+	TelegramChatID         string `json:"telegram_chat_id,omitempty"`
+	TelegramNotifyEnabled  bool   `json:"telegram_notify_enabled"`
+	SMSNotifyEnabled       bool   `json:"sms_notify_enabled"`
 }
 
 // PublicAccount omits secrets for API responses.
 func (a Account) Public() map[string]any {
 	return map[string]any{
-		"id":              a.ID,
-		"email":           a.Email,
-		"role":            a.Role,
-		"organization_id": a.OrganizationID,
-		"full_name":       a.FullName,
-		"phone":           a.Phone,
-		"blocked":         a.Blocked,
-		"active":          a.Active,
-		"lang":            a.Lang,
+		"id":                      a.ID,
+		"email":                   a.Email,
+		"role":                    a.Role,
+		"organization_id":         a.OrganizationID,
+		"full_name":               a.FullName,
+		"phone":                   a.Phone,
+		"blocked":                 a.Blocked,
+		"active":                  a.Active,
+		"lang":                    a.Lang,
+		"telegram_linked":         a.TelegramChatID != "",
+		"telegram_notify_enabled": a.TelegramNotifyEnabled,
+		"sms_notify_enabled":      a.SMSNotifyEnabled,
 	}
 }
 

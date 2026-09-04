@@ -9,6 +9,7 @@ import (
 
 	"github.com/viletech/vdp/hub/internal/adapters/docs"
 	"github.com/viletech/vdp/hub/internal/adapters/mail"
+	"github.com/viletech/vdp/hub/internal/adapters/sms"
 	"github.com/viletech/vdp/hub/internal/adapters/telegram"
 	"github.com/viletech/vdp/hub/internal/dispatcher"
 	"github.com/viletech/vdp/hub/internal/inbox"
@@ -70,11 +71,11 @@ func TestRouteDocsAndMail(t *testing.T) {
 			wantVal:   "mail",
 		},
 		{
-			name:      "socket",
-			eventType: events.TypeSocketPush,
-			formID:    "form-socket",
+			name:      "sms",
+			eventType: events.TypeSMSNotify,
+			formID:    "form-sms",
 			wantKey:   "channel",
-			wantVal:   "telegram",
+			wantVal:   "sms",
 		},
 	}
 	for _, tc := range cases {
@@ -89,6 +90,9 @@ func TestRouteDocsAndMail(t *testing.T) {
 				t.Fatal(err)
 			}
 			if err := plugins.Register(telegram.New(time.Second, 2, log)); err != nil {
+				t.Fatal(err)
+			}
+			if err := plugins.Register(sms.New(time.Second, 2, log)); err != nil {
 				t.Fatal(err)
 			}
 			d := dispatcher.New(inbox.NewStore(), plugins, log)

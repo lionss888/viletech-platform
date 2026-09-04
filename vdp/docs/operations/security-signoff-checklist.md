@@ -18,6 +18,8 @@ ENVIRONMENT=production + JWT_SECRET и HUB_SHARED_SECRET не dev-default (guard
 
 S2S hub: ротация HUB_SHARED_SECRET задокументирована. Статус не выполнено.
 
+Перед передачей заказчику: handover-secrets-checklist.md закрыт (PAT, DEPLOY_SSH_KEY, JWT/HUB на VM, доступы Selectel/reg.ru/GitHub/GitLab). Статус не выполнено.
+
 ## Файлы и документы
 
 ACL preview: User видит только свои формы; чужой file_id → 403 (unit TestFileACLUserCannotPreviewForeignFormFile). Статус не выполнено.

@@ -35,6 +35,8 @@ export function DocumentsPage() {
   const mine = visibleForms(forms, session?.role, session?.name);
   const canWrite = session?.role === "user" || session?.role === "manager" || session?.role === "root";
   const canDelete = canWrite && mode === "demo";
+  const deleteDisabledReason =
+    canWrite && mode === "app" ? "Удаление документов пока не поддерживается core API" : null;
 
   const [query, setQuery] = useState("");
   const [kind, setKind] = useState("");
@@ -161,6 +163,16 @@ export function DocumentsPage() {
                           type="button"
                           onClick={() => void removeDocument(form.id, doc.id)}
                           className="rounded-md px-2 py-1 text-[11px] font-semibold text-destructive hover:bg-destructive-soft"
+                        >
+                          Удалить
+                        </button>
+                      )}
+                      {deleteDisabledReason && (
+                        <button
+                          type="button"
+                          disabled
+                          title={deleteDisabledReason}
+                          className="cursor-not-allowed rounded-md px-2 py-1 text-[11px] font-semibold text-muted-foreground opacity-60"
                         >
                           Удалить
                         </button>

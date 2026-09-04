@@ -32,7 +32,7 @@ func (s *FormPaymentService) AssignDeadline(ctx context.Context, principal authz
 		"deadline": deadline.UTC().Format(time.RFC3339),
 		"provider": form.ProviderID,
 	}
-	_ = s.enqueue(ctx, form, events.TypeTelegramNotify, payload)
+	_ = s.enqueueTelegram(ctx, form, payload)
 	_ = s.enqueue(ctx, form, events.TypeMailNotify, map[string]any{
 		"template": "execution_deadline", "deadline": deadline.UTC().Format(time.RFC3339),
 	})

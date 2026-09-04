@@ -4,15 +4,19 @@ import (
 	"context"
 	"crypto/rand"
 	"encoding/hex"
+	"time"
 
 	"github.com/viletech/vdp/core/internal/authz"
 	"github.com/viletech/vdp/core/internal/domain"
+	"github.com/viletech/vdp/core/internal/outbox"
 	"github.com/viletech/vdp/core/internal/repository"
 	apperrors "github.com/viletech/vdp/core/pkg/errors"
+	"github.com/viletech/vdp/shared/events"
 )
 
 type OrganizationService struct {
 	store repository.Store
+	box   outbox.Store
 	newID func() string
 }
 
@@ -25,6 +29,11 @@ func NewOrganizationService(store repository.Store) *OrganizationService {
 			return hex.EncodeToString(buf)
 		},
 	}
+}
+
+func (s *OrganizationService) WithOutbox(box outbox.Store) *OrganizationService {
+	s.box = box
+	return s
 }
 
 func (s *OrganizationService) Get(ctx context.Context, principal authz.Principal, id string) (domain.Organization, error) {
@@ -192,6 +201,14 @@ func (s *OrganizationService) Block(ctx context.Context, principal authz.Princip
 	if acct, err := s.store.AccountByID(ctx, org.AccountID); err == nil {
 		acct.Blocked = true
 		_ = s.store.SaveAccount(ctx, acct)
+		if s.box != nil && acct.SMSNotifyEnabled && acct.Phone != "" {
+			_ = s.box.Enqueue(ctx, outbox.Event{
+				ID: s.newID(), AggregateID: org.ID, AggregateType: "organization",
+				EventType: events.TypeSMSNotify, FormPaymentID: org.ID,
+				Payload: map[string]any{"template": "org_blocked", "to": acct.Phone, "event": "organization_blocked"},
+				Status: "pending", MaxRetries: 3, CreatedAt: time.Now().UTC(),
+			})
+		}
 	}
 	return org, nil
 }

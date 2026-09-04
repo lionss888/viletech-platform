@@ -12,7 +12,9 @@ for script in \
   scripts/pin-revision.sh \
   scripts/wait-release-health.sh \
   scripts/rollback-compose-release.sh \
-  scripts/bootstrap-host.sh; do
+  scripts/bootstrap-host.sh \
+  scripts/deploy-preview.sh \
+  scripts/gitlab-promote.sh; do
   bash -n "$script"
   echo "syntax ok: $script"
 done

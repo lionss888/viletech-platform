@@ -28,7 +28,7 @@ Hub занимается интеграциями: отправляет доку
 
 ## Compose-стек
 
-Сервисы postgres-core, postgres-hub, hub, core, fe поднимаются через docker-compose.yml в корне vdp. STORE_DRIVER=postgres по умолчанию. Memory driver только для unit-тестов.
+Сервисы postgres-core, postgres-hub, docs-service, mail-gateway, sms-gateway, hub, core, fe поднимаются через docker-compose.yml в корне vdp. STORE_DRIVER=postgres по умолчанию. Memory driver только для unit-тестов.
 
 ## Поток запроса от UI
 

@@ -3,7 +3,9 @@ package httpapi
 import (
 	"encoding/json"
 	"net/http"
+	"time"
 
+	"github.com/viletech/vdp/hub/internal/adapters/telegram"
 	"github.com/viletech/vdp/hub/internal/dispatcher"
 	"github.com/viletech/vdp/hub/internal/registry"
 	"github.com/viletech/vdp/hub/pkg/config"
@@ -21,6 +23,7 @@ func New(cfg *config.Config, dispatch *dispatcher.Dispatcher, plugins *registry.
 	srv := &Server{cfg: cfg, dispatch: dispatch, plugins: plugins, mux: http.NewServeMux()}
 	srv.mux.HandleFunc("GET /api/v1/health", srv.health)
 	srv.mux.HandleFunc("POST /api/v1/inbox", srv.withS2S(srv.inbox))
+	srv.mux.HandleFunc("POST /telegram/webhook", srv.telegramWebhook)
 	return srv
 }
 
@@ -48,6 +51,11 @@ func (s *Server) inbox(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	writeJSON(w, http.StatusAccepted, result)
+}
+
+func (s *Server) telegramWebhook(w http.ResponseWriter, r *http.Request) {
+	timeout := time.Duration(s.cfg.ExternalTimeout) * time.Millisecond
+	telegram.HandleWebhook(w, r, s.cfg.CoreURL, s.cfg.SharedSecret, timeout)
 }
 
 func (s *Server) withS2S(next http.HandlerFunc) http.HandlerFunc {
