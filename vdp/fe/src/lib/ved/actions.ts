@@ -1,4 +1,6 @@
 import type { FormAction, FormStatus, VedRole } from "./types";
+import { findProcessRole, roleAllowsUiAction } from "./process-role-filter";
+import type { ProcessRoleRow } from "@/lib/api/process-roles";
 
 /**
  * Матрица действий роль × статус (demo UI + bridge к core в app-режиме).
@@ -209,9 +211,26 @@ function rootActions(status: FormStatus): FormAction[] {
   return all;
 }
 
-export function actionsFor(role: VedRole, status: FormStatus): FormAction[] {
-  if (role === "root") return rootActions(status);
-  return MATRIX[role]?.[status] ?? [];
+export function actionsFor(
+  role: VedRole,
+  status: FormStatus,
+  processRoles?: ProcessRoleRow[],
+): FormAction[] {
+  const raw = role === "root" ? rootActions(status) : (MATRIX[role]?.[status] ?? []);
+  if (!processRoles?.length) return raw;
+  if (role === "root") {
+    return raw.filter((action) => {
+      if (action.id === "root_cancel_form") return true;
+      // Root union: keep actions whose owning operational role is still enabled as actor.
+      return OPERATIONAL_ROLES.some((r) => {
+        const cfg = findProcessRole(processRoles, r);
+        if (!cfg?.enabled || cfg.influence !== "actor") return false;
+        return roleAllowsUiAction(cfg, action.id);
+      });
+    });
+  }
+  const cfg = findProcessRole(processRoles, role);
+  return raw.filter((action) => roleAllowsUiAction(cfg, action.id));
 }
 
 /** Provider видит org/INN; скрываем только ПДн клиента. */

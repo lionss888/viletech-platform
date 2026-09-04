@@ -13,10 +13,11 @@ type Command struct {
 	Role        domain.Role
 	OrgApproved bool
 	Target      Status
+	Policy      *ProcessPolicySnapshot
 }
 
 func Apply(cmd Command) (Form, error) {
-	if !RoleMayPerform(cmd.Role, cmd.Action) {
+	if !RoleMayPerformWithConfig(cmd.Role, cmd.Action, cmd.Policy) {
 		return Form{}, apperrors.New(apperrors.ErrCodeForbidden, "role is not allowed to perform this action")
 	}
 	target := cmd.Target

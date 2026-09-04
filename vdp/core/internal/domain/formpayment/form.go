@@ -62,6 +62,8 @@ type Form struct {
 	Commission            Commission `json:"commission"`
 	InvoiceAmount         string     `json:"invoice_amount,omitempty"`
 	Currency              string     `json:"currency,omitempty"`
+	ProcessPolicyVersion  int        `json:"process_policy_version,omitempty"`
+	ReferredByAccountID   string     `json:"referred_by_account_id,omitempty"`
 	CreatedAt             time.Time  `json:"created_at"`
 	UpdatedAt             time.Time  `json:"updated_at"`
 }
