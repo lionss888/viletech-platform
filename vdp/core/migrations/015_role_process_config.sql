@@ -32,7 +32,7 @@ INSERT INTO role_process_configs (role, enabled, priority, influence, capabiliti
     ('senior_provider', TRUE, 55, 'actor', '["form.view","manager.payment","provider.payment"]'),
     ('viewer', FALSE, 60, 'observer', '["form.view"]'),
     ('one_c', TRUE, 70, 'actor', '["internal.callback"]'),
-    ('bank', TRUE, 80, 'actor', '["form.view","form.submit"]')
+    ('bank', TRUE, 80, 'actor', '["form.view","form.submit","bank.channel"]')
 ON CONFLICT (role) DO NOTHING;
 
 ALTER TABLE form_payments ADD COLUMN IF NOT EXISTS process_policy_version INT NOT NULL DEFAULT 1;

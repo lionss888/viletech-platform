@@ -77,10 +77,11 @@ compose-db-migrate:
 	@chmod +x scripts/compose-db-migrate.sh
 	@./scripts/compose-db-migrate.sh
 
+# Existing Postgres volumes skip docker-entrypoint-initdb.d; migrate before core seed.
 compose-up:
-	docker compose up -d --build
+	docker compose up -d --build postgres-core postgres-hub
 	@$(MAKE) compose-db-migrate
-	docker compose restart core hub
+	docker compose up -d --build
 	@echo "waiting for core+hub+fe health..."
 	@ok=0; for i in 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28 29 30; do \
 		if curl -sf http://127.0.0.1:8080/api/v1/health >/dev/null && \
@@ -97,6 +98,8 @@ compose-up:
 	@echo "API http://localhost:8080"
 
 compose-up-prod:
+	docker compose --profile prod up -d --build postgres-core postgres-hub
+	@$(MAKE) compose-db-migrate
 	docker compose --profile prod up -d --build
 	@echo "waiting for core+hub+fe-prod health..."
 	@ok=0; for i in 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28 29 30; do \

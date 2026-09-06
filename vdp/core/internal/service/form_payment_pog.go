@@ -27,7 +27,7 @@ func (s *FormPaymentService) RequestDocsGenerate(ctx context.Context, principal 
 
 // RequestPaymentOrderGeneration unifies GenerateDocs / POG / agent-report enqueue.
 func (s *FormPaymentService) RequestPaymentOrderGeneration(ctx context.Context, principal authz.Principal, formID, kind string) error {
-	if err := authz.RequireRoles(principal, domain.RoleManager, domain.RoleTreasurer, domain.RoleRoot); err != nil {
+	if err := authz.AuthorizeRoles(principal, domain.RoleManager, domain.RoleTreasurer, domain.RoleRoot); err != nil {
 		return err
 	}
 	form, err := s.Get(ctx, principal, formID)

@@ -4,7 +4,7 @@ import { ProfilePage } from "@/components/ved/pages/profile-page";
 
 export const Route = createFileRoute("/profile")({
   head: () => ({
-    meta: [{ title: "Профиль — ВЭД от Вилетех" }],
+    meta: [{ title: "Профиль — ⚡ ВЭД от Вилетех ₽" }],
   }),
   component: ProfilePage,
 });

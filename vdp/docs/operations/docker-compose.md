@@ -4,7 +4,7 @@
 
 ## Сервис postgres-core
 
-Image postgres 16 alpine. Host port 5433 to container 5432. Migrations 001–014 mounted to initdb.
+Image postgres 16 alpine. Host port 5433 to container 5432. Migrations 001–015 mounted to initdb (только при первом создании volume).
 
 ## Сервис postgres-hub
 

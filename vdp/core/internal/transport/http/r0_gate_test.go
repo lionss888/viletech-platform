@@ -148,4 +148,13 @@ func TestDefaultStoreDriverIsPostgresNotMemory(t *testing.T) {
 	if !strings.Contains(text, "013_bank_org_client_type.sql") {
 		t.Fatal("core migration 013_bank_org_client_type.sql must be mounted")
 	}
+	if !strings.Contains(text, "014_notifications.sql") {
+		t.Fatal("core migration 014_notifications.sql must be mounted")
+	}
+	if !strings.Contains(text, "015_role_process_config.sql") {
+		t.Fatal("core migration 015_role_process_config.sql must be mounted")
+	}
+	if !strings.Contains(text, "016_account_kind_caps.sql") {
+		t.Fatal("core migration 016_account_kind_caps.sql must be mounted")
+	}
 }

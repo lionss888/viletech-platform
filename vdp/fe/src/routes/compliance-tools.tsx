@@ -4,7 +4,7 @@ import { ComplianceToolsPage } from "./demo/compliance-tools";
 
 export const Route = createFileRoute("/compliance-tools")({
   head: () => ({
-    meta: [{ title: "Инструменты комплаенс — ВЭД от Вилетех" }],
+    meta: [{ title: "Инструменты комплаенс — ⚡ ВЭД от Вилетех ₽" }],
   }),
   component: ComplianceToolsPage,
 });

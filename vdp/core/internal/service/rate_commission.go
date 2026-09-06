@@ -20,7 +20,7 @@ func (s *FormPaymentService) ResolveAndSetRate(ctx context.Context, principal au
 	if err != nil {
 		return formpayment.Form{}, rate.ResolvedDealRate{}, err
 	}
-	if err := authz.RequireRoles(principal, domain.RoleUser, domain.RoleManager, domain.RoleTreasurer, domain.RoleRoot); err != nil {
+	if err := authz.AuthorizeRoles(principal, domain.RoleUser, domain.RoleManager, domain.RoleTreasurer, domain.RoleRoot); err != nil {
 		return formpayment.Form{}, rate.ResolvedDealRate{}, err
 	}
 	if clientCurrency == "" {

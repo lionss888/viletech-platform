@@ -13,7 +13,7 @@ import (
 )
 
 func (s *FormPaymentService) AssignDeadline(ctx context.Context, principal authz.Principal, formID string, deadline time.Time) (formpayment.Form, error) {
-	if err := authz.RequireRoles(principal, domain.RoleManager); err != nil {
+	if err := authz.AuthorizeRoles(principal, domain.RoleManager); err != nil {
 		return formpayment.Form{}, err
 	}
 	form, err := s.store.FormByID(ctx, formID)
@@ -43,7 +43,7 @@ func (s *FormPaymentService) AssignDeadline(ctx context.Context, principal authz
 }
 
 func (s *FormPaymentService) AssignProvider(ctx context.Context, principal authz.Principal, formID, providerID string, clientAgreed bool) (formpayment.Form, error) {
-	if err := authz.RequireRoles(principal, domain.RoleManager); err != nil {
+	if err := authz.AuthorizeRoles(principal, domain.RoleManager); err != nil {
 		return formpayment.Form{}, err
 	}
 	provider, err := s.store.AccountByID(ctx, providerID)
@@ -77,7 +77,7 @@ func (s *FormPaymentService) AssignProvider(ctx context.Context, principal authz
 }
 
 func (s *FormPaymentService) AssignAgent(ctx context.Context, principal authz.Principal, formID, agentID string) (formpayment.Form, error) {
-	if err := authz.RequireRoles(principal, domain.RoleManager); err != nil {
+	if err := authz.AuthorizeRoles(principal, domain.RoleManager); err != nil {
 		return formpayment.Form{}, err
 	}
 	if _, err := s.store.AgentByID(ctx, agentID); err != nil {
@@ -103,7 +103,7 @@ func (s *FormPaymentService) AssignAgent(ctx context.Context, principal authz.Pr
 }
 
 func (s *FormPaymentService) SetConfirmation(ctx context.Context, principal authz.Principal, formID, fileContent, fileID string) (formpayment.Form, error) {
-	if err := authz.RequireRoles(principal, domain.RoleProvider, domain.RoleSeniorProvider); err != nil {
+	if err := authz.AuthorizeRoles(principal, domain.RoleProvider, domain.RoleSeniorProvider); err != nil {
 		return formpayment.Form{}, err
 	}
 	form, err := s.Get(ctx, principal, formID)

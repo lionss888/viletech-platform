@@ -40,6 +40,7 @@ type MemoryStore struct {
 	chatJoins       map[string]domain.ChatJoin
 	tgLinks         map[string]domain.TelegramLinkCode
 	processPolicy   *formpayment.ProcessPolicySnapshot
+	roleSystemCaps  map[domain.Role][]string
 }
 
 func NewMemoryStore() *MemoryStore {
@@ -64,6 +65,7 @@ func NewMemoryStore() *MemoryStore {
 		workChats:       map[string]domain.WorkChat{},
 		chatJoins:       map[string]domain.ChatJoin{},
 		tgLinks:         map[string]domain.TelegramLinkCode{},
+		roleSystemCaps:  map[domain.Role][]string{},
 	}
 }
 
@@ -73,6 +75,9 @@ func NewStore() *MemoryStore { return NewMemoryStore() }
 func (s *MemoryStore) SaveAccount(_ context.Context, account domain.Account) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
+	if account.AccountKind == "" {
+		account.AccountKind = domain.KindForRole(account.Role)
+	}
 	if prev, ok := s.accounts[account.ID]; ok && prev.RefreshToken != "" && prev.RefreshToken != account.RefreshToken {
 		delete(s.accountsRefresh, prev.RefreshToken)
 	}
@@ -837,8 +842,35 @@ func (s *MemoryStore) SaveProcessPolicySnapshot(_ context.Context, snap formpaym
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	cp := snap
-	cp.Roles = append([]formpayment.RoleProcessConfig(nil), snap.Roles...)
+	filtered := make([]formpayment.RoleProcessConfig, 0, len(snap.Roles))
+	for _, cfg := range snap.Roles {
+		if formpayment.IsProcessEligibleRole(cfg.Role) {
+			filtered = append(filtered, cfg)
+		}
+	}
+	cp.Roles = filtered
 	s.processPolicy = &cp
+	return nil
+}
+
+func (s *MemoryStore) GetRoleSystemCapabilities(_ context.Context, role domain.Role) ([]string, error) {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+	if caps, ok := s.roleSystemCaps[role]; ok {
+		return append([]string(nil), caps...), nil
+	}
+	if role == domain.RoleRoot {
+		return []string{
+			"accounts.manage", "directories.manage", "forms.admin", "process_roles.manage", "system.admin",
+		}, nil
+	}
+	return nil, nil
+}
+
+func (s *MemoryStore) SaveRoleSystemCapabilities(_ context.Context, role domain.Role, caps []string) error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	s.roleSystemCaps[role] = append([]string(nil), caps...)
 	return nil
 }
 

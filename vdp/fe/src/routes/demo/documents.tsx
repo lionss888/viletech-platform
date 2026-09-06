@@ -20,9 +20,9 @@ const KIND_FILTERS: { value: string; label: string }[] = [
 export const Route = createFileRoute("/demo/documents")({
   head: () => ({
     meta: [
-      { title: "Документы — ВЭД от Вилетех" },
+      { title: "Документы — ⚡ ВЭД от Вилетех ₽" },
       { name: "description", content: "Все документы по сделкам: договоры, поручения, инвойсы, платёжные документы и отчёты с предпросмотром." },
-      { property: "og:title", content: "Документы — ВЭД от Вилетех" },
+      { property: "og:title", content: "Документы — ⚡ ВЭД от Вилетех ₽" },
       { property: "og:description", content: "Договоры, поручения, инвойсы и платёжные документы по всем заявкам." },
     ],
   }),

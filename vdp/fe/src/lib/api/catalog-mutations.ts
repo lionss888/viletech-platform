@@ -51,13 +51,22 @@ export type CreateAdminInput = {
   email: string;
   password: string;
   role: string;
+  account_kind?: "user" | "admin";
+  full_name?: string;
+  business_cap_overrides?: string[];
+  system_cap_overrides?: string[];
 };
 
 export type PatchAdminInput = {
   email?: string;
   role?: string;
+  account_kind?: "user" | "admin";
   blocked?: boolean;
   full_name?: string;
+  business_cap_overrides?: string[];
+  system_cap_overrides?: string[];
+  clear_business_overrides?: boolean;
+  clear_system_overrides?: boolean;
 };
 
 export function createOrganization(input: CreateOrganizationInput): Promise<CoreOrganization> {

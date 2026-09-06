@@ -61,12 +61,31 @@ export function capabilityForUiAction(actionId: string): string | undefined {
 export function roleAllowsUiAction(cfg: ProcessRoleRow | undefined, actionId: string): boolean {
   if (!cfg) return true;
   if (!cfg.enabled || cfg.influence === "none" || cfg.influence === "observer") {
-    return actionId === "root_cancel_form" && cfg.role === "root";
+    return false;
   }
-  if (cfg.role === "root") return true;
   const cap = capabilityForUiAction(actionId);
   if (!cap) return true;
-  return cfg.capabilities.includes(cap);
+  if (cfg.capabilities.includes(cap)) return true;
+  // Platform admin union CTA: forms.admin is modeled as full business catalog on FE via capabilities.
+  return cfg.capabilities.includes("forms.admin");
+}
+
+/** Effective account caps (from /me) for cabinet CTA filtering. */
+export function effectiveAllowsUiAction(
+  businessCaps: string[] | undefined,
+  systemCaps: string[] | undefined,
+  influence: string | undefined,
+  actionId: string,
+): boolean {
+  if (systemCaps?.includes("forms.admin") || systemCaps?.includes("system.admin")) {
+    return true;
+  }
+  if (influence === "none" || influence === "observer") {
+    return false;
+  }
+  const cap = capabilityForUiAction(actionId);
+  if (!cap) return true;
+  return (businessCaps ?? []).includes(cap);
 }
 
 export function findProcessRole(rows: ProcessRoleRow[] | undefined, role: string): ProcessRoleRow | undefined {

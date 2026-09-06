@@ -470,7 +470,7 @@ func (s *Server) handleAttachDoc(w http.ResponseWriter, r *http.Request, princip
 }
 
 func (s *Server) handleCOClients(w http.ResponseWriter, r *http.Request, principal authz.Principal) {
-	if err := authz.RequireRoles(principal, domain.RoleComplianceOfficer, domain.RoleRoot); err != nil {
+	if err := authz.AuthorizeRoles(principal, domain.RoleComplianceOfficer, domain.RoleRoot); err != nil {
 		writeError(w, err)
 		return
 	}
@@ -483,7 +483,7 @@ func (s *Server) handleCOClients(w http.ResponseWriter, r *http.Request, princip
 }
 
 func (s *Server) handleICOClients(w http.ResponseWriter, r *http.Request, principal authz.Principal) {
-	if err := authz.RequireRoles(principal, domain.RoleInternalComplianceOfficer, domain.RoleRoot); err != nil {
+	if err := authz.AuthorizeRoles(principal, domain.RoleInternalComplianceOfficer, domain.RoleRoot); err != nil {
 		writeError(w, err)
 		return
 	}
@@ -496,7 +496,7 @@ func (s *Server) handleICOClients(w http.ResponseWriter, r *http.Request, princi
 }
 
 func (s *Server) handleCOClientsXLSX(w http.ResponseWriter, r *http.Request, principal authz.Principal) {
-	if err := authz.RequireRoles(principal, domain.RoleComplianceOfficer, domain.RoleRoot); err != nil {
+	if err := authz.AuthorizeRoles(principal, domain.RoleComplianceOfficer, domain.RoleRoot); err != nil {
 		writeError(w, err)
 		return
 	}
@@ -509,7 +509,7 @@ func (s *Server) handleCOClientsXLSX(w http.ResponseWriter, r *http.Request, pri
 }
 
 func (s *Server) handleICOClientsXLSX(w http.ResponseWriter, r *http.Request, principal authz.Principal) {
-	if err := authz.RequireRoles(principal, domain.RoleInternalComplianceOfficer, domain.RoleRoot); err != nil {
+	if err := authz.AuthorizeRoles(principal, domain.RoleInternalComplianceOfficer, domain.RoleRoot); err != nil {
 		writeError(w, err)
 		return
 	}
@@ -522,7 +522,7 @@ func (s *Server) handleICOClientsXLSX(w http.ResponseWriter, r *http.Request, pr
 }
 
 func (s *Server) handleCOClientGet(w http.ResponseWriter, r *http.Request, principal authz.Principal) {
-	if err := authz.RequireRoles(principal, domain.RoleComplianceOfficer, domain.RoleRoot); err != nil {
+	if err := authz.AuthorizeRoles(principal, domain.RoleComplianceOfficer, domain.RoleRoot); err != nil {
 		writeError(w, err)
 		return
 	}
@@ -530,7 +530,7 @@ func (s *Server) handleCOClientGet(w http.ResponseWriter, r *http.Request, princ
 }
 
 func (s *Server) handleICOClientGet(w http.ResponseWriter, r *http.Request, principal authz.Principal) {
-	if err := authz.RequireRoles(principal, domain.RoleInternalComplianceOfficer, domain.RoleRoot); err != nil {
+	if err := authz.AuthorizeRoles(principal, domain.RoleInternalComplianceOfficer, domain.RoleRoot); err != nil {
 		writeError(w, err)
 		return
 	}
@@ -547,7 +547,7 @@ func (s *Server) writeClientDetails(w http.ResponseWriter, r *http.Request, prin
 }
 
 func (s *Server) handleCOClientRequests(w http.ResponseWriter, r *http.Request, principal authz.Principal) {
-	if err := authz.RequireRoles(principal, domain.RoleComplianceOfficer, domain.RoleRoot); err != nil {
+	if err := authz.AuthorizeRoles(principal, domain.RoleComplianceOfficer, domain.RoleRoot); err != nil {
 		writeError(w, err)
 		return
 	}
@@ -555,7 +555,7 @@ func (s *Server) handleCOClientRequests(w http.ResponseWriter, r *http.Request, 
 }
 
 func (s *Server) handleICOClientRequests(w http.ResponseWriter, r *http.Request, principal authz.Principal) {
-	if err := authz.RequireRoles(principal, domain.RoleInternalComplianceOfficer, domain.RoleRoot); err != nil {
+	if err := authz.AuthorizeRoles(principal, domain.RoleInternalComplianceOfficer, domain.RoleRoot); err != nil {
 		writeError(w, err)
 		return
 	}
@@ -572,7 +572,7 @@ func (s *Server) writeClientRequests(w http.ResponseWriter, r *http.Request, pri
 }
 
 func (s *Server) handleCOClientRequestsXLSX(w http.ResponseWriter, r *http.Request, principal authz.Principal) {
-	if err := authz.RequireRoles(principal, domain.RoleComplianceOfficer, domain.RoleRoot); err != nil {
+	if err := authz.AuthorizeRoles(principal, domain.RoleComplianceOfficer, domain.RoleRoot); err != nil {
 		writeError(w, err)
 		return
 	}
@@ -585,7 +585,7 @@ func (s *Server) handleCOClientRequestsXLSX(w http.ResponseWriter, r *http.Reque
 }
 
 func (s *Server) handleICOClientRequestsXLSX(w http.ResponseWriter, r *http.Request, principal authz.Principal) {
-	if err := authz.RequireRoles(principal, domain.RoleInternalComplianceOfficer, domain.RoleRoot); err != nil {
+	if err := authz.AuthorizeRoles(principal, domain.RoleInternalComplianceOfficer, domain.RoleRoot); err != nil {
 		writeError(w, err)
 		return
 	}
@@ -598,7 +598,7 @@ func (s *Server) handleICOClientRequestsXLSX(w http.ResponseWriter, r *http.Requ
 }
 
 func (s *Server) handleCOOrgCard(w http.ResponseWriter, r *http.Request, principal authz.Principal) {
-	if err := authz.RequireRoles(principal, domain.RoleComplianceOfficer, domain.RoleRoot); err != nil {
+	if err := authz.AuthorizeRoles(principal, domain.RoleComplianceOfficer, domain.RoleRoot); err != nil {
 		writeError(w, err)
 		return
 	}
@@ -606,7 +606,7 @@ func (s *Server) handleCOOrgCard(w http.ResponseWriter, r *http.Request, princip
 }
 
 func (s *Server) handleICOOrgCard(w http.ResponseWriter, r *http.Request, principal authz.Principal) {
-	if err := authz.RequireRoles(principal, domain.RoleInternalComplianceOfficer, domain.RoleRoot); err != nil {
+	if err := authz.AuthorizeRoles(principal, domain.RoleInternalComplianceOfficer, domain.RoleRoot); err != nil {
 		writeError(w, err)
 		return
 	}

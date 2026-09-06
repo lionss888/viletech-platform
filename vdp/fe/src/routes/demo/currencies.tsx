@@ -9,9 +9,9 @@ import { usePlatformStore } from "@/lib/ved/platform-store";
 export const Route = createFileRoute("/demo/currencies")({
   head: () => ({
     meta: [
-      { title: "Валюты расчётов — ВЭД от Вилетех" },
+      { title: "Валюты расчётов — ⚡ ВЭД от Вилетех ₽" },
       { name: "description", content: "Справочник валют расчётов: курс, статус доступности и объём заявок. Добавление, редактирование и загрузка данных." },
-      { property: "og:title", content: "Валюты расчётов — ВЭД от Вилетех" },
+      { property: "og:title", content: "Валюты расчётов — ⚡ ВЭД от Вилетех ₽" },
       { property: "og:description", content: "Курсы, ограничения и объёмы по валютам расчётов." },
     ],
   }),

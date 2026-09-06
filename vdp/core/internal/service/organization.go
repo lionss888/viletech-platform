@@ -72,11 +72,11 @@ func contains(xs []string, v string) bool {
 
 func (s *OrganizationService) Create(ctx context.Context, principal authz.Principal, name, inn, country string, orgType domain.OrganizationType) (domain.Organization, error) {
 	if orgType == domain.OrgTypeProvider {
-		if err := authz.RequireRoles(principal, domain.RoleSeniorProvider, domain.RoleRoot); err != nil {
+		if err := authz.AuthorizeRoles(principal, domain.RoleSeniorProvider, domain.RoleRoot); err != nil {
 			return domain.Organization{}, err
 		}
 	} else {
-		if err := authz.RequireRoles(principal, domain.RoleUser, domain.RoleManager, domain.RoleRoot); err != nil {
+		if err := authz.AuthorizeRoles(principal, domain.RoleUser, domain.RoleManager, domain.RoleRoot); err != nil {
 			return domain.Organization{}, err
 		}
 		orgType = domain.OrgTypeClient
@@ -122,7 +122,7 @@ func (s *OrganizationService) Delete(ctx context.Context, principal authz.Princi
 }
 
 func (s *OrganizationService) SetRating(ctx context.Context, principal authz.Principal, id string, rating domain.ClientRating) (domain.Organization, error) {
-	if err := authz.RequireRoles(principal, domain.RoleManager, domain.RoleInternalComplianceOfficer); err != nil {
+	if err := authz.AuthorizeRoles(principal, domain.RoleManager, domain.RoleInternalComplianceOfficer); err != nil {
 		return domain.Organization{}, err
 	}
 	org, err := s.store.OrganizationByID(ctx, id)
@@ -140,14 +140,14 @@ func (s *OrganizationService) SetRating(ctx context.Context, principal authz.Pri
 }
 
 func (s *OrganizationService) ListAwaiting(ctx context.Context, principal authz.Principal) ([]domain.Organization, error) {
-	if err := authz.RequireRoles(principal, domain.RoleManager, domain.RoleInternalComplianceOfficer); err != nil {
+	if err := authz.AuthorizeRoles(principal, domain.RoleManager, domain.RoleInternalComplianceOfficer); err != nil {
 		return nil, err
 	}
 	return s.store.ListAwaiting(ctx), nil
 }
 
 func (s *OrganizationService) Approve(ctx context.Context, principal authz.Principal, id string) (domain.Organization, error) {
-	if err := authz.RequireRoles(principal, domain.RoleInternalComplianceOfficer); err != nil {
+	if err := authz.AuthorizeRoles(principal, domain.RoleInternalComplianceOfficer); err != nil {
 		return domain.Organization{}, err
 	}
 	org, err := s.store.OrganizationByID(ctx, id)
@@ -170,7 +170,7 @@ func (s *OrganizationService) Approve(ctx context.Context, principal authz.Princ
 }
 
 func (s *OrganizationService) UnApprove(ctx context.Context, principal authz.Principal, id string) (domain.Organization, error) {
-	if err := authz.RequireRoles(principal, domain.RoleInternalComplianceOfficer); err != nil {
+	if err := authz.AuthorizeRoles(principal, domain.RoleInternalComplianceOfficer); err != nil {
 		return domain.Organization{}, err
 	}
 	org, err := s.store.OrganizationByID(ctx, id)
@@ -184,7 +184,7 @@ func (s *OrganizationService) UnApprove(ctx context.Context, principal authz.Pri
 }
 
 func (s *OrganizationService) Block(ctx context.Context, principal authz.Principal, id string) (domain.Organization, error) {
-	if err := authz.RequireRoles(principal, domain.RoleInternalComplianceOfficer, domain.RoleManager); err != nil {
+	if err := authz.AuthorizeRoles(principal, domain.RoleInternalComplianceOfficer, domain.RoleManager); err != nil {
 		return domain.Organization{}, err
 	}
 	org, err := s.store.OrganizationByID(ctx, id)
@@ -376,7 +376,7 @@ func (s *OrganizationService) DeleteSubaccount(ctx context.Context, principal au
 }
 
 func (s *OrganizationService) FetchByINN(_ context.Context, principal authz.Principal, inn string) (map[string]any, error) {
-	if err := authz.RequireRoles(principal, domain.RoleUser, domain.RoleManager, domain.RoleRoot); err != nil {
+	if err := authz.AuthorizeRoles(principal, domain.RoleUser, domain.RoleManager, domain.RoleRoot); err != nil {
 		return nil, err
 	}
 	return map[string]any{"inn": inn, "name": "stub-kontur-" + inn, "source": "stub"}, nil

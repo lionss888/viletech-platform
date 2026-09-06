@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Bring up the release compose stack from /opt/vdp (or DEPLOY_PATH).
 # Used by systemd after reboot/preemptible thaw so the full app returns without manual steps.
-# Order mirrors local make compose-up: postgres → migrate → stack → restart core/hub → health.
+# Order matches local make compose-up: postgres → migrate → stack → restart core/hub → health.
 set -euo pipefail
 
 DEPLOY_PATH="${DEPLOY_PATH:-/opt/vdp}"

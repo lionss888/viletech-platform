@@ -88,4 +88,7 @@ func TestIsMandatoryProcessRole(t *testing.T) {
 	if formpayment.IsMandatoryProcessRole(domain.RoleSales) {
 		t.Fatal("sales must be optional")
 	}
+	if formpayment.IsMandatoryProcessRole(domain.RoleRoot) {
+		t.Fatal("root must not be mandatory process role")
+	}
 }

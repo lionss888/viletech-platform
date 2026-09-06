@@ -1,15 +1,17 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 
+import { BRAND_NAME } from "@/lib/brand";
+
 export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
-      { title: "ВЭД — операционный контур платежей" },
+      { title: `${BRAND_NAME} — операционный контур платежей` },
       {
         name: "description",
         content:
           "Управление внешнеэкономическими сделками, документами и платежами в одном контуре: заявки, проверки, договоры, поручения и отгрузка.",
       },
-      { property: "og:title", content: "ВЭД — операционный контур платежей" },
+      { property: "og:title", content: `${BRAND_NAME} — операционный контур платежей` },
       { property: "og:description", content: "Управление сделками, документами и платежами." },
     ],
   }),
@@ -31,7 +33,7 @@ function HomePage() {
             <span className="grid size-8 place-items-center rounded-md bg-primary font-mono text-sm font-bold text-primary-foreground">
               V
             </span>
-            <span className="text-sm font-semibold tracking-tight">ВЭД от Вилетех</span>
+            <span className="text-sm font-semibold tracking-tight">{BRAND_NAME}</span>
           </span>
           <Link
             to="/login"

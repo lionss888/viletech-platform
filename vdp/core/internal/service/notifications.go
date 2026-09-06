@@ -160,14 +160,14 @@ func (s *NotificationService) RequestJoin(ctx context.Context, principal authz.P
 }
 
 func (s *NotificationService) ListPendingJoins(ctx context.Context, principal authz.Principal) ([]domain.ChatJoin, error) {
-	if err := authz.RequireRoles(principal, domain.RoleRoot, domain.RoleManager); err != nil {
+	if err := authz.AuthorizeRoles(principal, domain.RoleRoot, domain.RoleManager); err != nil {
 		return nil, err
 	}
 	return s.store.ListChatJoins(ctx, domain.JoinPending)
 }
 
 func (s *NotificationService) DecideJoin(ctx context.Context, principal authz.Principal, joinID string, approved bool) (domain.ChatJoin, error) {
-	if err := authz.RequireRoles(principal, domain.RoleRoot, domain.RoleManager); err != nil {
+	if err := authz.AuthorizeRoles(principal, domain.RoleRoot, domain.RoleManager); err != nil {
 		return domain.ChatJoin{}, err
 	}
 	join, err := s.store.ChatJoinByID(ctx, joinID)

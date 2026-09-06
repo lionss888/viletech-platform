@@ -94,7 +94,7 @@ make compose-fe-refresh
 
 ## Если что-то пошло не так
 
-Система не поднимается после `make compose-up`: проверьте `docker compose ps`, убедитесь что порты 5173, 8080, 8081 свободны, попробуйте запустить заново. Для 500 на фронте — `make compose-fe-refresh`.
+Система не поднимается после `make compose-up`: проверьте `docker compose ps` и `docker compose logs core`. Если в логах `dev seed failed` / missing column — схема отстала от кода: `make compose-db-migrate`, затем `docker compose up -d core fe`. Убедитесь что порты 5173, 8080, 8081 свободны. Для 500 на фронте — `make compose-fe-refresh`.
 
 Ошибка 403 при создании заявки через банковский API: используйте правильный ID организации 88888888-8888-8888-8888-888888888888, а не обычный пользовательский.
 

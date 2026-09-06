@@ -132,6 +132,17 @@ grep -q 'compose-db-migrate' scripts/deploy-preview.sh \
 grep -q 'COMPOSE_FILES' scripts/compose-db-migrate.sh \
   || fail "compose-db-migrate must honor COMPOSE_FILES for release/preview"
 
+echo "== local make compose-up: postgres → migrate → stack (core seed needs schema) =="
+awk '/^compose-up:/{f=1;next} f&&/^[^#[:space:]].*:/{exit} f' Makefile > /tmp/vdp-compose-up-recipe.txt
+pg_line=$(grep -n 'postgres-core postgres-hub' /tmp/vdp-compose-up-recipe.txt | head -1 | cut -d: -f1)
+mig_line=$(grep -n 'compose-db-migrate' /tmp/vdp-compose-up-recipe.txt | head -1 | cut -d: -f1)
+stack_line=$(grep -n 'docker compose up -d --build$' /tmp/vdp-compose-up-recipe.txt | head -1 | cut -d: -f1)
+[ -n "$pg_line" ] || fail "compose-up must start postgres-core postgres-hub first"
+[ -n "$mig_line" ] || fail "compose-up must run compose-db-migrate"
+[ -n "$stack_line" ] || fail "compose-up must bring full stack after migrate"
+[ "$pg_line" -lt "$mig_line" ] && [ "$mig_line" -lt "$stack_line" ] \
+  || fail "compose-up order must be postgres → compose-db-migrate → full stack"
+
 echo "== staging-smoke must exercise seed login (schema drift → 401) =="
 grep -q '/api/v1/auth/login' scripts/staging-smoke.sh \
   || fail "staging-smoke must POST /api/v1/auth/login"

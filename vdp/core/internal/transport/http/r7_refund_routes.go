@@ -34,7 +34,7 @@ func (s *Server) handleGetRefund(w http.ResponseWriter, r *http.Request, princip
 }
 
 func (s *Server) handleInitRefund(w http.ResponseWriter, r *http.Request, principal authz.Principal) {
-	if err := authz.RequireRoles(principal, domain.RoleManager, domain.RoleTreasurer, domain.RoleRoot); err != nil {
+	if err := authz.AuthorizeRoles(principal, domain.RoleManager, domain.RoleTreasurer, domain.RoleRoot); err != nil {
 		writeError(w, err)
 		return
 	}
@@ -66,7 +66,7 @@ func (s *Server) handleAttachRefundFile(w http.ResponseWriter, r *http.Request, 
 }
 
 func (s *Server) handleConfirmRefundSent(w http.ResponseWriter, r *http.Request, principal authz.Principal) {
-	if err := authz.RequireRoles(principal, domain.RoleManager, domain.RoleTreasurer, domain.RoleRoot); err != nil {
+	if err := authz.AuthorizeRoles(principal, domain.RoleManager, domain.RoleTreasurer, domain.RoleRoot); err != nil {
 		writeError(w, err)
 		return
 	}
@@ -84,7 +84,7 @@ func (s *Server) handleConfirmRefundSent(w http.ResponseWriter, r *http.Request,
 
 func (s *Server) handleRefundAction(suffix string) func(http.ResponseWriter, *http.Request, authz.Principal) {
 	return func(w http.ResponseWriter, r *http.Request, principal authz.Principal) {
-		if err := authz.RequireRoles(principal, domain.RoleManager, domain.RoleTreasurer, domain.RoleRoot); err != nil {
+		if err := authz.AuthorizeRoles(principal, domain.RoleManager, domain.RoleTreasurer, domain.RoleRoot); err != nil {
 			writeError(w, err)
 			return
 		}

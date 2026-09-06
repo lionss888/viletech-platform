@@ -59,7 +59,7 @@ type BankFormResponse struct {
 }
 
 func (s *OrganizationService) SetBankSettings(ctx context.Context, principal authz.Principal, orgID string, in BankSettingsInput) (domain.Organization, error) {
-	if err := authz.RequireRoles(principal, domain.RoleRoot, domain.RoleManager); err != nil {
+	if err := authz.AuthorizeRoles(principal, domain.RoleRoot, domain.RoleManager); err != nil {
 		return domain.Organization{}, err
 	}
 	org, err := s.store.OrganizationByID(ctx, orgID)
@@ -82,7 +82,7 @@ func (s *OrganizationService) SetBankSettings(ctx context.Context, principal aut
 }
 
 func (s *FormPaymentService) CreateOrGetBankForm(ctx context.Context, principal authz.Principal, in BankCreateInput) (BankFormResponse, bool, error) {
-	if err := authz.RequireRoles(principal, domain.RoleBank); err != nil {
+	if err := authz.AuthorizeRoles(principal, domain.RoleBank); err != nil {
 		return BankFormResponse{}, false, err
 	}
 	if in.IdempotencyKey == "" {
@@ -228,7 +228,7 @@ func (s *FormPaymentService) applyBankAutoskip(ctx context.Context, form *formpa
 }
 
 func (s *FormPaymentService) GetBankForm(ctx context.Context, principal authz.Principal, formID string) (BankFormResponse, error) {
-	if err := authz.RequireRoles(principal, domain.RoleBank); err != nil {
+	if err := authz.AuthorizeRoles(principal, domain.RoleBank); err != nil {
 		return BankFormResponse{}, err
 	}
 	form, err := s.Get(ctx, principal, formID)
@@ -242,7 +242,7 @@ func (s *FormPaymentService) GetBankForm(ctx context.Context, principal authz.Pr
 }
 
 func (s *FormPaymentService) ListBankForms(ctx context.Context, principal authz.Principal) ([]BankFormResponse, error) {
-	if err := authz.RequireRoles(principal, domain.RoleBank); err != nil {
+	if err := authz.AuthorizeRoles(principal, domain.RoleBank); err != nil {
 		return nil, err
 	}
 	out := make([]BankFormResponse, 0)

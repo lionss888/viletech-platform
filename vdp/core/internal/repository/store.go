@@ -114,4 +114,7 @@ type Store interface {
 
 	GetProcessPolicySnapshot(ctx context.Context) (formpayment.ProcessPolicySnapshot, error)
 	SaveProcessPolicySnapshot(ctx context.Context, snap formpayment.ProcessPolicySnapshot) error
+
+	GetRoleSystemCapabilities(ctx context.Context, role domain.Role) ([]string, error)
+	SaveRoleSystemCapabilities(ctx context.Context, role domain.Role, caps []string) error
 }

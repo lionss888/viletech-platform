@@ -28,7 +28,7 @@ type TemplateMapping struct {
 }
 
 func (s *CatalogService) SaveTemplate(ctx context.Context, principal authz.Principal, t domain.Template) (domain.Template, error) {
-	if err := authz.RequireRoles(principal, domain.RoleRoot, domain.RoleManager); err != nil {
+	if err := authz.AuthorizeRoles(principal, domain.RoleRoot, domain.RoleManager); err != nil {
 		return domain.Template{}, err
 	}
 	if t.ID == "" {
@@ -56,14 +56,14 @@ func (s *CatalogService) GetTemplate(ctx context.Context, id string) (domain.Tem
 }
 
 func (s *CatalogService) DeleteTemplate(ctx context.Context, principal authz.Principal, id string) error {
-	if err := authz.RequireRoles(principal, domain.RoleRoot); err != nil {
+	if err := authz.AuthorizeRoles(principal, domain.RoleRoot); err != nil {
 		return err
 	}
 	return s.store.DeleteTemplate(ctx, id)
 }
 
 func (s *CatalogService) UpdateTemplate(ctx context.Context, principal authz.Principal, id string, patch domain.Template) (domain.Template, error) {
-	if err := authz.RequireRoles(principal, domain.RoleRoot, domain.RoleManager); err != nil {
+	if err := authz.AuthorizeRoles(principal, domain.RoleRoot, domain.RoleManager); err != nil {
 		return domain.Template{}, err
 	}
 	cur, err := s.store.TemplateByID(ctx, id)
@@ -87,7 +87,7 @@ func (s *CatalogService) UpdateTemplate(ctx context.Context, principal authz.Pri
 
 // ImportExcelRows parses CSV/TSV (Excel export) via template mapping → forms CREATING→DRAFT.
 func (s *FormPaymentService) ImportExcelWithTemplate(ctx context.Context, principal authz.Principal, templateID string, content []byte) ([]formpayment.Form, error) {
-	if err := authz.RequireRoles(principal, domain.RoleUser, domain.RoleManager, domain.RoleRoot); err != nil {
+	if err := authz.AuthorizeRoles(principal, domain.RoleUser, domain.RoleManager, domain.RoleRoot); err != nil {
 		return nil, err
 	}
 	tpl, err := s.store.TemplateByID(ctx, templateID)

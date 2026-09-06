@@ -8,9 +8,9 @@ import { usePlatformStore } from "@/lib/ved/platform-store";
 export const Route = createFileRoute("/demo/codes")({
   head: () => ({
     meta: [
-      { title: "Коды ТН ВЭД — ВЭД от Вилетех" },
+      { title: "Коды ТН ВЭД — ⚡ ВЭД от Вилетех ₽" },
       { name: "description", content: "Справочник кодов ТН ВЭД: наименование, пошлина и требование лицензии. Добавление, редактирование и загрузка данных." },
-      { property: "og:title", content: "Коды ТН ВЭД — ВЭД от Вилетех" },
+      { property: "og:title", content: "Коды ТН ВЭД — ⚡ ВЭД от Вилетех ₽" },
       { property: "og:description", content: "Наименования, пошлины и лицензирование по кодам ТН ВЭД." },
     ],
   }),

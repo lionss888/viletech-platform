@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" role="img" aria-label="- >B 8;5B5E">
+  <rect width="32" height="32" rx="7" fill="#141418"/>
+  <!-- lightning -->
+  <path fill="#F5C518" d="M12.8 4.5 6.9 16.4h4.4L9.4 27.5l10.2-14.1h-4.6L18.6 4.5z"/>
+  <!-- ruble -->
+  <text
+    x="24"
+    y="22.5"
+    text-anchor="middle"
+    font-family="Arial Black, Helvetica Neue, Arial, sans-serif"
+    font-size="13"
+    font-weight="700"
+    fill="#FFFFFF"
+  >½</text>
+</svg>

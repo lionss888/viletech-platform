@@ -15,6 +15,7 @@ func (s *Server) registerProcessRoleRoutes() {
 	s.mux.HandleFunc("GET /api/v1/process-roles", s.withAuth(s.handleProcessRolesGet))
 	s.mux.HandleFunc("PUT /api/v1/admin/process-roles/priorities", s.withAuth(s.handleProcessRolesPriorities))
 	s.mux.HandleFunc("PUT /api/v1/admin/process-roles/{role}", s.withAuth(s.handleProcessRolePut))
+	s.mux.HandleFunc("PUT /api/v1/admin/system-roles/{role}", s.withAuth(s.handleSystemRolePut))
 }
 
 func (s *Server) handleProcessRolesGet(w http.ResponseWriter, r *http.Request, principal authz.Principal) {
@@ -40,13 +41,15 @@ func (s *Server) handleProcessRolesGet(w http.ResponseWriter, r *http.Request, p
 		})
 	}
 	writeJSON(w, http.StatusOK, map[string]any{
-		"version":      view.Snapshot.Version,
-		"updated_at":   view.Snapshot.UpdatedAt,
-		"updated_by":   view.Snapshot.UpdatedBy,
-		"roles":        roles,
-		"capabilities": view.Capabilities,
-		"mandatory_roles": view.Mandatory,
-		"note":         "Role priority order does not change fixed application methodology stages",
+		"version":             view.Snapshot.Version,
+		"updated_at":          view.Snapshot.UpdatedAt,
+		"updated_by":          view.Snapshot.UpdatedBy,
+		"roles":               roles,
+		"capabilities":        view.Capabilities,
+		"system_capabilities": view.SystemCapabilities,
+		"admin_system_by_role": view.AdminSystemByRole,
+		"mandatory_roles":     view.Mandatory,
+		"note":                "Role priority order does not change fixed application methodology stages; admin is outside the business process",
 	})
 }
 
@@ -100,4 +103,26 @@ func (s *Server) handleProcessRolesPriorities(w http.ResponseWriter, r *http.Req
 		return
 	}
 	writeJSON(w, http.StatusOK, map[string]any{"version": snap.Version, "roles": snap.SortedByPriority()})
+}
+
+func (s *Server) handleSystemRolePut(w http.ResponseWriter, r *http.Request, principal authz.Principal) {
+	if s.processRoles == nil {
+		writeError(w, apperrors.New(apperrors.ErrCodeInternal, "process roles unavailable"))
+		return
+	}
+	role, ok := domain.ParseRole(r.PathValue("role"))
+	if !ok {
+		writeError(w, apperrors.New(apperrors.ErrCodeValidation, "unknown role"))
+		return
+	}
+	var body service.SystemRoleUpdate
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		writeError(w, apperrors.ErrInvalidInput)
+		return
+	}
+	if err := s.processRoles.UpdateSystemRole(r.Context(), principal, role, body); err != nil {
+		writeError(w, err)
+		return
+	}
+	writeJSON(w, http.StatusOK, map[string]string{"status": "ok"})
 }

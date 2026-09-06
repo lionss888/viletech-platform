@@ -56,7 +56,7 @@ func (s *FormPaymentService) GetRefundProcess(ctx context.Context, principal aut
 
 // InitRefund starts PAYMENT_REFUND_WAITING with amount/currency reconciliation.
 func (s *FormPaymentService) InitRefund(ctx context.Context, principal authz.Principal, formID, amount, currency, comment string) (formpayment.Form, error) {
-	if err := authz.RequireRoles(principal, domain.RoleManager, domain.RoleTreasurer, domain.RoleRoot); err != nil {
+	if err := authz.AuthorizeRoles(principal, domain.RoleManager, domain.RoleTreasurer, domain.RoleRoot); err != nil {
 		return formpayment.Form{}, err
 	}
 	form, err := s.Get(ctx, principal, formID)
@@ -128,7 +128,7 @@ func (s *FormPaymentService) InitRefund(ctx context.Context, principal authz.Pri
 
 // AttachRefundFile links optional confirmation file to the refund process.
 func (s *FormPaymentService) AttachRefundFile(ctx context.Context, principal authz.Principal, formID, fileID string) (formpayment.Form, error) {
-	if err := authz.RequireRoles(principal, domain.RoleManager, domain.RoleTreasurer, domain.RoleRoot); err != nil {
+	if err := authz.AuthorizeRoles(principal, domain.RoleManager, domain.RoleTreasurer, domain.RoleRoot); err != nil {
 		return formpayment.Form{}, err
 	}
 	if fileID == "" {

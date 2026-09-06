@@ -11,6 +11,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Modal, ModalButton } from "@/components/ved/Modal";
 import { useAuth } from "@/lib/auth/session";
+import { BRAND_NAME } from "@/lib/brand";
 import { actionsFor } from "@/lib/ved/actions";
 import { filterNav, MAIN_NAV, REFERENCE_NAV } from "@/lib/ved/nav-config";
 import { readRefsOpen, writeRefsOpen } from "@/lib/ved/nav-refs-open";
@@ -95,8 +96,8 @@ export function VedAppShell({ children, title, subtitle }: { children: ReactNode
   const counterpartiesTo = `${base}/counterparties` as AppRoute;
 
   const footerText = isDemo
-    ? `ВЭД от Вилетех · сделок в системе: ${store.forms.length}`
-    : `ВЭД от Вилетех · сделок в системе: ${store.forms.length} · API · vdp/core · ${role ? roleTitle(role) : "—"}`;
+    ? `${BRAND_NAME} · сделок в системе: ${store.forms.length}`
+    : `${BRAND_NAME} · сделок в системе: ${store.forms.length} · API · vdp/core · ${role ? roleTitle(role) : "—"}`;
 
   return (
     <div className="flex h-screen overflow-hidden bg-background">
@@ -106,7 +107,7 @@ export function VedAppShell({ children, title, subtitle }: { children: ReactNode
             V
           </span>
           <span className="min-w-0">
-            <span className="block text-sm font-semibold tracking-tight">ВЭД от Вилетех</span>
+            <span className="block text-sm font-semibold tracking-tight">{BRAND_NAME}</span>
             {isDemo && (
               <span className="mt-0.5 inline-block rounded bg-work-soft px-1.5 py-0.5 text-[10px] font-semibold text-work">
                 Демо / моки

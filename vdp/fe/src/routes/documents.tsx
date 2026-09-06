@@ -4,7 +4,7 @@ import { DocumentsPage } from "./demo/documents";
 
 export const Route = createFileRoute("/documents")({
   head: () => ({
-    meta: [{ title: "Документы — ВЭД от Вилетех" }],
+    meta: [{ title: "Документы — ⚡ ВЭД от Вилетех ₽" }],
   }),
   component: DocumentsPage,
 });
