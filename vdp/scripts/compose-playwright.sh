@@ -23,7 +23,7 @@ docker run --rm --network "${COMPOSE_NETWORK}" curlimages/curl:latest \
 }
 
 echo "== playwright (docker ${PLAYWRIGHT_IMAGE}) =="
-# CI: always reinstall linux node_modules. Host darwin node_modules break the Linux image.
+# CI: always wipe and reinstall linux node_modules. Host darwin node_modules break the Linux image.
 # PLAYWRIGHT_ARGS limits the required journey (login + User top-task) on the main gate.
 PLAYWRIGHT_ARGS="${PLAYWRIGHT_ARGS:-}"
 docker run --rm \
@@ -35,6 +35,25 @@ docker run --rm \
   -e CI="${CI:-}" \
   -e PLAYWRIGHT_ARGS="${PLAYWRIGHT_ARGS}" \
   "${PLAYWRIGHT_IMAGE}" \
-  bash -lc 'if [ "${CI}" = "true" ] || [ ! -d node_modules/@playwright/test ]; then npm ci --ignore-scripts; fi && npx playwright test ${PLAYWRIGHT_ARGS}'
+  bash -lc '
+set -euo pipefail
+echo "node=$(node -v) npm=$(npm -v) CI=${CI:-}"
+need_ci=0
+if [ "${CI:-}" = "true" ]; then
+  need_ci=1
+  rm -rf node_modules
+elif [ ! -d node_modules/@playwright/test ]; then
+  need_ci=1
+fi
+if [ "$need_ci" -eq 1 ]; then
+  echo "running: npm ci --ignore-scripts"
+  npm ci --ignore-scripts
+fi
+# Split PLAYWRIGHT_ARGS on whitespace into argv (empty = full suite).
+# shellcheck disable=SC2086
+set -- ${PLAYWRIGHT_ARGS:-}
+echo "running: npx playwright test $*"
+npx playwright test "$@"
+'
 
 echo "playwright e2e green"

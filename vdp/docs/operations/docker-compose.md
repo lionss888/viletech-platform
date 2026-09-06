@@ -46,7 +46,7 @@ wget health endpoints for hub core fe. compose-up waits up to 60s for all health
 
 fe_node_modules named volume for node_modules in dev container. Host npm install and image rebuild do not refresh this volume. After branch updates or package.json changes, run make compose-fe-refresh (prompts for confirmation).
 
-Postgres data volumes (`postgres_core_data`, `postgres_hub_data`) persist across deploys. SQL mounted under `docker-entrypoint-initdb.d` runs **only on first volume create**. Existing volumes do not re-apply new migration files. Every `compose-up`, release bring-up (`vdp-compose-up.sh`), promote, rollback, and preview must run `scripts/compose-db-migrate.sh` (idempotent `IF NOT EXISTS`) before relying on core seed/login.
+Postgres data volumes (postgres_core_data, postgres_hub_data) persist across deploys. SQL mounted under docker-entrypoint-initdb.d runs only on first volume create. Existing volumes do not re-apply new migration files. Every compose-up, release bring-up (vdp-compose-up.sh), promote, rollback, and preview must run scripts/compose-db-migrate.sh (idempotent IF NOT EXISTS) before relying on core seed/login.
 
 ## Команды
 

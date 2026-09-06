@@ -24,7 +24,7 @@
 
 На хосте не использовать docker compose build и флаг --build.
 
-Новая SQL-миграция в `core/migrations` или `hub/migrations`: достаточно merge и следующего VDP Deploy (или Images→Deploy). Promote всегда вызывает `compose-db-migrate` на существующих Postgres volumes; initdb при повторном up не срабатывает.
+Новая SQL-миграция в core/migrations или hub/migrations: достаточно merge и следующего VDP Deploy (или Images→Deploy). Promote всегда вызывает compose-db-migrate на существующих Postgres volumes; initdb при повторном up не срабатывает.
 
 ## Откат
 

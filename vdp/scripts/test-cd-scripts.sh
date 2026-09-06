@@ -16,6 +16,7 @@ for script in \
   scripts/deploy-preview.sh \
   scripts/gitlab-promote.sh \
   scripts/compose-db-migrate.sh \
+  scripts/compose-playwright.sh \
   scripts/vdp-compose-up.sh \
   scripts/staging-smoke.sh; do
   bash -n "$script"
