@@ -11,7 +11,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Modal, ModalButton } from "@/components/ved/Modal";
 import { useAuth } from "@/lib/auth/session";
-import { BRAND_NAME } from "@/lib/brand";
+import { BRAND_MARK, BRAND_NAME } from "@/lib/brand";
 import { actionsFor } from "@/lib/ved/actions";
 import { filterNav, MAIN_NAV, REFERENCE_NAV } from "@/lib/ved/nav-config";
 import { readRefsOpen, writeRefsOpen } from "@/lib/ved/nav-refs-open";
@@ -104,7 +104,7 @@ export function VedAppShell({ children, title, subtitle }: { children: ReactNode
       <aside className="hidden w-64 shrink-0 flex-col overflow-y-auto border-r border-border bg-sidebar p-4 lg:flex">
         <Link to={dashTo} className="flex items-center gap-2">
           <span className="grid size-8 place-items-center rounded-md bg-primary font-mono text-sm font-bold text-primary-foreground">
-            V
+            {BRAND_MARK}
           </span>
           <span className="min-w-0">
             <span className="block text-sm font-semibold tracking-tight">{BRAND_NAME}</span>

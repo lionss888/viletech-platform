@@ -1,7 +1,7 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
 
-import { BRAND_NAME, pageTitle } from "@/lib/brand";
+import { BRAND_MARK, BRAND_NAME, pageTitle } from "@/lib/brand";
 import { ROLES } from "@/lib/ved/roles";
 import { useVed } from "@/lib/ved/store";
 
@@ -43,7 +43,7 @@ function LoginPage() {
       <div className="w-full max-w-sm">
         <Link to="/" className="flex items-center gap-2">
           <span className="grid size-9 place-items-center rounded-lg bg-primary font-mono text-sm font-bold text-primary-foreground">
-            V
+            {BRAND_MARK}
           </span>
           <span className="text-sm font-semibold tracking-tight">{BRAND_NAME}</span>
         </Link>

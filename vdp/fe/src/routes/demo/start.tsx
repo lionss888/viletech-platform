@@ -1,17 +1,18 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 
+import { BRAND_MARK, pageTitle } from "@/lib/brand";
 import { ROLES } from "@/lib/ved/roles";
 import { useVed } from "@/lib/ved/store";
 
 export const Route = createFileRoute("/demo/start")({
   head: () => ({
     meta: [
-      { title: "Быстрый вход по роли — ⚡ ВЭД от Вилетех ₽" },
+      { title: pageTitle("Быстрый вход по роли") },
       {
         name: "description",
         content: "Выберите роль и войдите в платформу ВЭД: клиент, комплаенс, менеджер, провайдер, администратор.",
       },
-      { property: "og:title", content: "Быстрый вход по роли — ⚡ ВЭД от Вилетех ₽" },
+      { property: "og:title", content: pageTitle("Быстрый вход по роли") },
       { property: "og:description", content: "Выбор роли для входа в операционный контур платежей." },
     ],
   }),
@@ -32,7 +33,7 @@ function StartPage() {
       <div className="mx-auto grid max-w-6xl gap-8 px-4 py-10 lg:grid-cols-[1fr_1.1fr] lg:py-20">
         <div>
           <span className="grid size-10 place-items-center rounded-lg bg-primary font-mono text-base font-bold text-primary-foreground">
-            V
+            {BRAND_MARK}
           </span>
           <h1 className="mt-6 text-3xl font-semibold tracking-tight lg:text-4xl">
             ВЭД — операционный контур платежей

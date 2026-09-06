@@ -1,6 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 
-import { BRAND_NAME } from "@/lib/brand";
+import { BRAND_MARK, BRAND_NAME } from "@/lib/brand";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -31,7 +31,7 @@ function HomePage() {
         <div className="mx-auto flex max-w-5xl items-center justify-between px-4 py-4">
           <span className="flex items-center gap-2">
             <span className="grid size-8 place-items-center rounded-md bg-primary font-mono text-sm font-bold text-primary-foreground">
-              V
+              {BRAND_MARK}
             </span>
             <span className="text-sm font-semibold tracking-tight">{BRAND_NAME}</span>
           </span>
