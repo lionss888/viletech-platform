@@ -111,4 +111,7 @@ type Store interface {
 	SaveTelegramLink(ctx context.Context, link domain.TelegramLinkCode) error
 	TelegramLinkByCode(ctx context.Context, code string) (domain.TelegramLinkCode, error)
 	DeleteTelegramLink(ctx context.Context, code string) error
+
+	GetProcessPolicySnapshot(ctx context.Context) (formpayment.ProcessPolicySnapshot, error)
+	SaveProcessPolicySnapshot(ctx context.Context, snap formpayment.ProcessPolicySnapshot) error
 }

@@ -18,6 +18,7 @@ export const REFERENCE_NAV: NavItem[] = [
   { segment: "/organizations", label: "Организации", roles: ["manager", "root"] },
   { segment: "/compliance-tools", label: "Инструменты комплаенс", roles: ["root"] },
   { segment: "/admin", label: "Пользователи", roles: ["root"] },
+  { segment: "/process-roles", label: "Роли процесса", roles: ["root"] },
   { segment: "/providers", label: "Провайдеры", roles: ["manager", "root"] },
   { segment: "/codes", label: "Коды ТН ВЭД", roles: ["manager", "root"] },
   { segment: "/currencies", label: "Валюты", roles: ["manager", "root"] },

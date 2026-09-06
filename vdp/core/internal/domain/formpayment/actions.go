@@ -122,15 +122,7 @@ func RolesForAction(action Action) []domain.Role {
 }
 
 func RoleMayPerform(role domain.Role, action Action) bool {
-	if role == domain.RoleRoot {
-		return true
-	}
-	for _, allowed := range RolesForAction(action) {
-		if allowed == role {
-			return true
-		}
-	}
-	return false
+	return RoleMayPerformLegacy(role, action)
 }
 
 func TargetStatus(form Form, action Action, orgApproved bool) (Status, error) {
@@ -304,7 +296,8 @@ func CanSeeForm(role domain.Role, accountID string, form Form) bool {
 	case domain.RoleProvider, domain.RoleSeniorProvider:
 		return form.ProviderID == accountID
 	case domain.RoleManager, domain.RoleTreasurer, domain.RoleRoot,
-		domain.RoleComplianceOfficer, domain.RoleInternalComplianceOfficer, domain.RoleOneC:
+		domain.RoleComplianceOfficer, domain.RoleInternalComplianceOfficer, domain.RoleOneC,
+		domain.RoleSales, domain.RoleViewer:
 		return true
 	default:
 		return false

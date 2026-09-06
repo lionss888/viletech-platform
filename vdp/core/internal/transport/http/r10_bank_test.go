@@ -123,7 +123,7 @@ func newBankStack(t *testing.T, webhookURL string) (http.Handler, string, outbox
 	}))
 	t.Cleanup(hub.Close)
 	store := repository.NewStore()
-	seed.Dev(store)
+	seed.MustDev(t, store)
 	org, _ := store.OrganizationByID(context.Background(), seed.BankOrgID)
 	org.BankWebhookURL = webhookURL
 	org.BankWebhookSecret = "hook-secret"

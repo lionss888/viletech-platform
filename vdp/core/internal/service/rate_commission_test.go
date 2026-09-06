@@ -22,7 +22,7 @@ func TestResolveRateMarkupAndBankReadonly(t *testing.T) {
 	t.Parallel()
 	ctx := context.Background()
 	store := repository.NewStore()
-	seed.Dev(store)
+	seed.MustDev(t, store)
 	acct, _ := store.AccountByID(ctx, seed.UserID)
 	acct.BankRateReadonly = true
 	settings, _ := json.Marshal([]rate.Settings{{
@@ -67,7 +67,7 @@ func TestPOGEnqueueAttachAndTemplateImportXLSX(t *testing.T) {
 	t.Parallel()
 	ctx := context.Background()
 	store := repository.NewStore()
-	seed.Dev(store)
+	seed.MustDev(t, store)
 	box := outbox.NewMemoryStore()
 	svc := service.NewFormPaymentService(store, box, seqID())
 	catalog := service.NewCatalogService(store, box, seqID())

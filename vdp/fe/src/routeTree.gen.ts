@@ -22,6 +22,7 @@ import { Route as DocumentsRouteImport } from './routes/documents'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as McpRouteImport } from './routes/mcp'
 import { Route as OrganizationsRouteImport } from './routes/organizations'
+import { Route as ProcessRolesRouteImport } from './routes/process-roles'
 import { Route as ProfileRouteImport } from './routes/profile'
 import { Route as ProvidersRouteImport } from './routes/providers'
 import { Route as StartRouteImport } from './routes/start'
@@ -40,6 +41,7 @@ import { Route as DemoDashboardRouteImport } from './routes/demo/dashboard'
 import { Route as DemoDocumentsRouteImport } from './routes/demo/documents'
 import { Route as DemoLoginRouteImport } from './routes/demo/login'
 import { Route as DemoOrganizationsRouteImport } from './routes/demo/organizations'
+import { Route as DemoProcessRolesRouteImport } from './routes/demo/process-roles'
 import { Route as DemoProfileRouteImport } from './routes/demo/profile'
 import { Route as DemoProvidersRouteImport } from './routes/demo/providers'
 import { Route as DemoStartRouteImport } from './routes/demo/start'
@@ -115,6 +117,11 @@ const McpRoute = McpRouteImport.update({
 const OrganizationsRoute = OrganizationsRouteImport.update({
   id: '/organizations',
   path: '/organizations',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ProcessRolesRoute = ProcessRolesRouteImport.update({
+  id: '/process-roles',
+  path: '/process-roles',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ProfileRoute = ProfileRouteImport.update({
@@ -209,6 +216,11 @@ const DemoOrganizationsRoute = DemoOrganizationsRouteImport.update({
   path: '/demo/organizations',
   getParentRoute: () => rootRouteImport,
 } as any)
+const DemoProcessRolesRoute = DemoProcessRolesRouteImport.update({
+  id: '/demo/process-roles',
+  path: '/demo/process-roles',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const DemoProfileRoute = DemoProfileRouteImport.update({
   id: '/demo/profile',
   path: '/demo/profile',
@@ -280,6 +292,7 @@ export interface FileRoutesByFullPath {
   '/login': typeof LoginRoute
   '/mcp': typeof McpRoute
   '/organizations': typeof OrganizationsRoute
+  '/process-roles': typeof ProcessRolesRoute
   '/profile': typeof ProfileRoute
   '/providers': typeof ProvidersRoute
   '/start': typeof StartRoute
@@ -297,6 +310,7 @@ export interface FileRoutesByFullPath {
   '/demo/documents': typeof DemoDocumentsRoute
   '/demo/login': typeof DemoLoginRoute
   '/demo/organizations': typeof DemoOrganizationsRoute
+  '/demo/process-roles': typeof DemoProcessRolesRoute
   '/demo/profile': typeof DemoProfileRoute
   '/demo/providers': typeof DemoProvidersRoute
   '/demo/start': typeof DemoStartRoute
@@ -324,6 +338,7 @@ export interface FileRoutesByTo {
   '/login': typeof LoginRoute
   '/mcp': typeof McpRoute
   '/organizations': typeof OrganizationsRoute
+  '/process-roles': typeof ProcessRolesRoute
   '/profile': typeof ProfileRoute
   '/providers': typeof ProvidersRoute
   '/start': typeof StartRoute
@@ -341,6 +356,7 @@ export interface FileRoutesByTo {
   '/demo/documents': typeof DemoDocumentsRoute
   '/demo/login': typeof DemoLoginRoute
   '/demo/organizations': typeof DemoOrganizationsRoute
+  '/demo/process-roles': typeof DemoProcessRolesRoute
   '/demo/profile': typeof DemoProfileRoute
   '/demo/providers': typeof DemoProvidersRoute
   '/demo/start': typeof DemoStartRoute
@@ -369,6 +385,7 @@ export interface FileRoutesById {
   '/login': typeof LoginRoute
   '/mcp': typeof McpRoute
   '/organizations': typeof OrganizationsRoute
+  '/process-roles': typeof ProcessRolesRoute
   '/profile': typeof ProfileRoute
   '/providers': typeof ProvidersRoute
   '/start': typeof StartRoute
@@ -386,6 +403,7 @@ export interface FileRoutesById {
   '/demo/documents': typeof DemoDocumentsRoute
   '/demo/login': typeof DemoLoginRoute
   '/demo/organizations': typeof DemoOrganizationsRoute
+  '/demo/process-roles': typeof DemoProcessRolesRoute
   '/demo/profile': typeof DemoProfileRoute
   '/demo/providers': typeof DemoProvidersRoute
   '/demo/start': typeof DemoStartRoute
@@ -415,6 +433,7 @@ export interface FileRouteTypes {
     | '/login'
     | '/mcp'
     | '/organizations'
+    | '/process-roles'
     | '/profile'
     | '/providers'
     | '/start'
@@ -432,6 +451,7 @@ export interface FileRouteTypes {
     | '/demo/documents'
     | '/demo/login'
     | '/demo/organizations'
+    | '/demo/process-roles'
     | '/demo/profile'
     | '/demo/providers'
     | '/demo/start'
@@ -459,6 +479,7 @@ export interface FileRouteTypes {
     | '/login'
     | '/mcp'
     | '/organizations'
+    | '/process-roles'
     | '/profile'
     | '/providers'
     | '/start'
@@ -476,6 +497,7 @@ export interface FileRouteTypes {
     | '/demo/documents'
     | '/demo/login'
     | '/demo/organizations'
+    | '/demo/process-roles'
     | '/demo/profile'
     | '/demo/providers'
     | '/demo/start'
@@ -503,6 +525,7 @@ export interface FileRouteTypes {
     | '/login'
     | '/mcp'
     | '/organizations'
+    | '/process-roles'
     | '/profile'
     | '/providers'
     | '/start'
@@ -520,6 +543,7 @@ export interface FileRouteTypes {
     | '/demo/documents'
     | '/demo/login'
     | '/demo/organizations'
+    | '/demo/process-roles'
     | '/demo/profile'
     | '/demo/providers'
     | '/demo/start'
@@ -548,6 +572,7 @@ export interface RootRouteChildren {
   LoginRoute: typeof LoginRoute
   McpRoute: typeof McpRoute
   OrganizationsRoute: typeof OrganizationsRoute
+  ProcessRolesRoute: typeof ProcessRolesRoute
   ProfileRoute: typeof ProfileRoute
   ProvidersRoute: typeof ProvidersRoute
   StartRoute: typeof StartRoute
@@ -565,6 +590,7 @@ export interface RootRouteChildren {
   DemoDocumentsRoute: typeof DemoDocumentsRoute
   DemoLoginRoute: typeof DemoLoginRoute
   DemoOrganizationsRoute: typeof DemoOrganizationsRoute
+  DemoProcessRolesRoute: typeof DemoProcessRolesRoute
   DemoProfileRoute: typeof DemoProfileRoute
   DemoProvidersRoute: typeof DemoProvidersRoute
   DemoStartRoute: typeof DemoStartRoute
@@ -670,6 +696,13 @@ declare module '@tanstack/react-router' {
       path: '/organizations'
       fullPath: '/organizations'
       preLoaderRoute: typeof OrganizationsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/process-roles': {
+      id: '/process-roles'
+      path: '/process-roles'
+      fullPath: '/process-roles'
+      preLoaderRoute: typeof ProcessRolesRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/profile': {
@@ -798,6 +831,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DemoOrganizationsRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/demo/process-roles': {
+      id: '/demo/process-roles'
+      path: '/demo/process-roles'
+      fullPath: '/demo/process-roles'
+      preLoaderRoute: typeof DemoProcessRolesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/demo/profile': {
       id: '/demo/profile'
       path: '/demo/profile'
@@ -892,6 +932,7 @@ const rootRouteChildren: RootRouteChildren = {
   LoginRoute: LoginRoute,
   McpRoute: McpRoute,
   OrganizationsRoute: OrganizationsRoute,
+  ProcessRolesRoute: ProcessRolesRoute,
   ProfileRoute: ProfileRoute,
   ProvidersRoute: ProvidersRoute,
   StartRoute: StartRoute,
@@ -910,6 +951,7 @@ const rootRouteChildren: RootRouteChildren = {
   DemoDocumentsRoute: DemoDocumentsRoute,
   DemoLoginRoute: DemoLoginRoute,
   DemoOrganizationsRoute: DemoOrganizationsRoute,
+  DemoProcessRolesRoute: DemoProcessRolesRoute,
   DemoProfileRoute: DemoProfileRoute,
   DemoProvidersRoute: DemoProvidersRoute,
   DemoStartRoute: DemoStartRoute,
@@ -926,13 +968,3 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
-
-import type { getRouter } from './router.tsx'
-import type { startInstance } from './start.ts'
-declare module '@tanstack/react-start' {
-  interface Register {
-    ssr: true
-    router: Awaited<ReturnType<typeof getRouter>>
-    config: Awaited<ReturnType<typeof startInstance.getOptions>>
-  }
-}

@@ -20,23 +20,27 @@ import (
 )
 
 type Server struct {
-	cfg      *config.Config
-	auth     *service.AuthService
-	accounts *service.AccountService
-	forms    *service.FormPaymentService
-	orgs     *service.OrganizationService
-	catalog  *service.CatalogService
-	publish  *service.HubPublisher
-	events   *service.FormEventBus
-	notify   *service.NotificationService
-	mux      *http.ServeMux
-	limiters sync.Map
+	cfg          *config.Config
+	auth         *service.AuthService
+	accounts     *service.AccountService
+	forms        *service.FormPaymentService
+	orgs         *service.OrganizationService
+	catalog      *service.CatalogService
+	publish      *service.HubPublisher
+	events       *service.FormEventBus
+	notify       *service.NotificationService
+	processRoles *service.ProcessRoleService
+	mux          *http.ServeMux
+	limiters     sync.Map
 }
 
 func NewServer(cfg *config.Config, auth *service.AuthService, accounts *service.AccountService, forms *service.FormPaymentService, orgs *service.OrganizationService, catalog *service.CatalogService, publish *service.HubPublisher, notify *service.NotificationService) *Server {
 	bus := service.NewFormEventBus()
 	forms.WithEventBus(bus)
-	srv := &Server{cfg: cfg, auth: auth, accounts: accounts, forms: forms, orgs: orgs, catalog: catalog, publish: publish, notify: notify, events: bus, mux: http.NewServeMux()}
+	srv := &Server{
+		cfg: cfg, auth: auth, accounts: accounts, forms: forms, orgs: orgs, catalog: catalog,
+		publish: publish, notify: notify, events: bus, processRoles: forms.ProcessRoles(), mux: http.NewServeMux(),
+	}
 	srv.routes()
 	srv.registerExtendedRoutes()
 	return srv

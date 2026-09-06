@@ -23,18 +23,34 @@ docker run --rm --network "${COMPOSE_NETWORK}" curlimages/curl:latest \
 }
 
 echo "== playwright (docker ${PLAYWRIGHT_IMAGE}) =="
-# CI: always reinstall linux node_modules. Host darwin node_modules break the Linux image.
-# PLAYWRIGHT_ARGS limits the required journey (login + User top-task) on the main gate.
+# Copy fe sources into an ephemeral container workdir. Never write node_modules onto the
+# compose bind mount ./fe — that races the fe service named volume and clears Vite deps
+# (browser then gets 404 on /node_modules/.vite/deps/* and login never hydrates).
 PLAYWRIGHT_ARGS="${PLAYWRIGHT_ARGS:-}"
 docker run --rm \
   --network "${COMPOSE_NETWORK}" \
-  -v "${ROOT}/fe:/app" \
-  -w /app \
+  -v "${ROOT}/fe:/fe:ro" \
+  -w /work \
   -e PLAYWRIGHT_BASE_URL="${E2E_FE_URL}" \
   -e CORE_URL="${E2E_CORE_URL}" \
   -e CI="${CI:-}" \
   -e PLAYWRIGHT_ARGS="${PLAYWRIGHT_ARGS}" \
   "${PLAYWRIGHT_IMAGE}" \
-  bash -lc 'if [ "${CI}" = "true" ] || [ ! -d node_modules/@playwright/test ]; then npm ci --ignore-scripts; fi && npx playwright test ${PLAYWRIGHT_ARGS}'
+  bash -lc '
+set -euo pipefail
+echo "node=$(node -v) npm=$(npm -v) CI=${CI:-}"
+mkdir -p /work
+# Exclude host/container node_modules and Vite caches from the copy.
+tar -C /fe --exclude=node_modules --exclude=playwright-report --exclude=test-results \
+  -cf - . | tar -C /work -xf -
+cd /work
+echo "running: npm ci --ignore-scripts"
+npm ci --ignore-scripts
+# Split PLAYWRIGHT_ARGS on whitespace into argv (empty = full suite).
+# shellcheck disable=SC2086
+set -- ${PLAYWRIGHT_ARGS:-}
+echo "running: npx playwright test $*"
+npx playwright test "$@"
+'
 
 echo "playwright e2e green"

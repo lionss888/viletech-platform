@@ -17,7 +17,7 @@ func TestApplyHubCallbackOCRAndOneCNoAutoPay(t *testing.T) {
 	t.Parallel()
 	ctx := context.Background()
 	store := repository.NewStore()
-	seed.Dev(store)
+	seed.MustDev(t, store)
 	svc := service.NewFormPaymentService(store, outbox.NewMemoryStore(), seqID())
 	user := authz.Principal{AccountID: seed.UserID, Role: domain.RoleUser, OrganizationID: seed.OrgID}
 	form, err := svc.Create(ctx, user, service.CreateInput{InvoiceAmount: "10", Currency: "USD"})

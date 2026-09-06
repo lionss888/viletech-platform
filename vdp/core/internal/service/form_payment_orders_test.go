@@ -17,7 +17,7 @@ func TestMultiOrderMainAndAdvanceActiveForProvider(t *testing.T) {
 	t.Parallel()
 	ctx := context.Background()
 	store := repository.NewStore()
-	seed.Dev(store)
+	seed.MustDev(t, store)
 	svc := service.NewFormPaymentService(store, outbox.NewMemoryStore(), seqID())
 	user := authz.Principal{AccountID: seed.UserID, Role: domain.RoleUser, OrganizationID: seed.OrgID}
 	manager := authz.Principal{AccountID: seed.ManagerID, Role: domain.RoleManager}

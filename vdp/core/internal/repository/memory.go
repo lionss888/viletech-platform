@@ -39,6 +39,7 @@ type MemoryStore struct {
 	workChats       map[string]domain.WorkChat
 	chatJoins       map[string]domain.ChatJoin
 	tgLinks         map[string]domain.TelegramLinkCode
+	processPolicy   *formpayment.ProcessPolicySnapshot
 }
 
 func NewMemoryStore() *MemoryStore {
@@ -817,6 +818,27 @@ func (s *MemoryStore) DeleteTelegramLink(_ context.Context, code string) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	delete(s.tgLinks, code)
+	return nil
+}
+
+func (s *MemoryStore) GetProcessPolicySnapshot(_ context.Context) (formpayment.ProcessPolicySnapshot, error) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	if s.processPolicy == nil {
+		def := formpayment.DefaultProcessPolicySnapshot()
+		s.processPolicy = &def
+	}
+	cp := *s.processPolicy
+	cp.Roles = append([]formpayment.RoleProcessConfig(nil), s.processPolicy.Roles...)
+	return cp, nil
+}
+
+func (s *MemoryStore) SaveProcessPolicySnapshot(_ context.Context, snap formpayment.ProcessPolicySnapshot) error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	cp := snap
+	cp.Roles = append([]formpayment.RoleProcessConfig(nil), snap.Roles...)
+	s.processPolicy = &cp
 	return nil
 }
 

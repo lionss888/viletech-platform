@@ -19,7 +19,7 @@ func TestR11NoDocumentsSkipsOCR(t *testing.T) {
 	t.Parallel()
 	ctx := context.Background()
 	store := repository.NewStore()
-	seed.Dev(store)
+	seed.MustDev(t, store)
 	box := outbox.NewMemoryStore()
 	svc := service.NewFormPaymentService(store, box, seqID())
 	user := authz.Principal{AccountID: seed.UserID, Role: domain.RoleUser, OrganizationID: seed.OrgID}
@@ -42,7 +42,7 @@ func TestR11DeadlineNotifiesAndProviderSeesIt(t *testing.T) {
 	t.Parallel()
 	ctx := context.Background()
 	store := repository.NewStore()
-	seed.Dev(store)
+	seed.MustDev(t, store)
 	box := outbox.NewMemoryStore()
 	svc := service.NewFormPaymentService(store, box, seqID())
 	user := authz.Principal{AccountID: seed.UserID, Role: domain.RoleUser, OrganizationID: seed.OrgID}
@@ -78,7 +78,7 @@ func TestR11ConfirmationCryptoRequiresHash(t *testing.T) {
 	t.Parallel()
 	ctx := context.Background()
 	store := repository.NewStore()
-	seed.Dev(store)
+	seed.MustDev(t, store)
 	svc := service.NewFormPaymentService(store, outbox.NewMemoryStore(), seqID())
 	user := authz.Principal{AccountID: seed.UserID, Role: domain.RoleUser, OrganizationID: seed.OrgID}
 	manager := authz.Principal{AccountID: seed.ManagerID, Role: domain.RoleManager}
@@ -98,7 +98,7 @@ func TestR11VADedupeSingleModule(t *testing.T) {
 	t.Parallel()
 	ctx := context.Background()
 	store := repository.NewStore()
-	seed.Dev(store)
+	seed.MustDev(t, store)
 	catalog := service.NewCatalogService(store, outbox.NewMemoryStore(), seqID())
 	user := authz.Principal{AccountID: seed.UserID, Role: domain.RoleUser, OrganizationID: seed.OrgID}
 	a, err := catalog.CreateVirtualAccount(ctx, user, domain.VirtualAccount{Kind: "fiat", Currency: "USD"})
