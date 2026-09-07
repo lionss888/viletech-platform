@@ -5,6 +5,7 @@ import (
 	"encoding/base64"
 	"log/slog"
 	"os"
+	"strconv"
 	"time"
 
 	"github.com/viletech/vdp/extraction/internal/engine"
@@ -17,25 +18,28 @@ import (
 
 // Config for extraction worker.
 type Config struct {
-	Primary  string
-	Fallback string
-	ShadowURL string
-	GoldDir  string
-	YandexAPIKey   string
-	YandexFolderID string
-	YandexModelURI string
-	OwnModelPath   string
-	Log      *slog.Logger
+	Primary          string
+	Fallback         string
+	ShadowURL        string
+	GoldDir          string
+	YandexAPIKey     string
+	YandexFolderID   string
+	YandexModelURI   string
+	OwnModelPath     string
+	OllamaBaseURL    string
+	OllamaModel      string
+	OwnFewShotK      int
+	Log              *slog.Logger
 }
 
 // Service runs recognize + gold flywheel.
 type Service struct {
-	cfg     Config
-	primary engine.Primary
+	cfg      Config
+	primary  engine.Primary
 	fallback engine.Primary
-	shadow  engine.Shadow
-	gold    *gold.Store
-	log     *slog.Logger
+	shadow   engine.Shadow
+	gold     *gold.Store
+	log      *slog.Logger
 }
 
 func New(cfg Config) *Service {
@@ -43,30 +47,36 @@ func New(cfg Config) *Service {
 	if log == nil {
 		log = slog.Default()
 	}
-	primary := pickPrimary(cfg)
+	goldDir := cfg.GoldDir
+	if goldDir == "" {
+		goldDir = os.TempDir() + "/vdp-extraction-gold"
+	}
+	store := gold.NewStore(goldDir)
+	primary := pickPrimary(cfg, store, log)
 	var fallback engine.Primary = engine.FixturePrimary{}
-	if cfg.Fallback == "yandex" && cfg.YandexAPIKey != "" {
-		fallback = engine.NewYandex(cfg.YandexAPIKey, cfg.YandexFolderID, cfg.YandexModelURI)
+	switch cfg.Fallback {
+	case "yandex":
+		if cfg.YandexAPIKey != "" && cfg.YandexFolderID != "" {
+			fallback = engine.NewYandex(cfg.YandexAPIKey, cfg.YandexFolderID, cfg.YandexModelURI)
+		}
+	case "fixture":
+		fallback = engine.FixturePrimary{}
 	}
 	var shadow engine.Shadow = engine.StubShadow{}
 	if cfg.ShadowURL != "" {
 		shadow = engine.DoclingShadow{URL: cfg.ShadowURL}
-	}
-	goldDir := cfg.GoldDir
-	if goldDir == "" {
-		goldDir = os.TempDir() + "/vdp-extraction-gold"
 	}
 	return &Service{
 		cfg:      cfg,
 		primary:  primary,
 		fallback: fallback,
 		shadow:   shadow,
-		gold:     gold.NewStore(goldDir),
+		gold:     store,
 		log:      log,
 	}
 }
 
-func pickPrimary(cfg Config) engine.Primary {
+func pickPrimary(cfg Config, store *gold.Store, log *slog.Logger) engine.Primary {
 	switch cfg.Primary {
 	case "yandex":
 		if cfg.YandexAPIKey == "" || cfg.YandexFolderID == "" {
@@ -74,6 +84,18 @@ func pickPrimary(cfg Config) engine.Primary {
 		}
 		return engine.NewYandex(cfg.YandexAPIKey, cfg.YandexFolderID, cfg.YandexModelURI)
 	case "own":
+		if cfg.OllamaBaseURL != "" {
+			model := engine.OllamaModelFromArtifact(cfg.OwnModelPath, cfg.OllamaModel)
+			if model == "" {
+				model = "qwen2.5:3b"
+			}
+			k := cfg.OwnFewShotK
+			if k == 0 {
+				k = 3
+			}
+			return engine.NewOllama(cfg.OllamaBaseURL, model, k, store)
+		}
+		log.Warn("EXTRACTION_PRIMARY=own without OLLAMA_BASE_URL; using stub/artifact")
 		if cfg.OwnModelPath != "" {
 			return engine.OwnFromArtifact{Path: cfg.OwnModelPath}
 		}
@@ -105,7 +127,9 @@ func (s *Service) Recognize(ctx context.Context, req RecognizeRequest) (Recogniz
 	kind := format.Detect(in.FileName, in.Mime, in.Content)
 	in.Kind = string(kind)
 	layout, _ := textx.ExtractLayout(kind, in.Content, in.FileName)
-	in.LayoutText = layout
+	if in.LayoutText == "" {
+		in.LayoutText = layout
+	}
 
 	result, err := s.primary.Extract(ctx, in)
 	mode := s.primary.Name()
@@ -164,10 +188,18 @@ func (s *Service) runShadowGold(in engine.Input, primary extraction.Result) {
 		ShadowEngine:   shadowOut.Meta.EngineID,
 		PrimaryOut:     primary,
 		ShadowOut:      shadowOut,
+		LayoutText:     truncateLayout(in.LayoutText, 20000),
 	}
 	if err := s.gold.Append(rec); err != nil {
 		s.log.Warn("gold append failed", "err", err)
 	}
+}
+
+func truncateLayout(s string, n int) string {
+	if len(s) <= n {
+		return s
+	}
+	return s[:n]
 }
 
 // ConfirmHuman upserts HITL gold.
@@ -224,4 +256,19 @@ func buildInput(req RecognizeRequest) engine.Input {
 		in.LayoutText = v
 	}
 	return in
+}
+
+// ParseFewShotK parses OWN_FEW_SHOT_K env.
+func ParseFewShotK(raw string) int {
+	if raw == "" {
+		return 3
+	}
+	n, err := strconv.Atoi(raw)
+	if err != nil || n < 0 {
+		return 3
+	}
+	if n > 8 {
+		return 8
+	}
+	return n
 }

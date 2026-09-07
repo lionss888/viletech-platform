@@ -5,66 +5,76 @@ Manual entry always remains. Status machine stays in core; extraction is a plugi
 
 ## Architecture
 
-PRIMARY (client-visible prefill). Yandex Vision OCR plus AI Studio, or fixture without keys, or own after eval gate.
+PRIMARY (client-visible prefill): Yandex Vision OCR plus AI Studio, or fixture without keys, or own (Ollama) for dev/canary after wiring.
 
-SHADOW. Docling HTTP when EXTRACTION_SHADOW_URL is set; otherwise deterministic stub. Not shown in UI.
+SHADOW: Docling HTTP when EXTRACTION_SHADOW_URL is set; otherwise deterministic stub. Not shown in UI.
 
-HITL. Operator edits line items and confirms; hard labels live in human_out.
+HITL: operator edits line items and confirms; hard labels live in human_out.
 
-Gold. JSONL under EXTRACTION_GOLD_DIR on the extraction service volume (not the payment DB).
+Gold: JSONL under EXTRACTION_GOLD_DIR (includes layout_text for SFT).
 
-Own. Offline train from gold to artifact to OwnAdapter; canary via EXTRACTION_PRIMARY equals own with EXTRACTION_FALLBACK equals yandex.
+Own: CPU = Ollama Qwen2.5-3B plus few-shot from gold; weights = Wave E LoRA (see train/lora_recipe.md). Prod PRIMARY equals own only after held-out eval.
 
 ## Schema v1
 
-ExtractionResult fields: schema_version, doc_type, language, confidence, header, line_items, meta, warnings.
+ExtractionResult: schema_version, doc_type, language, confidence, header, line_items, meta, warnings.
 
-GoldRecord fields: gold_id, form_payment_id, organization_id, primary_out, shadow_out, human_out, engines, timestamps.
+GoldRecord: gold_id, form_payment_id, organization_id, primary_out, shadow_out, human_out, layout_text, engines, timestamps.
 
 ## Env
 
-Variable OCR_URL. Role hub calls extraction POST recognize.
+OCR_URL — hub to extraction POST /recognize.
 
-Variable EXTRACTION_PRIMARY. Values yandex, fixture, or own.
+EXTRACTION_PRIMARY — yandex | fixture | own.
 
-Variable EXTRACTION_FALLBACK. Value fixture for commercial wire, or yandex when own is primary.
+EXTRACTION_FALLBACK — fixture (commercial wire) or yandex when own is primary.
 
-Variable EXTRACTION_SHADOW_URL. Docling HTTP; empty means stub.
+EXTRACTION_SHADOW_URL — Docling HTTP; empty means stub.
 
-Variable EXTRACTION_GOLD_DIR. JSONL gold store.
+EXTRACTION_GOLD_DIR — JSONL gold store.
 
-Variables YANDEX_API_KEY, YANDEX_FOLDER_ID, YANDEX_MODEL_URI. Role PRIMARY yandex. Store only in gitignored env, never commit.
+YANDEX_API_KEY / YANDEX_FOLDER_ID / YANDEX_MODEL_URI — PRIMARY yandex (gitignored .env only).
 
-Variable OWN_MODEL_PATH. Artifact dir for own.
+OLLAMA_BASE_URL / OLLAMA_MODEL / OWN_FEW_SHOT_K — own via host Ollama (default model qwen2.5:3b).
 
-Secrets: copy env.example to env. Rotate any key that appeared outside the secret store. Smoke: make extraction-yandex-smoke.
+OWN_MODEL_PATH — artifact dir (metrics.json may set ollama_model tag).
+
+Secrets: copy .env.example to .env. Rotate leaked keys. Smoke: make extraction-yandex-smoke. Own ensure: make extraction-ollama-ensure (pull once if missing).
+
+## Model cache (no re-download on rebuild)
+
+Weights live in host Ollama store or compose volume ollama_models (profile own only).
+
+extraction Dockerfile never runs ollama pull. go test uses httptest mocks only.
+
+Cold start (RAM load) is not a network download.
 
 ## Flywheel
 
-Recognize produces primary plus shadow and appends GoldRecord with human empty.
+Recognize → primary + shadow → GoldRecord (human empty, layout_text set).
 
-Operator confirm sends core S2S POST gold human and upserts human_out.
+Confirm → S2S POST /gold/human → human_out.
 
-After at least 100 confirmed docs with line items: make extraction-export-gold, then train job, then eval F1, then canary own.
+After ≥100 confirms: make extraction-export-gold → train/eval → canary own.
 
-Hard label is human_out only. Primary output is soft teacher.
+Hard label = human_out only.
 
 ## Eval gate (own prod)
 
-Do not set prod EXTRACTION_PRIMARY to own until held-out eval report exists with header and line-item F1 recorded. Own is partial or stub until then (честность-готовности).
+Do not set prod EXTRACTION_PRIMARY to own until held-out eval and ready_for_prod_primary. CPU eval (make extraction-eval-own) always keeps ready_for_prod_primary false.
 
 ## Formats
 
 pdf, txt, docx, xlsx via format router in vdp/extraction.
 
-## Applied tooling matrix (what to take / skip)
+## Applied tooling matrix
 
-Source Hugging Face. Applied role Hub plus Transformers / PEFT / TRL for Wave E LoRA on Qwen; optional private dataset for export gold. Inference Endpoints equal vendor API again, not own. Decision: use for train and tooling only. Runtime serve on CPU equals Ollama (separate plan), not HF Endpoints as PRIMARY.
+Hugging Face — train/tooling (PEFT/TRL) for Wave E; not PRIMARY runtime.
 
-Source YaLM 100B (Yandex OSS, 2022). Applied role large bilingual OSS; 100B impractical on CPU pilot; outdated vs Qwen2.5 / YandexGPT API for IE. Decision: skip self-host in dual-track.
+YaLM 100B — skip self-host.
 
-Source Onyx. Applied role open-source chat/RAG over connectors — not invoice IE, not hub OCR replacement. Decision: skip for extraction. Possible later RFC for help/RAG support only (non-payment path).
+Onyx — skip for extraction.
 
-Source open-llms. Applied role commercial-use license checklist for open LLMs. Decision: license gate before Wave E base model choice — see extraction/train/lora_recipe.md.
+open-llms — license gate before Wave E; see train/lora_recipe.md.
 
-Commercial path now: Yandex API PRIMARY behind hub. Own substitution: gold to LoRA (HF tooling) to eval to canary; never auto-pay.
+Commercial path: Yandex API PRIMARY. Own: gold → few-shot (CPU) → LoRA (GPU Wave E) → eval → canary; never auto-pay.

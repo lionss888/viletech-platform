@@ -78,13 +78,22 @@ def main() -> int:
         "test_eval": eval_split(test),
         "train_eval_vs_primary": eval_split(train),
         "ready_for_prod_primary": False,
+        "ollama_model": "qwen2.5:3b",
         "note": "Set ready_for_prod_primary true only after human review of F1 vs thresholds in extraction.md",
     }
     out = Path(args.out_dir) / args.model_version
     out.mkdir(parents=True, exist_ok=True)
     (out / "metrics.json").write_text(json.dumps(metrics, indent=2), encoding="utf-8")
+    adapter = {
+        "base_model": "Qwen/Qwen2.5-3B-Instruct",
+        "ollama_model": "qwen2.5:3b",
+        "lora_r": 16,
+        "schema_version": "v1",
+        "status": "smoke_placeholder",
+    }
+    (out / "adapter_config.json").write_text(json.dumps(adapter, indent=2), encoding="utf-8")
     (out / "README.txt").write_text(
-        "Placeholder artifact. Replace with real IE weights after GPU train.\n",
+        "Placeholder artifact. Wave E GPU LoRA → Modelfile; see lora_recipe.md\n",
         encoding="utf-8",
     )
     print(json.dumps(metrics, indent=2))

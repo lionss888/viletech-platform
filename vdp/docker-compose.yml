@@ -73,6 +73,8 @@ services:
     build:
       context: .
       dockerfile: extraction/Dockerfile
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     environment:
       PORT: "8093"
       EXTRACTION_PRIMARY: ${EXTRACTION_PRIMARY:-fixture}
@@ -83,6 +85,9 @@ services:
       YANDEX_FOLDER_ID: ${YANDEX_FOLDER_ID:-}
       YANDEX_MODEL_URI: ${YANDEX_MODEL_URI:-}
       OWN_MODEL_PATH: ${OWN_MODEL_PATH:-}
+      OLLAMA_BASE_URL: ${OLLAMA_BASE_URL:-}
+      OLLAMA_MODEL: ${OLLAMA_MODEL:-qwen2.5:3b}
+      OWN_FEW_SHOT_K: ${OWN_FEW_SHOT_K:-3}
     volumes:
       - extraction_gold:/var/vdp/extraction-gold
     ports:
@@ -93,6 +98,18 @@ services:
       timeout: 3s
       retries: 10
       start_period: 5s
+
+  # Optional: long-lived Ollama with persistent model volume (no pull on start).
+  # Use: docker compose --profile own up -d ollama
+  # Prefer host Ollama for day-to-day; do not add to default compose-up.
+  ollama:
+    profiles: ["own"]
+    image: ollama/ollama:latest
+    restart: unless-stopped
+    volumes:
+      - ollama_models:/root/.ollama
+    ports:
+      - "${OLLAMA_BIND:-127.0.0.1}:11434:11434"
 
   mail-gateway:
     build:
@@ -248,3 +265,4 @@ volumes:
   fe_node_modules:
   core_blobs:
   extraction_gold:
+  ollama_models:

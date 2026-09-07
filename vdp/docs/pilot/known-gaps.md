@@ -67,6 +67,8 @@ Role ACL tested in unit e2e. Checklist security-signoff-checklist.md; prod confi
 Dual-track behind hub OCR_URL (vdp/extraction). Fixture works without Yandex keys.
 HITL confirm writes gold JSONL for offline train. Own model equals not ready for prod PRIMARY until Wave E held-out eval (see architecture/extraction.md). Commercial path: wire via gitignored .env (YANDEX_* plus EXTRACTION_PRIMARY equals yandex, fallback fixture). Smoke: make extraction-yandex-smoke. Keys leaked outside secret store must be rotated.
 
+Own CPU: Ollama Qwen2.5-3b plus few-shot is testable (EXTRACTION_PRIMARY equals own, OLLAMA_BASE_URL); make extraction-ollama-ensure once; make extraction-eval-own keeps ready_for_prod_primary false. Weight-based own model equals Wave E after GPU (lora_recipe.md).
+
 Applied skips: YaLM 100B self-host; Onyx as OCR/IE. HF equals LoRA tooling only; open-llms equals license checklist before train (extraction/train/lora_recipe.md).
 
 OCR is optional side-path only. recognize_complete in app advances draft without vendor OCR. Never on transactional payment commit. Manual entry remains available.

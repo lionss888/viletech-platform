@@ -27,6 +27,11 @@ EXTRACTION_GOLD_DIR=/var/vdp/extraction-gold
 # YANDEX_API_KEY=   # rotate if ever leaked; never commit
 # YANDEX_FOLDER_ID=
 # YANDEX_MODEL_URI=gpt://<folder_id>/yandexgpt-lite
+# Own CPU (host Ollama; make extraction-ollama-ensure once):
+# EXTRACTION_PRIMARY=own
+# OLLAMA_BASE_URL=http://host.docker.internal:11434
+# OLLAMA_MODEL=qwen2.5:3b
+# OWN_FEW_SHOT_K=3
 # OWN_MODEL_PATH=
 
 # 1C / Diadoc — optional. Empty URL → hub fixture / smart stub. Do not claim vendor-ready.

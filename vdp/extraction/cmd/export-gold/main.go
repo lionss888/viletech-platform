@@ -80,6 +80,8 @@ func main() {
 		"train_rows":        trainN,
 		"test_rows":         testN,
 		"min_confirms_hint": 100,
+		"fields":            []string{"layout_text", "human_out", "primary_out", "shadow_out"},
+		"sft_hint":          "Use layout_text as input and human_out as label for LoRA/SFT (Wave E)",
 	}
 	raw, _ := json.MarshalIndent(manifest, "", "  ")
 	_ = os.WriteFile(filepath.Join(*outDir, "manifest.json"), raw, 0o640)

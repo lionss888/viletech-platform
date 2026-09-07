@@ -15,24 +15,34 @@ func main() {
 	log := slog.Default()
 	cfg := service.Config{
 		Primary:        env("EXTRACTION_PRIMARY", "fixture"),
-		Fallback:       env("EXTRACTION_FALLBACK", "yandex"),
+		Fallback:       env("EXTRACTION_FALLBACK", "fixture"),
 		ShadowURL:      os.Getenv("EXTRACTION_SHADOW_URL"),
 		GoldDir:        env("EXTRACTION_GOLD_DIR", "/var/vdp/extraction-gold"),
 		YandexAPIKey:   os.Getenv("YANDEX_API_KEY"),
 		YandexFolderID: os.Getenv("YANDEX_FOLDER_ID"),
 		YandexModelURI: os.Getenv("YANDEX_MODEL_URI"),
 		OwnModelPath:   os.Getenv("OWN_MODEL_PATH"),
+		OllamaBaseURL:  os.Getenv("OLLAMA_BASE_URL"),
+		OllamaModel:    env("OLLAMA_MODEL", "qwen2.5:3b"),
+		OwnFewShotK:    service.ParseFewShotK(os.Getenv("OWN_FEW_SHOT_K")),
 		Log:            log,
 	}
 	if cfg.Primary == "yandex" && (cfg.YandexAPIKey == "" || cfg.YandexFolderID == "") {
 		log.Warn("YANDEX_API_KEY or YANDEX_FOLDER_ID missing; forcing fixture primary")
 		cfg.Primary = "fixture"
 	}
+	if cfg.Primary == "own" && cfg.OllamaBaseURL == "" {
+		log.Warn("EXTRACTION_PRIMARY=own without OLLAMA_BASE_URL; stub/artifact only")
+	}
 	svc := service.New(cfg)
 	addr := env("PORT", "8093")
 	mux := http.NewServeMux()
 	mux.HandleFunc("GET /health", func(w http.ResponseWriter, _ *http.Request) {
-		writeJSON(w, http.StatusOK, map[string]any{"status": "ok", "primary": cfg.Primary})
+		writeJSON(w, http.StatusOK, map[string]any{
+			"status":          "ok",
+			"primary":         cfg.Primary,
+			"ollama_configured": cfg.OllamaBaseURL != "",
+		})
 	})
 	mux.HandleFunc("GET /metrics", func(w http.ResponseWriter, _ *http.Request) {
 		writeJSON(w, http.StatusOK, metrics.Default.Snapshot())

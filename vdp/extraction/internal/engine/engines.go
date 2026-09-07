@@ -254,6 +254,7 @@ func (d DoclingShadow) Extract(ctx context.Context, in Input) (extraction.Result
 }
 
 // OwnFromArtifact loads metrics.json marker and returns fixture-shaped result tagged with version.
+// Prefer OllamaPrimary when OLLAMA_BASE_URL is set; this path is offline marker only.
 type OwnFromArtifact struct {
 	Path string
 }
@@ -272,11 +273,33 @@ func (o OwnFromArtifact) Extract(_ context.Context, in Input) (extraction.Result
 			if v, ok := m["model_version"].(string); ok && v != "" {
 				r.Meta.ModelVersion = v
 			}
+			if v, ok := m["ollama_model"].(string); ok && v != "" {
+				r.Meta.ModelVersion = v
+			}
 		}
 	}
 	r.Meta.EventID = in.EventID
 	r.Warnings = []string{"own_artifact"}
 	return r, nil
+}
+
+// OllamaModelFromArtifact reads preferred Ollama tag from metrics.json.
+func OllamaModelFromArtifact(path, fallback string) string {
+	if path == "" {
+		return fallback
+	}
+	raw, err := osReadFile(path + "/metrics.json")
+	if err != nil {
+		return fallback
+	}
+	var m map[string]any
+	if json.Unmarshal(raw, &m) != nil {
+		return fallback
+	}
+	if v, ok := m["ollama_model"].(string); ok && v != "" {
+		return v
+	}
+	return fallback
 }
 
 func osReadFile(p string) ([]byte, error) { return osRead(p) }
