@@ -9,3 +9,6 @@ release-images.env
 .env
 .env.*
 !.env.example
+extraction/.export/
+extraction/.gold/
+extraction/artifacts/

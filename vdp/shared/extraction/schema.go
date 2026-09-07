@@ -84,6 +84,7 @@ type GoldRecord struct {
 	PrimaryOut     Result    `json:"primary_out"`
 	ShadowOut      Result    `json:"shadow_out"`
 	HumanOut       *Result   `json:"human_out,omitempty"`
+	LayoutText     string    `json:"layout_text,omitempty"`
 }
 
 // FixtureResult returns a valid schema v1 payload for offline/dev.

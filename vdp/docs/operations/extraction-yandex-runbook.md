@@ -1,33 +1,47 @@
-# Extraction / Yandex keys runbook
+# Extraction runbook (Yandex + Ollama own)
 
 Side-path only. Manual entry always available. Do not enable EXTRACTION_PRIMARY equals own in production until held-out eval report exists.
 
-## Yandex Cloud
+## Secrets
 
-Step 1. Open folder (AI Studio / Cloud console).
+Copy vdp/.env.example to vdp/.env (gitignored). Never commit keys. Rotate any key shared outside the secret store.
 
-Step 2. Create service account with Vision OCR and Foundation Models execute scopes.
+## Yandex Cloud (PRIMARY commercial)
 
-Step 3. Create API key; store as YANDEX_API_KEY (never commit).
+1. Open folder (AI Studio / Cloud console).
+2. Service account with Vision OCR + Foundation Models execute scopes.
+3. API key → YANDEX_API_KEY; folder → YANDEX_FOLDER_ID; model URI → YANDEX_MODEL_URI (e.g. gpt://folder/yandexgpt-lite).
+4. EXTRACTION_PRIMARY=yandex, EXTRACTION_FALLBACK=fixture.
+5. docker compose up -d extraction; make extraction-yandex-smoke.
 
-Step 4. Set YANDEX_FOLDER_ID to the folder id.
+## Ollama own (CPU dev/canary)
 
-Step 5. Set YANDEX_MODEL_URI (for example gpt://folder/yandexgpt-lite or a vision-capable model URI from AI Studio).
+Prefer Ollama on the host so rebuilds never re-download weights.
 
-Step 6. Compose / staging: EXTRACTION_PRIMARY equals yandex; hub OCR_URL equals http://extraction:8093/recognize; core EXTRACTION_URL equals http://extraction:8093.
+1. Install Ollama; once: make extraction-ollama-ensure (pulls qwen2.5:3b only if missing).
+2. .env: EXTRACTION_PRIMARY=own, EXTRACTION_FALLBACK=yandex or fixture, OLLAMA_BASE_URL=http://host.docker.internal:11434, OLLAMA_MODEL=qwen2.5:3b, OWN_FEW_SHOT_K=3.
+3. Restart extraction. Health shows ollama_configured true.
+4. Latency on CPU may be tens of seconds (cold start = RAM load, not pull).
+5. Optional compose profile: docker compose --profile own up -d ollama (volume ollama_models; no pull in entrypoint).
+
+## Distinctions
+
+- Network pull: make extraction-ollama-ensure / ollama pull (rare, once per machine/model tag).
+- Cold start: first request after Ollama restart loads weights into RAM.
+- Inference latency: CPU generation time for recognize.
 
 ## Smoke
 
-Without keys: curl health on localhost:8093, then POST recognize with JSON form_payment_id, event_id, and payload file_name plus text. Expect mode equals fixture and fields.invoice_json schema v1 with line_items.
+make extraction-yandex-smoke — fixture or yandex.
 
-With keys: same with EXTRACTION_PRIMARY equals yandex; expect mode equals yandex or fallback.
+Own: POST /recognize with text payload; expect mode own and fields.invoice_json when Ollama is up; otherwise stub/fallback.
 
 HITL: POST /api/v1/forms/{id}/extraction/confirm with JWT (not provider).
 
-## Own path
+## Eval / export
 
-Step 1. Accumulate at least 100 confirms, then make extraction-export-gold.
+make extraction-export-gold
+make extraction-eval-own   # ready_for_prod_primary stays false on CPU
+make extraction-train-eval # smoke artifact scaffold
 
-Step 2. Run python extraction/train/train_eval.py with export-dir and out-dir artifacts.
-
-Step 3. Review metrics.json; only then staging canary EXTRACTION_PRIMARY equals own plus OWN_MODEL_PATH plus EXTRACTION_FALLBACK equals yandex.
+Wave E (GPU weights): see extraction/train/lora_recipe.md.

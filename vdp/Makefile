@@ -36,16 +36,23 @@ test:
 	cd sms-gateway && go test ./...
 	cd release-gate && go test ./...
 
-.PHONY: extraction-export-gold extraction-train-eval extraction-yandex-smoke
+.PHONY: extraction-export-gold extraction-train-eval extraction-yandex-smoke extraction-ollama-ensure extraction-eval-own
 extraction-export-gold:
 	cd extraction && go run ./cmd/export-gold -gold-dir="$${EXTRACTION_GOLD_DIR:-./.gold}" -out="$${EXTRACTION_EXPORT_DIR:-./.export}"
 
 extraction-train-eval:
 	python3 extraction/train/train_eval.py --export-dir="$${EXTRACTION_EXPORT_DIR:-./extraction/.export}" --out-dir="$${OWN_MODEL_PATH:-./extraction/artifacts}" --model-version="$${OWN_MODEL_VERSION:-own-baseline-0}"
 
+extraction-eval-own:
+	python3 extraction/train/eval_own.py --export-dir="$${EXTRACTION_EXPORT_DIR:-./extraction/.export}" --out-dir="$${OWN_MODEL_PATH:-./extraction/artifacts}" --model-version="$${OWN_MODEL_VERSION:-own-cpu-eval-0}"
+
 extraction-yandex-smoke:
 	@chmod +x scripts/extraction-yandex-smoke.sh
 	@./scripts/extraction-yandex-smoke.sh
+
+extraction-ollama-ensure:
+	@chmod +x scripts/extraction-ollama-ensure.sh
+	@./scripts/extraction-ollama-ensure.sh
 
 test-integration:
 	cd $(CORE_DIR) && go test -tags=integration ./...
