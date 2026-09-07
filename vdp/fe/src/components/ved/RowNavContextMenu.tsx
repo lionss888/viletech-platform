@@ -36,7 +36,8 @@ type AppRoute =
 type MenuPoint = { x: number; y: number };
 
 /**
- * Global context menu for table rows/cells: Рабочие чаты, Профиль, Справочники.
+ * Global menu on left-click (and right-click) of table rows/cells.
+ * Profile lives here, not in the left sidebar.
  */
 export function RowNavContextMenu({
   basePath,
@@ -76,26 +77,37 @@ export function RowNavContextMenu({
     close();
   }, [close, go, onOpenRefs, refs]);
 
+  const openAt = useCallback((event: MouseEvent) => {
+    const target = event.target;
+    if (!(target instanceof Element)) return false;
+    if (target.closest("a, button, input, textarea, select, [data-no-row-menu]")) return false;
+    const cell = target.closest("td, [data-row-menu]");
+    const row = cell?.closest("tr") ?? target.closest("tbody tr");
+    if (!row || !rootRef.current?.contains(row)) return false;
+    if (row.closest("thead, tfoot")) return false;
+    event.preventDefault();
+    event.stopPropagation();
+    setPoint({ x: event.clientX, y: event.clientY });
+    return true;
+  }, []);
+
   useEffect(() => {
     const root = rootRef.current;
     if (!root) return;
-
-    const onContextMenu = (event: MouseEvent) => {
-      const target = event.target;
-      if (!(target instanceof Element)) return;
-      if (target.closest("a, button, input, textarea, select, [data-no-row-menu]")) return;
-      const cell = target.closest("td, [data-row-menu]");
-      const row = cell?.closest("tr") ?? target.closest("tbody tr");
-      if (!row || !root.contains(row)) return;
-      if (row.closest("thead, tfoot")) return;
-      event.preventDefault();
-      event.stopPropagation();
-      setPoint({ x: event.clientX, y: event.clientY });
+    const onClick = (event: MouseEvent) => {
+      if (event.button !== 0) return;
+      openAt(event);
     };
-
+    const onContextMenu = (event: MouseEvent) => {
+      openAt(event);
+    };
+    root.addEventListener("click", onClick);
     root.addEventListener("contextmenu", onContextMenu);
-    return () => root.removeEventListener("contextmenu", onContextMenu);
-  }, []);
+    return () => {
+      root.removeEventListener("click", onClick);
+      root.removeEventListener("contextmenu", onContextMenu);
+    };
+  }, [openAt]);
 
   useEffect(() => {
     if (!point) return;

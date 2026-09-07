@@ -84,6 +84,7 @@ func TestR9TreasurerTaskAgentHsAndMailSSE(t *testing.T) {
 	}
 	catalog := service.NewCatalogService(store, box, newID)
 	forms := service.NewFormPaymentService(store, box, newID).WithEventBus(bus)
+	enableComplianceActors(t, forms)
 	manager := authz.Principal{AccountID: seed.ManagerID, Role: domain.RoleManager}
 	treasurer := authz.Principal{AccountID: seed.ManagerID, Role: domain.RoleTreasurer}
 	user := authz.Principal{AccountID: seed.UserID, Role: domain.RoleUser, OrganizationID: seed.OrgID}

@@ -37,19 +37,20 @@ func (s *Server) handleProcessRolesGet(w http.ResponseWriter, r *http.Request, p
 			"influence":    cfg.Influence,
 			"capabilities": cfg.Capabilities,
 			"removable":    cfg.Removable(),
-			"mandatory":    formpayment.IsMandatoryProcessRole(cfg.Role),
+			"mandatory":    cfg.Mandatory,
 		})
 	}
 	writeJSON(w, http.StatusOK, map[string]any{
-		"version":             view.Snapshot.Version,
-		"updated_at":          view.Snapshot.UpdatedAt,
-		"updated_by":          view.Snapshot.UpdatedBy,
-		"roles":               roles,
-		"capabilities":        view.Capabilities,
-		"system_capabilities": view.SystemCapabilities,
+		"version":              view.Snapshot.Version,
+		"updated_at":           view.Snapshot.UpdatedAt,
+		"updated_by":           view.Snapshot.UpdatedBy,
+		"roles":                roles,
+		"capabilities":         view.Capabilities,
+		"capabilities_catalog": formpayment.CapabilitiesCatalog(),
+		"system_capabilities":  view.SystemCapabilities,
 		"admin_system_by_role": view.AdminSystemByRole,
-		"mandatory_roles":     view.Mandatory,
-		"note":                "Role priority order does not change fixed application methodology stages; admin is outside the business process",
+		"mandatory_roles":      view.Mandatory,
+		"note":                 "Role priority order does not change fixed application methodology stages; admin is outside the business process",
 	})
 }
 

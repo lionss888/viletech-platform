@@ -18,9 +18,9 @@ import { usePlatformStore } from "@/lib/ved/platform-store";
 export const Route = createFileRoute("/demo/testing")({
   head: () => ({
     meta: [
-      { title: "Тестовые данные и сценарии — ⚡ ВЭД от Вилетех ₽" },
+      { title: "Тестовые данные и сценарии — ⚡ Веди ВЭД ₽" },
       { name: "description", content: "Тестовые аккаунты всех шести ролей, набор заявок по каждой стадии и сценарии ручной проверки интерфейса ВЭД." },
-      { property: "og:title", content: "Тестовые данные и сценарии — ⚡ ВЭД от Вилетех ₽" },
+      { property: "og:title", content: "Тестовые данные и сценарии — ⚡ Веди ВЭД ₽" },
       { property: "og:description", content: "Аккаунты ролей, заявки по стадиям и пошаговые сценарии ручного тестирования." },
     ],
   }),

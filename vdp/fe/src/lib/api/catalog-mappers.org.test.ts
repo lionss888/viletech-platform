@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { mapCoreAdminAccount, mapCoreOrganization, mapOrgStatus } from "./catalog-mappers";
+import { mapCoreAdminAccount, mapCoreCounterparty, mapCoreOrganization, mapOrgStatus } from "./catalog-mappers";
 import type { CoreAdminAccount, CoreOrganization } from "./catalog";
 
 describe("mapOrgStatus", () => {
@@ -51,5 +51,19 @@ describe("mapCoreAdminAccount", () => {
       blocked: false,
     };
     expect(mapCoreAdminAccount(input).name).toBe("Root Admin");
+  });
+});
+
+describe("mapCoreCounterparty", () => {
+  it("maps core country field used by /api/v1/counterparties", () => {
+    const actual = mapCoreCounterparty({
+      id: "cp-1",
+      name: "Shenzhen Kaiyuan Electronics Co., Ltd",
+      country: "CN",
+      last_approval_status: "approved",
+    });
+    expect(actual.name).toContain("Shenzhen");
+    expect(actual.country).toBe("CN");
+    expect(actual.status).toBe("approved");
   });
 });

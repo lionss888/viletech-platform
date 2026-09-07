@@ -21,6 +21,7 @@ const (
 type RoleProcessConfig struct {
 	Role         domain.Role  `json:"role"`
 	Enabled      bool         `json:"enabled"`
+	Mandatory    bool         `json:"mandatory"`
 	Priority     int          `json:"priority"`
 	Influence    Influence    `json:"influence"`
 	Capabilities []Capability `json:"capabilities"`
@@ -63,28 +64,28 @@ func (c RoleProcessConfig) HasCapability(cap Capability) bool {
 	return false
 }
 
-// Removable is true for optional process roles (not mandatory stage actors).
+// Removable is true when the role is not marked mandatory in process config.
 func (c RoleProcessConfig) Removable() bool {
-	return !IsMandatoryProcessRole(c.Role)
+	return !c.Mandatory
 }
 
-// DefaultProcessPolicySnapshot mirrors today's RolesForAction matrix and participation order.
+// DefaultProcessPolicySnapshot is pilot participation: U/M/P spine mandatory; ICO/ECO off.
 // Root/admin is excluded: not a business-process participant.
 func DefaultProcessPolicySnapshot() ProcessPolicySnapshot {
 	return ProcessPolicySnapshot{
 		Version: 1,
 		Roles: []RoleProcessConfig{
-			{Role: domain.RoleUser, Enabled: true, Priority: 10, Influence: InfluenceActor, Capabilities: defaultCapsUser()},
-			{Role: domain.RoleSales, Enabled: false, Priority: 15, Influence: InfluenceObserver, Capabilities: []Capability{CapFormView, CapSalesAttribution}},
-			{Role: domain.RoleInternalComplianceOfficer, Enabled: true, Priority: 20, Influence: InfluenceActor, Capabilities: []Capability{CapFormView, CapOrgCompliance}},
-			{Role: domain.RoleComplianceOfficer, Enabled: true, Priority: 30, Influence: InfluenceActor, Capabilities: []Capability{CapFormView, CapFormCompliance}},
-			{Role: domain.RoleManager, Enabled: true, Priority: 40, Influence: InfluenceActor, Capabilities: []Capability{CapFormView, CapFormRecognize, CapManagerOps, CapManagerPayment, CapProviderPayment}},
-			{Role: domain.RoleTreasurer, Enabled: true, Priority: 45, Influence: InfluenceActor, Capabilities: []Capability{CapFormView, CapManagerOps, CapManagerPayment, CapTreasurerOps}},
-			{Role: domain.RoleProvider, Enabled: true, Priority: 50, Influence: InfluenceActor, Capabilities: []Capability{CapFormView, CapManagerPayment, CapProviderPayment}},
-			{Role: domain.RoleSeniorProvider, Enabled: true, Priority: 55, Influence: InfluenceActor, Capabilities: []Capability{CapFormView, CapManagerPayment, CapProviderPayment}},
-			{Role: domain.RoleViewer, Enabled: false, Priority: 60, Influence: InfluenceObserver, Capabilities: []Capability{CapFormView}},
-			{Role: domain.RoleOneC, Enabled: true, Priority: 70, Influence: InfluenceActor, Capabilities: []Capability{CapInternalCallback}},
-			{Role: domain.RoleBank, Enabled: true, Priority: 80, Influence: InfluenceActor, Capabilities: []Capability{CapFormView, CapFormSubmit, CapBankChannel}},
+			{Role: domain.RoleUser, Enabled: true, Mandatory: true, Priority: 10, Influence: InfluenceActor, Capabilities: defaultCapsUser()},
+			{Role: domain.RoleSales, Enabled: false, Mandatory: false, Priority: 15, Influence: InfluenceObserver, Capabilities: []Capability{CapFormView, CapSalesAttribution}},
+			{Role: domain.RoleInternalComplianceOfficer, Enabled: false, Mandatory: false, Priority: 20, Influence: InfluenceActor, Capabilities: []Capability{CapFormView, CapOrgCompliance}},
+			{Role: domain.RoleComplianceOfficer, Enabled: false, Mandatory: false, Priority: 30, Influence: InfluenceActor, Capabilities: []Capability{CapFormView, CapFormCompliance}},
+			{Role: domain.RoleManager, Enabled: true, Mandatory: true, Priority: 40, Influence: InfluenceActor, Capabilities: []Capability{CapFormView, CapFormRecognize, CapManagerOps, CapManagerPayment, CapProviderPayment}},
+			{Role: domain.RoleTreasurer, Enabled: true, Mandatory: false, Priority: 45, Influence: InfluenceActor, Capabilities: []Capability{CapFormView, CapManagerOps, CapManagerPayment, CapTreasurerOps}},
+			{Role: domain.RoleProvider, Enabled: true, Mandatory: true, Priority: 50, Influence: InfluenceActor, Capabilities: []Capability{CapFormView, CapManagerPayment, CapProviderPayment}},
+			{Role: domain.RoleSeniorProvider, Enabled: true, Mandatory: true, Priority: 55, Influence: InfluenceActor, Capabilities: []Capability{CapFormView, CapManagerPayment, CapProviderPayment}},
+			{Role: domain.RoleViewer, Enabled: false, Mandatory: false, Priority: 60, Influence: InfluenceObserver, Capabilities: []Capability{CapFormView}},
+			{Role: domain.RoleOneC, Enabled: true, Mandatory: false, Priority: 70, Influence: InfluenceActor, Capabilities: []Capability{CapInternalCallback}},
+			{Role: domain.RoleBank, Enabled: true, Mandatory: false, Priority: 80, Influence: InfluenceActor, Capabilities: []Capability{CapFormView, CapFormSubmit, CapBankChannel}},
 		},
 	}
 }
@@ -106,6 +107,7 @@ func defaultCapsUser() []Capability {
 
 // RoleMayPerformWithConfig authorizes action using snapshot; nil/empty falls back to RolesForAction.
 // Platform admin (root) is not a process role: authorized via AdminBusinessCaps when role is root.
+// When a slot actor is disabled in config, manager (manager.ops) may advance that slot (continuity spine).
 func RoleMayPerformWithConfig(role domain.Role, action Action, snap *ProcessPolicySnapshot) bool {
 	if role == domain.RoleRoot {
 		cap := CapabilityForAction(action)
@@ -123,20 +125,46 @@ func RoleMayPerformWithConfig(role domain.Role, action Action, snap *ProcessPoli
 		return RoleMayPerformLegacy(role, action)
 	}
 	cfg, ok := snap.ConfigFor(role)
-	if !ok || !cfg.Enabled || cfg.Influence == InfluenceNone {
-		return false
+	if ok && cfg.Enabled && cfg.Influence == InfluenceActor {
+		cap := CapabilityForAction(action)
+		if cap != "" && cfg.HasCapability(cap) {
+			return true
+		}
 	}
-	if cfg.Influence == InfluenceObserver {
-		return false
+	if canAdvanceDisabledSlot(role, action, snap) {
+		return true
 	}
+	return false
+}
+
+// slotActorForCapability maps a capability to its primary process-slot actor.
+func slotActorForCapability(cap Capability) domain.Role {
+	switch cap {
+	case CapOrgCompliance:
+		return domain.RoleInternalComplianceOfficer
+	case CapFormCompliance:
+		return domain.RoleComplianceOfficer
+	default:
+		return ""
+	}
+}
+
+// canAdvanceDisabledSlot allows manager.ops when the dedicated slot actor is disabled.
+func canAdvanceDisabledSlot(role domain.Role, action Action, snap *ProcessPolicySnapshot) bool {
 	cap := CapabilityForAction(action)
-	if cap == "" {
+	slot := slotActorForCapability(cap)
+	if slot == "" {
 		return false
 	}
-	if !cfg.HasCapability(cap) {
+	slotCfg, ok := snap.ConfigFor(slot)
+	if !ok || slotCfg.Enabled {
 		return false
 	}
-	return true
+	actor, ok := snap.ConfigFor(role)
+	if !ok || !actor.Enabled || actor.Influence != InfluenceActor {
+		return false
+	}
+	return actor.HasCapability(CapManagerOps)
 }
 
 // RoleMayPerformLegacy is the hard-coded matrix (kept for parity tests and empty snapshot).
@@ -162,12 +190,12 @@ func RoleMayPerformLegacy(role domain.Role, action Action) bool {
 }
 
 // ValidateRoleConfigUpdate checks capabilities and mandatory disable rules.
-func ValidateRoleConfigUpdate(role domain.Role, enabled bool, influence Influence, caps []Capability) error {
+func ValidateRoleConfigUpdate(role domain.Role, enabled bool, mandatory bool, influence Influence, caps []Capability) error {
 	if !IsProcessEligibleRole(role) {
 		return apperrors.New(apperrors.ErrCodeValidation, "admin roles are not process participants")
 	}
-	if IsMandatoryProcessRole(role) && !enabled {
-		return apperrors.New(apperrors.ErrCodeValidation, "cannot disable mandatory process role; methodology is fixed in code")
+	if mandatory && !enabled {
+		return apperrors.New(apperrors.ErrCodeValidation, "cannot disable mandatory process role")
 	}
 	if influence != InfluenceActor && influence != InfluenceObserver && influence != InfluenceNone {
 		return apperrors.New(apperrors.ErrCodeValidation, "invalid influence")

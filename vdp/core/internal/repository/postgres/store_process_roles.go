@@ -24,7 +24,8 @@ func (s *Store) GetProcessPolicySnapshot(ctx context.Context) (formpayment.Proce
 		return formpayment.DefaultProcessPolicySnapshot(), nil
 	}
 	rows, err := s.db.QueryContext(ctx, `
-		SELECT role, enabled, priority, influence, capabilities FROM role_process_configs ORDER BY priority ASC, role ASC`)
+		SELECT role, enabled, COALESCE(mandatory, FALSE), priority, influence, capabilities
+		FROM role_process_configs ORDER BY priority ASC, role ASC`)
 	if err != nil {
 		return formpayment.DefaultProcessPolicySnapshot(), nil
 	}
@@ -35,10 +36,10 @@ func (s *Store) GetProcessPolicySnapshot(ctx context.Context) (formpayment.Proce
 	}
 	for rows.Next() {
 		var role, influence string
-		var enabled bool
+		var enabled, mandatory bool
 		var priority int
 		var capsRaw []byte
-		if err := rows.Scan(&role, &enabled, &priority, &influence, &capsRaw); err != nil {
+		if err := rows.Scan(&role, &enabled, &mandatory, &priority, &influence, &capsRaw); err != nil {
 			return formpayment.DefaultProcessPolicySnapshot(), nil
 		}
 		var caps []formpayment.Capability
@@ -51,7 +52,7 @@ func (s *Store) GetProcessPolicySnapshot(ctx context.Context) (formpayment.Proce
 			continue
 		}
 		snap.Roles = append(snap.Roles, formpayment.RoleProcessConfig{
-			Role: parsed, Enabled: enabled, Priority: priority,
+			Role: parsed, Enabled: enabled, Mandatory: mandatory, Priority: priority,
 			Influence: formpayment.Influence(influence), Capabilities: caps,
 		})
 	}
@@ -81,12 +82,12 @@ func (s *Store) SaveProcessPolicySnapshot(ctx context.Context, snap formpayment.
 		}
 		caps, _ := json.Marshal(cfg.Capabilities)
 		_, err = tx.ExecContext(ctx, `
-			INSERT INTO role_process_configs (role, enabled, priority, influence, capabilities, updated_at)
-			VALUES ($1,$2,$3,$4,$5,NOW())
+			INSERT INTO role_process_configs (role, enabled, mandatory, priority, influence, capabilities, updated_at)
+			VALUES ($1,$2,$3,$4,$5,$6,NOW())
 			ON CONFLICT (role) DO UPDATE SET
-				enabled=EXCLUDED.enabled, priority=EXCLUDED.priority, influence=EXCLUDED.influence,
-				capabilities=EXCLUDED.capabilities, updated_at=NOW()`,
-			string(cfg.Role), cfg.Enabled, cfg.Priority, string(cfg.Influence), caps)
+				enabled=EXCLUDED.enabled, mandatory=EXCLUDED.mandatory, priority=EXCLUDED.priority,
+				influence=EXCLUDED.influence, capabilities=EXCLUDED.capabilities, updated_at=NOW()`,
+			string(cfg.Role), cfg.Enabled, cfg.Mandatory, cfg.Priority, string(cfg.Influence), caps)
 		if err != nil {
 			return err
 		}

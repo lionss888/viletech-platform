@@ -53,12 +53,9 @@ func (s *ProcessRoleService) GetConfig(ctx context.Context, _ authz.Principal) (
 		return ProcessConfigView{}, err
 	}
 	mandatory := make([]domain.Role, 0)
-	for _, role := range []domain.Role{
-		domain.RoleUser, domain.RoleInternalComplianceOfficer, domain.RoleComplianceOfficer,
-		domain.RoleManager, domain.RoleProvider, domain.RoleSeniorProvider,
-	} {
-		if formpayment.IsMandatoryProcessRole(role) {
-			mandatory = append(mandatory, role)
+	for _, cfg := range snap.Roles {
+		if cfg.Mandatory {
+			mandatory = append(mandatory, cfg.Role)
 		}
 	}
 	adminSys := map[string][]string{}
@@ -75,6 +72,7 @@ func (s *ProcessRoleService) GetConfig(ctx context.Context, _ authz.Principal) (
 
 type RoleConfigUpdate struct {
 	Enabled      *bool                    `json:"enabled"`
+	Mandatory    *bool                    `json:"mandatory"`
 	Influence    *formpayment.Influence    `json:"influence"`
 	Capabilities *[]formpayment.Capability `json:"capabilities"`
 }
@@ -96,6 +94,16 @@ func (s *ProcessRoleService) UpdateRole(ctx context.Context, principal authz.Pri
 	}
 	if input.Enabled != nil {
 		cfg.Enabled = *input.Enabled
+		// Continuity: leaving the process clears mandatory in the same update (root may re-gate later).
+		if !*input.Enabled {
+			cfg.Mandatory = false
+		}
+	}
+	if input.Mandatory != nil {
+		cfg.Mandatory = *input.Mandatory
+		if *input.Mandatory {
+			cfg.Enabled = true
+		}
 	}
 	if input.Influence != nil {
 		cfg.Influence = *input.Influence
@@ -103,7 +111,7 @@ func (s *ProcessRoleService) UpdateRole(ctx context.Context, principal authz.Pri
 	if input.Capabilities != nil {
 		cfg.Capabilities = append([]formpayment.Capability(nil), (*input.Capabilities)...)
 	}
-	if err := formpayment.ValidateRoleConfigUpdate(role, cfg.Enabled, cfg.Influence, cfg.Capabilities); err != nil {
+	if err := formpayment.ValidateRoleConfigUpdate(role, cfg.Enabled, cfg.Mandatory, cfg.Influence, cfg.Capabilities); err != nil {
 		return formpayment.ProcessPolicySnapshot{}, err
 	}
 	for i := range snap.Roles {

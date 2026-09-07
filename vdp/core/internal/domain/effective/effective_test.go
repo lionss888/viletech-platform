@@ -50,10 +50,11 @@ func TestResolveRootLocksSystemCaps(t *testing.T) {
 
 func TestIsMandatoryProcessRoleExcludesRoot(t *testing.T) {
 	t.Parallel()
-	if formpayment.IsMandatoryProcessRole(domain.RoleRoot) {
+	snap := formpayment.DefaultProcessPolicySnapshot()
+	if formpayment.IsMandatoryProcessRole(domain.RoleRoot, &snap) {
 		t.Fatal("root must not be mandatory process role")
 	}
-	if !formpayment.IsMandatoryProcessRole(domain.RoleManager) {
+	if !formpayment.IsMandatoryProcessRole(domain.RoleManager, &snap) {
 		t.Fatal("manager is mandatory")
 	}
 }

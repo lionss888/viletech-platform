@@ -1,9 +1,10 @@
 import { useNavigate } from "@tanstack/react-router";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 import { VedAppShell } from "@/components/ved/VedAppShell";
 import { usePlatformBasePath, usePlatformMode } from "@/lib/ved/platform-mode";
 import { usePlatformStore } from "@/lib/ved/platform-store";
+import { sortCurrencyRecords } from "@/lib/ved/sort-currencies";
 import { assertFileSize, UploadError } from "@/lib/api/files";
 import type { FormCondition, FormDirection, FormKind } from "@/lib/ved/types";
 import { cn } from "@/lib/utils";
@@ -11,7 +12,7 @@ import { cn } from "@/lib/utils";
 const STEPS = ["Направление", "Стороны", "Условия", "Документы", "Проверка"];
 
 export function NewForm() {
-  const { organizations, counterparties, createForm } = usePlatformStore();
+  const { organizations, counterparties, currencies, hsCodes, createForm } = usePlatformStore();
   const navigate = useNavigate();
   const base = usePlatformBasePath();
   const mode = usePlatformMode();
@@ -22,8 +23,8 @@ export function NewForm() {
     direction: "import" as FormDirection,
     kind: "good" as FormKind,
     condition: "advance" as FormCondition,
-    organizationId: organizations[0]?.id ?? "",
-    counterpartyId: counterparties[0]?.id ?? "",
+    organizationId: "",
+    counterpartyId: "",
     amount: "",
     currency: "USD",
     clientCurrency: "RUB",
@@ -37,6 +38,30 @@ export function NewForm() {
     invoiceFile: null as File | null,
     contractFile: null as File | null,
   });
+  const currencyOptions = sortCurrencyRecords(currencies);
+
+  useEffect(() => {
+    setDraft((prev) => {
+      const nextOrg =
+        prev.organizationId && organizations.some((o) => o.id === prev.organizationId)
+          ? prev.organizationId
+          : (organizations[0]?.id ?? "");
+      const nextCp =
+        prev.counterpartyId && counterparties.some((c) => c.id === prev.counterpartyId)
+          ? prev.counterpartyId
+          : (counterparties[0]?.id ?? "");
+      const nextHs =
+        prev.hsCode && hsCodes.some((h) => h.code === prev.hsCode) ? prev.hsCode : "";
+      if (
+        nextOrg === prev.organizationId &&
+        nextCp === prev.counterpartyId &&
+        nextHs === prev.hsCode
+      ) {
+        return prev;
+      }
+      return { ...prev, organizationId: nextOrg, counterpartyId: nextCp, hsCode: nextHs };
+    });
+  }, [organizations, counterparties, hsCodes]);
 
   function set<K extends keyof typeof draft>(key: K, value: (typeof draft)[K]) {
     setDraft((prev) => ({ ...prev, [key]: value }));
@@ -59,7 +84,11 @@ export function NewForm() {
 
   function validateStep(): string | null {
     if (step === 2) {
-      if (draft.kind === "good" && !draft.hsCode.trim()) return "Для товара укажите код ТН ВЭД";
+      if (draft.kind === "good" && !draft.hsCode.trim()) {
+        return hsCodes.length === 0
+          ? "Справочник кодов ТН ВЭД пуст — добавьте код в «Коды ТН ВЭД»"
+          : "Для товара выберите код ТН ВЭД из справочника";
+      }
       if (draft.kind === "good" && draft.condition === "advance" && !draft.shipmentDate.trim()) {
         return "Для товара с авансом укажите дату отгрузки";
       }
@@ -214,6 +243,7 @@ export function NewForm() {
             </Field>
             <Field label="Контрагент">
               <select value={draft.counterpartyId} onChange={(e) => set("counterpartyId", e.target.value)} className="field">
+                {counterparties.length === 0 && <option value="">Нет контрагентов</option>}
                 {counterparties.map((c) => (
                   <option key={c.id} value={c.id}>
                     {c.name} · {c.country}
@@ -231,34 +261,51 @@ export function NewForm() {
             </Field>
             <Field label="Валюта инвойса">
               <select value={draft.currency} onChange={(e) => set("currency", e.target.value)} className="field">
-                {["USD", "CNY", "AED", "TRY", "EUR", "KZT", "USDT"].map((c) => (
-                  <option key={c} value={c}>
-                    {c}
+                {currencyOptions.length === 0 && <option value="">Нет валют в справочнике</option>}
+                {currencyOptions.map((c) => (
+                  <option key={c.code} value={c.code}>
+                    {c.code} · {c.title}
                   </option>
                 ))}
               </select>
             </Field>
             <Field label="Валюта клиента">
               <select value={draft.clientCurrency} onChange={(e) => set("clientCurrency", e.target.value)} className="field">
-                {["RUB", "USD", "EUR", "CNY"].map((c) => (
-                  <option key={c} value={c}>
-                    {c}
+                {currencyOptions.length === 0 && <option value="">Нет валют в справочнике</option>}
+                {currencyOptions.map((c) => (
+                  <option key={c.code} value={c.code}>
+                    {c.code} · {c.title}
                   </option>
                 ))}
               </select>
             </Field>
             <Field label="Валюта контрагента">
               <select value={draft.counterpartyCurrency} onChange={(e) => set("counterpartyCurrency", e.target.value)} className="field">
-                {["USD", "CNY", "AED", "EUR"].map((c) => (
-                  <option key={c} value={c}>
-                    {c}
+                {currencyOptions.length === 0 && <option value="">Нет валют в справочнике</option>}
+                {currencyOptions.map((c) => (
+                  <option key={c.code} value={c.code}>
+                    {c.code} · {c.title}
                   </option>
                 ))}
               </select>
             </Field>
             {draft.kind === "good" && (
               <Field label="Код ТН ВЭД">
-                <input value={draft.hsCode} onChange={(e) => set("hsCode", e.target.value)} placeholder="8542 31 90" className="field font-mono" />
+                <select
+                  value={draft.hsCode}
+                  onChange={(e) => set("hsCode", e.target.value)}
+                  className="field font-mono"
+                  aria-label="Код ТН ВЭД из справочника"
+                >
+                  <option value="">
+                    {hsCodes.length === 0 ? "Справочник пуст — откройте «Коды ТН ВЭД»" : "Выберите из справочника"}
+                  </option>
+                  {hsCodes.map((h) => (
+                    <option key={h.code} value={h.code}>
+                      {h.code} · {h.title}
+                    </option>
+                  ))}
+                </select>
               </Field>
             )}
             {draft.kind === "good" && draft.condition === "advance" && (

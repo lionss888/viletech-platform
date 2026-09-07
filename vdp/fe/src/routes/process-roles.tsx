@@ -4,7 +4,7 @@ import { ProcessRolesPage } from "@/components/ved/pages/process-roles-page";
 
 export const Route = createFileRoute("/process-roles")({
   head: () => ({
-    meta: [{ title: "Роли процесса — ⚡ ВЭД от Вилетех ₽" }],
+    meta: [{ title: "Роли процесса — ⚡ Веди ВЭД ₽" }],
   }),
   component: ProcessRolesPage,
 });
