@@ -176,15 +176,15 @@ export function VedAppShell({ children, title, subtitle }: { children: ReactNode
           )}
         </nav>
 
-        <div className="mt-auto space-y-3">
+        <div className="mt-auto space-y-4 border-t border-border pt-4">
           {isDemo ? (
-            <>
-              <div>
-                <p className="label-caps">Роль (только демо)</p>
+            <div className="space-y-3">
+              <div className="space-y-1.5">
+                <p className="label-caps">Роль · демо</p>
                 <select
                   value={role ?? ""}
                   onChange={(e) => store.signIn(e.target.value as VedRole)}
-                  className="field mt-1 text-xs"
+                  className="field text-sm"
                 >
                   {ROLES.map((r) => (
                     <option key={r.id} value={r.id}>
@@ -197,30 +197,33 @@ export function VedAppShell({ children, title, subtitle }: { children: ReactNode
                 <button
                   type="button"
                   onClick={store.resetDemo}
-                  className="w-full rounded-md px-3 py-2 text-xs font-semibold text-muted-foreground hover:bg-muted"
+                  className="block w-full rounded-md px-0 py-1.5 text-left text-xs text-muted-foreground hover:text-foreground"
                 >
                   Сбросить данные
                 </button>
               )}
               <Link
                 to="/login"
-                className="block w-full rounded-md px-3 py-2 text-center text-xs font-semibold text-muted-foreground hover:bg-muted"
+                className="block w-full rounded-md px-0 py-1.5 text-left text-xs text-muted-foreground hover:text-foreground"
               >
                 Войти через API (нужен core)
               </Link>
-            </>
+            </div>
           ) : (
-            <>
-              <p className="text-xs text-muted-foreground">
-                Роль: <span className="font-semibold text-foreground">{role ? roleTitle(role) : "—"}</span>
-              </p>
+            <div className="space-y-3">
+              <div className="space-y-1">
+                <p className="label-caps">Роль</p>
+                <p className="text-sm font-semibold leading-snug text-foreground">
+                  {role ? roleTitle(role) : "—"}
+                </p>
+              </div>
               <Link
                 to="/demo/login"
-                className="block w-full rounded-md px-3 py-2 text-center text-xs font-semibold text-muted-foreground hover:bg-muted"
+                className="block w-full rounded-md px-0 py-1.5 text-left text-xs leading-snug text-muted-foreground hover:text-foreground"
               >
                 Демо без бэкенда
               </Link>
-            </>
+            </div>
           )}
           <button
             type="button"
@@ -233,7 +236,7 @@ export function VedAppShell({ children, title, subtitle }: { children: ReactNode
                 void navigate({ to: "/login" });
               }
             }}
-            className="w-full rounded-md px-3 py-2 text-xs font-semibold text-destructive hover:bg-destructive-soft"
+            className="block w-full rounded-md px-0 py-1.5 text-left text-sm font-medium text-destructive hover:underline"
           >
             Выйти
           </button>

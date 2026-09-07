@@ -1,5 +1,5 @@
 import { useNavigate } from "@tanstack/react-router";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 
 import { VedAppShell } from "@/components/ved/VedAppShell";
 import { usePlatformBasePath, usePlatformMode } from "@/lib/ved/platform-mode";
@@ -26,9 +26,9 @@ export function NewForm() {
     organizationId: "",
     counterpartyId: "",
     amount: "",
-    currency: "USD",
+    currency: "RUB",
     clientCurrency: "RUB",
-    counterpartyCurrency: "USD",
+    counterpartyCurrency: "CNY",
     hsCode: "",
     invoiceNumber: "",
     contractNumber: "",
@@ -38,7 +38,7 @@ export function NewForm() {
     invoiceFile: null as File | null,
     contractFile: null as File | null,
   });
-  const currencyOptions = sortCurrencyRecords(currencies);
+  const currencyOptions = useMemo(() => sortCurrencyRecords(currencies), [currencies]);
 
   useEffect(() => {
     setDraft((prev) => {
@@ -52,16 +52,32 @@ export function NewForm() {
           : (counterparties[0]?.id ?? "");
       const nextHs =
         prev.hsCode && hsCodes.some((h) => h.code === prev.hsCode) ? prev.hsCode : "";
+      const prefer = (code: string, fallback: string) =>
+        currencyOptions.some((c) => c.code === code) ? code : (currencyOptions[0]?.code ?? fallback);
+      const nextCurrency = prefer(prev.currency, "RUB");
+      const nextClientCurrency = prefer(prev.clientCurrency, "RUB");
+      const nextCounterpartyCurrency = prefer(prev.counterpartyCurrency, "CNY");
       if (
         nextOrg === prev.organizationId &&
         nextCp === prev.counterpartyId &&
-        nextHs === prev.hsCode
+        nextHs === prev.hsCode &&
+        nextCurrency === prev.currency &&
+        nextClientCurrency === prev.clientCurrency &&
+        nextCounterpartyCurrency === prev.counterpartyCurrency
       ) {
         return prev;
       }
-      return { ...prev, organizationId: nextOrg, counterpartyId: nextCp, hsCode: nextHs };
+      return {
+        ...prev,
+        organizationId: nextOrg,
+        counterpartyId: nextCp,
+        hsCode: nextHs,
+        currency: nextCurrency,
+        clientCurrency: nextClientCurrency,
+        counterpartyCurrency: nextCounterpartyCurrency,
+      };
     });
-  }, [organizations, counterparties, hsCodes]);
+  }, [organizations, counterparties, hsCodes, currencyOptions]);
 
   function set<K extends keyof typeof draft>(key: K, value: (typeof draft)[K]) {
     setDraft((prev) => ({ ...prev, [key]: value }));
