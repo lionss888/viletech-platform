@@ -295,7 +295,13 @@ func CanSeeForm(role domain.Role, accountID string, form Form) bool {
 		return form.Channel == ChannelBank && form.AccountID == accountID
 	case domain.RoleProvider, domain.RoleSeniorProvider:
 		return form.ProviderID == accountID
-	case domain.RoleManager, domain.RoleTreasurer, domain.RoleRoot,
+	case domain.RoleManager:
+		// Client drafts stay in the client cabinet until submit.
+		if form.Status == StatusCreating || form.Status == StatusDraft {
+			return false
+		}
+		return true
+	case domain.RoleTreasurer, domain.RoleRoot,
 		domain.RoleComplianceOfficer, domain.RoleInternalComplianceOfficer, domain.RoleOneC,
 		domain.RoleSales, domain.RoleViewer:
 		return true

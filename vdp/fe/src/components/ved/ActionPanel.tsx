@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 
 import { Modal, ModalButton } from "@/components/ved/Modal";
 import { actionsFor } from "@/lib/ved/actions";
+import { waitingActorLabel } from "@/lib/api/mappers";
 import type { ContractType } from "@/lib/api/contract";
 import { getProcessRoles, type ProcessRoleRow } from "@/lib/api/process-roles";
 import { assertFileSize, UploadError } from "@/lib/api/files";
@@ -102,11 +103,14 @@ export function ActionPanel({
   const marks = marksFor(complianceTools, "form");
 
   if (actions.length === 0) {
+    const waiting = waitingActorLabel(form.status);
     return (
       <div className="panel p-4">
         <p className="label-caps">{title}</p>
         <p className="mt-2 text-sm text-muted-foreground">
-          На этом статусе для вашей роли действий нет — заявка у другого участника процесса.
+          {waiting
+            ? `На этом статусе для вашей роли действий нет. Сейчас очередь у: ${waiting}.`
+            : "На этом статусе для вашей роли действий нет — заявка у другого участника процесса."}
         </p>
       </div>
     );

@@ -1,6 +1,13 @@
 import { describe, expect, it } from "vitest";
 
-import { mapComplianceHistory, mapCoreFormToPaymentForm, normalizeFormId, parseDocsJson } from "./mappers";
+import {
+  mapComplianceHistory,
+  mapCoreFormToPaymentForm,
+  nextStepHint,
+  normalizeFormId,
+  parseDocsJson,
+  waitingActorLabel,
+} from "./mappers";
 import type { CoreForm } from "./forms";
 
 describe("normalizeFormId", () => {
@@ -51,18 +58,58 @@ describe("parseDocsJson", () => {
 });
 
 describe("mapComplianceHistory", () => {
-  it("maps history entries to timeline", () => {
+  it("maps history entries to timeline with human-readable labels", () => {
     const timeline = mapComplianceHistory([
       {
         id: "h1",
         form_payment_id: "f1",
         actor_id: "a1",
         from_status: "draft",
-        to_status: "form_waiting_verification",
+        to_status: "organization_waiting_verification",
         comment: "submit",
         created_at: "2026-01-01T00:00:00Z",
       },
     ]);
+    expect(timeline[0]?.title).toContain("Черновик");
+    expect(timeline[0]?.title).toContain("Ожидает проверки организации");
     expect(timeline[0]?.title).toContain("submit");
+    expect(timeline[0]?.title).not.toMatch(/organization_waiting_verification/);
+  });
+
+  it("maps creating → draft without snake_case codes", () => {
+    const timeline = mapComplianceHistory([
+      {
+        id: "h2",
+        form_payment_id: "f1",
+        actor_id: "a1",
+        from_status: "creating",
+        to_status: "draft",
+        created_at: "2026-01-01T00:00:00Z",
+      },
+    ]);
+    expect(timeline[0]?.title).toContain("Создаётся");
+    expect(timeline[0]?.title).toContain("Черновик");
+    expect(timeline[0]?.title).not.toContain("creating");
+  });
+});
+
+describe("nextStepHint", () => {
+  it("tells manager who owns organization_waiting_verification", () => {
+    const hint = nextStepHint("organization_waiting_verification", "manager");
+    expect(hint.toLowerCase()).toMatch(/комплаенс|внутренн/);
+    expect(hint).toMatch(/действий нет|Сейчас действует/i);
+  });
+
+  it("gives ICO their primary action on organization_waiting_verification", () => {
+    const hint = nextStepHint("organization_waiting_verification", "internal_compliance_officer");
+    expect(hint).toContain("Взять в проверку");
+  });
+});
+
+describe("waitingActorLabel", () => {
+  it("names internal compliance for organization_waiting_verification", () => {
+    const label = waitingActorLabel("organization_waiting_verification");
+    expect(label).toBeTruthy();
+    expect(label!.toLowerCase()).toMatch(/комплаенс|вко|внутренн/);
   });
 });

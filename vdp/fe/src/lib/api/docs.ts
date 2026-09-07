@@ -19,20 +19,26 @@ export function previewPrivatePath(fileId: string): string {
   return `${apiBase()}/api/v1/file-store/preview/private/${fileId}`;
 }
 
-export async function downloadPrivateFile(fileId: string, fileName: string): Promise<void> {
+/** Fetches private file with Bearer auth and returns a blob (+ object URL). Caller must revoke the URL. */
+export async function fetchPrivateFileBlob(fileId: string): Promise<{ blob: Blob; objectUrl: string }> {
   const headers = new Headers();
   headers.set("X-Request-ID", newRequestId());
   const tokens = loadAuthTokens();
   if (tokens?.token) headers.set("Authorization", `Bearer ${tokens.token}`);
   const response = await fetch(previewPrivatePath(fileId), { headers });
   if (!response.ok) {
-    throw new Error(response.status === 404 ? "Файл не найден" : "Не удалось скачать документ");
+    throw new Error(response.status === 404 ? "Файл не найден" : "Не удалось открыть документ");
   }
   const blob = await response.blob();
-  const url = URL.createObjectURL(blob);
+  return { blob, objectUrl: URL.createObjectURL(blob) };
+}
+
+export async function downloadPrivateFile(fileId: string, fileName: string): Promise<void> {
+  const { blob, objectUrl } = await fetchPrivateFileBlob(fileId);
   const anchor = document.createElement("a");
-  anchor.href = url;
+  anchor.href = objectUrl;
   anchor.download = fileName;
   anchor.click();
-  URL.revokeObjectURL(url);
+  URL.revokeObjectURL(objectUrl);
+  void blob;
 }

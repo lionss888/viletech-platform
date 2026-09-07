@@ -6,6 +6,7 @@ import { usePlatformBasePath, usePlatformMode } from "@/lib/ved/platform-mode";
 import { usePlatformStore } from "@/lib/ved/platform-store";
 import { sortCurrencyRecords } from "@/lib/ved/sort-currencies";
 import { assertFileSize, UploadError } from "@/lib/api/files";
+import { CREATE_REVIEW_OCR_BANNER, CREATE_REVIEW_OCR_CAPTION } from "@/lib/ved/create-review-copy";
 import type { FormCondition, FormDirection, FormKind } from "@/lib/ved/types";
 import { cn } from "@/lib/utils";
 
@@ -384,45 +385,55 @@ export function NewForm() {
         )}
 
         {step === 4 && (
-          <dl className="grid gap-3 sm:grid-cols-2">
-            {[
-              ["Направление", draft.direction === "import" ? "Импорт" : "Экспорт"],
-              ["Предмет", draft.kind === "good" ? "Товар" : "Услуга"],
-              ["Условие", draft.condition === "advance" ? "Аванс" : "Постоплата"],
-              ["Организация", organizations.find((o) => o.id === draft.organizationId)?.name ?? ""],
-              ["Контрагент", counterparties.find((c) => c.id === draft.counterpartyId)?.name ?? ""],
-              ["Сумма", `${draft.amount || 0} ${draft.currency}`],
-              ["Валюты", `${draft.clientCurrency} / ${draft.counterpartyCurrency}`],
-              ["ТН ВЭД", draft.hsCode || "—"],
-              ["Документы", draft.noDocuments ? "Без файлов (ручной контракт)" : "Инвойс + контракт"],
-            ].map(([k, v]) => (
-              <div key={k}>
-                <dt className="label-caps">{k}</dt>
-                <dd className="text-sm">{v}</dd>
-              </div>
-            ))}
-          </dl>
+          <div className="grid gap-4">
+            {!draft.noDocuments && (
+              <p className="rounded-md bg-muted px-3 py-2 text-sm text-foreground">{CREATE_REVIEW_OCR_BANNER}</p>
+            )}
+            <dl className="grid gap-3 sm:grid-cols-2">
+              {[
+                ["Направление", draft.direction === "import" ? "Импорт" : "Экспорт"],
+                ["Предмет", draft.kind === "good" ? "Товар" : "Услуга"],
+                ["Условие", draft.condition === "advance" ? "Аванс" : "Постоплата"],
+                ["Организация", organizations.find((o) => o.id === draft.organizationId)?.name ?? ""],
+                ["Контрагент", counterparties.find((c) => c.id === draft.counterpartyId)?.name ?? ""],
+                ["Сумма", `${draft.amount || 0} ${draft.currency}`],
+                ["Валюты", `${draft.clientCurrency} / ${draft.counterpartyCurrency}`],
+                ["ТН ВЭД", draft.hsCode || "—"],
+                ["Документы", draft.noDocuments ? "Без файлов (ручной контракт)" : "Инвойс + контракт"],
+              ].map(([k, v]) => (
+                <div key={k}>
+                  <dt className="label-caps">{k}</dt>
+                  <dd className="text-sm">{v}</dd>
+                </div>
+              ))}
+            </dl>
+          </div>
         )}
 
-        <div className="mt-6 flex gap-2">
-          {step > 0 && (
-            <button type="button" onClick={() => setStep(step - 1)} className="rounded-md px-3 py-2 text-sm font-semibold text-muted-foreground hover:bg-muted">
-              Назад
-            </button>
-          )}
-          {step < STEPS.length - 1 ? (
-            <button type="button" onClick={nextStep} className="rounded-md bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground">
-              Далее
-            </button>
-          ) : (
-            <button
-              type="button"
-              onClick={() => void submit()}
-              disabled={submitting}
-              className="rounded-md bg-accent px-4 py-2 text-sm font-semibold text-accent-foreground disabled:opacity-50"
-            >
-              {submitting ? "Создание…" : "Создать заявку"}
-            </button>
+        <div className="mt-6 flex flex-col gap-2">
+          <div className="flex gap-2">
+            {step > 0 && (
+              <button type="button" onClick={() => setStep(step - 1)} className="rounded-md px-3 py-2 text-sm font-semibold text-muted-foreground hover:bg-muted">
+                Назад
+              </button>
+            )}
+            {step < STEPS.length - 1 ? (
+              <button type="button" onClick={nextStep} className="rounded-md bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground">
+                Далее
+              </button>
+            ) : (
+              <button
+                type="button"
+                onClick={() => void submit()}
+                disabled={submitting}
+                className="rounded-md bg-accent px-4 py-2 text-sm font-semibold text-accent-foreground disabled:opacity-50"
+              >
+                {submitting ? "Создание…" : "Создать заявку"}
+              </button>
+            )}
+          </div>
+          {step === 4 && !draft.noDocuments && (
+            <p className="text-xs text-muted-foreground">{CREATE_REVIEW_OCR_CAPTION}</p>
           )}
         </div>
       </div>
