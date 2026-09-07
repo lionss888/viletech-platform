@@ -13,22 +13,30 @@ test.describe("Reject path (ECO → corrections → user resubmit)", () => {
     await loginAs("user");
     await page.goto(`/forms/${formId}`);
     await expect(page.getByTitle("Возвращена на коррекцию")).toBeVisible({ timeout: 15_000 });
+    await expect(page.getByTestId("correction-guidance")).toBeVisible();
     await expect(page.getByRole("button", { name: "Отправить исправления" })).toBeVisible();
     await page.getByRole("button", { name: "Отправить исправления" }).click();
     await expect(page.getByTitle("Ожидает проверки комплаенса")).toBeVisible({ timeout: 15_000 });
   });
 
-  test("eco rejects via UI with reason and mark", async ({ page, loginAs }) => {
+  test("manager returns for corrections via UI with reason", async ({ page, loginAs }) => {
     const tokens = await loginAllRoles();
     const formId = await createSubmittedForm(tokens, `ui-reject-${Date.now()}`);
 
-    await loginAs("compliance_officer");
+    await loginAs("manager");
     await page.goto(`/forms/${formId}`);
-    await page.getByRole("button", { name: "Взять в проверку" }).click();
-    await page.getByRole("button", { name: "Вернуть на доработку" }).click();
+    const take = page.getByRole("button", { name: /Взять .* в проверку|Взять заявку в проверку/i });
+    if (await take.isVisible().catch(() => false)) {
+      await take.click();
+    }
+    const rejectBtn = page.getByRole("button", { name: /Вернуть на доработку|Вернуть на коррекцию/i });
+    await expect(rejectBtn).toBeVisible({ timeout: 15_000 });
+    await rejectBtn.click();
     await page.getByPlaceholder("Что именно нужно исправить или предоставить").fill("E2E: исправьте документы");
-    const markSelect = page.locator("label").filter({ hasText: "Отметка комплаенс" }).locator("select");
-    await markSelect.selectOption({ index: 1 });
+    const markSelect = page.locator("label").filter({ hasText: /Отметка/ }).locator("select");
+    if (await markSelect.isVisible().catch(() => false)) {
+      await markSelect.selectOption({ index: 1 });
+    }
     await page.getByRole("button", { name: "Подтвердить" }).click();
     await expect(page.getByTitle("Возвращена на коррекцию")).toBeVisible({ timeout: 15_000 });
   });

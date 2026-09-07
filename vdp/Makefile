@@ -1,4 +1,4 @@
-.PHONY: deps test test-integration test-adapters build db-setup db-migrate compose-db-migrate run-hub run-core run smoke stop compose-up compose-up-prod compose-down compose-ps compose-e2e compose-fe-smoke compose-fe-refresh compose-fe-prod-smoke compose-playwright lovable-seed-check integration-gate playwright-e2e docs-format-check release-gate image-build image-push image-build-push compose-release-config-check compose-release-up deploy-alpha deploy-beta deploy-gamma rollback-alpha rollback-beta rollback-gamma test-cd-scripts
+.PHONY: deps test test-integration test-adapters build db-setup db-migrate compose-db-migrate run-hub run-core run smoke stop compose-up compose-up-prod compose-down compose-ps compose-e2e compose-fe-smoke compose-fe-refresh compose-fe-prod-smoke compose-playwright lovable-seed-check integration-gate playwright-e2e docs-format-check release-gate image-build image-push image-build-push compose-release-config-check compose-release-up deploy-alpha deploy-beta deploy-gamma rollback-alpha rollback-beta rollback-gamma test-cd-scripts core-seed-reset
 
 CORE_DIR := core
 HUB_DIR := hub
@@ -116,6 +116,13 @@ compose-up:
 	@$(MAKE) compose-fe-smoke
 	@echo "UI  http://localhost:5173"
 	@echo "API http://localhost:8080"
+
+# Restart core with SEED_WIPE_FORMS=1 so probe forms are cleared after seed accounts.
+core-seed-reset:
+	SEED_WIPE_FORMS=1 ENVIRONMENT=development docker compose up -d --force-recreate core
+	@sleep 2
+	@curl -sf http://127.0.0.1:8080/api/v1/health >/dev/null
+	@echo "core restarted; seed accounts kept, forms wiped (local only)"
 
 compose-up-prod:
 	docker compose --profile prod up -d --build postgres-core postgres-hub

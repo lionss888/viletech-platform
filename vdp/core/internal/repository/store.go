@@ -28,6 +28,7 @@ type Store interface {
 	SaveForm(ctx context.Context, form formpayment.Form) error
 	FormByID(ctx context.Context, id string) (formpayment.Form, error)
 	ListForms(ctx context.Context) []formpayment.Form
+	DeleteForm(ctx context.Context, id string) error
 
 	AppendHistory(ctx context.Context, entry formpayment.ComplianceHistoryEntry) error
 	HistoryByForm(ctx context.Context, formID string) []formpayment.ComplianceHistoryEntry

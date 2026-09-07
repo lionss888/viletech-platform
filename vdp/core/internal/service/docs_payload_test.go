@@ -84,6 +84,14 @@ func TestDocsGeneratePayloadMatrixKeys(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+	form, err = forms.Transition(ctx, user, form.ID, formpayment.ActionRecognizeComplete)
+	if err != nil {
+		t.Fatal(err)
+	}
+	form, err = forms.Transition(ctx, user, form.ID, formpayment.ActionSubmit)
+	if err != nil {
+		t.Fatal(err)
+	}
 	form.AgentID = agent.ID
 	form.CounterpartyID = cp.ID
 	form.PaymentPurpose = "Invoice payment under C-B2"

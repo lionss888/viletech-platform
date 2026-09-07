@@ -83,13 +83,19 @@ describe("process-roles continuity v3", () => {
     expect(ids).toContain("ico_form_start");
   });
 
+  it("uses continuity labels without external-compliance wording", () => {
+    const labels = actionsFor("manager", "organization_verification", v3).map((a) => a.label);
+    expect(labels.some((l) => /Одобрить организацию и продолжить/.test(l))).toBe(true);
+    expect(labels.join(" ")).not.toMatch(/внешн/i);
+  });
+
   it("hides ICO CTA when ICO disabled in snapshot", () => {
     expect(actionsFor("internal_compliance_officer", "organization_waiting_verification", v3)).toEqual([]);
   });
 
   it("next-step for manager is take-in-work, not waiting on compliance", () => {
     const hint = nextStepHint("organization_waiting_verification", "manager", v3);
-    expect(hint).toContain("Взять в проверку");
+    expect(hint).toContain("Взять организацию в проверку");
     expect(hint).not.toMatch(/Сейчас действует/);
   });
 

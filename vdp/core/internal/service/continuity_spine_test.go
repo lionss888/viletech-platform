@@ -111,6 +111,9 @@ func TestContinuityICOGateWhenEnabled(t *testing.T) {
 	ctx := context.Background()
 	store := repository.NewMemoryStore()
 	seed.MustDev(t, store)
+	if err := seed.ForceOrgNotApproved(store); err != nil {
+		t.Fatal(err)
+	}
 	svc := service.NewFormPaymentService(store, outbox.NewMemoryStore(), seqID())
 	roles := svc.ProcessRoles()
 	root := authz.Principal{AccountID: seed.RootID, Role: domain.RoleRoot}
@@ -171,6 +174,9 @@ func TestManagerBypassDisabledICO(t *testing.T) {
 	ctx := context.Background()
 	store := repository.NewMemoryStore()
 	seed.MustDev(t, store)
+	if err := seed.ForceOrgNotApproved(store); err != nil {
+		t.Fatal(err)
+	}
 	svc := service.NewFormPaymentService(store, outbox.NewMemoryStore(), seqID())
 	user := authz.Principal{AccountID: seed.UserID, Role: domain.RoleUser, OrganizationID: seed.OrgID}
 	manager := authz.Principal{AccountID: seed.ManagerID, Role: domain.RoleManager}

@@ -4,25 +4,25 @@ overview: "План стабилизации app-контура Core API: чис
 todos:
   - id: w0-seed-doc
     content: "W0: wipe forms on local seed; trim counterparties/workchats; заметки/vdp-seed-пользователи-app.md + bank in APP_SEED_ACCOUNTS"
-    status: pending
+    status: completed
   - id: w1-row-menu
     content: "W1: remove RowNavContextMenu trigger from table cells (no left-click nav menu on registry)"
-    status: pending
+    status: completed
   - id: w2-card-continuity
     content: "W2: continuity CTA labels without ECO; OrgApproved seed; formQuery>store; counterparty empty-state"
-    status: pending
+    status: completed
   - id: w3-correction-ux
     content: "W3: guided «что исправить» on form_waiting_corrections + rate section when mark about курс"
-    status: pending
+    status: completed
   - id: w4-ocr-feedback
     content: "W4: ExtractionReviewPanel purpose copy + success toast/highlight params sync"
-    status: pending
+    status: completed
   - id: w5-scenario-runner
     content: "W5: scenarioverify advanceCompliance via manager when ICO/ECO off; /testing catalog vs forms count; fix refund assert"
-    status: pending
+    status: completed
   - id: w6-ci-touchpoints
     content: "W6: contract test CTA×processRoles; expand PR playwright smoke; update e2e-coverage-matrix honesty"
-    status: pending
+    status: completed
 isProject: false
 ---
 

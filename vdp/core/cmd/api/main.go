@@ -42,6 +42,13 @@ func main() {
 		log.Error("dev seed failed", "error", err)
 		os.Exit(1)
 	}
+	if seed.ShouldWipeForms(cfg.Environment) {
+		if err := seed.WipeForms(store); err != nil {
+			log.Error("seed wipe forms failed", "error", err)
+			os.Exit(1)
+		}
+		log.Info("seed wipe forms done", "environment", cfg.Environment)
+	}
 	forms := service.NewFormPaymentService(store, box, newID).
 		WithExtractionURL(cfg.ExtractionURL, cfg.HubSharedSecret)
 	orgs := service.NewOrganizationService(store).WithOutbox(box)

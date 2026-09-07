@@ -217,6 +217,28 @@ function rootActions(status: FormStatus): FormAction[] {
   return all;
 }
 
+/** Labels for manager/root closing disabled ICO/ECO slots (no ECO wording when slot is off). */
+const CONTINUITY_LABELS: Record<string, string> = {
+  ico_form_start: "Взять организацию в проверку",
+  ico_form_accept: "Одобрить организацию и продолжить",
+  ico_form_reject: "Вернуть на доработку",
+  ico_form_stop: "Приостановить проверку организации",
+  ico_cancel: "Отклонить заявку",
+  eco_form_start: "Взять заявку в проверку",
+  eco_form_accept: "Подтвердить заявку",
+  eco_form_reject: "Вернуть на доработку",
+  eco_form_stop: "Приостановить проверку заявки",
+  eco_cancel: "Отклонить заявку",
+};
+
+function withContinuityLabels(actions: FormAction[]): FormAction[] {
+  return actions.map((action) => {
+    const label = CONTINUITY_LABELS[action.id];
+    if (!label) return action;
+    return { ...action, label };
+  });
+}
+
 /** Inject ICO/ECO matrix CTAs when those slots are disabled and the viewer has manager.ops. */
 function continuityInjectedActions(
   role: VedRole,
@@ -230,7 +252,7 @@ function continuityInjectedActions(
   if (canContinuityAdvance(processRoles, role, "compliance_officer")) {
     injected.push(...(MATRIX.compliance_officer[status] ?? []));
   }
-  return injected;
+  return withContinuityLabels(injected);
 }
 
 function mergeActions(base: FormAction[], extra: FormAction[]): FormAction[] {

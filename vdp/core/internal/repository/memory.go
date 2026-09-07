@@ -240,6 +240,32 @@ func (s *MemoryStore) ListForms(_ context.Context) []formpayment.Form {
 	return out
 }
 
+func (s *MemoryStore) DeleteForm(_ context.Context, id string) error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	delete(s.forms, id)
+	keptHist := s.history[:0]
+	for _, entry := range s.history {
+		if entry.FormPaymentID != id {
+			keptHist = append(keptHist, entry)
+		}
+	}
+	s.history = keptHist
+	keptDocs := s.docs[:0]
+	for _, doc := range s.docs {
+		if doc.FormPaymentID != id {
+			keptDocs = append(keptDocs, doc)
+		}
+	}
+	s.docs = keptDocs
+	for oid, order := range s.orders {
+		if order.FormPaymentID == id {
+			delete(s.orders, oid)
+		}
+	}
+	return nil
+}
+
 func (s *MemoryStore) AppendHistory(_ context.Context, entry formpayment.ComplianceHistoryEntry) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
