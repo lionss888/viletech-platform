@@ -4,7 +4,12 @@ import { useMemo } from "react";
 
 import { getComplianceHistory, getForm } from "@/lib/api/forms";
 import { getFormDiadocStatus } from "@/lib/api/notifications";
-import { mapComplianceHistory, mapCoreFormToPaymentForm, rejectFromHistory } from "@/lib/api/mappers";
+import {
+  mapComplianceHistory,
+  mapCoreFormToPaymentForm,
+  nextStepHint,
+  rejectFromHistory,
+} from "@/lib/api/mappers";
 import { ActionPanel } from "@/components/ved/ActionPanel";
 import { DocumentList } from "@/components/ved/DocumentViewer";
 import { RefundPanel } from "@/components/ved/RefundPanel";
@@ -231,6 +236,11 @@ export function FormDetail() {
         </div>
 
         <div className="space-y-4">
+          <div className="panel p-4">
+            <p className="label-caps">Следующий шаг</p>
+            <p className="mt-2 text-sm">{nextStepHint(form.status, role)}</p>
+          </div>
+
           {compliance ? (
             <>
               <ActionPanel form={form} title="Рассмотрение заявки" {...actionLock} />

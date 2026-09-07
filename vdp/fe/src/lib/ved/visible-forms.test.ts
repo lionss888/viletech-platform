@@ -68,4 +68,15 @@ describe("visibleForms", () => {
     const actual = visibleForms(forms, "compliance_officer");
     expect(actual.map((f) => f.id)).toEqual(["a", "b", "d"]);
   });
+
+  it("manager does not see client creating or draft", () => {
+    const forms = [
+      stubForm({ id: "a", status: "draft" }),
+      stubForm({ id: "b", status: "creating" }),
+      stubForm({ id: "c", status: "organization_waiting_verification" }),
+      stubForm({ id: "d", status: "form_accepted" }),
+    ];
+    const actual = visibleForms(forms, "manager");
+    expect(actual.map((f) => f.id)).toEqual(["c", "d"]);
+  });
 });

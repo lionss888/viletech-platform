@@ -1,5 +1,8 @@
 import type { ComplianceHistoryEntry, CoreForm } from "./forms";
-import type { AttachedDocument, FormDirection, FormKind, PaymentForm, TimelineEntry, VedRole } from "@/lib/ved/types";
+import { actionsFor } from "@/lib/ved/actions";
+import { roleTitle } from "@/lib/ved/roles";
+import { statusMeta } from "@/lib/ved/statuses";
+import type { AttachedDocument, FormDirection, FormKind, FormStatus, PaymentForm, TimelineEntry, VedRole } from "@/lib/ved/types";
 
 function parseAmountMinor(raw: string | undefined): number {
   if (!raw) return 0;
@@ -65,17 +68,57 @@ export function parseDocsJson(raw: string | undefined, formId: string): Attached
   }
 }
 
-/** Maps compliance history API rows to timeline entries. */
+/** Maps compliance history API rows to timeline entries with human-readable status labels. */
 export function mapComplianceHistory(entries: ComplianceHistoryEntry[]): TimelineEntry[] {
-  return entries.map((entry) => ({
-    id: entry.id,
-    title: entry.comment
-      ? `${entry.from_status} → ${entry.to_status}: ${entry.comment}`
-      : `${entry.from_status} → ${entry.to_status}`,
-    at: entry.created_at,
-    actorRole: "manager" as VedRole,
-    done: true,
-  }));
+  return entries.map((entry) => {
+    const fromLabel = statusMeta(entry.from_status as FormStatus).label;
+    const toLabel = statusMeta(entry.to_status as FormStatus).label;
+    const transition = `${fromLabel} → ${toLabel}`;
+    return {
+      id: entry.id,
+      title: entry.comment ? `${transition}: ${entry.comment}` : transition,
+      at: entry.created_at,
+      actorRole: inferTimelineActor(entry.from_status),
+      done: true,
+    };
+  });
+}
+
+/** Best-effort actor for a transition: role that had actions on the previous status. */
+function inferTimelineActor(fromStatus: string): VedRole {
+  const candidates: VedRole[] = [
+    "user",
+    "internal_compliance_officer",
+    "compliance_officer",
+    "manager",
+    "provider",
+  ];
+  for (const role of candidates) {
+    if (actionsFor(role, fromStatus as FormStatus).length > 0) return role;
+  }
+  return "user";
+}
+
+/**
+ * Role(s) that currently own CTAs on this status (for guided next-step copy).
+ * Excludes root union.
+ */
+export function waitingActorRoles(status: FormStatus): VedRole[] {
+  const roles: VedRole[] = [
+    "user",
+    "internal_compliance_officer",
+    "compliance_officer",
+    "manager",
+    "provider",
+  ];
+  return roles.filter((role) => actionsFor(role, status).length > 0);
+}
+
+/** Human label for who should act next on this status. */
+export function waitingActorLabel(status: FormStatus): string | null {
+  const roles = waitingActorRoles(status);
+  if (roles.length === 0) return null;
+  return roles.map((r) => roleTitle(r)).join(", ");
 }
 
 /**
@@ -141,7 +184,16 @@ export function mapCoreFormToPaymentForm(
   };
 }
 
-export function nextStepHint(status: string): string {
+export function nextStepHint(status: string, role?: VedRole): string {
+  const formStatus = status as FormStatus;
+  const myActions = role ? actionsFor(role, formStatus) : [];
+  if (myActions.length > 0) {
+    return `Следующий шаг: ${myActions[0]!.label}.`;
+  }
+  const waiting = waitingActorLabel(formStatus);
+  if (waiting) {
+    return `Сейчас действует: ${waiting}. Для вашей роли действий нет — дождитесь их решения.`;
+  }
   if (status === "draft" || status === "creating") return "Отправьте заявку на проверку.";
   if (status.includes("waiting_verification") || status.includes("_verification")) {
     return "Ожидайте решения проверяющего или возьмите в работу, если это ваша роль.";

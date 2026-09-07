@@ -1,0 +1,6 @@
+/** Copy for create wizard step 5 («Проверка») when documents are attached. */
+export const CREATE_REVIEW_OCR_BANNER =
+  "После создания заявки документы будут распознаны. Пока идёт распознавание, заявка доступна в реестре.";
+
+export const CREATE_REVIEW_OCR_CAPTION =
+  "Распознавание закончится в фоне. Если произойдёт ошибка или будут сложности, помощник Вэди сообщит вам в кабинете.";

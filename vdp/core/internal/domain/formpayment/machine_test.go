@@ -84,7 +84,7 @@ func TestImportTransitionCoverage(t *testing.T) {
 
 func TestCanSeeFormZones(t *testing.T) {
 	t.Parallel()
-	form := Form{AccountID: "user-1", ProviderID: "prov-1"}
+	form := Form{AccountID: "user-1", ProviderID: "prov-1", Status: StatusFormAccepted}
 	if !CanSeeForm(domain.RoleUser, "user-1", form) {
 		t.Fatal("user should see own form")
 	}
@@ -98,7 +98,19 @@ func TestCanSeeFormZones(t *testing.T) {
 		t.Fatal("provider should not see unassigned form")
 	}
 	if !CanSeeForm(domain.RoleManager, "any", form) {
-		t.Fatal("manager sees all")
+		t.Fatal("manager sees non-draft forms")
+	}
+	draft := Form{AccountID: "user-1", Status: StatusDraft}
+	if CanSeeForm(domain.RoleManager, "any", draft) {
+		t.Fatal("manager must not see client draft")
+	}
+	creating := Form{AccountID: "user-1", Status: StatusCreating}
+	if CanSeeForm(domain.RoleManager, "any", creating) {
+		t.Fatal("manager must not see creating forms")
+	}
+	orgWait := Form{AccountID: "user-1", Status: StatusOrganizationWaitingVerification}
+	if !CanSeeForm(domain.RoleManager, "any", orgWait) {
+		t.Fatal("manager should see organization_waiting_verification")
 	}
 }
 

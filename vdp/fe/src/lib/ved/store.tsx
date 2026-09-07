@@ -359,5 +359,8 @@ export function visibleForms(forms: PaymentForm[], role: VedRole | undefined, ow
   if (role === "internal_compliance_officer")
     return forms.filter((f) => f.status.startsWith("organization") || f.status.startsWith("form") || f.status.startsWith("canceled"));
   if (role === "compliance_officer") return forms.filter((f) => f.status.startsWith("form") || f.status.startsWith("canceled"));
+  if (role === "manager") {
+    return forms.filter((f) => f.status !== "creating" && f.status !== "draft");
+  }
   return forms;
 }
