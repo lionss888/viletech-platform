@@ -151,6 +151,9 @@ services:
       GATEWAY_RATE_LIMIT: "2000"
       TELEGRAM_BOT_USERNAME: ${TELEGRAM_BOT_USERNAME:-vdp_notify_bot}
       DATABASE_URL: postgres://vdp_core:vdp_core@postgres-core:5432/vdp_core?sslmode=disable
+      VDP_BLOB_DIR: /var/vdp/blobs
+    volumes:
+      - core_blobs:/var/vdp/blobs
     ports:
       - "${CORE_BIND:-0.0.0.0}:8080:8080"
     depends_on:
@@ -213,3 +216,4 @@ services:
 
 volumes:
   fe_node_modules:
+  core_blobs:

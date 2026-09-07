@@ -77,7 +77,11 @@ export function DocumentList({ documents, formId: _formId }: DocumentListProps) 
 
   return (
     <>
-      {error && <p className="mb-2 rounded-md bg-destructive-soft px-2 py-1 text-xs text-destructive">{error}</p>}
+      {error && (
+        <p className="mb-2 rounded-md bg-destructive-soft px-2 py-1 text-xs text-destructive" role="alert">
+          {error}
+        </p>
+      )}
       <ul className="mt-3 divide-y divide-border">
         {documents.map((d) => (
           <li key={d.id} className="flex items-center gap-3 py-2">
@@ -89,7 +93,7 @@ export function DocumentList({ documents, formId: _formId }: DocumentListProps) 
               <span className="flex shrink-0 gap-1">
                 <button
                   type="button"
-                  disabled={busy}
+                  disabled={busy || !d.fileId}
                   onClick={() => void handleView(d)}
                   className="rounded-md bg-muted px-2 py-1 text-[11px] font-semibold hover:bg-border"
                 >
@@ -97,7 +101,7 @@ export function DocumentList({ documents, formId: _formId }: DocumentListProps) 
                 </button>
                 <button
                   type="button"
-                  disabled={busy}
+                  disabled={busy || !d.fileId}
                   onClick={() => void handleDownload(d)}
                   className="rounded-md bg-accent px-2 py-1 text-[11px] font-semibold text-accent-foreground hover:opacity-90"
                 >

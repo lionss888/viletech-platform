@@ -43,6 +43,8 @@ export type TimelineEntry = {
   title: string;
   at: string;
   actorRole: VedRole;
+  /** Display name when resolved from history.actor_id. */
+  actorName?: string | undefined;
   done: boolean;
 };
 
@@ -102,6 +104,8 @@ export type PaymentForm = {
   hsCode: string;
   invoiceNumber: string;
   ownerName: string;
+  /** Assigned manager account id from core (not display name). */
+  managerId?: string | undefined;
   managerName?: string | undefined;
   providerId?: string | undefined;
   providerName?: string | undefined;

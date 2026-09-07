@@ -47,6 +47,9 @@ services:
       HUB_SHARED_SECRET: ${HUB_SHARED_SECRET:?set HUB_SHARED_SECRET in .env.deploy}
       ENVIRONMENT: ${ENVIRONMENT:-staging}
       GATEWAY_RATE_LIMIT: ${GATEWAY_RATE_LIMIT:-2000}
+      VDP_BLOB_DIR: /var/vdp/blobs
+    volumes:
+      - core_blobs:/var/vdp/blobs
     restart: unless-stopped
 
   fe-prod:
@@ -56,3 +59,4 @@ services:
 volumes:
   postgres_core_data:
   postgres_hub_data:
+  core_blobs:

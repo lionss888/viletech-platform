@@ -30,6 +30,14 @@ func NewCatalogService(store repository.Store, box outbox.Store, newID IDFunc) *
 	return &CatalogService{store: store, box: box, newID: newID, blobs: storage.NewMemoryBlobStore()}
 }
 
+// WithBlobStore replaces the default in-memory blob backend (disk/S3 for durable previews).
+func (s *CatalogService) WithBlobStore(blobs storage.BlobStore) *CatalogService {
+	if blobs != nil {
+		s.blobs = blobs
+	}
+	return s
+}
+
 func (s *CatalogService) SaveCounterparty(ctx context.Context, c domain.Counterparty) (domain.Counterparty, error) {
 	if c.ID == "" {
 		c.ID = s.newID()

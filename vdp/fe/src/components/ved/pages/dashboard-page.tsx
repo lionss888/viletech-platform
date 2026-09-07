@@ -14,6 +14,7 @@ import { useVedPaths } from "@/lib/ved/ved-paths";
 import { roleTitle } from "@/lib/ved/roles";
 import { STAGES, statusMeta } from "@/lib/ved/statuses";
 import { cpByIdFrom, usePlatformStore, visibleForms } from "@/lib/ved/platform-store";
+import { useProcessRolesRows } from "@/lib/ved/use-process-roles-snapshot";
 import type { VedRole } from "@/lib/ved/types";
 import { cn } from "@/lib/utils";
 
@@ -158,7 +159,9 @@ function RootDashboard() {
                 {form.number}
               </VedFormLink>
               <StatusBadge status={form.status} />
-              <span className="min-w-0 flex-1 truncate text-xs text-muted-foreground">{form.managerName ?? "менеджер не назначен"}</span>
+              <span className="min-w-0 flex-1 truncate text-xs text-muted-foreground">
+                {users.find((u) => u.id === form.managerId)?.name ?? form.managerName ?? "менеджер не назначен"}
+              </span>
               <span className="font-mono text-xs">{money(form.amountMinor, form.currency)}</span>
               <span className="font-mono text-[11px] text-return">{daysIdle(form)} дн. без движения</span>
             </li>
@@ -180,10 +183,14 @@ function RootDashboard() {
 
 function RoleDashboard() {
   const { forms, session, organizations, counterparties } = usePlatformStore();
+  const processRoles = useProcessRolesRows();
   const role = session?.role ?? "user";
   const scoped = visibleForms(forms, role, session?.name);
 
-  const todo = useMemo(() => scoped.filter((f) => actionsFor(role, f.status).length > 0), [scoped, role]);
+  const todo = useMemo(
+    () => scoped.filter((f) => actionsFor(role, f.status, processRoles).length > 0),
+    [scoped, role, processRoles],
+  );
 
   const byStage = useMemo(() => {
     const map = new Map<string, number>();
@@ -280,7 +287,7 @@ function RoleDashboard() {
                   </span>
                   <span className="shrink-0 font-mono text-xs whitespace-nowrap">{money(form.amountMinor, form.currency)}</span>
                   <span className="basis-full text-[11px] text-muted-foreground sm:basis-auto sm:shrink-0 sm:truncate">
-                    {actionsFor(role, form.status)[0]?.label}
+                    {actionsFor(role, form.status, processRoles)[0]?.label}
                   </span>
                 </li>
               ))}

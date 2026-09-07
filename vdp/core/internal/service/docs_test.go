@@ -10,6 +10,7 @@ import (
 	"github.com/viletech/vdp/core/internal/outbox"
 	"github.com/viletech/vdp/core/internal/repository"
 	"github.com/viletech/vdp/core/internal/service"
+	"github.com/viletech/vdp/core/internal/storage"
 )
 
 func TestDocsCounterpartyBanksAndAttach(t *testing.T) {
@@ -101,6 +102,33 @@ func TestFileACLUserCannotPreviewForeignFormFile(t *testing.T) {
 	provider := authz.Principal{AccountID: "prov", Role: domain.RoleProvider}
 	if _, _, _, err := catalog.PreviewFile(context.Background(), provider, file.ID); err != nil {
 		t.Fatalf("provider may preview for ops: %v", err)
+	}
+}
+
+func TestDiskBlobSurvivesCatalogRestart(t *testing.T) {
+	t.Parallel()
+	store := repository.NewMemoryStore()
+	root := t.TempDir()
+	blobs, err := storage.NewDiskBlobStore(root)
+	if err != nil {
+		t.Fatal(err)
+	}
+	ids := 0
+	newID := func() string {
+		ids++
+		return fmt.Sprintf("d%d", ids)
+	}
+	catalog := service.NewCatalogService(store, outbox.NewMemoryStore(), newID).WithBlobStore(blobs)
+	user := authz.Principal{AccountID: "u1", Role: domain.RoleUser}
+	file, err := catalog.UploadFileBytes(context.Background(), user, "form-1", "application/pdf", []byte("%PDF-disk"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	// New catalog instance sharing store + disk root (simulates process restart).
+	catalog2 := service.NewCatalogService(store, outbox.NewMemoryStore(), newID).WithBlobStore(blobs)
+	_, _, data, err := catalog2.PreviewFile(context.Background(), user, file.ID)
+	if err != nil || string(data) != "%PDF-disk" {
+		t.Fatalf("preview after restart err=%v data=%q", err, data)
 	}
 }
 

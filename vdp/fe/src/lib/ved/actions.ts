@@ -1,5 +1,11 @@
 import type { FormAction, FormStatus, VedRole } from "./types";
-import { findProcessRole, roleAllowsUiAction } from "./process-role-filter";
+import {
+  canContinuityAdvance,
+  capabilityForUiAction,
+  findProcessRole,
+  isProcessSlotDisabled,
+  roleAllowsUiAction,
+} from "./process-role-filter";
 import type { ProcessRoleRow } from "@/lib/api/process-roles";
 
 /**
@@ -211,26 +217,84 @@ function rootActions(status: FormStatus): FormAction[] {
   return all;
 }
 
+/** Inject ICO/ECO matrix CTAs when those slots are disabled and the viewer has manager.ops. */
+function continuityInjectedActions(
+  role: VedRole,
+  status: FormStatus,
+  processRoles: ProcessRoleRow[],
+): FormAction[] {
+  const injected: FormAction[] = [];
+  if (canContinuityAdvance(processRoles, role, "internal_compliance_officer")) {
+    injected.push(...(MATRIX.internal_compliance_officer[status] ?? []));
+  }
+  if (canContinuityAdvance(processRoles, role, "compliance_officer")) {
+    injected.push(...(MATRIX.compliance_officer[status] ?? []));
+  }
+  return injected;
+}
+
+function mergeActions(base: FormAction[], extra: FormAction[]): FormAction[] {
+  if (extra.length === 0) return base;
+  const seen = new Set(base.map((a) => a.id));
+  const out = [...base];
+  for (const action of extra) {
+    if (seen.has(action.id)) continue;
+    seen.add(action.id);
+    out.push(action);
+  }
+  return out;
+}
+
+function allowsContinuityUiAction(
+  role: VedRole,
+  actionId: string,
+  processRoles: ProcessRoleRow[],
+): boolean {
+  const cap = capabilityForUiAction(actionId);
+  if (cap === "org.compliance") {
+    return canContinuityAdvance(processRoles, role, "internal_compliance_officer");
+  }
+  if (cap === "form.compliance") {
+    return canContinuityAdvance(processRoles, role, "compliance_officer");
+  }
+  return false;
+}
+
 export function actionsFor(
   role: VedRole,
   status: FormStatus,
   processRoles?: ProcessRoleRow[],
 ): FormAction[] {
-  const raw = role === "root" ? rootActions(status) : (MATRIX[role]?.[status] ?? []);
+  let raw = role === "root" ? rootActions(status) : (MATRIX[role]?.[status] ?? []);
+  if (processRoles?.length && role !== "root") {
+    raw = mergeActions(raw, continuityInjectedActions(role, status, processRoles));
+  }
   if (!processRoles?.length) return raw;
   if (role === "root") {
     return raw.filter((action) => {
       if (action.id === "root_cancel_form") return true;
       // Root union: keep actions whose owning operational role is still enabled as actor.
-      return OPERATIONAL_ROLES.some((r) => {
+      const owned = OPERATIONAL_ROLES.some((r) => {
         const cfg = findProcessRole(processRoles, r);
         if (!cfg?.enabled || cfg.influence !== "actor") return false;
         return roleAllowsUiAction(cfg, action.id);
       });
+      if (owned) return true;
+      // Continuity: keep ICO/ECO CTAs when slot is off and manager.ops can close it.
+      const cap = capabilityForUiAction(action.id);
+      if (cap === "org.compliance" && isProcessSlotDisabled(processRoles, "internal_compliance_officer")) {
+        return canContinuityAdvance(processRoles, "manager", "internal_compliance_officer");
+      }
+      if (cap === "form.compliance" && isProcessSlotDisabled(processRoles, "compliance_officer")) {
+        return canContinuityAdvance(processRoles, "manager", "compliance_officer");
+      }
+      return false;
     });
   }
   const cfg = findProcessRole(processRoles, role);
-  return raw.filter((action) => roleAllowsUiAction(cfg, action.id));
+  return raw.filter(
+    (action) => roleAllowsUiAction(cfg, action.id) || allowsContinuityUiAction(role, action.id, processRoles),
+  );
 }
 
 /** Provider видит org/INN; скрываем только ПДн клиента. */
