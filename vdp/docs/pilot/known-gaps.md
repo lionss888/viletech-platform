@@ -28,7 +28,7 @@ GitHub Actions: vdp-ci.yml (fast/docs/integration/playwright required User journ
 
 ## Playwright UI coverage
 
-Playwright: login-form, user-submit, happy-path, completed-journey, reject-path, ico-org, provider-acl, bank-badge, manager-payment, manager-hides-drafts. Full browser matrix all roles × all statuses not covered. Shared catalog `scenarioverify`; Root `/testing` runs API scenarios on demand. Backend compose-e2e covers API journeys including RH2 ICO reject refund full P5 advance shipment.
+Playwright: login-form, user-submit, happy-path, completed-journey, reject-path, ico-org, provider-acl, bank-badge, manager-payment, manager-hides-drafts. Full browser matrix all roles × all statuses not covered. Shared catalog scenarioverify; Root /testing runs API scenarios on demand. Backend compose-e2e covers API journeys including RH2 ICO reject refund full P5 advance shipment.
 
 ## Postgres test coverage
 
@@ -64,8 +64,10 @@ Role ACL tested in unit e2e. Checklist security-signoff-checklist.md; prod confi
 
 ## OCR / document extraction
 
-Dual-track behind hub OCR_URL (`vdp/extraction`). Fixture works without Yandex keys.
-HITL confirm writes gold JSONL for offline train. **Own model = not ready for prod PRIMARY** until Wave 6 held-out eval (see architecture/extraction.md). Commercial path: partial — compose + fixture + confirm wired; live Yandex needs staging keys.
+Dual-track behind hub OCR_URL (vdp/extraction). Fixture works without Yandex keys.
+HITL confirm writes gold JSONL for offline train. Own model equals not ready for prod PRIMARY until Wave E held-out eval (see architecture/extraction.md). Commercial path: wire via gitignored .env (YANDEX_* plus EXTRACTION_PRIMARY equals yandex, fallback fixture). Smoke: make extraction-yandex-smoke. Keys leaked outside secret store must be rotated.
+
+Applied skips: YaLM 100B self-host; Onyx as OCR/IE. HF equals LoRA tooling only; open-llms equals license checklist before train (extraction/train/lora_recipe.md).
 
 OCR is optional side-path only. recognize_complete in app advances draft without vendor OCR. Never on transactional payment commit. Manual entry remains available.
 

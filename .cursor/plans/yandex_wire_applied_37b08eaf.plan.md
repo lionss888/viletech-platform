@@ -4,13 +4,13 @@ overview: "Отдельный план: безопасно включить Yand
 todos:
   - id: rotate-env-yandex
     content: Ротация ключа; собрать YANDEX_* в gitignored env (без коммита)
-    status: pending
+    status: completed
   - id: wire-compose-smoke
     content: PRIMARY=yandex + smoke recognize/hub/FE HITL + fallback fixture
-    status: pending
+    status: completed
   - id: docs-applied-matrix
     content: "extraction.md/known-gaps: HF train tooling, skip YaLM100B/Onyx, open-llms license gate"
-    status: pending
+    status: completed
 isProject: false
 ---
 

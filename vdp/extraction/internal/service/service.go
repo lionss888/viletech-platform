@@ -69,7 +69,7 @@ func New(cfg Config) *Service {
 func pickPrimary(cfg Config) engine.Primary {
 	switch cfg.Primary {
 	case "yandex":
-		if cfg.YandexAPIKey == "" {
+		if cfg.YandexAPIKey == "" || cfg.YandexFolderID == "" {
 			return engine.FixturePrimary{}
 		}
 		return engine.NewYandex(cfg.YandexAPIKey, cfg.YandexFolderID, cfg.YandexModelURI)

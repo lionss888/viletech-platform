@@ -24,8 +24,8 @@ func main() {
 		OwnModelPath:   os.Getenv("OWN_MODEL_PATH"),
 		Log:            log,
 	}
-	if cfg.Primary == "yandex" && cfg.YandexAPIKey == "" {
-		log.Warn("YANDEX_API_KEY missing; forcing fixture primary")
+	if cfg.Primary == "yandex" && (cfg.YandexAPIKey == "" || cfg.YandexFolderID == "") {
+		log.Warn("YANDEX_API_KEY or YANDEX_FOLDER_ID missing; forcing fixture primary")
 		cfg.Primary = "fixture"
 	}
 	svc := service.New(cfg)
