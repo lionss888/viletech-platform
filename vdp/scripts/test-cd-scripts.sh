@@ -67,9 +67,15 @@ if bash scripts/pin-revision.sh "$TMP/absent.env" >/dev/null 2>&1; then
   fail "missing pin file must fail"
 fi
 
-echo "== image-build-push writes GIT_REVISION into the pin =="
-grep -q '^GIT_REVISION=\${GIT_REVISION}$' scripts/image-build-push.sh \
-  || fail "image-build-push.sh must pin GIT_REVISION (deploy resolves the tree from it)"
+echo "== image-build-push includes extraction pin =="
+grep -q 'VDP_EXTRACTION_IMAGE=' scripts/image-build-push.sh \
+  || fail "image-build-push.sh must pin VDP_EXTRACTION_IMAGE"
+grep -q 'extraction/Dockerfile' scripts/image-build-push.sh \
+  || fail "image-build-push.sh must build extraction image"
+grep -q 'VDP_EXTRACTION_IMAGE' docker-compose.release.yml \
+  || fail "release overlay must set extraction image from pin"
+grep -q 'VDP_EXTRACTION_IMAGE' scripts/deploy-compose-release.sh \
+  || fail "deploy must require and pull VDP_EXTRACTION_IMAGE"
 
 echo "== deploy refuses an incomplete pin before touching the host =="
 write_pin "$TMP/partial.env" <<'EOF'

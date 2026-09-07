@@ -32,9 +32,11 @@ Unit postgres integration compose-e2e playwright six spec browser suite. CI vdp-
 
 ## Document extraction (dual-track)
 
-Commercial path (Yandex PRIMARY + HITL gold + shadow): wired in compose behind hub `OCR_URL`; fixture without keys. Live Yandex needs staging `YANDEX_*`.
+Commercial path (Yandex PRIMARY plus HITL gold plus shadow): wired in compose behind hub OCR_URL; fixture without keys. Live Yandex: set YANDEX_* in gitignored .env, EXTRACTION_PRIMARY equals yandex, EXTRACTION_FALLBACK equals fixture; smoke make extraction-yandex-smoke.
 
-Own model: **stub / not ready for prod PRIMARY** until Wave 6 held-out eval thresholds (see architecture/extraction.md). `EXTRACTION_PRIMARY=own` without eval report = partial readiness only.
+Own model: stub / not ready for prod PRIMARY until Wave E held-out eval thresholds (see architecture/extraction.md). EXTRACTION_PRIMARY equals own without eval report equals partial readiness only.
+
+Applied: HF for LoRA tooling; skip YaLM 100B self-host and Onyx-as-OCR; open-llms license gate before train.
 
 ## Stub inventory hub
 

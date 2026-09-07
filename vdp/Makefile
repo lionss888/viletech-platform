@@ -36,12 +36,16 @@ test:
 	cd sms-gateway && go test ./...
 	cd release-gate && go test ./...
 
-.PHONY: extraction-export-gold extraction-train-eval
+.PHONY: extraction-export-gold extraction-train-eval extraction-yandex-smoke
 extraction-export-gold:
 	cd extraction && go run ./cmd/export-gold -gold-dir="$${EXTRACTION_GOLD_DIR:-./.gold}" -out="$${EXTRACTION_EXPORT_DIR:-./.export}"
 
 extraction-train-eval:
 	python3 extraction/train/train_eval.py --export-dir="$${EXTRACTION_EXPORT_DIR:-./extraction/.export}" --out-dir="$${OWN_MODEL_PATH:-./extraction/artifacts}" --model-version="$${OWN_MODEL_VERSION:-own-baseline-0}"
+
+extraction-yandex-smoke:
+	@chmod +x scripts/extraction-yandex-smoke.sh
+	@./scripts/extraction-yandex-smoke.sh
 
 test-integration:
 	cd $(CORE_DIR) && go test -tags=integration ./...
@@ -225,6 +229,7 @@ compose-release-config-check:
 	VDP_CORE_IMAGE="$${VDP_CORE_IMAGE:-example.local/vdp-core:check}" \
 	VDP_HUB_IMAGE="$${VDP_HUB_IMAGE:-example.local/vdp-hub:check}" \
 	VDP_DOCS_IMAGE="$${VDP_DOCS_IMAGE:-example.local/vdp-docs:check}" \
+	VDP_EXTRACTION_IMAGE="$${VDP_EXTRACTION_IMAGE:-example.local/vdp-extraction:check}" \
 	VDP_MAIL_IMAGE="$${VDP_MAIL_IMAGE:-example.local/vdp-mail:check}" \
 	VDP_SMS_IMAGE="$${VDP_SMS_IMAGE:-example.local/vdp-sms:check}" \
 	VDP_FE_IMAGE="$${VDP_FE_IMAGE:-example.local/vdp-fe:check}" \

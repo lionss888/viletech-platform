@@ -10,19 +10,27 @@ Unit. Go или npm test без docker. API E2E. scripts/compose-e2e.sh на com
 
 ## Каталог (scenarioverify)
 
-| ID | API compose | Root runner | UI Playwright |
-|----|-------------|-------------|---------------|
-| happy_path_to_completed | main path | mutating/dry_run | happy-path (partial) + completed-journey |
-| eco_reject_resubmit | RH2 reject | yes | reject-path |
-| ico_org_pending_approve | RH2 ICO spot | yes (skip if org approved) | ico-org (spot) |
-| manager_payment_assign_provider | main / RD7 prep | yes | manager-payment |
-| provider_payment_no_pii | RD7 | yes | provider-acl |
-| bank_channel_badge | RD9 | yes | bank-badge |
-| root_cancel | RD8 | yes | not covered |
-| refund_smoke | refund smoke | yes | not covered |
-| manager_hides_drafts | — | dry/UI note | manager-hides-drafts |
-| doc_preview_visible | — | dry/UI note | not covered (unit/helper) |
-| health_core | health | health mode | — |
+ID happy_path_to_completed. API compose: main path. Root runner: mutating/dry_run. UI Playwright: happy-path (partial) plus completed-journey.
+
+ID eco_reject_resubmit. API compose: RH2 reject. Root runner: yes. UI Playwright: reject-path.
+
+ID ico_org_pending_approve. API compose: RH2 ICO spot. Root runner: yes (skip if org approved). UI Playwright: ico-org (spot).
+
+ID manager_payment_assign_provider. API compose: main / RD7 prep. Root runner: yes. UI Playwright: manager-payment.
+
+ID provider_payment_no_pii. API compose: RD7. Root runner: yes. UI Playwright: provider-acl.
+
+ID bank_channel_badge. API compose: RD9. Root runner: yes. UI Playwright: bank-badge.
+
+ID root_cancel. API compose: RD8. Root runner: yes. UI Playwright: not covered.
+
+ID refund_smoke. API compose: refund smoke. Root runner: yes. UI Playwright: not covered.
+
+ID manager_hides_drafts. API compose: dash. Root runner: dry/UI note. UI Playwright: manager-hides-drafts.
+
+ID doc_preview_visible. API compose: dash. Root runner: dry/UI note. UI Playwright: not covered (unit/helper).
+
+ID health_core. API compose: health. Root runner: health mode. UI Playwright: dash.
 
 ## Критичные journeys
 

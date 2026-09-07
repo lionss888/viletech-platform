@@ -29,6 +29,7 @@ source "$PIN_FILE"
 : "${VDP_CORE_IMAGE:?VDP_CORE_IMAGE required in pin file}"
 : "${VDP_HUB_IMAGE:?VDP_HUB_IMAGE required in pin file}"
 : "${VDP_DOCS_IMAGE:?VDP_DOCS_IMAGE required in pin file}"
+: "${VDP_EXTRACTION_IMAGE:?VDP_EXTRACTION_IMAGE required in pin file}"
 : "${VDP_FE_IMAGE:?VDP_FE_IMAGE required in pin file}"
 # VDP_MAIL_IMAGE / VDP_SMS_IMAGE optional — enable compose profile gateways when set.
 
@@ -44,6 +45,7 @@ echo "Deploying ${ENVIRONMENT} to ${DEPLOY_HOST}:${DEPLOY_PATH}"
 echo "  core: ${VDP_CORE_IMAGE}"
 echo "  hub:  ${VDP_HUB_IMAGE}"
 echo "  docs: ${VDP_DOCS_IMAGE}"
+echo "  extraction: ${VDP_EXTRACTION_IMAGE}"
 echo "  mail: ${VDP_MAIL_IMAGE:-<skip>}"
 echo "  sms:  ${VDP_SMS_IMAGE:-<skip>}"
 echo "  fe:   ${VDP_FE_IMAGE}"
@@ -91,7 +93,7 @@ export COMPOSE_FILES
 if [ -x ./scripts/vdp-compose-up.sh ]; then
   # Pull digests first, then bring-up (postgres → migrate → stack → restart → health).
   PROFILES=(--profile prod)
-  PULL_SVCS=(docs-service hub core fe-prod)
+  PULL_SVCS=(docs-service extraction hub core fe-prod)
   if [ -n "${VDP_MAIL_IMAGE:-}" ] || [ -n "${VDP_SMS_IMAGE:-}" ]; then
     PROFILES+=(--profile gateways)
     PULL_SVCS+=(mail-gateway sms-gateway)
@@ -101,7 +103,7 @@ if [ -x ./scripts/vdp-compose-up.sh ]; then
   ./scripts/vdp-compose-up.sh
 else
   PROFILES=(--profile prod)
-  PULL_SVCS=(docs-service hub core fe-prod)
+  PULL_SVCS=(docs-service extraction hub core fe-prod)
   if [ -n "${VDP_MAIL_IMAGE:-}" ] || [ -n "${VDP_SMS_IMAGE:-}" ]; then
     PROFILES+=(--profile gateways)
     PULL_SVCS+=(mail-gateway sms-gateway)

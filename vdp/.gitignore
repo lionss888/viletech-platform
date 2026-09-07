@@ -6,3 +6,6 @@ bin/
 release-images.env
 .release-images.*.last-good
 .env.deploy
+.env
+.env.*
+!.env.example
