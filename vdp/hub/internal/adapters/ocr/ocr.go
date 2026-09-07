@@ -9,6 +9,7 @@ import (
 	"github.com/viletech/vdp/hub/internal/adapters/remote"
 	"github.com/viletech/vdp/hub/internal/domain"
 	"github.com/viletech/vdp/hub/internal/resilience"
+	"github.com/viletech/vdp/shared/extraction"
 )
 
 type Plugin struct {
@@ -56,13 +57,8 @@ func BuildRecognizePayload(params map[string]any) map[string]any {
 }
 
 func fixtureFields(formID string) map[string]any {
-	return map[string]any{
-		"contract_number": "OCR-" + formID,
-		"contract_date":   "2026-01-15",
-		"invoice_amount":  "1000",
-		"currency":        "USD",
-		"invoice_json":    `{"source":"ocr","form_payment_id":"` + formID + `"}`,
-	}
+	r := extraction.FixtureResult(formID)
+	return extraction.HubFields(r)
 }
 
 func (p *Plugin) Execute(ctx context.Context, action string, params map[string]any) (map[string]any, error) {

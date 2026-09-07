@@ -10,6 +10,7 @@ import {
   nextStepHint,
   rejectFromHistory,
 } from "@/lib/api/mappers";
+import { ExtractionReviewPanel } from "@/components/ved/ExtractionReviewPanel";
 import { ActionPanel } from "@/components/ved/ActionPanel";
 import { DocumentList } from "@/components/ved/DocumentViewer";
 import { RefundPanel } from "@/components/ved/RefundPanel";
@@ -183,6 +184,16 @@ export function FormDetail() {
           <StageStepper status={form.status} />
         </div>
       </div>
+
+      {mode === "app" && !isProvider && (
+        <div className="mt-4">
+          <ExtractionReviewPanel
+            formId={form.id}
+            invoiceJson={form.invoiceJson ?? formQuery.data?.invoice_json}
+            role={role}
+          />
+        </div>
+      )}
 
       {(form.rejectText || form.rejectMark) && (
         <div className="mt-4 rounded-lg bg-return-soft p-4">

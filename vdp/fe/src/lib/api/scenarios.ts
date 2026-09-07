@@ -65,8 +65,9 @@ export function startScenarioRuns(input: {
   });
 }
 
-export function listScenarioRuns(limit = 20): Promise<ScenarioRun[]> {
-  return apiFetch<ScenarioRun[]>(`/api/v1/admin/scenario-runs?limit=${limit}`);
+export async function listScenarioRuns(limit = 20): Promise<ScenarioRun[]> {
+  const rows = await apiFetch<ScenarioRun[] | null>(`/api/v1/admin/scenario-runs?limit=${limit}`);
+  return Array.isArray(rows) ? rows : [];
 }
 
 export function getScenarioRun(id: string): Promise<ScenarioRun> {

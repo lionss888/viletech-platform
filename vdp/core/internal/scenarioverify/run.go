@@ -92,7 +92,7 @@ func (s *MemoryRunStore) List(limit int) []*Run {
 	if limit <= 0 {
 		limit = 20
 	}
-	var out []*Run
+	out := make([]*Run, 0, limit)
 	for i := len(s.order) - 1; i >= 0 && len(out) < limit; i-- {
 		r := s.byID[s.order[i]]
 		cp := *r

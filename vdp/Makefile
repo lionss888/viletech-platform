@@ -36,9 +36,12 @@ test:
 	cd sms-gateway && go test ./...
 	cd release-gate && go test ./...
 
-.PHONY: extraction-export-gold
+.PHONY: extraction-export-gold extraction-train-eval
 extraction-export-gold:
 	cd extraction && go run ./cmd/export-gold -gold-dir="$${EXTRACTION_GOLD_DIR:-./.gold}" -out="$${EXTRACTION_EXPORT_DIR:-./.export}"
+
+extraction-train-eval:
+	python3 extraction/train/train_eval.py --export-dir="$${EXTRACTION_EXPORT_DIR:-./extraction/.export}" --out-dir="$${OWN_MODEL_PATH:-./extraction/artifacts}" --model-version="$${OWN_MODEL_VERSION:-own-baseline-0}"
 
 test-integration:
 	cd $(CORE_DIR) && go test -tags=integration ./...

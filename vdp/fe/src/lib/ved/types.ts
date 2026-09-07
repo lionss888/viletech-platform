@@ -117,6 +117,8 @@ export type PaymentForm = {
   counterpartyCurrency?: string | undefined;
   shipmentDate?: string | undefined;
   noDocuments?: boolean | undefined;
+  /** Raw extraction schema v1 from core invoice_json. */
+  invoiceJson?: string | undefined;
   rejectText?: string | undefined;
   /** Код отметки комплаенс при возврате на доработку. */
   rejectMark?: string | undefined;

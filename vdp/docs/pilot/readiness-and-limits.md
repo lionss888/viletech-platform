@@ -30,6 +30,12 @@ Unit postgres integration compose-e2e playwright six spec browser suite. CI vdp-
 
 100 процентов готовности. Полный паритет Nest. Prod Diadoc mail OCR without staging config. Real XLSX. Prod secrets in compose defaults. Full browser matrix all statuses.
 
+## Document extraction (dual-track)
+
+Commercial path (Yandex PRIMARY + HITL gold + shadow): wired in compose behind hub `OCR_URL`; fixture without keys. Live Yandex needs staging `YANDEX_*`.
+
+Own model: **stub / not ready for prod PRIMARY** until Wave 6 held-out eval thresholds (see architecture/extraction.md). `EXTRACTION_PRIMARY=own` without eval report = partial readiness only.
+
 ## Stub inventory hub
 
 Docs mail stub when URL empty; HTTP contract tested in CI. OCR not on user path. Diadoc TG 1C partner callback only without vendor URL.

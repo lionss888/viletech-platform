@@ -5,12 +5,12 @@ import (
 	"encoding/base64"
 	"log/slog"
 	"os"
-	"sync"
 	"time"
 
 	"github.com/viletech/vdp/extraction/internal/engine"
 	"github.com/viletech/vdp/extraction/internal/format"
 	"github.com/viletech/vdp/extraction/internal/gold"
+	"github.com/viletech/vdp/extraction/internal/metrics"
 	"github.com/viletech/vdp/extraction/internal/textx"
 	"github.com/viletech/vdp/shared/extraction"
 )
@@ -112,15 +112,19 @@ func (s *Service) Recognize(ctx context.Context, req RecognizeRequest) (Recogniz
 	ml := mode == "yandex" || mode == "own"
 	if err != nil && s.fallback != nil && s.fallback.Name() != s.primary.Name() {
 		s.log.Warn("primary failed, fallback", "err", err, "primary", s.primary.Name())
+		metrics.Default.PrimaryFail.Add(1)
 		result, err = s.fallback.Extract(ctx, in)
 		mode = s.fallback.Name() + "_fallback"
 		ml = false
 	}
 	if err != nil {
+		metrics.Default.PrimaryFail.Add(1)
 		result = extraction.FixtureResult(in.FormPaymentID)
 		mode = "fixture_error"
 		ml = false
 		result.Warnings = append(result.Warnings, "primary_error")
+	} else {
+		metrics.Default.PrimarySuccess.Add(1)
 	}
 	result.Meta.FormPaymentID = in.FormPaymentID
 	result.Meta.EventID = in.EventID
@@ -139,9 +143,14 @@ func (s *Service) Recognize(ctx context.Context, req RecognizeRequest) (Recogniz
 func (s *Service) runShadowGold(in engine.Input, primary extraction.Result) {
 	ctx, cancel := context.WithTimeout(context.Background(), 60*time.Second)
 	defer cancel()
+	started := time.Now()
 	shadowOut, err := s.shadow.Extract(ctx, in)
+	metrics.Default.ShadowLatencyMs.Store(time.Since(started).Milliseconds())
 	if err != nil {
+		metrics.Default.ShadowFail.Add(1)
 		shadowOut, _ = engine.StubShadow{}.Extract(ctx, in)
+	} else {
+		metrics.Default.ShadowOK.Add(1)
 	}
 	rec := extraction.GoldRecord{
 		GoldID:         extraction.NewGoldID(in.FormPaymentID, in.EventID),
@@ -163,13 +172,28 @@ func (s *Service) runShadowGold(in engine.Input, primary extraction.Result) {
 
 // ConfirmHuman upserts HITL gold.
 func (s *Service) ConfirmHuman(formID, goldID string, human extraction.Result) error {
-	return s.gold.UpsertHuman(formID, goldID, human)
+	if err := s.gold.UpsertHuman(formID, goldID, human); err != nil {
+		return err
+	}
+	metrics.Default.GoldHumanUpsert.Add(1)
+	if recs, err := s.gold.List(); err == nil {
+		for i := len(recs) - 1; i >= 0; i-- {
+			r := recs[i]
+			if r.FormPaymentID != formID {
+				continue
+			}
+			if r.PrimaryOut.Meta.ContentHash != "" && human.Meta.ContentHash != "" &&
+				r.PrimaryOut.Meta.ContentHash != human.Meta.ContentHash {
+				metrics.Default.PrimaryVsHuman.Add(1)
+			}
+			break
+		}
+	}
+	return nil
 }
 
 // GoldStore exposes store for export CLI.
 func (s *Service) GoldStore() *gold.Store { return s.gold }
-
-var _ = sync.Once{}
 
 func buildInput(req RecognizeRequest) engine.Input {
 	in := engine.Input{

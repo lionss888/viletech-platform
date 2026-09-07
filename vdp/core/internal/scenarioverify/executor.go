@@ -25,7 +25,7 @@ type Loopback struct {
 
 func (l *Loopback) do(method, path, token string, body any) (status int, payload map[string]any, err error) {
 	if l == nil || l.Handler == nil {
-		return 0, nil, fmt.Errorf("loopback handler not configured")
+		return 0, nil, fmt.Errorf("внутренняя ошибка запуска проверки")
 	}
 	var reader io.Reader
 	if body != nil {
@@ -57,11 +57,11 @@ func (l *Loopback) login(email, password string) (string, error) {
 		return "", err
 	}
 	if code < 200 || code >= 300 {
-		return "", fmt.Errorf("login %s: %d", email, code)
+		return "", fmt.Errorf("не удалось войти под %s", email)
 	}
 	tok, _ := payload["token"].(string)
 	if tok == "" {
-		return "", fmt.Errorf("login %s: empty token", email)
+		return "", fmt.Errorf("не удалось войти под %s", email)
 	}
 	return tok, nil
 }
@@ -102,7 +102,7 @@ func (e *Executor) Execute(ctx context.Context, scenarioID string, mode Mode) (*
 	_ = ctx
 	sc, ok := ByID(scenarioID)
 	if !ok {
-		return nil, fmt.Errorf("unknown scenario %q", scenarioID)
+		return nil, fmt.Errorf("неизвестный сценарий")
 	}
 	mode = ResolveMode(mode, e.Environment)
 	run := &Run{
@@ -122,7 +122,7 @@ func (e *Executor) Execute(ctx context.Context, scenarioID string, mode Mode) (*
 	case ModeMutating:
 		err = e.runMutating(run, sc)
 	default:
-		err = fmt.Errorf("unsupported mode %s", mode)
+		err = fmt.Errorf("неподдерживаемый режим проверки")
 	}
 	now := time.Now().UTC()
 	run.FinishedAt = &now
@@ -151,7 +151,7 @@ func (e *Executor) newRunID() string {
 func (e *Executor) runHealth(run *Run) error {
 	start := time.Now()
 	code, payload, err := e.Loopback.do(http.MethodGet, "/api/v1/health", "", nil)
-	sr := StepResult{StepID: "health", Title: "Health ok", DurationMS: time.Since(start).Milliseconds()}
+	sr := StepResult{StepID: "health", Title: "Сервис доступен", DurationMS: time.Since(start).Milliseconds()}
 	if err != nil {
 		sr.OK = false
 		sr.Detail = err.Error()
@@ -160,7 +160,7 @@ func (e *Executor) runHealth(run *Run) error {
 	}
 	sr.OK = code == http.StatusOK && payload["status"] == "ok"
 	if !sr.OK {
-		sr.Detail = fmt.Sprintf("code=%d payload=%v", code, payload)
+		sr.Detail = "сервис заявок сейчас не отвечает как ожидалось"
 	}
 	run.Steps = append(run.Steps, sr)
 	return nil
@@ -177,13 +177,13 @@ func (e *Executor) runDry(run *Run, sc Scenario) error {
 			Title:          step.Title,
 			ExpectedStatus: step.ExpectedStatus,
 			OK:             step.ID != "" && step.Title != "",
-			Detail:         "dry_run: catalog step validated (no status transition)",
+			Detail:         "проверка без изменений в заявках — шаг каталога корректен",
 			DurationMS:     time.Since(start).Milliseconds(),
 		}
 		run.Steps = append(run.Steps, sr)
 	}
 	if len(run.Steps) == 0 {
-		return fmt.Errorf("scenario has no steps")
+		return fmt.Errorf("у сценария нет шагов для проверки")
 	}
 	return nil
 }
@@ -193,26 +193,25 @@ func (e *Executor) runMutating(run *Run, sc Scenario) error {
 	case IDHealthCore:
 		return e.runHealth(run)
 	case IDHappyPathToCompleted:
-		return e.mutatingHappy(run)
+		return e.mutatingHappy(run, sc)
 	case IDEcoRejectResubmit:
-		return e.mutatingReject(run)
+		return e.mutatingReject(run, sc)
 	case IDProviderPaymentNoPII:
-		return e.mutatingProviderNoPII(run)
+		return e.mutatingProviderNoPII(run, sc)
 	case IDRootCancel:
-		return e.mutatingRootCancel(run)
+		return e.mutatingRootCancel(run, sc)
 	case IDBankChannelBadge:
-		return e.mutatingBank(run)
+		return e.mutatingBank(run, sc)
 	case IDManagerPaymentAssignProvider:
-		return e.mutatingManagerPayment(run)
+		return e.mutatingManagerPayment(run, sc)
 	case IDRefundSmoke:
-		return e.mutatingRefundSmoke(run)
+		return e.mutatingRefundSmoke(run, sc)
 	case IDIcoOrgPendingApprove:
-		return e.mutatingICO(run)
+		return e.mutatingICO(run, sc)
 	case IDManagerHidesDrafts, IDDocPreviewVisible:
-		// UI-only: mutating API run records dry validation note.
 		return e.runDry(run, sc)
 	default:
-		return fmt.Errorf("mutating executor not implemented for %s", sc.ID)
+		return fmt.Errorf("сценарий пока нельзя выполнить автоматически")
 	}
 }
 
@@ -251,7 +250,7 @@ func (e *Executor) put(tok, path string, body any) error {
 		return err
 	}
 	if code < 200 || code >= 300 {
-		return fmt.Errorf("PUT %s → %d", path, code)
+		return fmt.Errorf("%s", humanHTTPStatus(code))
 	}
 	return nil
 }
@@ -262,9 +261,35 @@ func (e *Executor) post(tok, path string, body any) (map[string]any, error) {
 		return nil, err
 	}
 	if code < 200 || code >= 300 {
-		return payload, fmt.Errorf("POST %s → %d", path, code)
+		return payload, fmt.Errorf("%s", humanHTTPStatus(code))
 	}
 	return payload, nil
+}
+
+func humanHTTPStatus(code int) string {
+	switch code {
+	case http.StatusForbidden:
+		return "у роли нет права на это действие"
+	case http.StatusUnauthorized:
+		return "не удалось войти под нужной ролью"
+	case http.StatusConflict:
+		return "действие сейчас нельзя выполнить из‑за текущего статуса заявки"
+	case http.StatusNotFound:
+		return "заявка или объект не найдены"
+	case http.StatusBadRequest:
+		return "некорректные данные для шага"
+	default:
+		return fmt.Sprintf("система ответила отказом (код %d)", code)
+	}
+}
+
+func stepTitle(sc Scenario, stepID, fallback string) string {
+	for _, st := range sc.Steps {
+		if st.ID == stepID && st.Title != "" {
+			return st.Title
+		}
+	}
+	return fallback
 }
 
 func (e *Executor) getStatus(tok, path string) (string, error) {
@@ -273,7 +298,7 @@ func (e *Executor) getStatus(tok, path string) (string, error) {
 		return "", err
 	}
 	if code < 200 || code >= 300 {
-		return "", fmt.Errorf("GET %s → %d", path, code)
+		return "", fmt.Errorf("%s", humanHTTPStatus(code))
 	}
 	st, _ := payload["status"].(string)
 	return st, nil
@@ -288,14 +313,14 @@ func (e *Executor) createProbeForm(tok tokens, suffix string) (string, error) {
 		"contract_date":   "2026-08-01",
 	})
 	if err != nil {
-		return "", err
+		return "", fmt.Errorf("не удалось создать тестовую заявку: %w", err)
 	}
 	id, _ := created["id"].(string)
 	if id == "" {
-		return "", fmt.Errorf("create form: empty id")
+		return "", fmt.Errorf("не удалось создать тестовую заявку")
 	}
 	if _, err := e.post(tok.user, "/api/v1/forms/"+id+"/actions/recognize_complete", map[string]any{}); err != nil {
-		return "", err
+		return "", fmt.Errorf("не удалось подготовить тестовую заявку: %w", err)
 	}
 	return id, nil
 }
@@ -335,98 +360,103 @@ func (e *Executor) appendStep(run *Run, stepID, title, expected, actual string, 
 		sr.OK = false
 		sr.Detail = err.Error()
 	} else if expected != "" && actual != expected && !strings.Contains(actual, expected) {
-		// allow form_waiting_verification vs form_verification soft match above; else fail
 		if actual != expected {
 			sr.OK = false
-			sr.Detail = fmt.Sprintf("want %s got %s", expected, actual)
+			sr.Detail = "заявка оказалась в другом статусе, чем ожидалось"
 		}
 	}
 	run.Steps = append(run.Steps, sr)
 }
 
-func (e *Executor) mutatingHappy(run *Run) error {
+func (e *Executor) mutatingHappy(run *Run, sc Scenario) error {
 	tok, err := e.loginAll()
 	if err != nil {
-		return err
+		return fmt.Errorf("не удалось войти под тестовыми ролями")
 	}
 	start := time.Now()
+	titleCreate := stepTitle(sc, "create_submit", "Клиент создал и отправил заявку")
 	id, err := e.createProbeForm(tok, "happy")
 	run.FormID = id
 	if err != nil {
-		e.appendStep(run, "create_submit", "User create and submit", "draft", "", err, start)
+		e.appendStep(run, "create_submit", titleCreate, "draft", "", err, start)
 		return err
 	}
 	if err := e.put(tok.user, "/api/v1/site/form-payment/"+id+"/form/accept", map[string]any{}); err != nil {
-		e.appendStep(run, "create_submit", "User create and submit", "form_waiting_verification", "", err, start)
+		e.appendStep(run, "create_submit", titleCreate, "form_waiting_verification", "", err, start)
 		return err
 	}
 	st, _ := e.getStatus(tok.user, "/api/v1/site/form-payment/"+id)
 	submitOK := st == "form_waiting_verification" || st == "organization_waiting_verification" || st == "form_verification"
 	sr := StepResult{
-		StepID: "create_submit", Title: "User create and submit",
+		StepID: "create_submit", Title: titleCreate,
 		ExpectedStatus: "form_waiting_verification", ActualStatus: st, OK: submitOK,
 		DurationMS: time.Since(start).Milliseconds(),
 	}
 	if !submitOK {
-		sr.Detail = "unexpected post-submit status"
+		sr.Detail = "после отправки заявка оказалась в неожиданном статусе"
 	}
 	run.Steps = append(run.Steps, sr)
 
 	start = time.Now()
+	titleCompliance := stepTitle(sc, "compliance", "Комплаенс подтвердил заявку")
 	if err := e.advanceCompliance(tok, id); err != nil {
-		e.appendStep(run, "compliance", "ICO/ECO accept", "form_accepted", "", err, start)
+		e.appendStep(run, "compliance", titleCompliance, "form_accepted", "", err, start)
 		return err
 	}
 	st, _ = e.getStatus(tok.manager, "/api/v1/manager/form-payment/"+id)
-	e.appendStep(run, "compliance", "ICO/ECO accept", "form_accepted", st, nil, start)
+	e.appendStep(run, "compliance", titleCompliance, "form_accepted", st, nil, start)
 
 	start = time.Now()
+	titleOrder := stepTitle(sc, "order_payment", "Менеджер принял средства от клиента")
 	_ = e.put(tok.manager, "/api/v1/manager/form-payment/"+id+"/order/signing", map[string]any{})
 	_ = e.put(tok.user, "/api/v1/site/form-payment/"+id+"/order", map[string]any{})
 	_ = e.put(tok.manager, "/api/v1/manager/form-payment/"+id+"/order/start", map[string]any{})
 	_ = e.put(tok.manager, "/api/v1/manager/form-payment/"+id+"/order/accept", map[string]any{})
 	if err := e.put(tok.manager, "/api/v1/manager/form-payment/"+id+"/payment/received", map[string]any{}); err != nil {
-		e.appendStep(run, "order_payment", "Manager order and payment_received", "payment_received", "", err, start)
+		e.appendStep(run, "order_payment", titleOrder, "payment_received", "", err, start)
 		return err
 	}
 	st, _ = e.getStatus(tok.manager, "/api/v1/manager/form-payment/"+id)
-	e.appendStep(run, "order_payment", "Manager order and payment_received", "payment_received", st, nil, start)
+	e.appendStep(run, "order_payment", titleOrder, "payment_received", st, nil, start)
 
 	start = time.Now()
+	titleProvider := stepTitle(sc, "provider_sent", "Провайдер отправил платёж")
 	_, _ = e.post(tok.manager, "/api/v1/forms/"+id+"/provider", map[string]any{
 		"provider_id": e.providerID(), "client_agreed": true,
 	})
 	_ = e.put(tok.manager, "/api/v1/manager/form-payment/"+id+"/payment/start", map[string]any{})
 	_ = e.put(tok.provider, "/api/v1/provider/form-payment/"+id+"/payment/start", map[string]any{})
 	if err := e.put(tok.provider, "/api/v1/provider/form-payment/"+id+"/payment/sent", map[string]any{}); err != nil {
-		e.appendStep(run, "provider_sent", "Provider payment sent", "payment_sent", "", err, start)
+		e.appendStep(run, "provider_sent", titleProvider, "payment_sent", "", err, start)
 		return err
 	}
 	st, _ = e.getStatus(tok.provider, "/api/v1/provider/form-payment/"+id)
-	e.appendStep(run, "provider_sent", "Provider payment sent", "payment_sent", st, nil, start)
+	e.appendStep(run, "provider_sent", titleProvider, "payment_sent", st, nil, start)
 
 	start = time.Now()
+	titleDone := stepTitle(sc, "completed", "Менеджер закрыл заявку")
 	_ = e.put(tok.manager, "/api/v1/manager/form-payment/"+id+"/report/signing", map[string]any{})
 	_ = e.put(tok.manager, "/api/v1/manager/form-payment/"+id+"/report/accept", map[string]any{})
 	if err := e.put(tok.manager, "/api/v1/manager/form-payment/"+id+"/completed", map[string]any{}); err != nil {
-		e.appendStep(run, "completed", "Manager close", "completed", "", err, start)
+		e.appendStep(run, "completed", titleDone, "completed", "", err, start)
 		return err
 	}
 	st, _ = e.getStatus(tok.manager, "/api/v1/manager/form-payment/"+id)
-	e.appendStep(run, "completed", "Manager close", "completed", st, nil, start)
+	e.appendStep(run, "completed", titleDone, "completed", st, nil, start)
 	return nil
 }
 
-func (e *Executor) mutatingReject(run *Run) error {
+func (e *Executor) mutatingReject(run *Run, sc Scenario) error {
 	tok, err := e.loginAll()
 	if err != nil {
-		return err
+		return fmt.Errorf("не удалось войти под тестовыми ролями")
 	}
 	start := time.Now()
+	titleReject := stepTitle(sc, "reject", "Комплаенс вернул на доработку")
 	id, err := e.createProbeForm(tok, "reject")
 	run.FormID = id
 	if err != nil {
-		e.appendStep(run, "reject", "ECO reject", "form_waiting_corrections", "", err, start)
+		e.appendStep(run, "reject", titleReject, "form_waiting_corrections", "", err, start)
 		return err
 	}
 	_ = e.put(tok.user, "/api/v1/site/form-payment/"+id+"/form/accept", map[string]any{})
@@ -440,37 +470,42 @@ func (e *Executor) mutatingReject(run *Run) error {
 	if err := e.put(tok.eco, "/api/v1/eco/form-payment/"+id+"/form/reject", map[string]any{
 		"reason": "probe: уточните контракт", "mark": "docs",
 	}); err != nil {
-		e.appendStep(run, "reject", "ECO reject", "form_waiting_corrections", "", err, start)
+		e.appendStep(run, "reject", titleReject, "form_waiting_corrections", "", err, start)
 		return err
 	}
 	st, _ = e.getStatus(tok.user, "/api/v1/site/form-payment/"+id)
-	e.appendStep(run, "reject", "ECO reject", "form_waiting_corrections", st, nil, start)
+	e.appendStep(run, "reject", titleReject, "form_waiting_corrections", st, nil, start)
 
 	start = time.Now()
+	titleResubmit := stepTitle(sc, "resubmit", "Клиент отправил исправления")
 	if err := e.put(tok.user, "/api/v1/site/form-payment/"+id+"/form/accept-corrections", map[string]any{}); err != nil {
-		e.appendStep(run, "resubmit", "User resubmit corrections", "form_waiting_verification", "", err, start)
+		e.appendStep(run, "resubmit", titleResubmit, "form_waiting_verification", "", err, start)
 		return err
 	}
 	st, _ = e.getStatus(tok.user, "/api/v1/site/form-payment/"+id)
 	ok := st == "form_waiting_verification" || st == "form_verification"
-	sr := StepResult{StepID: "resubmit", Title: "User resubmit corrections", ExpectedStatus: "form_waiting_verification", ActualStatus: st, OK: ok, DurationMS: time.Since(start).Milliseconds()}
+	sr := StepResult{
+		StepID: "resubmit", Title: titleResubmit, ExpectedStatus: "form_waiting_verification",
+		ActualStatus: st, OK: ok, DurationMS: time.Since(start).Milliseconds(),
+	}
 	if !ok {
-		sr.Detail = "unexpected status after resubmit"
+		sr.Detail = "после повторной отправки статус заявки неожиданный"
 	}
 	run.Steps = append(run.Steps, sr)
 	return nil
 }
 
-func (e *Executor) mutatingProviderNoPII(run *Run) error {
+func (e *Executor) mutatingProviderNoPII(run *Run, sc Scenario) error {
 	tok, err := e.loginAll()
 	if err != nil {
-		return err
+		return fmt.Errorf("не удалось войти под тестовыми ролями")
 	}
 	start := time.Now()
+	title := stepTitle(sc, "provider_view", "Карточка провайдера без личных данных")
 	id, err := e.createProbeForm(tok, "pii")
 	run.FormID = id
 	if err != nil {
-		e.appendStep(run, "provider_view", "Provider GET form has no PII keys", "payment_processing", "", err, start)
+		e.appendStep(run, "provider_view", title, "payment_processing", "", err, start)
 		return err
 	}
 	_ = e.put(tok.user, "/api/v1/site/form-payment/"+id+"/form/accept", map[string]any{})
@@ -488,8 +523,12 @@ func (e *Executor) mutatingProviderNoPII(run *Run) error {
 
 	code, payload, err := e.Loopback.do(http.MethodGet, "/api/v1/provider/form-payment/"+id, tok.provider, nil)
 	if err != nil || code >= 300 {
-		e.appendStep(run, "provider_view", "Provider GET form has no PII keys", "payment_processing", "", fmt.Errorf("get %d %v", code, err), start)
-		return err
+		detailErr := fmt.Errorf("%s", humanHTTPStatus(code))
+		if err != nil {
+			detailErr = fmt.Errorf("не удалось открыть карточку провайдера")
+		}
+		e.appendStep(run, "provider_view", title, "payment_processing", "", detailErr, start)
+		return detailErr
 	}
 	st, _ := payload["status"].(string)
 	var found []string
@@ -501,49 +540,53 @@ func (e *Executor) mutatingProviderNoPII(run *Run) error {
 		}
 	}
 	sr := StepResult{
-		StepID: "provider_view", Title: "Provider GET form has no PII keys",
+		StepID: "provider_view", Title: title,
 		ExpectedStatus: "payment_processing", ActualStatus: st,
-		OK: len(found) == 0 && (st == "payment_processing" || st == "payment_sent"),
+		OK:         len(found) == 0 && (st == "payment_processing" || st == "payment_sent"),
 		DurationMS: time.Since(start).Milliseconds(),
 	}
 	if len(found) > 0 {
-		sr.Detail = "forbidden keys present: " + strings.Join(found, ",")
+		sr.Detail = "в карточке провайдера нашлись личные данные клиента — так быть не должно"
 		sr.OK = false
+	} else if !sr.OK {
+		sr.Detail = "заявка ещё не дошла до этапа исполнения у провайдера"
 	}
 	run.Steps = append(run.Steps, sr)
 	return nil
 }
 
-func (e *Executor) mutatingRootCancel(run *Run) error {
+func (e *Executor) mutatingRootCancel(run *Run, sc Scenario) error {
 	tok, err := e.loginAll()
 	if err != nil {
-		return err
+		return fmt.Errorf("не удалось войти под тестовыми ролями")
 	}
 	start := time.Now()
+	title := stepTitle(sc, "cancel", "Заявка отменена")
 	id, err := e.createProbeForm(tok, "cancel")
 	run.FormID = id
 	if err != nil {
-		e.appendStep(run, "cancel", "Root cancel", "canceled_by_manager", "", err, start)
+		e.appendStep(run, "cancel", title, "canceled_by_manager", "", err, start)
 		return err
 	}
 	if err := e.put(tok.root, "/api/v1/manager/form-payment/"+id+"/cancel", map[string]any{"reason": "probe cancel"}); err != nil {
-		e.appendStep(run, "cancel", "Root cancel", "canceled_by_manager", "", err, start)
+		e.appendStep(run, "cancel", title, "canceled_by_manager", "", err, start)
 		return err
 	}
 	st, _ := e.getStatus(tok.root, "/api/v1/manager/form-payment/"+id)
-	e.appendStep(run, "cancel", "Root cancel", "canceled_by_manager", st, nil, start)
+	e.appendStep(run, "cancel", title, "canceled_by_manager", st, nil, start)
 	return nil
 }
 
-func (e *Executor) mutatingBank(run *Run) error {
+func (e *Executor) mutatingBank(run *Run, sc Scenario) error {
 	tok, err := e.loginAll()
 	if err != nil {
-		return err
+		return fmt.Errorf("не удалось войти под тестовыми ролями")
 	}
 	if tok.bank == "" {
-		return fmt.Errorf("bank login unavailable")
+		return fmt.Errorf("не удалось войти под учёткой банка")
 	}
 	start := time.Now()
+	title := stepTitle(sc, "bank_create", "Тестовая заявка от банка создана и помечена")
 	var payload map[string]any
 	req := httptest.NewRequest(http.MethodPost, "/api/v1/bank/forms", bytes.NewReader(mustJSON(map[string]any{
 		"organization_id": e.bankOrgID(),
@@ -564,13 +607,17 @@ func (e *Executor) mutatingBank(run *Run) error {
 	run.FormID = id
 	ch, _ := payload["channel"].(string)
 	sr := StepResult{
-		StepID: "bank_create", Title: "POST bank forms", ExpectedStatus: "draft",
+		StepID: "bank_create", Title: title, ExpectedStatus: "draft",
 		ActualStatus: fmt.Sprint(payload["status"]),
 		OK:           code >= 200 && code < 300 && ch == "bank",
 		DurationMS:   time.Since(start).Milliseconds(),
 	}
-	if !sr.OK {
-		sr.Detail = fmt.Sprintf("code=%d channel=%s body=%s", code, ch, rec.Body.String())
+	if sr.OK {
+		sr.Detail = "в реестре у заявки должна быть метка «от банка»"
+	} else if code < 200 || code >= 300 {
+		sr.Detail = humanHTTPStatus(code)
+	} else {
+		sr.Detail = "заявка создалась, но метка «от банка» не проставилась"
 	}
 	run.Steps = append(run.Steps, sr)
 	return nil
@@ -581,16 +628,17 @@ func mustJSON(v any) []byte {
 	return b
 }
 
-func (e *Executor) mutatingManagerPayment(run *Run) error {
+func (e *Executor) mutatingManagerPayment(run *Run, sc Scenario) error {
 	tok, err := e.loginAll()
 	if err != nil {
-		return err
+		return fmt.Errorf("не удалось войти под тестовыми ролями")
 	}
 	start := time.Now()
+	titlePay := stepTitle(sc, "payment_received", "Средства от клиента получены")
 	id, err := e.createProbeForm(tok, "mgrpay")
 	run.FormID = id
 	if err != nil {
-		e.appendStep(run, "payment_received", "Manager payment received", "payment_received", "", err, start)
+		e.appendStep(run, "payment_received", titlePay, "payment_received", "", err, start)
 		return err
 	}
 	_ = e.put(tok.user, "/api/v1/site/form-payment/"+id+"/form/accept", map[string]any{})
@@ -600,36 +648,38 @@ func (e *Executor) mutatingManagerPayment(run *Run) error {
 	_ = e.put(tok.manager, "/api/v1/manager/form-payment/"+id+"/order/start", map[string]any{})
 	_ = e.put(tok.manager, "/api/v1/manager/form-payment/"+id+"/order/accept", map[string]any{})
 	if err := e.put(tok.manager, "/api/v1/manager/form-payment/"+id+"/payment/received", map[string]any{}); err != nil {
-		e.appendStep(run, "payment_received", "Manager payment received", "payment_received", "", err, start)
+		e.appendStep(run, "payment_received", titlePay, "payment_received", "", err, start)
 		return err
 	}
 	st, _ := e.getStatus(tok.manager, "/api/v1/manager/form-payment/"+id)
-	e.appendStep(run, "payment_received", "Manager payment received", "payment_received", st, nil, start)
+	e.appendStep(run, "payment_received", titlePay, "payment_received", st, nil, start)
 
 	start = time.Now()
+	titleAssign := stepTitle(sc, "assign_provider", "Провайдер назначен, платёж в работе")
 	_, _ = e.post(tok.manager, "/api/v1/forms/"+id+"/provider", map[string]any{
 		"provider_id": e.providerID(), "client_agreed": true,
 	})
 	_ = e.put(tok.manager, "/api/v1/manager/form-payment/"+id+"/payment/start", map[string]any{})
 	if err := e.put(tok.provider, "/api/v1/provider/form-payment/"+id+"/payment/start", map[string]any{}); err != nil {
-		e.appendStep(run, "assign_provider", "Assign provider and start", "payment_processing", "", err, start)
+		e.appendStep(run, "assign_provider", titleAssign, "payment_processing", "", err, start)
 		return err
 	}
 	st, _ = e.getStatus(tok.provider, "/api/v1/provider/form-payment/"+id)
-	e.appendStep(run, "assign_provider", "Assign provider and start", "payment_processing", st, nil, start)
+	e.appendStep(run, "assign_provider", titleAssign, "payment_processing", st, nil, start)
 	return nil
 }
 
-func (e *Executor) mutatingRefundSmoke(run *Run) error {
+func (e *Executor) mutatingRefundSmoke(run *Run, sc Scenario) error {
 	tok, err := e.loginAll()
 	if err != nil {
-		return err
+		return fmt.Errorf("не удалось войти под тестовыми ролями")
 	}
 	start := time.Now()
+	title := stepTitle(sc, "refund_init", "Отмена заявки корректно запрещена")
 	id, err := e.createProbeForm(tok, "refund")
 	run.FormID = id
 	if err != nil {
-		e.appendStep(run, "refund_init", "Refund init then cancel blocked", "", "", err, start)
+		e.appendStep(run, "refund_init", title, "", "", err, start)
 		return err
 	}
 	_ = e.put(tok.user, "/api/v1/site/form-payment/"+id+"/form/accept", map[string]any{})
@@ -643,58 +693,60 @@ func (e *Executor) mutatingRefundSmoke(run *Run) error {
 		"amount": "100", "currency": "USD", "comment": "probe refund",
 	})
 	if err != nil {
-		e.appendStep(run, "refund_init", "Refund init then cancel blocked", "", "", err, start)
+		e.appendStep(run, "refund_init", title, "", "", err, start)
 		return err
 	}
 	code, _, _ := e.Loopback.do(http.MethodPut, "/api/v1/manager/form-payment/"+id+"/cancel", tok.manager, map[string]any{})
 	sr := StepResult{
-		StepID: "refund_init", Title: "Refund init then cancel blocked",
+		StepID: "refund_init", Title: title,
 		OK: code == http.StatusConflict, DurationMS: time.Since(start).Milliseconds(),
-		Detail: fmt.Sprintf("cancel status=%d want 409", code),
 	}
 	if sr.OK {
-		sr.Detail = "cancel correctly blocked with 409"
+		sr.Detail = "система правильно не дала отменить заявку, пока идёт возврат"
+	} else {
+		sr.Detail = "ожидали запрет отмены при незавершённом возврате, но отмена прошла или ответ другой"
 	}
 	run.Steps = append(run.Steps, sr)
 	return nil
 }
 
-func (e *Executor) mutatingICO(run *Run) error {
+func (e *Executor) mutatingICO(run *Run, sc Scenario) error {
 	tok, err := e.loginAll()
 	if err != nil {
-		return err
+		return fmt.Errorf("не удалось войти под тестовыми ролями")
 	}
 	start := time.Now()
-	// Force org pending path by un-approving when possible; otherwise soft-pass if already approved.
+	titleOrg := stepTitle(sc, "org_waiting", "Заявка ждёт проверки организации")
+	titleICO := stepTitle(sc, "ico_accept", "Внутренний комплаенс одобрил")
 	id, err := e.createProbeForm(tok, "ico")
 	run.FormID = id
 	if err != nil {
-		e.appendStep(run, "org_waiting", "Submit lands on org waiting", "organization_waiting_verification", "", err, start)
+		e.appendStep(run, "org_waiting", titleOrg, "organization_waiting_verification", "", err, start)
 		return err
 	}
 	_ = e.put(tok.user, "/api/v1/site/form-payment/"+id+"/form/accept", map[string]any{})
 	st, _ := e.getStatus(tok.user, "/api/v1/site/form-payment/"+id)
 	if st == "organization_waiting_verification" {
-		e.appendStep(run, "org_waiting", "Submit lands on org waiting", "organization_waiting_verification", st, nil, start)
+		e.appendStep(run, "org_waiting", titleOrg, "organization_waiting_verification", st, nil, start)
 		start = time.Now()
 		_ = e.put(tok.ico, "/api/v1/admin/internal-compliance-officer/organization/"+e.orgID()+"/approve", map[string]any{})
 		_ = e.put(tok.ico, "/api/v1/ico/form-payment/"+id+"/form/start", map[string]any{})
 		if err := e.put(tok.ico, "/api/v1/ico/form-payment/"+id+"/form/accept", map[string]any{}); err != nil {
-			e.appendStep(run, "ico_accept", "ICO start and accept", "form_waiting_verification", "", err, start)
+			e.appendStep(run, "ico_accept", titleICO, "form_waiting_verification", "", err, start)
 			return err
 		}
 		st, _ = e.getStatus(tok.user, "/api/v1/site/form-payment/"+id)
-		e.appendStep(run, "ico_accept", "ICO start and accept", "form_waiting_verification", st, nil, start)
+		e.appendStep(run, "ico_accept", titleICO, "form_waiting_verification", st, nil, start)
 		return nil
 	}
-	// Org already approved — record skip as ok with detail (repeatable e2e).
-	e.appendStep(run, "org_waiting", "Submit lands on org waiting", "organization_waiting_verification", st, nil, start)
+	// Org already approved — soft-pass so the check stays repeatable.
+	e.appendStep(run, "org_waiting", titleOrg, "organization_waiting_verification", st, nil, start)
 	run.Steps[len(run.Steps)-1].OK = true
-	run.Steps[len(run.Steps)-1].Detail = "skipped: org already approved (status=" + st + ")"
+	run.Steps[len(run.Steps)-1].Detail = "организация уже была одобрена раньше — шаг пропускаем"
 	run.Steps = append(run.Steps, StepResult{
-		StepID: "ico_accept", Title: "ICO start and accept",
+		StepID: "ico_accept", Title: titleICO,
 		ExpectedStatus: "form_waiting_verification", ActualStatus: st,
-		OK: true, Detail: "skipped: org already approved",
+		OK: true, Detail: "организация уже одобрена — отдельное одобрение не требуется",
 	})
 	return nil
 }

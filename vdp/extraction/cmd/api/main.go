@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"os"
 
+	"github.com/viletech/vdp/extraction/internal/metrics"
 	"github.com/viletech/vdp/extraction/internal/service"
 	"github.com/viletech/vdp/shared/extraction"
 )
@@ -32,6 +33,9 @@ func main() {
 	mux := http.NewServeMux()
 	mux.HandleFunc("GET /health", func(w http.ResponseWriter, _ *http.Request) {
 		writeJSON(w, http.StatusOK, map[string]any{"status": "ok", "primary": cfg.Primary})
+	})
+	mux.HandleFunc("GET /metrics", func(w http.ResponseWriter, _ *http.Request) {
+		writeJSON(w, http.StatusOK, metrics.Default.Snapshot())
 	})
 	mux.HandleFunc("POST /recognize", func(w http.ResponseWriter, r *http.Request) {
 		var req service.RecognizeRequest

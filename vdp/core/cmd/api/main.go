@@ -42,7 +42,8 @@ func main() {
 		log.Error("dev seed failed", "error", err)
 		os.Exit(1)
 	}
-	forms := service.NewFormPaymentService(store, box, newID)
+	forms := service.NewFormPaymentService(store, box, newID).
+		WithExtractionURL(cfg.ExtractionURL, cfg.HubSharedSecret)
 	orgs := service.NewOrganizationService(store).WithOutbox(box)
 	catalog := service.NewCatalogService(store, box, newID)
 	if blobs, err := openBlobStore(cfg); err != nil {

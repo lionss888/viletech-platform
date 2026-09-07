@@ -179,6 +179,7 @@ services:
       JWT_SECRET: vdp-core-dev-secret
       GATEWAY_RATE_LIMIT: "2000"
       TELEGRAM_BOT_USERNAME: ${TELEGRAM_BOT_USERNAME:-vdp_notify_bot}
+      EXTRACTION_URL: http://extraction:8093
       DATABASE_URL: postgres://vdp_core:vdp_core@postgres-core:5432/vdp_core?sslmode=disable
       VDP_BLOB_DIR: /var/vdp/blobs
     volumes:

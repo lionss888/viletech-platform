@@ -1,0 +1,35 @@
+{
+  "schema_version": "v1",
+  "doc_type": "invoice",
+  "language": "en",
+  "confidence": 0.9,
+  "header": {
+    "contract_number": "C-GOLD-1",
+    "contract_date": "2026-02-01",
+    "invoice_number": "INV-GOLD-1",
+    "invoice_date": "2026-02-02",
+    "invoice_amount": "1500",
+    "currency": "USD",
+    "company_name": "Golden Co",
+    "hs_codes": ["847130"]
+  },
+  "line_items": [
+    {
+      "line_no": 1,
+      "description": "Laptop",
+      "qty": "1",
+      "unit": "pcs",
+      "unit_price": "1500",
+      "line_amount": "1500",
+      "currency": "USD",
+      "hs_code": "847130",
+      "confidence": 0.9
+    }
+  ],
+  "meta": {
+    "engine_id": "golden",
+    "model_version": "testdata",
+    "form_payment_id": "golden-1"
+  },
+  "warnings": []
+}

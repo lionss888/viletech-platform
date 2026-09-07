@@ -15,6 +15,8 @@ SMS_URL=https://sms-gateway.example.com/notify
 TELEGRAM_BOT_TOKEN=
 TELEGRAM_BOT_USERNAME=vdp_notify_bot
 
+EXTRACTION_URL=http://127.0.0.1:8093
+
 # Document extraction (side-path). Compose: http://extraction:8093/recognize
 OCR_URL=http://127.0.0.1:8093/recognize
 EXTRACTION_PRIMARY=fixture

@@ -193,6 +193,7 @@ export function mapCoreFormToPaymentForm(
     agentId: form.agent_id || undefined,
     contractId: form.contract_id || undefined,
     noDocuments: form.no_documents || undefined,
+    invoiceJson: form.invoice_json || undefined,
     createdAt: form.created_at,
     updatedAt: form.updated_at,
     documents: parseDocsJson(form.docs_json, id),

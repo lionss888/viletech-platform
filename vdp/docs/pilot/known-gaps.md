@@ -62,8 +62,11 @@ RW1–RW9 copy layer and glossariy synced per RW9 gate. Root wording unchanged b
 
 Role ACL tested in unit e2e. Checklist security-signoff-checklist.md; prod config guard rejects dev JWT/S2S secrets. Formal customer sign-off pending.
 
-## OCR policy
+## OCR / document extraction
 
-OCR is optional side-path only. recognize_complete in app advances draft without vendor OCR. Staging OCR worker optional; never on transactional payment commit. Disable OCR env → manual entry remains available.
+Dual-track behind hub OCR_URL (`vdp/extraction`). Fixture works without Yandex keys.
+HITL confirm writes gold JSONL for offline train. **Own model = not ready for prod PRIMARY** until Wave 6 held-out eval (see architecture/extraction.md). Commercial path: partial — compose + fixture + confirm wired; live Yandex needs staging keys.
+
+OCR is optional side-path only. recognize_complete in app advances draft without vendor OCR. Never on transactional payment commit. Manual entry remains available.
 
 При закрытии gap обновляйте readiness-and-limits.md и этот файл в одном PR.

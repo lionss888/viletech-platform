@@ -21,6 +21,7 @@ type Config struct {
 	RateLimitPerMinute int
 	GatewayTimeoutSec  int
 	BlobDir            string
+	ExtractionURL      string
 }
 
 func Load() *Config {
@@ -38,6 +39,7 @@ func Load() *Config {
 		RateLimitPerMinute: getEnvAsInt("GATEWAY_RATE_LIMIT", 120),
 		GatewayTimeoutSec:  getEnvAsInt("GATEWAY_TIMEOUT", 15),
 		BlobDir:            getEnv("VDP_BLOB_DIR", "data/blobs"),
+		ExtractionURL:      getEnv("EXTRACTION_URL", "http://localhost:8093"),
 	}
 }
 

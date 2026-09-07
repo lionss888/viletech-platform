@@ -1,11 +1,11 @@
 FROM golang:1.23-alpine AS build
 WORKDIR /src
-COPY shared /shared
+COPY shared ./shared
 COPY extraction/go.mod ./extraction/
 WORKDIR /src/extraction
 RUN go mod download
 COPY extraction/ ./
-RUN go build -o /extraction ./cmd/api
+RUN CGO_ENABLED=0 go build -o /extraction ./cmd/api
 
 FROM alpine:3.20
 RUN apk add --no-cache ca-certificates

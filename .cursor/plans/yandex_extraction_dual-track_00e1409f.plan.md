@@ -10,19 +10,19 @@ todos:
     status: completed
   - id: wave2-core-callback-confirm
     content: ApplyOCRRecognized line_items merge + confirm endpoint + AuthZ + idempotency tests
-    status: in_progress
+    status: completed
   - id: wave3-fe-hitl
     content: FE prefill/edit line items + confirm CTA + copy + vitest; спросить compose-fe-refresh
-    status: pending
+    status: completed
   - id: wave4-shadow-gold
     content: Shadow port + GoldRecord JSONL store + metrics + PRIMARY=own stub switch + golden harness
-    status: pending
+    status: completed
   - id: wave5-ops-dod
     content: Runbook Yandex keys + staging smoke + честная готовность (commercial path)
-    status: pending
+    status: completed
   - id: wave6-own-from-gold
     content: Export gold → train/eval job scaffold → artifact version → canary own; DoD только после порогов F1
-    status: pending
+    status: completed
 isProject: false
 ---
 

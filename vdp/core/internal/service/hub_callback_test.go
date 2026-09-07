@@ -11,6 +11,7 @@ import (
 	"github.com/viletech/vdp/core/internal/repository"
 	"github.com/viletech/vdp/core/internal/repository/seed"
 	"github.com/viletech/vdp/core/internal/service"
+	"github.com/viletech/vdp/shared/extraction"
 )
 
 func TestApplyHubCallbackOCRAndOneCNoAutoPay(t *testing.T) {
@@ -32,6 +33,35 @@ func TestApplyHubCallbackOCRAndOneCNoAutoPay(t *testing.T) {
 	}
 	if form.Status != formpayment.StatusDraft || form.ContractNumber != "C-OCR" {
 		t.Fatalf("%#v", form)
+	}
+	r := extraction.FixtureResult(form.ID)
+	r.Header.InvoiceAmount = "42"
+	r.Header.Currency = "EUR"
+	form, err = svc.ApplyHubCallback(ctx, form.ID, "ocr_recognized", map[string]any{
+		"event_id":     "e1",
+		"invoice_json": extraction.ToInvoiceJSON(r),
+		"fields":       extraction.HubFields(r),
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if form.InvoiceAmount != "42" || form.Currency != "EUR" {
+		t.Fatalf("schema merge %#v", form)
+	}
+	if _, ok := extraction.ParseFromInvoiceJSON(form.InvoiceJSON); !ok {
+		t.Fatal("invoice_json not schema v1")
+	}
+	form2, err := svc.ConfirmExtraction(ctx, user, form.ID, r)
+	if err != nil {
+		t.Fatal(err)
+	}
+	parsed, ok := extraction.ParseFromInvoiceJSON(form2.InvoiceJSON)
+	if !ok || !parsed.Meta.Confirmed {
+		t.Fatalf("confirm %#v", form2)
+	}
+	prov := authz.Principal{AccountID: "p1", Role: domain.RoleProvider}
+	if _, err := svc.ConfirmExtraction(ctx, prov, form.ID, r); err == nil {
+		t.Fatal("provider must be forbidden")
 	}
 	form, err = svc.ApplyHubCallback(ctx, form.ID, "onec_cover", map[string]any{
 		"external_id": "ext-1", "cover": "500", "fee": "12",

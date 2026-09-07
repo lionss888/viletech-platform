@@ -70,6 +70,10 @@ func (s *Server) handleScenarioRunsList(w http.ResponseWriter, r *http.Request, 
 		writeError(w, err)
 		return
 	}
+	if items == nil {
+		writeJSON(w, http.StatusOK, []struct{}{})
+		return
+	}
 	writeJSON(w, http.StatusOK, items)
 }
 
