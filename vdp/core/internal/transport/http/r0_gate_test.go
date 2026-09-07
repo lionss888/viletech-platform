@@ -157,4 +157,7 @@ func TestDefaultStoreDriverIsPostgresNotMemory(t *testing.T) {
 	if !strings.Contains(text, "016_account_kind_caps.sql") {
 		t.Fatal("core migration 016_account_kind_caps.sql must be mounted")
 	}
+	if !strings.Contains(text, "017_role_mandatory_and_pilot_compliance.sql") {
+		t.Fatal("core migration 017_role_mandatory_and_pilot_compliance.sql must be mounted")
+	}
 }

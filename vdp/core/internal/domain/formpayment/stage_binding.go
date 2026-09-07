@@ -18,13 +18,14 @@ const (
 )
 
 // StageBinding ties a fixed process stage to default actor roles (methodology in code).
+// Mandatory on bindings is seed/backfill only; runtime truth is RoleProcessConfig.Mandatory.
 type StageBinding struct {
 	Stage     StageID
 	Actors    []domain.Role
 	Mandatory bool
 }
 
-// StageBindings is the immutable process methodology map.
+// StageBindings is the immutable process slot map (status methodology stays in code).
 func StageBindings() []StageBinding {
 	return []StageBinding{
 		{Stage: StageUserIntake, Actors: []domain.Role{domain.RoleUser}, Mandatory: true},
@@ -39,9 +40,9 @@ func StageBindings() []StageBinding {
 	}
 }
 
-// IsMandatoryProcessRole is true when the role is a required actor on a mandatory stage.
-// Admin/root is not a process actor; methodology bindings only.
-func IsMandatoryProcessRole(role domain.Role) bool {
+// MandatorySeedFromStageBindings returns seed mandatory for migrations/empty config.
+// Runtime participation uses RoleProcessConfig.Mandatory via IsMandatoryProcessRole.
+func MandatorySeedFromStageBindings(role domain.Role) bool {
 	for _, b := range StageBindings() {
 		if !b.Mandatory {
 			continue
@@ -53,6 +54,20 @@ func IsMandatoryProcessRole(role domain.Role) bool {
 		}
 	}
 	return false
+}
+
+// IsMandatoryProcessRole reads mandatory from snapshot config when present; otherwise seed.
+// Admin/root is never a process actor.
+func IsMandatoryProcessRole(role domain.Role, snap *ProcessPolicySnapshot) bool {
+	if !IsProcessEligibleRole(role) {
+		return false
+	}
+	if snap != nil {
+		if cfg, ok := snap.ConfigFor(role); ok {
+			return cfg.Mandatory
+		}
+	}
+	return MandatorySeedFromStageBindings(role)
 }
 
 // IsProcessEligibleRole is true when the role may appear in process participation config.

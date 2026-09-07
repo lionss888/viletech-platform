@@ -19,6 +19,7 @@ func TestRefundServiceHappyPathBlockCancelAndFile(t *testing.T) {
 	store := repository.NewStore()
 	seed.MustDev(t, store)
 	svc := service.NewFormPaymentService(store, outbox.NewMemoryStore(), seqID())
+	enableComplianceActors(t, svc)
 	user := authz.Principal{AccountID: seed.UserID, Role: domain.RoleUser, OrganizationID: seed.OrgID}
 	manager := authz.Principal{AccountID: seed.ManagerID, Role: domain.RoleManager}
 	eco := authz.Principal{AccountID: seed.ECOID, Role: domain.RoleComplianceOfficer}

@@ -77,6 +77,7 @@ func TestCreateToICOPath(t *testing.T) {
 	store := repository.NewStore()
 	seed.MustDev(t, store)
 	svc := service.NewFormPaymentService(store, outbox.NewMemoryStore(), seqID())
+	enableComplianceActors(t, svc)
 	user := authz.Principal{AccountID: seed.UserID, Role: domain.RoleUser, OrganizationID: seed.OrgID}
 	ico := authz.Principal{AccountID: seed.ICOID, Role: domain.RoleInternalComplianceOfficer}
 	form, err := svc.Create(ctx, user, service.CreateInput{})

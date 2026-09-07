@@ -2,6 +2,7 @@ package httpapi_test
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"io"
 	"net/http"
@@ -10,6 +11,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/viletech/vdp/core/internal/authz"
+	"github.com/viletech/vdp/core/internal/domain"
 	"github.com/viletech/vdp/core/internal/outbox"
 	"github.com/viletech/vdp/core/internal/repository"
 	"github.com/viletech/vdp/core/internal/repository/seed"
@@ -76,6 +79,19 @@ func (p *inboxProbe) count() int {
 	return len(p.items)
 }
 
+func enableHTTPCompliance(t *testing.T, forms *service.FormPaymentService) {
+	t.Helper()
+	root := authz.Principal{AccountID: seed.RootID, Role: domain.RoleRoot}
+	on := true
+	for _, role := range []domain.Role{domain.RoleInternalComplianceOfficer, domain.RoleComplianceOfficer} {
+		if _, err := forms.ProcessRoles().UpdateRole(context.Background(), root, role, service.RoleConfigUpdate{
+			Enabled: &on, Mandatory: &on,
+		}); err != nil {
+			t.Fatalf("enable %s: %v", role, err)
+		}
+	}
+}
+
 func newStack(t *testing.T) (http.Handler, string, *inboxProbe) {
 	t.Helper()
 	secret := "test-s2s"
@@ -105,6 +121,7 @@ func newStack(t *testing.T) (http.Handler, string, *inboxProbe) {
 		n++
 		return "f" + itoa(n)
 	})
+	enableHTTPCompliance(t, forms)
 	orgs := service.NewOrganizationService(store)
 	catalog := service.NewCatalogService(store, box, func() string {
 		n++

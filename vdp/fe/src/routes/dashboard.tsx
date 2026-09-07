@@ -4,7 +4,7 @@ import { DashboardPage } from "@/components/ved/pages/dashboard-page";
 
 export const Route = createFileRoute("/dashboard")({
   head: () => ({
-    meta: [{ title: "Рабочий стол — ⚡ ВЭД от Вилетех ₽" }],
+    meta: [{ title: "Рабочий стол — ⚡ Веди ВЭД ₽" }],
   }),
   component: DashboardPage,
 });

@@ -8,9 +8,9 @@ import { usePlatformStore } from "@/lib/ved/platform-store";
 export const Route = createFileRoute("/demo/providers")({
   head: () => ({
     meta: [
-      { title: "Провайдеры платежей — ⚡ ВЭД от Вилетех ₽" },
+      { title: "Провайдеры платежей — ⚡ Веди ВЭД ₽" },
       { name: "description", content: "Справочник провайдеров исполнения платежей: страна, валютные коридоры, контакты и SLA. Добавление, редактирование и загрузка данных." },
-      { property: "og:title", content: "Провайдеры платежей — ⚡ ВЭД от Вилетех ₽" },
+      { property: "og:title", content: "Провайдеры платежей — ⚡ Веди ВЭД ₽" },
       { property: "og:description", content: "Валютные коридоры, контакты и SLA по каждому провайдеру." },
     ],
   }),

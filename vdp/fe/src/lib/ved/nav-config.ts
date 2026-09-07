@@ -9,7 +9,6 @@ export const MAIN_NAV: NavItem[] = [
   { segment: "/organizations", label: "Проверка организаций", roles: ["internal_compliance_officer", "compliance_officer"] },
   { segment: "/forms/new", label: "Новая заявка", roles: ["user", "manager", "root"] },
   { segment: "/chats", label: "Рабочие чаты", roles: "all" },
-  { segment: "/profile", label: "Профиль", roles: "all" },
 ];
 
 export const REFERENCE_NAV: NavItem[] = [

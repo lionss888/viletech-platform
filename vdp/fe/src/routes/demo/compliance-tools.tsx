@@ -8,13 +8,13 @@ import { usePlatformStore } from "@/lib/ved/platform-store";
 export const Route = createFileRoute("/demo/compliance-tools")({
   head: () => ({
     meta: [
-      { title: "Инструменты комплаенс — ⚡ ВЭД от Вилетех ₽" },
+      { title: "Инструменты комплаенс — ⚡ Веди ВЭД ₽" },
       {
         name: "description",
         content:
           "Справочник отметок комплаенс: причина возврата заявки или организации на доработку и инструкция клиенту. Создание, редактирование и загрузка отметок.",
       },
-      { property: "og:title", content: "Инструменты комплаенс — ⚡ ВЭД от Вилетех ₽" },
+      { property: "og:title", content: "Инструменты комплаенс — ⚡ Веди ВЭД ₽" },
       { property: "og:description", content: "Отметки возврата на доработку и инструкции для клиента." },
     ],
   }),

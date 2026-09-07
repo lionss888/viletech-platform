@@ -1,8 +1,18 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 import { VedAppShell } from "@/components/ved/VedAppShell";
 import { Modal, ModalButton } from "@/components/ved/Modal";
+import {
+  findCapabilityLabel,
+  getProcessRoles,
+  influenceLabel,
+  updateProcessRole,
+  type CapabilityCatalogEntry,
+  type ProcessRoleInfluence,
+  type ProcessRoleRow,
+} from "@/lib/api/process-roles";
+import { createAdminAccount, patchAdminAccount } from "@/lib/api/catalog-mutations";
 import { dateOnly } from "@/lib/ved/format";
 import { usePlatformMode } from "@/lib/ved/platform-mode";
 import { parseRecords, templateCsv, toCsv, USER_IMPORT_FIELDS } from "@/lib/ved/registry";
@@ -11,6 +21,7 @@ import { usePlatformStore } from "@/lib/ved/platform-store";
 import { useAuth } from "@/lib/auth/session";
 import type { PlatformUser, VedRole } from "@/lib/ved/types";
 import { cn } from "@/lib/utils";
+import { useQueryClient } from "@tanstack/react-query";
 
 export const Route = createFileRoute("/demo/admin")({
   head: () => ({
@@ -24,11 +35,35 @@ export const Route = createFileRoute("/demo/admin")({
   component: AdminPage,
 });
 
-type Draft = { name: string; email: string; role: VedRole; organization: string; accountKind: "user" | "admin" };
+type Draft = {
+  name: string;
+  email: string;
+  role: VedRole;
+  organization: string;
+  accountKind: "user" | "admin";
+  businessOverrides: string[];
+  useBusinessOverrides: boolean;
+};
 
-const EMPTY: Draft = { name: "", email: "", role: "user", organization: "", accountKind: "user" };
+type RoleTemplateDraft = {
+  enabled: boolean;
+  mandatory: boolean;
+  influence: ProcessRoleInfluence;
+  capabilities: string[];
+};
+
+const EMPTY: Draft = {
+  name: "",
+  email: "",
+  role: "user",
+  organization: "",
+  accountKind: "user",
+  businessOverrides: [],
+  useBusinessOverrides: false,
+};
 
 const USERS_CSV = { fields: USER_IMPORT_FIELDS };
+const INFLUENCE_OPTIONS: ProcessRoleInfluence[] = ["actor", "observer", "none"];
 
 function download(text: string, name: string) {
   const url = URL.createObjectURL(new Blob(["\uFEFF" + text], { type: "text/csv;charset=utf-8" }));
@@ -40,8 +75,8 @@ function download(text: string, name: string) {
 }
 
 export function AdminPage() {
-  const { users, organizations, toggleBlocked, createUser, updateUser, deleteUser, importUsers, session, ready } =
-    usePlatformStore();
+  const { users, organizations, toggleBlocked, deleteUser, importUsers, session, ready } = usePlatformStore();
+  const queryClient = useQueryClient();
   const auth = useAuth();
   const mode = usePlatformMode();
   const isApp = mode === "app";
@@ -51,12 +86,59 @@ export function AdminPage() {
   const [removing, setRemoving] = useState<PlatformUser | null>(null);
   const [blocking, setBlocking] = useState<PlatformUser | null>(null);
   const [draft, setDraft] = useState<Draft>(EMPTY);
+  const [roleTemplate, setRoleTemplate] = useState<RoleTemplateDraft | null>(null);
+  const [roleTemplateDirty, setRoleTemplateDirty] = useState(false);
+  const [catalog, setCatalog] = useState<CapabilityCatalogEntry[]>([]);
+  const [allCaps, setAllCaps] = useState<string[]>([]);
+  const [formError, setFormError] = useState<string | null>(null);
+  const [saving, setSaving] = useState(false);
   const [importOpen, setImportOpen] = useState(false);
   const [importText, setImportText] = useState("");
   const [importMode, setImportMode] = useState<"append" | "replace">("append");
   const [importError, setImportError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
   const fileRef = useRef<HTMLInputElement | null>(null);
+
+  const modalOpen = creating || editing !== null;
+  const processEligible = draft.accountKind === "user" && draft.role !== "root";
+
+  useEffect(() => {
+    if (!modalOpen || !isApp) {
+      setRoleTemplate(null);
+      setRoleTemplateDirty(false);
+      return;
+    }
+    let cancelled = false;
+    void getProcessRoles()
+      .then((data) => {
+        if (cancelled) return;
+        setCatalog(data.capabilities_catalog ?? []);
+        setAllCaps(data.capabilities ?? []);
+        if (!processEligible) {
+          setRoleTemplate(null);
+          setRoleTemplateDirty(false);
+          return;
+        }
+        const row = data.roles.find((r: ProcessRoleRow) => r.role === draft.role);
+        if (row) {
+          setRoleTemplate({
+            enabled: row.enabled,
+            mandatory: row.mandatory,
+            influence: row.influence,
+            capabilities: [...row.capabilities],
+          });
+        } else {
+          setRoleTemplate(null);
+        }
+        setRoleTemplateDirty(false);
+      })
+      .catch((err: Error) => {
+        if (!cancelled) setFormError(err.message);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [modalOpen, isApp, processEligible, draft.role]);
 
   if (!ready && isApp) {
     return (
@@ -81,6 +163,7 @@ export function AdminPage() {
 
   function openCreate() {
     setDraft(EMPTY);
+    setFormError(null);
     setCreating(true);
   }
 
@@ -91,29 +174,75 @@ export function AdminPage() {
       role: user.role,
       organization: user.organization ?? "",
       accountKind: user.role === "root" ? "admin" : "user",
+      businessOverrides: [],
+      useBusinessOverrides: false,
     });
+    setFormError(null);
     setEditing(user);
   }
 
-  function submit() {
-    const role = draft.accountKind === "admin" ? ("root" as VedRole) : draft.role === "root" ? ("user" as VedRole) : draft.role;
-    const payload = {
-      name: draft.name.trim(),
-      email: draft.email.trim(),
-      role,
-      organization: draft.organization || undefined,
-    };
-    if (editing) {
-      void updateUser(editing.id, payload);
-    } else {
-      void createUser(payload);
+  async function submit() {
+    if (!valid) return;
+    const typedRole = draft.accountKind === "admin" ? ("root" as VedRole) : draft.role === "root" ? ("user" as VedRole) : draft.role;
+    setSaving(true);
+    setFormError(null);
+    try {
       if (isApp) {
-        setNotice(`Создан ${payload.email} (${draft.accountKind}). Временный пароль: ChangeMe2024!`);
+        if (editing) {
+          const patch: Parameters<typeof patchAdminAccount>[1] = {
+            email: draft.email.trim(),
+            role: typedRole,
+            account_kind: draft.accountKind,
+            full_name: draft.name.trim(),
+            clear_business_overrides: !draft.useBusinessOverrides,
+          };
+          if (draft.useBusinessOverrides) {
+            patch.business_cap_overrides = draft.businessOverrides;
+          }
+          await patchAdminAccount(editing.id, patch);
+        } else {
+          const create: Parameters<typeof createAdminAccount>[0] = {
+            email: draft.email.trim(),
+            password: "ChangeMe2024!",
+            role: typedRole,
+            account_kind: draft.accountKind,
+            full_name: draft.name.trim(),
+          };
+          if (draft.useBusinessOverrides) {
+            create.business_cap_overrides = draft.businessOverrides;
+          }
+          await createAdminAccount(create);
+          setNotice(`Создан ${draft.email.trim()} (${draft.accountKind}). Временный пароль: ChangeMe2024!`);
+        }
+        if (processEligible && roleTemplate && roleTemplateDirty) {
+          try {
+            await updateProcessRole(typedRole, {
+              enabled: roleTemplate.enabled,
+              mandatory: roleTemplate.mandatory,
+              influence: roleTemplate.influence,
+              capabilities: roleTemplate.capabilities,
+            });
+          } catch (err) {
+            setFormError(
+              `Аккаунт сохранён, но шаблон роли не обновлён: ${err instanceof Error ? err.message : "ошибка"}`,
+            );
+            await queryClient.invalidateQueries({ queryKey: ["admin-accounts"] });
+            setSaving(false);
+            return;
+          }
+        }
+        await queryClient.invalidateQueries({ queryKey: ["admin-accounts"] });
+      } else {
+        setNotice("В демо-режиме сохранение шаблона роли недоступно — используйте app.");
       }
+      setEditing(null);
+      setCreating(false);
+      setDraft(EMPTY);
+    } catch (err) {
+      setFormError(err instanceof Error ? err.message : "Ошибка сохранения");
+    } finally {
+      setSaving(false);
     }
-    setEditing(null);
-    setCreating(false);
-    setDraft(EMPTY);
   }
 
   function runImport() {
@@ -129,60 +258,189 @@ export function AdminPage() {
     setImportError(null);
   }
 
+  function patchTemplate(patch: Partial<RoleTemplateDraft>) {
+    setRoleTemplate((prev) => (prev ? { ...prev, ...patch } : prev));
+    setRoleTemplateDirty(true);
+  }
+
   const formFields = (
-    <div className="space-y-3">
-      <label className="block">
-        <span className="label-caps">Имя</span>
-        <input value={draft.name} onChange={(e) => setDraft({ ...draft, name: e.target.value })} className="field mt-1" placeholder="И. Иванов" />
-      </label>
-      <label className="block">
-        <span className="label-caps">Email</span>
-        <input value={draft.email} onChange={(e) => setDraft({ ...draft, email: e.target.value })} className="field mt-1" placeholder="user@company.ru" />
-      </label>
-      <label className="block">
-        <span className="label-caps">Тип аккаунта</span>
-        <select
-          value={draft.accountKind}
-          onChange={(e) => {
-            const accountKind = e.target.value as "user" | "admin";
-            setDraft({
-              ...draft,
-              accountKind,
-              role: accountKind === "admin" ? "root" : draft.role === "root" ? "user" : draft.role,
-            });
-          }}
-          className="field mt-1 text-sm"
-        >
-          <option value="user">Пользователь (бизнес-роли)</option>
-          <option value="admin">Администратор (суперадмин)</option>
-        </select>
-      </label>
-      <label className="block">
-        <span className="label-caps">Роль</span>
-        <select
-          value={draft.role}
-          disabled={draft.accountKind === "admin"}
-          onChange={(e) => setDraft({ ...draft, role: e.target.value as VedRole })}
-          className="field mt-1 text-sm"
-        >
-          {ROLES.filter((r) => (draft.accountKind === "admin" ? r.id === "root" : r.id !== "root")).map((r) => (
-            <option key={r.id} value={r.id}>
-              {r.title}
-            </option>
-          ))}
-        </select>
-      </label>
-      <label className="block">
-        <span className="label-caps">Организация</span>
-        <select value={draft.organization} onChange={(e) => setDraft({ ...draft, organization: e.target.value })} className="field mt-1 text-sm">
-          <option value="">Без организации</option>
-          {organizations.map((o) => (
-            <option key={o.id} value={o.name}>
-              {o.name}
-            </option>
-          ))}
-        </select>
-      </label>
+    <div className="space-y-5">
+      <section className="space-y-3">
+        <h3 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Аккаунт</h3>
+        <label className="block">
+          <span className="label-caps">Имя</span>
+          <input value={draft.name} onChange={(e) => setDraft({ ...draft, name: e.target.value })} className="field mt-1" placeholder="И. Иванов" />
+        </label>
+        <label className="block">
+          <span className="label-caps">Email</span>
+          <input value={draft.email} onChange={(e) => setDraft({ ...draft, email: e.target.value })} className="field mt-1" placeholder="user@company.ru" />
+        </label>
+        <label className="block">
+          <span className="label-caps">Тип аккаунта</span>
+          <select
+            value={draft.accountKind}
+            onChange={(e) => {
+              const accountKind = e.target.value as "user" | "admin";
+              setDraft({
+                ...draft,
+                accountKind,
+                role: accountKind === "admin" ? "root" : draft.role === "root" ? "user" : draft.role,
+              });
+            }}
+            className="field mt-1 text-sm"
+          >
+            <option value="user">Пользователь (бизнес-роли)</option>
+            <option value="admin">Администратор (суперадмин)</option>
+          </select>
+        </label>
+        <label className="block">
+          <span className="label-caps">Роль</span>
+          <select
+            value={draft.role}
+            disabled={draft.accountKind === "admin"}
+            onChange={(e) => setDraft({ ...draft, role: e.target.value as VedRole })}
+            className="field mt-1 text-sm"
+          >
+            {ROLES.filter((r) => (draft.accountKind === "admin" ? r.id === "root" : r.id !== "root")).map((r) => (
+              <option key={r.id} value={r.id}>
+                {r.title}
+              </option>
+            ))}
+          </select>
+        </label>
+        <label className="block">
+          <span className="label-caps">Организация</span>
+          <select value={draft.organization} onChange={(e) => setDraft({ ...draft, organization: e.target.value })} className="field mt-1 text-sm">
+            <option value="">Без организации</option>
+            {organizations.map((o) => (
+              <option key={o.id} value={o.name}>
+                {o.name}
+              </option>
+            ))}
+          </select>
+        </label>
+      </section>
+
+      {processEligible && roleTemplate && isApp ? (
+        <section className="space-y-3 border-t border-border pt-4">
+          <h3 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Шаблон роли в процессе</h3>
+          <p className="text-xs text-amber-700 dark:text-amber-400">
+            Изменения шаблона действуют на всех пользователей с ролью «{roleTitle(draft.role)}».
+          </p>
+          <div className="grid gap-3 sm:grid-cols-3">
+                <label className="flex items-center gap-2 text-sm">
+              <input
+                type="checkbox"
+                checked={roleTemplate.enabled}
+                onChange={(e) => {
+                  const enabled = e.target.checked;
+                  patchTemplate(
+                    enabled
+                      ? { enabled: true }
+                      : { enabled: false, mandatory: false },
+                  );
+                }}
+              />
+              В процессе
+            </label>
+            <label className="flex items-center gap-2 text-sm">
+              <input
+                type="checkbox"
+                checked={roleTemplate.mandatory}
+                onChange={(e) =>
+                  patchTemplate({
+                    mandatory: e.target.checked,
+                    enabled: e.target.checked ? true : roleTemplate.enabled,
+                  })
+                }
+              />
+              Обязательная
+            </label>
+            <label className="block text-sm">
+              <span className="label-caps">Влияние</span>
+              <select
+                className="field mt-1 text-xs"
+                value={roleTemplate.influence}
+                onChange={(e) => patchTemplate({ influence: e.target.value as ProcessRoleInfluence })}
+              >
+                {INFLUENCE_OPTIONS.map((opt) => (
+                  <option key={opt} value={opt}>
+                    {influenceLabel(opt)}
+                  </option>
+                ))}
+              </select>
+            </label>
+          </div>
+          <div className="max-h-40 space-y-1 overflow-y-auto rounded border border-border p-2">
+            {(catalog.length > 0 ? catalog.map((c) => c.id) : allCaps).map((id) => {
+              const label = findCapabilityLabel(catalog, id);
+              const checked = roleTemplate.capabilities.includes(id);
+              return (
+                <label key={id} className="flex cursor-pointer items-start gap-2 text-xs">
+                  <input
+                    type="checkbox"
+                    className="mt-0.5"
+                    checked={checked}
+                    onChange={() => {
+                      const next = checked
+                        ? roleTemplate.capabilities.filter((c) => c !== id)
+                        : [...roleTemplate.capabilities, id];
+                      patchTemplate({ capabilities: next });
+                    }}
+                  />
+                  <span>
+                    <span className="font-medium">{label.title}</span>
+                    {label.description ? <span className="block text-muted-foreground">{label.description}</span> : null}
+                  </span>
+                </label>
+              );
+            })}
+          </div>
+        </section>
+      ) : null}
+
+      {isApp ? (
+        <section className="space-y-3 border-t border-border pt-4">
+          <h3 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Override на аккаунте</h3>
+          <label className="flex items-center gap-2 text-sm">
+            <input
+              type="checkbox"
+              checked={draft.useBusinessOverrides}
+              onChange={(e) => setDraft({ ...draft, useBusinessOverrides: e.target.checked })}
+            />
+            Задать персональные business-права (иначе шаблон роли)
+          </label>
+          {draft.useBusinessOverrides ? (
+            <div className="max-h-36 space-y-1 overflow-y-auto rounded border border-border p-2">
+              {(catalog.length > 0 ? catalog.map((c) => c.id) : allCaps).map((id) => {
+                const label = findCapabilityLabel(catalog, id);
+                const checked = draft.businessOverrides.includes(id);
+                return (
+                  <label key={id} className="flex cursor-pointer items-start gap-2 text-xs">
+                    <input
+                      type="checkbox"
+                      className="mt-0.5"
+                      checked={checked}
+                      onChange={() => {
+                        const next = checked
+                          ? draft.businessOverrides.filter((c) => c !== id)
+                          : [...draft.businessOverrides, id];
+                        setDraft({ ...draft, businessOverrides: next });
+                      }}
+                    />
+                    <span className="font-medium">{label.title}</span>
+                  </label>
+                );
+              })}
+            </div>
+          ) : null}
+          {draft.accountKind === "admin" ? (
+            <p className="text-xs text-muted-foreground">Системные права root locked (accounts / process_roles / system.admin) нельзя снять.</p>
+          ) : null}
+        </section>
+      ) : null}
+
+      {formError ? <p className="text-sm text-destructive">{formError}</p> : null}
     </div>
   );
 
@@ -216,7 +474,6 @@ export function AdminPage() {
             <ModalButton
               variant="quiet"
               disabled={isApp}
-              title={isApp ? "Импорт доступен только в демо-контуре" : undefined}
               onClick={() => {
                 setImportOpen(true);
                 setImportError(null);
@@ -293,6 +550,7 @@ export function AdminPage() {
           if (!v) {
             setCreating(false);
             setEditing(null);
+            setFormError(null);
           }
         }}
         title={editing ? "Редактирование пользователя" : "Новый пользователь"}
@@ -309,7 +567,7 @@ export function AdminPage() {
             >
               Отмена
             </ModalButton>
-            <ModalButton onClick={submit} disabled={!valid}>
+            <ModalButton onClick={() => void submit()} disabled={!valid || saving}>
               {editing ? "Сохранить" : "Создать"}
             </ModalButton>
           </>
@@ -367,59 +625,40 @@ export function AdminPage() {
       <Modal
         open={importOpen}
         onOpenChange={setImportOpen}
-        wide
-        title="Загрузка пользователей"
-        description="Загрузите файл CSV/TSV или вставьте таблицу из Excel. Первая строка — заголовки. Совпадение по email обновляет существующую запись."
+        title="Загрузить пользователей"
+        description="CSV: name, email, role, organization"
         footer={
           <>
             <ModalButton variant="quiet" onClick={() => setImportOpen(false)}>
               Отмена
             </ModalButton>
-            <ModalButton onClick={runImport} disabled={importText.trim().length === 0}>
-              Загрузить
-            </ModalButton>
+            <ModalButton onClick={runImport}>Импорт</ModalButton>
           </>
         }
       >
         <div className="space-y-3">
-          <div className="flex flex-wrap items-center gap-2">
-            <ModalButton variant="quiet" onClick={() => fileRef.current?.click()}>
-              Выбрать файл
-            </ModalButton>
-            <ModalButton variant="quiet" onClick={() => download(templateCsv(USERS_CSV), "users-template.csv")}>
-              Скачать шаблон
-            </ModalButton>
-            <input
-              ref={fileRef}
-              type="file"
-              accept=".csv,.tsv,.txt"
-              className="hidden"
-              onChange={async (e) => {
-                const file = e.target.files?.[0];
-                if (!file) return;
-                setImportText(await file.text());
-                setImportError(null);
-              }}
-            />
+          <textarea className="field min-h-32 font-mono text-xs" value={importText} onChange={(e) => setImportText(e.target.value)} />
+          <div className="flex gap-2 text-xs">
+            <label className="flex items-center gap-1">
+              <input type="radio" checked={importMode === "append"} onChange={() => setImportMode("append")} />
+              Дописать
+            </label>
+            <label className="flex items-center gap-1">
+              <input type="radio" checked={importMode === "replace"} onChange={() => setImportMode("replace")} />
+              Заменить
+            </label>
+            <button type="button" className="text-primary underline" onClick={() => setImportText(templateCsv(USERS_CSV))}>
+              Шаблон
+            </button>
+            <input ref={fileRef} type="file" accept=".csv,text/csv" className="hidden" onChange={(e) => {
+              const file = e.target.files?.[0];
+              if (!file) return;
+              void file.text().then(setImportText);
+            }} />
+            <button type="button" className="text-primary underline" onClick={() => fileRef.current?.click()}>
+              Файл
+            </button>
           </div>
-          <textarea
-            value={importText}
-            onChange={(e) => setImportText(e.target.value)}
-            rows={8}
-            placeholder={templateCsv(USERS_CSV)}
-            className="field resize-none font-mono text-xs"
-          />
-          <div className="flex gap-4 text-xs">
-            {(["append", "replace"] as const).map((mode) => (
-              <label key={mode} className="flex items-center gap-2">
-                <input type="radio" checked={importMode === mode} onChange={() => setImportMode(mode)} />
-                {mode === "append" ? "Добавить и обновить" : "Заменить список"}
-              </label>
-            ))}
-          </div>
-          <p className="text-xs text-muted-foreground">
-            Ожидаемые колонки: {USER_IMPORT_FIELDS.map((f) => f.label).join(", ")}. Роль указывается названием (например «Менеджер»).
-          </p>
           {importError && <p className="text-xs text-destructive">{importError}</p>}
         </div>
       </Modal>

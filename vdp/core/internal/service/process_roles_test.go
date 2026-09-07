@@ -12,7 +12,7 @@ import (
 	"github.com/viletech/vdp/core/internal/service"
 )
 
-func TestProcessRolesDisableSalesAndRejectICO(t *testing.T) {
+func TestProcessRolesDisableClearsMandatory(t *testing.T) {
 	store := repository.NewMemoryStore()
 	_ = seed.Dev(store)
 	svc := service.NewProcessRoleService(store)
@@ -25,8 +25,17 @@ func TestProcessRolesDisableSalesAndRejectICO(t *testing.T) {
 		t.Fatal(err)
 	}
 	_, err = svc.UpdateRole(context.Background(), root, domain.RoleInternalComplianceOfficer, service.RoleConfigUpdate{Enabled: &enabled})
-	if err == nil {
-		t.Fatal("expected reject disable ICO")
+	if err != nil {
+		t.Fatal(err)
+	}
+	// Manager is mandatory in default — disable must succeed and clear mandatory (continuity).
+	snap, err := svc.UpdateRole(context.Background(), root, domain.RoleManager, service.RoleConfigUpdate{Enabled: &enabled})
+	if err != nil {
+		t.Fatal(err)
+	}
+	mgr, ok := snap.ConfigFor(domain.RoleManager)
+	if !ok || mgr.Enabled || mgr.Mandatory {
+		t.Fatalf("manager after disable: enabled=%v mandatory=%v", mgr.Enabled, mgr.Mandatory)
 	}
 	_, err = svc.UpdateRole(context.Background(), user, domain.RoleSales, service.RoleConfigUpdate{Enabled: &enabled})
 	if err == nil {
@@ -49,7 +58,6 @@ func TestProcessRolesPriorities(t *testing.T) {
 	if sales.Priority != 10 || mgr.Priority != 20 {
 		t.Fatalf("sales=%d manager=%d", sales.Priority, mgr.Priority)
 	}
-	// Methodology unchanged: TargetStatus still org wait when not approved.
 	got, err := formpayment.TargetStatus(formpayment.Form{Status: formpayment.StatusDraft}, formpayment.ActionSubmit, false)
 	if err != nil || got != formpayment.StatusOrganizationWaitingVerification {
 		t.Fatalf("process path changed: %v %s", err, got)

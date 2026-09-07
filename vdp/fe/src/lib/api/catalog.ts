@@ -26,8 +26,10 @@ export type CoreOrganization = {
 export type CoreCounterparty = {
   id: string;
   name: string;
+  country?: string;
   country_code?: string;
   status?: string;
+  last_approval_status?: string;
   inn?: string;
 };
 

@@ -5,7 +5,7 @@ import { FormsList } from "@/components/ved/pages/forms-list-page";
 
 export const Route = createFileRoute("/forms/")({
   head: () => ({
-    meta: [{ title: "Реестр заявок — ⚡ ВЭД от Вилетех ₽" }],
+    meta: [{ title: "Реестр заявок — ⚡ Веди ВЭД ₽" }],
   }),
   validateSearch: parseFormsSearch,
   component: FormsList,

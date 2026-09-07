@@ -4,7 +4,7 @@ import { CodesPage } from "./demo/codes";
 
 export const Route = createFileRoute("/codes")({
   head: () => ({
-    meta: [{ title: "Коды ТН ВЭД — ⚡ ВЭД от Вилетех ₽" }],
+    meta: [{ title: "Коды ТН ВЭД — ⚡ Веди ВЭД ₽" }],
   }),
   component: CodesPage,
 });

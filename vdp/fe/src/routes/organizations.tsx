@@ -4,7 +4,7 @@ import { OrganizationsPage } from "./demo/organizations";
 
 export const Route = createFileRoute("/organizations")({
   head: () => ({
-    meta: [{ title: "Организации — ⚡ ВЭД от Вилетех ₽" }],
+    meta: [{ title: "Организации — ⚡ Веди ВЭД ₽" }],
   }),
   component: OrganizationsPage,
 });

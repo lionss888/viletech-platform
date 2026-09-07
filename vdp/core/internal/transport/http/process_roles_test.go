@@ -58,12 +58,25 @@ func TestProcessRolesHTTP(t *testing.T) {
 	}
 
 	body, _ := json.Marshal(map[string]any{"enabled": false})
-	req = httptest.NewRequest(http.MethodPut, "/api/v1/admin/process-roles/internal_compliance_officer", bytes.NewReader(body))
+	req = httptest.NewRequest(http.MethodPut, "/api/v1/admin/process-roles/manager", bytes.NewReader(body))
 	req.Header.Set("Authorization", "Bearer "+rootTok)
 	rec = httptest.NewRecorder()
 	h.ServeHTTP(rec, req)
-	if rec.Code == http.StatusOK {
-		t.Fatal("expected reject disable ICO")
+	if rec.Code != http.StatusOK {
+		t.Fatalf("disable mandatory manager should clear mandatory: %d %s", rec.Code, rec.Body.String())
+	}
+
+	var getOut map[string]any
+	req = httptest.NewRequest(http.MethodGet, "/api/v1/process-roles", nil)
+	req.Header.Set("Authorization", "Bearer "+rootTok)
+	rec = httptest.NewRecorder()
+	h.ServeHTTP(rec, req)
+	if rec.Code != http.StatusOK {
+		t.Fatalf("GET process-roles root: %d %s", rec.Code, rec.Body.String())
+	}
+	_ = json.Unmarshal(rec.Body.Bytes(), &getOut)
+	if _, ok := getOut["capabilities_catalog"]; !ok {
+		t.Fatal("expected capabilities_catalog in GET response")
 	}
 
 	body, _ = json.Marshal(map[string]any{"enabled": true, "influence": "observer", "capabilities": []string{"form.view", "sales.attribution"}})

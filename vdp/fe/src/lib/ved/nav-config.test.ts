@@ -16,10 +16,10 @@ describe("nav-config documents placement", () => {
     expect(filterNav(MAIN_NAV, "provider").some((item) => item.label === "Документы")).toBe(false);
   });
 
-  it("exposes profile and work chats for every role", () => {
-    expect(MAIN_NAV.some((item) => item.segment === "/profile")).toBe(true);
+  it("keeps work chats in sidebar and profile only via row context menu", () => {
     expect(MAIN_NAV.some((item) => item.segment === "/chats")).toBe(true);
-    expect(filterNav(MAIN_NAV, "user").some((item) => item.segment === "/profile")).toBe(true);
+    expect(MAIN_NAV.some((item) => item.segment === "/profile")).toBe(false);
+    expect(filterNav(MAIN_NAV, "user").some((item) => item.segment === "/profile")).toBe(false);
     expect(filterNav(MAIN_NAV, "provider").some((item) => item.segment === "/chats")).toBe(true);
   });
 });

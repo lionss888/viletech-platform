@@ -45,15 +45,18 @@ export function mapCoreOrganization(org: CoreOrganization): Organization {
 }
 
 export function mapCoreCounterparty(cp: CoreCounterparty): Counterparty {
+  const country = cp.country_code?.trim() || cp.country?.trim() || "—";
+  const approved =
+    cp.status === "approved" || cp.last_approval_status === "approved";
   return {
     id: cp.id,
     name: cp.name,
-    country: cp.country_code ?? "—",
-    countryCode: cp.country_code ?? "—",
+    country,
+    countryCode: country,
     bank: "—",
     swift: "—",
     scope: "foreign",
-    status: cp.status === "approved" ? "approved" : "not_approved",
+    status: approved ? "approved" : "not_approved",
   };
 }
 
@@ -89,9 +92,10 @@ export function mapCoreHs(h: CoreHsCode): HsCodeRecord {
 
 export function mapCoreAdminAccount(a: CoreAdminAccount): PlatformUser {
   const role = (a.role ?? "user") as VedRole;
+  const fullName = a.full_name?.trim() ?? "";
   return {
     id: a.id,
-    name: a.full_name ?? a.email,
+    name: fullName || a.email,
     email: a.email,
     role,
     blocked: Boolean(a.blocked),

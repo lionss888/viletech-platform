@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"testing"
+	"time"
 
 	"github.com/viletech/vdp/core/internal/domain"
 	"github.com/viletech/vdp/core/internal/repository"
@@ -20,6 +21,9 @@ const (
 	BankID     = "77777777-7777-7777-7777-777777777777"
 	BankOrgID  = "88888888-8888-8888-8888-888888888888"
 	RootID     = "99999999-9999-9999-9999-999999999999"
+	Cp1ID      = "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaa1"
+	Cp2ID      = "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaa2"
+	Cp3ID      = "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaa3"
 )
 
 // Dev upserts demo accounts/orgs. Errors must not be ignored — schema drift
@@ -28,12 +32,12 @@ func Dev(store repository.Store) error {
 	ctx := context.Background()
 	accounts := []domain.Account{
 		{ID: UserID, Email: "user@vdp.local", PasswordHash: service.HashPassword("user"), Role: domain.RoleUser, AccountKind: domain.AccountKindUser, OrganizationID: OrgID, FullName: "Ivan Petrov", Phone: "+79990000000", Passport: "4510 123456", Active: true, TelegramNotifyEnabled: true},
-		{ID: ManagerID, Email: "manager@vdp.local", PasswordHash: service.HashPassword("manager"), Role: domain.RoleManager, AccountKind: domain.AccountKindUser, Active: true},
-		{ID: ICOID, Email: "ico@vdp.local", PasswordHash: service.HashPassword("ico"), Role: domain.RoleInternalComplianceOfficer, AccountKind: domain.AccountKindUser, Active: true},
-		{ID: ECOID, Email: "eco@vdp.local", PasswordHash: service.HashPassword("eco"), Role: domain.RoleComplianceOfficer, AccountKind: domain.AccountKindUser, Active: true},
-		{ID: ProviderID, Email: "provider@vdp.local", PasswordHash: service.HashPassword("provider"), Role: domain.RoleProvider, AccountKind: domain.AccountKindUser, Active: true},
+		{ID: ManagerID, Email: "manager@vdp.local", PasswordHash: service.HashPassword("manager"), Role: domain.RoleManager, AccountKind: domain.AccountKindUser, FullName: "Manager Seed", Active: true},
+		{ID: ICOID, Email: "ico@vdp.local", PasswordHash: service.HashPassword("ico"), Role: domain.RoleInternalComplianceOfficer, AccountKind: domain.AccountKindUser, FullName: "ICO Seed", Active: true},
+		{ID: ECOID, Email: "eco@vdp.local", PasswordHash: service.HashPassword("eco"), Role: domain.RoleComplianceOfficer, AccountKind: domain.AccountKindUser, FullName: "ECO Seed", Active: true},
+		{ID: ProviderID, Email: "provider@vdp.local", PasswordHash: service.HashPassword("provider"), Role: domain.RoleProvider, AccountKind: domain.AccountKindUser, FullName: "Provider Seed", Active: true},
 		{ID: RootID, Email: "root@vdp.local", PasswordHash: service.HashPassword("root"), Role: domain.RoleRoot, AccountKind: domain.AccountKindAdmin, FullName: "Root Admin", Active: true},
-		{ID: BankID, Email: "bank@vdp.local", PasswordHash: service.HashPassword("bank"), Role: domain.RoleBank, AccountKind: domain.AccountKindUser, OrganizationID: BankOrgID, Active: true, BankRateReadonly: true},
+		{ID: BankID, Email: "bank@vdp.local", PasswordHash: service.HashPassword("bank"), Role: domain.RoleBank, AccountKind: domain.AccountKindUser, OrganizationID: BankOrgID, FullName: "Bank Seed", Active: true, BankRateReadonly: true},
 	}
 	for _, account := range accounts {
 		if err := store.SaveAccount(ctx, account); err != nil {
@@ -64,6 +68,29 @@ func Dev(store repository.Store) error {
 		ApplyPlatformMarkup:        false,
 	}); err != nil {
 		return fmt.Errorf("seed bank org: %w", err)
+	}
+	now := time.Now().UTC()
+	counterparties := []domain.Counterparty{
+		{
+			ID: Cp1ID, CreatedBy: UserID, Name: "Shenzhen Kaiyuan Electronics Co., Ltd", Country: "CN", INN: "CN91440300MA5F",
+			Banks: `[{"uuid":"bank-cp1","name":"Bank of China, Shenzhen Branch","accounts":[{"uuid":"acc-cp1","number":"6222","currency":"CNY","iban":""}]}]`,
+			LastApprovalStatus: domain.CounterpartyApprovalApproved, CreatedAt: now,
+		},
+		{
+			ID: Cp2ID, CreatedBy: UserID, Name: "Anadolu Makina Sanayi A.Ş.", Country: "TR", INN: "TR1234567890",
+			Banks: `[{"uuid":"bank-cp2","name":"Türkiye İş Bankası","accounts":[{"uuid":"acc-cp2","number":"1001","currency":"TRY","iban":""}]}]`,
+			LastApprovalStatus: domain.CounterpartyApprovalApproved, CreatedAt: now,
+		},
+		{
+			ID: Cp3ID, CreatedBy: UserID, Name: "Emirates General Trading LLC", Country: "AE", INN: "AE100200300",
+			Banks: `[{"uuid":"bank-cp3","name":"Emirates NBD","accounts":[{"uuid":"acc-cp3","number":"3001","currency":"AED","iban":""}]}]`,
+			LastApprovalStatus: domain.CounterpartyApprovalApproved, CreatedAt: now,
+		},
+	}
+	for _, cp := range counterparties {
+		if err := store.SaveCounterparty(ctx, cp); err != nil {
+			return fmt.Errorf("seed counterparty %s: %w", cp.Name, err)
+		}
 	}
 	if err := store.SaveWorkChat(ctx, domain.WorkChat{ID: "wc-ops", Title: "Операционка", ChatID: "ops-chat", Kind: "ops", Active: true}); err != nil {
 		return fmt.Errorf("seed work chat ops: %w", err)
