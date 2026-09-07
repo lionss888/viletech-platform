@@ -22,6 +22,12 @@ services:
     image: ${VDP_DOCS_IMAGE:?set VDP_DOCS_IMAGE to registry image@digest or :tag}
     restart: unless-stopped
 
+  extraction:
+    image: ${VDP_EXTRACTION_IMAGE:?set VDP_EXTRACTION_IMAGE to registry image@digest or :tag}
+    restart: unless-stopped
+    volumes:
+      - extraction_gold:/var/vdp/extraction-gold
+
   # Optional notify gateways — enable with --profile gateways when VDP_MAIL_IMAGE / VDP_SMS_IMAGE are pinned.
   mail-gateway:
     profiles: ["gateways"]
@@ -60,3 +66,4 @@ volumes:
   postgres_core_data:
   postgres_hub_data:
   core_blobs:
+  extraction_gold:

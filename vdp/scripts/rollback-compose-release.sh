@@ -42,7 +42,7 @@ export COMPOSE_FILES
 
 chmod +x scripts/*.sh || true
 # shellcheck disable=SC2086
-docker compose $COMPOSE_FILES --profile prod pull hub core fe-prod
+docker compose $COMPOSE_FILES --profile prod pull docs-service extraction hub core fe-prod
 if [ -x ./scripts/vdp-compose-up.sh ]; then
   ./scripts/vdp-compose-up.sh
 else
