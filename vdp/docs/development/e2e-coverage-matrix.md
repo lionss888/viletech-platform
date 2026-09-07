@@ -4,7 +4,7 @@
 
 Единый каталог сценариев: пакет `vdp/core/internal/scenarioverify` (ids ниже). Compose shell, Playwright (tag `ui`) и Root `/testing` (API runner) ссылаются на те же id.
 
-**Не путать:** длина каталога (фиксированные ~11 id) ≠ футер «сделок в системе» (число form_payments в БД).
+Не путать: длина каталога (фиксированные ~11 id) ≠ футер «сделок в системе» (число form_payments в БД).
 
 ## Легенда слоёв
 

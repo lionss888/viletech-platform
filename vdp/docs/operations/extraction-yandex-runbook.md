@@ -8,27 +8,17 @@ Copy vdp/.env.example to vdp/.env (gitignored). Never commit keys. Rotate any ke
 
 ## Yandex Cloud (PRIMARY commercial)
 
-1. Open folder (AI Studio / Cloud console).
-2. Service account with Vision OCR + Foundation Models execute scopes.
-3. API key → YANDEX_API_KEY; folder → YANDEX_FOLDER_ID; model URI → YANDEX_MODEL_URI (e.g. gpt://folder/yandexgpt-lite).
-4. EXTRACTION_PRIMARY=yandex, EXTRACTION_FALLBACK=fixture.
-5. docker compose up -d extraction; make extraction-yandex-smoke.
+Open folder (AI Studio / Cloud console). Service account with Vision OCR + Foundation Models execute scopes. API key → YANDEX_API_KEY; folder → YANDEX_FOLDER_ID; model URI → YANDEX_MODEL_URI (e.g. gpt://folder/yandexgpt-lite). EXTRACTION_PRIMARY=yandex, EXTRACTION_FALLBACK=fixture. docker compose up -d extraction; make extraction-yandex-smoke.
 
 ## Ollama own (CPU dev/canary)
 
 Prefer Ollama on the host so rebuilds never re-download weights.
 
-1. Install Ollama; once: make extraction-ollama-ensure (pulls qwen2.5:3b only if missing).
-2. .env: EXTRACTION_PRIMARY=own, EXTRACTION_FALLBACK=yandex or fixture, OLLAMA_BASE_URL=http://host.docker.internal:11434, OLLAMA_MODEL=qwen2.5:3b, OWN_FEW_SHOT_K=3.
-3. Restart extraction. Health shows ollama_configured true.
-4. Latency on CPU may be tens of seconds (cold start = RAM load, not pull).
-5. Optional compose profile: docker compose --profile own up -d ollama (volume ollama_models; no pull in entrypoint).
+Install Ollama; once: make extraction-ollama-ensure (pulls qwen2.5:3b only if missing). .env: EXTRACTION_PRIMARY=own, EXTRACTION_FALLBACK=yandex or fixture, OLLAMA_BASE_URL=http://host.docker.internal:11434, OLLAMA_MODEL=qwen2.5:3b, OWN_FEW_SHOT_K=3. Restart extraction. Health shows ollama_configured true. Latency on CPU may be tens of seconds (cold start = RAM load, not pull). Optional compose profile: docker compose --profile own up -d ollama (volume ollama_models; no pull in entrypoint).
 
 ## Distinctions
 
-- Network pull: make extraction-ollama-ensure / ollama pull (rare, once per machine/model tag).
-- Cold start: first request after Ollama restart loads weights into RAM.
-- Inference latency: CPU generation time for recognize.
+Network pull: make extraction-ollama-ensure / ollama pull (rare, once per machine/model tag). Cold start: first request after Ollama restart loads weights into RAM. Inference latency: CPU generation time for recognize.
 
 ## Smoke
 
