@@ -69,6 +69,31 @@ services:
       retries: 10
       start_period: 5s
 
+  extraction:
+    build:
+      context: .
+      dockerfile: extraction/Dockerfile
+    environment:
+      PORT: "8093"
+      EXTRACTION_PRIMARY: ${EXTRACTION_PRIMARY:-fixture}
+      EXTRACTION_FALLBACK: ${EXTRACTION_FALLBACK:-yandex}
+      EXTRACTION_SHADOW_URL: ${EXTRACTION_SHADOW_URL:-}
+      EXTRACTION_GOLD_DIR: /var/vdp/extraction-gold
+      YANDEX_API_KEY: ${YANDEX_API_KEY:-}
+      YANDEX_FOLDER_ID: ${YANDEX_FOLDER_ID:-}
+      YANDEX_MODEL_URI: ${YANDEX_MODEL_URI:-}
+      OWN_MODEL_PATH: ${OWN_MODEL_PATH:-}
+    volumes:
+      - extraction_gold:/var/vdp/extraction-gold
+    ports:
+      - "${EXTRACTION_BIND:-0.0.0.0}:8093:8093"
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://127.0.0.1:8093/health >/dev/null || exit 1"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+      start_period: 5s
+
   mail-gateway:
     build:
       context: ./mail-gateway
@@ -111,6 +136,7 @@ services:
       HUB_SHARED_SECRET: vdp-s2s-dev-secret
       CORE_URL: http://core:8080
       DOCS_URL: http://docs-service:8090/generate
+      OCR_URL: http://extraction:8093/recognize
       MAIL_URL: http://mail-gateway:8091/notify
       SMS_URL: http://sms-gateway:8092/notify
       TELEGRAM_BOT_TOKEN: ${TELEGRAM_BOT_TOKEN:-}
@@ -123,6 +149,9 @@ services:
         condition: service_healthy
       docs-service:
         condition: service_healthy
+      extraction:
+        condition: service_healthy
+        required: false
       # Release overlay keeps the gateways behind the "gateways" profile, so the
       # dependency must stay optional: hub falls back to notify stubs without them.
       mail-gateway:
@@ -217,3 +246,4 @@ services:
 volumes:
   fe_node_modules:
   core_blobs:
+  extraction_gold:

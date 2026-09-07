@@ -91,10 +91,58 @@ describe("mapComplianceHistory", () => {
     expect(timeline[0]?.title).toContain("Черновик");
     expect(timeline[0]?.title).not.toContain("creating");
   });
+
+  it("resolves actor name and role from actor_id when users provided", () => {
+    const timeline = mapComplianceHistory(
+      [
+        {
+          id: "h3",
+          form_payment_id: "f1",
+          actor_id: "mgr-1",
+          from_status: "organization_waiting_verification",
+          to_status: "organization_verification",
+          created_at: "2026-01-01T00:00:00Z",
+        },
+      ],
+      [
+        {
+          id: "mgr-1",
+          name: "Анна Менеджер",
+          email: "manager@vdp.local",
+          role: "manager",
+          blocked: false,
+          createdAt: "2026-01-01T00:00:00Z",
+        },
+      ],
+    );
+    expect(timeline[0]?.actorName).toBe("Анна Менеджер");
+    expect(timeline[0]?.actorRole).toBe("manager");
+  });
+});
+
+describe("mapCoreFormToPaymentForm manager", () => {
+  it("keeps manager_id as managerId, not display name", () => {
+    const form = {
+      id: "ca3dcfcd-dd3d-e79d-1910-9c885e5f397b",
+      account_id: "a1",
+      organization_id: "o1",
+      manager_id: "mgr-uuid",
+      status: "draft",
+      direction: "import",
+      kind: "good",
+      invoice_amount: "10",
+      currency: "USD",
+      created_at: "2026-01-01T00:00:00Z",
+      updated_at: "2026-01-01T00:00:00Z",
+    } as CoreForm;
+    const mapped = mapCoreFormToPaymentForm(form, "User");
+    expect(mapped.managerId).toBe("mgr-uuid");
+    expect(mapped.managerName).toBeUndefined();
+  });
 });
 
 describe("nextStepHint", () => {
-  it("tells manager who owns organization_waiting_verification", () => {
+  it("tells manager who owns organization_waiting_verification without snapshot", () => {
     const hint = nextStepHint("organization_waiting_verification", "manager");
     expect(hint.toLowerCase()).toMatch(/комплаенс|внутренн/);
     expect(hint).toMatch(/действий нет|Сейчас действует/i);
@@ -107,7 +155,7 @@ describe("nextStepHint", () => {
 });
 
 describe("waitingActorLabel", () => {
-  it("names internal compliance for organization_waiting_verification", () => {
+  it("names internal compliance for organization_waiting_verification without snapshot", () => {
     const label = waitingActorLabel("organization_waiting_verification");
     expect(label).toBeTruthy();
     expect(label!.toLowerCase()).toMatch(/комплаенс|вко|внутренн/);

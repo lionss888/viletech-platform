@@ -32,16 +32,21 @@ function rank(forms: PaymentForm[], key: (f: PaymentForm) => string | undefined)
   return [...map.values()];
 }
 
-export function systemStats(forms: PaymentForm[]) {
-  const byManager = rank(forms, (f) => f.managerName);
+export function systemStats(
+  forms: PaymentForm[],
+  resolveManagerName?: (managerId: string) => string | undefined,
+) {
+  const managerLabel = (f: PaymentForm) =>
+    f.managerName ?? (f.managerId ? resolveManagerName?.(f.managerId) ?? f.managerId : undefined);
+  const byManager = rank(forms, managerLabel);
   const byClient = rank(forms, (f) => f.ownerName);
   const stuck = stuckForms(forms);
 
   const closedByManager = rank(
     forms.filter((f) => f.status === "completed"),
-    (f) => f.managerName,
+    managerLabel,
   );
-  const stuckByManager = rank(stuck, (f) => f.managerName);
+  const stuckByManager = rank(stuck, managerLabel);
 
   const top = (list: Ranked[], by: "count" | "sum") =>
     [...list].sort((a, b) => b[by] - a[by])[0];

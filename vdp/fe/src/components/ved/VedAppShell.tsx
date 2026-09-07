@@ -20,6 +20,7 @@ import { usePlatformBasePath, usePlatformMode } from "@/lib/ved/platform-mode";
 import { usePlatformStore } from "@/lib/ved/platform-store";
 import { ROLES, roleTitle } from "@/lib/ved/roles";
 import { visibleForms } from "@/lib/ved/store";
+import { useProcessRolesRows } from "@/lib/ved/use-process-roles-snapshot";
 import { cn } from "@/lib/utils";
 import type { VedRole } from "@/lib/ved/types";
 
@@ -56,6 +57,7 @@ export function VedAppShell({ children, title, subtitle }: { children: ReactNode
 
   const [refsOpen, setRefsOpenState] = useState(() => readRefsOpen(false));
   const [supportOpen, setSupportOpen] = useState(false);
+  const processRoles = useProcessRolesRows();
 
   const setRefsOpen = (value: boolean | ((prev: boolean) => boolean)) => {
     setRefsOpenState((prev) => {
@@ -80,7 +82,7 @@ export function VedAppShell({ children, title, subtitle }: { children: ReactNode
   }
 
   const mine = visibleForms(store.forms, role, displayName);
-  const todo = mine.filter((f) => actionsFor(role ?? "user", f.status).length > 0).length;
+  const todo = mine.filter((f) => actionsFor(role ?? "user", f.status, processRoles).length > 0).length;
 
   const mainNav = filterNav(MAIN_NAV, role).filter((item) => item.segment !== "/forms/new");
   const refs = filterNav(REFERENCE_NAV, role);
@@ -221,7 +223,7 @@ export function VedAppShell({ children, title, subtitle }: { children: ReactNode
                 to="/demo/login"
                 className="block w-full rounded-md px-0 py-1.5 text-left text-xs leading-snug text-muted-foreground hover:text-foreground"
               >
-                Демо без бэкенда
+                Открыть демо-контур
               </Link>
             </div>
           )}

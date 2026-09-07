@@ -3,6 +3,7 @@ package service
 import (
 	"context"
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/viletech/vdp/core/internal/authz"
@@ -17,11 +18,13 @@ import (
 type IDFunc func() string
 
 type FormPaymentService struct {
-	store repository.Store
-	box   outbox.Store
-	newID IDFunc
-	bus   *FormEventBus
-	roles *ProcessRoleService
+	store          repository.Store
+	box            outbox.Store
+	newID          IDFunc
+	bus            *FormEventBus
+	roles          *ProcessRoleService
+	extractionURL  string
+	hubSharedSecret string
 }
 
 func NewFormPaymentService(store repository.Store, box outbox.Store, newID IDFunc) *FormPaymentService {
@@ -37,6 +40,13 @@ func (s *FormPaymentService) WithProcessRoles(roles *ProcessRoleService) *FormPa
 	if roles != nil {
 		s.roles = roles
 	}
+	return s
+}
+
+// WithExtractionURL sets base URL for gold/human S2S (e.g. http://extraction:8093).
+func (s *FormPaymentService) WithExtractionURL(url, hubSecret string) *FormPaymentService {
+	s.extractionURL = strings.TrimRight(strings.TrimSpace(url), "/")
+	s.hubSharedSecret = hubSecret
 	return s
 }
 
@@ -141,6 +151,13 @@ func (s *FormPaymentService) TransitionWithComment(ctx context.Context, principa
 	})
 	if err != nil {
 		return formpayment.Form{}, err
+	}
+	// Continuity take: claim manager assignment when manager closes a disabled ICO/ECO slot.
+	if principal.Role == domain.RoleManager &&
+		policy != nil &&
+		formpayment.CanAdvanceDisabledSlot(principal.Role, action, policy) &&
+		next.ManagerID == "" {
+		next.ManagerID = principal.AccountID
 	}
 	next.PackDocsJSON()
 	if err := s.store.SaveForm(ctx, next); err != nil {

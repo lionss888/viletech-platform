@@ -198,4 +198,7 @@ func TestManagerBypassDisabledICO(t *testing.T) {
 	if form.Status != formpayment.StatusFormWaitingVerification {
 		t.Fatalf("status=%s", form.Status)
 	}
+	if form.ManagerID != seed.ManagerID {
+		t.Fatalf("manager_id=%q want continuity claim %s", form.ManagerID, seed.ManagerID)
+	}
 }

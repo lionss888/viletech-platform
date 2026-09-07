@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 
 import { VedAppShell } from "@/components/ved/VedAppShell";
 import {
@@ -14,6 +15,7 @@ import {
 import { usePlatformMode } from "@/lib/ved/platform-mode";
 import { useAuth } from "@/lib/auth/session";
 import { usePlatformStore } from "@/lib/ved/platform-store";
+import { invalidateProcessRolesSnapshot } from "@/lib/ved/use-process-roles-snapshot";
 import { cn } from "@/lib/utils";
 
 const INFLUENCE_OPTIONS: ProcessRoleInfluence[] = ["actor", "observer", "none"];
@@ -21,6 +23,7 @@ const INFLUENCE_OPTIONS: ProcessRoleInfluence[] = ["actor", "observer", "none"];
 export function ProcessRolesPage() {
   const mode = usePlatformMode();
   const auth = useAuth();
+  const queryClient = useQueryClient();
   const { session } = usePlatformStore();
   const role = session?.role ?? auth.role;
   const [rows, setRows] = useState<ProcessRoleRow[]>([]);
@@ -46,6 +49,11 @@ export function ProcessRolesPage() {
     if (mode !== "app" || role !== "root") return;
     void reload().catch((err: Error) => setError(err.message));
   }, [mode, role, reload]);
+
+  async function afterSave() {
+    await reload();
+    await invalidateProcessRolesSnapshot(queryClient);
+  }
 
   if (role !== "root") {
     return (
@@ -77,7 +85,7 @@ export function ProcessRolesPage() {
     setError(null);
     try {
       await updateProcessRolePriorities(order);
-      await reload();
+      await afterSave();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Ошибка приоритетов");
     } finally {
@@ -90,7 +98,7 @@ export function ProcessRolesPage() {
     setError(null);
     try {
       await updateProcessRole(roleId, body);
-      await reload();
+      await afterSave();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Ошибка сохранения");
     } finally {
@@ -139,6 +147,12 @@ export function ProcessRolesPage() {
           <p className="text-muted-foreground">
             {note ||
               "Порядок ролей ≠ этапы заявки. Суперадмин вне бизнес-процесса. Влияние, участие и «обязательная» правятся по месту; изменения шаблона роли глобальны."}
+          </p>
+          <p className="rounded-md bg-muted/50 px-3 py-2 text-xs text-foreground">
+            <span className="font-semibold">Эффект «В процессе: нет»:</span> этапы заявки (организация / форма) остаются.
+            Слот проверки ICO или ECO закрывает менеджер с правом <span className="font-mono">manager.ops</span> — в
+            кабинете появятся CTA «Взять в проверку» и подсказки «следующий шаг» у менеджера. Включение роли возвращает
+            CTA соответствующей роли комплаенса.
           </p>
           <p className="text-xs text-muted-foreground">Версия конфигурации: {version}</p>
         </div>

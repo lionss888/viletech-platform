@@ -63,7 +63,7 @@ function HomePage() {
             to="/demo/start"
             className="flex-1 rounded-md px-5 py-2.5 text-center text-sm font-semibold shadow-[0_0_0_1px_var(--input)] transition-colors hover:bg-muted"
           >
-            Демо без бэкенда
+            Открыть демо-контур
           </Link>
         </div>
         <p className="mt-3 text-xs text-muted-foreground">

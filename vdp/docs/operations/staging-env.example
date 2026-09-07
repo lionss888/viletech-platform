@@ -15,6 +15,17 @@ SMS_URL=https://sms-gateway.example.com/notify
 TELEGRAM_BOT_TOKEN=
 TELEGRAM_BOT_USERNAME=vdp_notify_bot
 
+# Document extraction (side-path). Compose: http://extraction:8093/recognize
+OCR_URL=http://127.0.0.1:8093/recognize
+EXTRACTION_PRIMARY=fixture
+EXTRACTION_FALLBACK=yandex
+EXTRACTION_SHADOW_URL=
+EXTRACTION_GOLD_DIR=/var/vdp/extraction-gold
+# YANDEX_API_KEY=
+# YANDEX_FOLDER_ID=
+# YANDEX_MODEL_URI=
+# OWN_MODEL_PATH=
+
 # 1C / Diadoc — optional. Empty URL → hub fixture / smart stub. Do not claim vendor-ready.
 # ONEC_URL=https://1c.example.com/vdp
 # DIADOC_URL=https://diadoc.example.com/vdp

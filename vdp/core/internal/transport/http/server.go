@@ -7,6 +7,7 @@ import (
 	"encoding/json"
 	"net"
 	"net/http"
+	"strconv"
 	"strings"
 	"sync"
 	"time"
@@ -30,6 +31,7 @@ type Server struct {
 	events       *service.FormEventBus
 	notify       *service.NotificationService
 	processRoles *service.ProcessRoleService
+	scenarios    *service.ScenarioVerifyService
 	mux          *http.ServeMux
 	limiters     sync.Map
 }
@@ -37,12 +39,22 @@ type Server struct {
 func NewServer(cfg *config.Config, auth *service.AuthService, accounts *service.AccountService, forms *service.FormPaymentService, orgs *service.OrganizationService, catalog *service.CatalogService, publish *service.HubPublisher, notify *service.NotificationService) *Server {
 	bus := service.NewFormEventBus()
 	forms.WithEventBus(bus)
+	env := ""
+	if cfg != nil {
+		env = cfg.Environment
+	}
+	scenarios := service.NewScenarioVerifyService(env, func() string {
+		return strconv.FormatInt(time.Now().UnixNano(), 36)
+	})
 	srv := &Server{
 		cfg: cfg, auth: auth, accounts: accounts, forms: forms, orgs: orgs, catalog: catalog,
-		publish: publish, notify: notify, events: bus, processRoles: forms.ProcessRoles(), mux: http.NewServeMux(),
+		publish: publish, notify: notify, events: bus, processRoles: forms.ProcessRoles(),
+		scenarios: scenarios, mux: http.NewServeMux(),
 	}
 	srv.routes()
 	srv.registerExtendedRoutes()
+	// Loopback for mutating scenario runs uses the same mux stack (without outer recover? use Handler).
+	scenarios.BindHTTP(srv.mux)
 	return srv
 }
 

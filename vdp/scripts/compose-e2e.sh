@@ -1,6 +1,16 @@
 #!/usr/bin/env bash
 # Compose E2E: User → ICO → ECO → order → payment → provider sent → report → completed
 # (+ refund cancel-invariant smoke on a second form).
+#
+# Shared scenario catalog IDs (vdp/core/internal/scenarioverify):
+#   happy_path_to_completed — main path below
+#   refund_smoke — refund smoke section
+#   provider_payment_no_pii — RD7 provider_start spot
+#   root_cancel — RD8 root cancel + admin spot
+#   bank_channel_badge — RD9 bank channel spot
+#   ico_org_pending_approve — RH2 ICO org-pending spot
+#   eco_reject_resubmit — RH2 ECO reject + user resubmit
+# Root on-demand runner: POST /api/v1/admin/scenario-runs (system.admin).
 set -euo pipefail
 
 BASE="${CORE_URL:-http://127.0.0.1:8080}"

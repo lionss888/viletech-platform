@@ -28,7 +28,7 @@ GitHub Actions: vdp-ci.yml (fast/docs/integration/playwright required User journ
 
 ## Playwright UI coverage
 
-Six specs: happy-path, reject-path, provider-acl, bank-badge, login-form, manager-payment. Full browser matrix all roles × all statuses not covered. Backend compose-e2e covers API journeys including RH2 ICO reject refund full P5 advance shipment.
+Playwright: login-form, user-submit, happy-path, completed-journey, reject-path, ico-org, provider-acl, bank-badge, manager-payment, manager-hides-drafts. Full browser matrix all roles × all statuses not covered. Shared catalog `scenarioverify`; Root `/testing` runs API scenarios on demand. Backend compose-e2e covers API journeys including RH2 ICO reject refund full P5 advance shipment.
 
 ## Postgres test coverage
 

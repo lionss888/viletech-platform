@@ -4,22 +4,22 @@ overview: "Два связанных плана работ: (A) системно
 todos:
   - id: w0-catalog
     content: "Wave 0: пакет scenarioverify + единый каталог ~8–12 сценариев; связать с compose-e2e; обновить e2e-coverage-matrix честно"
-    status: in_progress
+    status: completed
   - id: a-playwright-journeys
     content: "Plan A: дописать/выровнять Playwright UI journeys по catalog tags; helpers seed по scenario id"
-    status: pending
+    status: completed
   - id: a-ci-split
     content: "Plan A: CI split PR (узкий) vs nightly/release-gate (полный make playwright-e2e); починить docs vs specs"
-    status: pending
+    status: completed
   - id: b-runner-api
     content: "Plan B: Core ScenarioRunner + AuthZ system.admin + env mutating/dry_run + HTTP catalog/runs + tests"
-    status: pending
+    status: completed
   - id: b-testing-ui
     content: "Plan B: /testing Root UI — Run, progress, step report, history; без Chromium в кабинете"
-    status: pending
+    status: completed
   - id: gate-verify
     content: "Самопроверка DoD A+B: unit AuthZ/no-PII, playwright-e2e, compose/scenario path, честность matrix"
-    status: pending
+    status: completed
 isProject: false
 ---
 

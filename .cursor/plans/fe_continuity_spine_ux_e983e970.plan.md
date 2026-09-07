@@ -4,28 +4,28 @@ overview: "Сделать «Роли процесса» реальным runtime
 todos:
   - id: process-roles-runtime
     content: "Единый runtime-контракт process-roles: cache/hook + все CTA/hint/счётчики читают snapshot"
-    status: in_progress
+    status: completed
   - id: continuity-actions
     content: "actionsFor: inject ico_*/eco_* for manager when slot disabled + manager.ops"
-    status: pending
+    status: completed
   - id: continuity-hints
     content: waitingActorLabel/nextStepHint + ActionPanel/detail с processRoles
-    status: pending
+    status: completed
   - id: continuity-counters
     content: "list/dashboard/shell: actionsFor(..., processRoles)"
-    status: pending
+    status: completed
   - id: process-roles-admin-ux
     content: "Страница Роли процесса: честный эффект В процессе=нет + smoke что snapshot доходит до FE"
-    status: pending
+    status: completed
   - id: chronology-actor
     content: "Хронология: actor из history.actor_id → имя/роль"
-    status: pending
+    status: completed
   - id: participants-manager
     content: "Участники: resolve manager_id→ФИО; claim ManagerID при continuity take"
-    status: pending
+    status: completed
   - id: continuity-tests
     content: Vitest на snapshot v3 (ICO/ECO off) + chronology + participants; verify gate
-    status: pending
+    status: completed
 isProject: false
 ---
 

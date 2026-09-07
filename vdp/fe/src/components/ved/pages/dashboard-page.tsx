@@ -42,7 +42,10 @@ export function DashboardPage() {
 function RootDashboard() {
   const { forms, users } = usePlatformStore();
   const paths = useVedPaths();
-  const stats = useMemo(() => systemStats(forms), [forms]);
+  const stats = useMemo(
+    () => systemStats(forms, (id) => users.find((u) => u.id === id)?.name),
+    [forms, users],
+  );
 
   const critical = SYSTEM_INCIDENTS.filter((i) => i.severity === "critical");
   const healthy = SYSTEM_SERVICES.filter((s) => s.state === "up").length;
