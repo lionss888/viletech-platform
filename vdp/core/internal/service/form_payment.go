@@ -55,7 +55,7 @@ type CreateInput struct {
 }
 
 func (s *FormPaymentService) Create(ctx context.Context, principal authz.Principal, input CreateInput) (formpayment.Form, error) {
-	if err := authz.RequireRoles(principal, domain.RoleUser); err != nil {
+	if err := authz.AuthorizeRoles(principal, domain.RoleUser); err != nil {
 		return formpayment.Form{}, err
 	}
 	if input.Direction == "" {
@@ -241,7 +241,7 @@ func (s *FormPaymentService) CalculateAndSetCommission(ctx context.Context, prin
 }
 
 func (s *FormPaymentService) SetImportant(ctx context.Context, principal authz.Principal, formID string, important bool) (formpayment.Form, error) {
-	if err := authz.RequireRoles(principal, domain.RoleManager, domain.RoleProvider); err != nil {
+	if err := authz.AuthorizeRoles(principal, domain.RoleManager, domain.RoleProvider); err != nil {
 		return formpayment.Form{}, err
 	}
 	form, err := s.Get(ctx, principal, formID)
@@ -275,7 +275,7 @@ func (s *FormPaymentService) List(ctx context.Context, principal authz.Principal
 }
 
 func (s *FormPaymentService) SetRate(ctx context.Context, principal authz.Principal, formID string, rate formpayment.Rate) (formpayment.Form, error) {
-	if err := authz.RequireRoles(principal, domain.RoleManager, domain.RoleTreasurer, domain.RoleRoot, domain.RoleUser); err != nil {
+	if err := authz.AuthorizeRoles(principal, domain.RoleManager, domain.RoleTreasurer, domain.RoleRoot, domain.RoleUser); err != nil {
 		return formpayment.Form{}, err
 	}
 	form, err := s.store.FormByID(ctx, formID)
@@ -290,7 +290,7 @@ func (s *FormPaymentService) SetRate(ctx context.Context, principal authz.Princi
 }
 
 func (s *FormPaymentService) SetCommission(ctx context.Context, principal authz.Principal, formID string, commission formpayment.Commission) (formpayment.Form, error) {
-	if err := authz.RequireRoles(principal, domain.RoleManager, domain.RoleTreasurer, domain.RoleRoot, domain.RoleUser); err != nil {
+	if err := authz.AuthorizeRoles(principal, domain.RoleManager, domain.RoleTreasurer, domain.RoleRoot, domain.RoleUser); err != nil {
 		return formpayment.Form{}, err
 	}
 	form, err := s.store.FormByID(ctx, formID)

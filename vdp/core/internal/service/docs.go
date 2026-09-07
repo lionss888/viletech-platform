@@ -468,14 +468,14 @@ func (s *CatalogService) AttachFileToForm(ctx context.Context, principal authz.P
 }
 
 func (s *CatalogService) ListComplianceClients(ctx context.Context, principal authz.Principal) ([]domain.Organization, error) {
-	if err := authz.RequireRoles(principal, domain.RoleComplianceOfficer, domain.RoleInternalComplianceOfficer, domain.RoleRoot); err != nil {
+	if err := authz.AuthorizeRoles(principal, domain.RoleComplianceOfficer, domain.RoleInternalComplianceOfficer, domain.RoleRoot); err != nil {
 		return nil, err
 	}
 	return s.store.ListOrganizations(ctx)
 }
 
 func (s *CatalogService) ClientDetails(ctx context.Context, principal authz.Principal, orgID string) (map[string]any, error) {
-	if err := authz.RequireRoles(principal, domain.RoleComplianceOfficer, domain.RoleInternalComplianceOfficer, domain.RoleRoot); err != nil {
+	if err := authz.AuthorizeRoles(principal, domain.RoleComplianceOfficer, domain.RoleInternalComplianceOfficer, domain.RoleRoot); err != nil {
 		return nil, err
 	}
 	org, err := s.store.OrganizationByID(ctx, orgID)
@@ -495,7 +495,7 @@ func (s *CatalogService) ClientDetails(ctx context.Context, principal authz.Prin
 }
 
 func (s *CatalogService) OrganizationCardFile(ctx context.Context, principal authz.Principal, orgID string) (domain.FileMeta, string, []byte, error) {
-	if err := authz.RequireRoles(principal, domain.RoleComplianceOfficer, domain.RoleInternalComplianceOfficer, domain.RoleRoot); err != nil {
+	if err := authz.AuthorizeRoles(principal, domain.RoleComplianceOfficer, domain.RoleInternalComplianceOfficer, domain.RoleRoot); err != nil {
 		return domain.FileMeta{}, "", nil, err
 	}
 	org, err := s.store.OrganizationByID(ctx, orgID)
@@ -509,7 +509,7 @@ func (s *CatalogService) OrganizationCardFile(ctx context.Context, principal aut
 }
 
 func (s *CatalogService) SetOrganizationCard(ctx context.Context, principal authz.Principal, orgID, fileID string) (domain.Organization, error) {
-	if err := authz.RequireRoles(principal, domain.RoleInternalComplianceOfficer, domain.RoleComplianceOfficer, domain.RoleRoot, domain.RoleManager); err != nil {
+	if err := authz.AuthorizeRoles(principal, domain.RoleInternalComplianceOfficer, domain.RoleComplianceOfficer, domain.RoleRoot, domain.RoleManager); err != nil {
 		return domain.Organization{}, err
 	}
 	org, err := s.store.OrganizationByID(ctx, orgID)
@@ -567,7 +567,7 @@ func (s *CatalogService) CounterpartyCanSkipCompliance(ctx context.Context, prin
 }
 
 func (s *CatalogService) SetCounterpartyApproval(ctx context.Context, principal authz.Principal, id string, status domain.CounterpartyApprovalStatus, comment string) (domain.Counterparty, error) {
-	if err := authz.RequireRoles(principal, domain.RoleComplianceOfficer, domain.RoleInternalComplianceOfficer, domain.RoleRoot); err != nil {
+	if err := authz.AuthorizeRoles(principal, domain.RoleComplianceOfficer, domain.RoleInternalComplianceOfficer, domain.RoleRoot); err != nil {
 		return domain.Counterparty{}, err
 	}
 	c, err := s.store.CounterpartyByID(ctx, id)
@@ -621,7 +621,7 @@ func (s *CatalogService) ComplianceClientsExportRows(ctx context.Context, princi
 }
 
 func (s *CatalogService) ClientRequests(ctx context.Context, principal authz.Principal, orgID string) ([]formpayment.Form, error) {
-	if err := authz.RequireRoles(principal, domain.RoleComplianceOfficer, domain.RoleInternalComplianceOfficer, domain.RoleRoot); err != nil {
+	if err := authz.AuthorizeRoles(principal, domain.RoleComplianceOfficer, domain.RoleInternalComplianceOfficer, domain.RoleRoot); err != nil {
 		return nil, err
 	}
 	out := make([]formpayment.Form, 0)
@@ -640,13 +640,13 @@ func (s *CatalogService) ListFormHistory(ctx context.Context, principal authz.Pr
 			return nil, err
 		}
 		if err := authz.CanAccessForm(principal, form); err != nil {
-			if err2 := authz.RequireRoles(principal, domain.RoleComplianceOfficer, domain.RoleInternalComplianceOfficer, domain.RoleManager, domain.RoleRoot); err2 != nil {
+			if err2 := authz.AuthorizeRoles(principal, domain.RoleComplianceOfficer, domain.RoleInternalComplianceOfficer, domain.RoleManager, domain.RoleRoot); err2 != nil {
 				return nil, err
 			}
 		}
 		return s.store.HistoryByForm(ctx, formID), nil
 	}
-	if err := authz.RequireRoles(principal, domain.RoleComplianceOfficer, domain.RoleInternalComplianceOfficer, domain.RoleRoot); err != nil {
+	if err := authz.AuthorizeRoles(principal, domain.RoleComplianceOfficer, domain.RoleInternalComplianceOfficer, domain.RoleRoot); err != nil {
 		return nil, err
 	}
 	return s.store.ListAllHistory(ctx), nil

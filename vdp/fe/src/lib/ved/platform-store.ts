@@ -542,6 +542,8 @@ function useApiPlatformStore(): VedStore {
         email: draft.email,
         password: "ChangeMe2024!",
         role: draft.role,
+        account_kind: draft.role === "root" ? "admin" : "user",
+        full_name: draft.name,
       });
       await queryClient.invalidateQueries({ queryKey: ["admin-accounts"] });
     },

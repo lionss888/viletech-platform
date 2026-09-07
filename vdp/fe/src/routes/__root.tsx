@@ -11,6 +11,12 @@ import { useEffect, type ReactNode } from "react";
 
 import appCss from "../styles.css?url";
 import { AuthProvider } from "../lib/auth/session";
+import {
+  BRAND_FAVICON_ICO,
+  BRAND_FAVICON_PNG,
+  BRAND_FAVICON_SVG,
+  BRAND_NAME,
+} from "../lib/brand";
 import { VedStoreProvider } from "../lib/ved/store";
 import { reportLovableError } from "../lib/lovable-error-reporting";
 
@@ -79,24 +85,26 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
-      { title: "ВЭД от Вилетех — платформа платежей по внешнеэкономическим сделкам" },
+      { title: `${BRAND_NAME} — платформа платежей по внешнеэкономическим сделкам` },
       {
         name: "description",
         content:
           "Операционная платформа ВЭД: реестр платёжных заявок, комплаенс организаций, агентские договоры, поручения, платежи и отгрузка.",
       },
-      { property: "og:title", content: "ВЭД от Вилетех — платформа платежей по внешнеэкономическим сделкам" },
+      { property: "og:title", content: `${BRAND_NAME} — платформа платежей по внешнеэкономическим сделкам` },
       { property: "og:description", content: "Реестр заявок, комплаенс, договоры, поручения, платежи и отгрузка в одном контуре." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
-      { name: "twitter:site", content: "@Lovable" },
     ],
     links: [
       {
         rel: "stylesheet",
         href: appCss,
       },
-      { rel: "icon", href: "/favicon.ico", type: "image/x-icon" },
+      { rel: "icon", href: BRAND_FAVICON_SVG, type: "image/svg+xml" },
+      { rel: "icon", href: BRAND_FAVICON_PNG, type: "image/png", sizes: "256x256" },
+      { rel: "icon", href: BRAND_FAVICON_ICO, type: "image/x-icon", sizes: "any" },
+      { rel: "apple-touch-icon", href: BRAND_FAVICON_PNG },
       { rel: "preconnect", href: "https://fonts.googleapis.com" },
       { rel: "preconnect", href: "https://fonts.gstatic.com", crossOrigin: "anonymous" },
       {

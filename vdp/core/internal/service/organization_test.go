@@ -106,7 +106,9 @@ func TestAccountRBACAdminCreateForbiddenForUser(t *testing.T) {
 	seed.MustDev(t, store)
 	accounts := service.NewAccountService(store)
 	user := authz.Principal{AccountID: seed.UserID, Role: domain.RoleUser}
-	if _, err := accounts.CreateAdmin(context.Background(), user, "x@vdp.local", "pass", domain.RoleManager); err == nil {
+	if _, err := accounts.CreateAdmin(context.Background(), user, service.AccountCreateInput{
+		Email: "x@vdp.local", Password: "pass", Role: domain.RoleManager,
+	}); err == nil {
 		t.Fatal("user must not create admin accounts")
 	}
 }

@@ -69,6 +69,7 @@ func (c RoleProcessConfig) Removable() bool {
 }
 
 // DefaultProcessPolicySnapshot mirrors today's RolesForAction matrix and participation order.
+// Root/admin is excluded: not a business-process participant.
 func DefaultProcessPolicySnapshot() ProcessPolicySnapshot {
 	return ProcessPolicySnapshot{
 		Version: 1,
@@ -83,10 +84,20 @@ func DefaultProcessPolicySnapshot() ProcessPolicySnapshot {
 			{Role: domain.RoleSeniorProvider, Enabled: true, Priority: 55, Influence: InfluenceActor, Capabilities: []Capability{CapFormView, CapManagerPayment, CapProviderPayment}},
 			{Role: domain.RoleViewer, Enabled: false, Priority: 60, Influence: InfluenceObserver, Capabilities: []Capability{CapFormView}},
 			{Role: domain.RoleOneC, Enabled: true, Priority: 70, Influence: InfluenceActor, Capabilities: []Capability{CapInternalCallback}},
-			{Role: domain.RoleBank, Enabled: true, Priority: 80, Influence: InfluenceActor, Capabilities: []Capability{CapFormView, CapFormSubmit}},
-			{Role: domain.RoleRoot, Enabled: true, Priority: 1, Influence: InfluenceActor, Capabilities: AllCapabilities()},
+			{Role: domain.RoleBank, Enabled: true, Priority: 80, Influence: InfluenceActor, Capabilities: []Capability{CapFormView, CapFormSubmit, CapBankChannel}},
 		},
 	}
+}
+
+// DefaultTemplateForRole returns process template for a typed role (empty for admin-only roles).
+func DefaultTemplateForRole(role domain.Role) (RoleProcessConfig, bool) {
+	snap := DefaultProcessPolicySnapshot()
+	return snap.ConfigFor(role)
+}
+
+// AdminBusinessCaps are business capabilities granted to platform admin for union CTA.
+func AdminBusinessCaps() []Capability {
+	return AllCapabilities()
 }
 
 func defaultCapsUser() []Capability {
@@ -94,9 +105,19 @@ func defaultCapsUser() []Capability {
 }
 
 // RoleMayPerformWithConfig authorizes action using snapshot; nil/empty falls back to RolesForAction.
+// Platform admin (root) is not a process role: authorized via AdminBusinessCaps when role is root.
 func RoleMayPerformWithConfig(role domain.Role, action Action, snap *ProcessPolicySnapshot) bool {
 	if role == domain.RoleRoot {
-		return true
+		cap := CapabilityForAction(action)
+		if cap == "" {
+			return false
+		}
+		for _, c := range AdminBusinessCaps() {
+			if c == cap {
+				return true
+			}
+		}
+		return false
 	}
 	if snap == nil || len(snap.Roles) == 0 {
 		return RoleMayPerformLegacy(role, action)
@@ -121,7 +142,16 @@ func RoleMayPerformWithConfig(role domain.Role, action Action, snap *ProcessPoli
 // RoleMayPerformLegacy is the hard-coded matrix (kept for parity tests and empty snapshot).
 func RoleMayPerformLegacy(role domain.Role, action Action) bool {
 	if role == domain.RoleRoot {
-		return true
+		cap := CapabilityForAction(action)
+		if cap == "" {
+			return false
+		}
+		for _, c := range AdminBusinessCaps() {
+			if c == cap {
+				return true
+			}
+		}
+		return false
 	}
 	for _, allowed := range RolesForAction(action) {
 		if allowed == role {
@@ -133,8 +163,8 @@ func RoleMayPerformLegacy(role domain.Role, action Action) bool {
 
 // ValidateRoleConfigUpdate checks capabilities and mandatory disable rules.
 func ValidateRoleConfigUpdate(role domain.Role, enabled bool, influence Influence, caps []Capability) error {
-	if role == domain.RoleRoot && !enabled {
-		return apperrors.New(apperrors.ErrCodeValidation, "cannot disable root role")
+	if !IsProcessEligibleRole(role) {
+		return apperrors.New(apperrors.ErrCodeValidation, "admin roles are not process participants")
 	}
 	if IsMandatoryProcessRole(role) && !enabled {
 		return apperrors.New(apperrors.ErrCodeValidation, "cannot disable mandatory process role; methodology is fixed in code")

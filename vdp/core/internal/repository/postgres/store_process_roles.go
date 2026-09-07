@@ -47,6 +47,9 @@ func (s *Store) GetProcessPolicySnapshot(ctx context.Context) (formpayment.Proce
 		if !ok {
 			continue
 		}
+		if !formpayment.IsProcessEligibleRole(parsed) {
+			continue
+		}
 		snap.Roles = append(snap.Roles, formpayment.RoleProcessConfig{
 			Role: parsed, Enabled: enabled, Priority: priority,
 			Influence: formpayment.Influence(influence), Capabilities: caps,
@@ -73,6 +76,9 @@ func (s *Store) SaveProcessPolicySnapshot(ctx context.Context, snap formpayment.
 		return err
 	}
 	for _, cfg := range snap.Roles {
+		if !formpayment.IsProcessEligibleRole(cfg.Role) {
+			continue
+		}
 		caps, _ := json.Marshal(cfg.Capabilities)
 		_, err = tx.ExecContext(ctx, `
 			INSERT INTO role_process_configs (role, enabled, priority, influence, capabilities, updated_at)

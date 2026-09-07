@@ -17,6 +17,7 @@ const (
 	CapUserDocs              Capability = "user.docs"
 	CapInternalCallback      Capability = "internal.callback"
 	CapSalesAttribution      Capability = "sales.attribution"
+	CapBankChannel           Capability = "bank.channel"
 )
 
 // AllCapabilities returns the fixed catalog for admin UI / validation.
@@ -25,7 +26,7 @@ func AllCapabilities() []Capability {
 		CapFormView, CapFormSubmit, CapFormCancelUser, CapFormRecognize,
 		CapOrgCompliance, CapFormCompliance, CapManagerOps, CapManagerPayment,
 		CapProviderPayment, CapTreasurerOps, CapUserDocs, CapInternalCallback,
-		CapSalesAttribution,
+		CapSalesAttribution, CapBankChannel,
 	}
 }
 
@@ -42,6 +43,8 @@ func IsKnownCapability(c Capability) bool {
 func TransitionCapability(c Capability) bool {
 	switch c {
 	case CapFormView, CapSalesAttribution:
+		return false
+	case CapBankChannel:
 		return false
 	default:
 		return true

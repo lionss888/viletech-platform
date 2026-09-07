@@ -1,28 +1,34 @@
-package authz_test
+package authz
 
 import (
 	"testing"
 
-	"github.com/viletech/vdp/core/internal/authz"
 	"github.com/viletech/vdp/core/internal/domain"
 	"github.com/viletech/vdp/core/internal/domain/formpayment"
+	"github.com/viletech/vdp/core/internal/domain/systemcap"
 )
 
-func TestRequireRolesAndAccess(t *testing.T) {
+func TestRequireBusinessAndSystem(t *testing.T) {
 	t.Parallel()
-	manager := authz.Principal{AccountID: "m1", Role: domain.RoleManager}
-	if err := authz.RequireRoles(manager, domain.RoleManager); err != nil {
+	manager := Principal{AccountID: "m1", Role: domain.RoleManager}
+	if err := RequireBusinessCapability(manager, formpayment.CapManagerOps); err != nil {
 		t.Fatal(err)
 	}
-	user := authz.Principal{AccountID: "u1", Role: domain.RoleUser}
-	if err := authz.RequireRoles(user, domain.RoleManager); err == nil {
-		t.Fatal("expected forbidden")
+	user := Principal{AccountID: "u1", Role: domain.RoleUser}
+	if err := RequireBusinessCapability(user, formpayment.CapManagerOps); err == nil {
+		t.Fatal("user must not have manager.ops")
 	}
-	form := formpayment.Form{AccountID: "u1", ProviderID: "p1"}
-	if err := authz.CanAccessForm(user, form); err != nil {
+	root := Principal{AccountID: "r1", Role: domain.RoleRoot, AccountKind: domain.AccountKindAdmin}
+	if err := RequireSystemCapability(root, systemcap.CapAccountsManage); err != nil {
 		t.Fatal(err)
 	}
-	if err := authz.CanAccessForm(authz.Principal{AccountID: "u2", Role: domain.RoleUser}, form); err == nil {
-		t.Fatal("expected forbidden")
+	if err := RequireSystemCapability(user, systemcap.CapAccountsManage); err == nil {
+		t.Fatal("user must not manage accounts")
+	}
+	if err := AuthorizeRoles(user, domain.RoleRoot, domain.RoleManager); err == nil {
+		t.Fatal("user must not authorize as manager")
+	}
+	if err := AuthorizeRoles(manager, domain.RoleRoot, domain.RoleManager); err != nil {
+		t.Fatal(err)
 	}
 }

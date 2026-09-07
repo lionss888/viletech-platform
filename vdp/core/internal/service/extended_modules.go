@@ -16,7 +16,7 @@ import (
 // --- Liquidity ---
 
 func (s *CatalogService) CreateLiquidity(ctx context.Context, principal authz.Principal, o domain.LiquidityOffer) (domain.LiquidityOffer, error) {
-	if err := authz.RequireRoles(principal, domain.RoleProvider, domain.RoleSeniorProvider, domain.RoleManager, domain.RoleRoot); err != nil {
+	if err := authz.AuthorizeRoles(principal, domain.RoleProvider, domain.RoleSeniorProvider, domain.RoleManager, domain.RoleRoot); err != nil {
 		return domain.LiquidityOffer{}, err
 	}
 	if o.Direction != "import" && o.Direction != "export" {
@@ -32,7 +32,7 @@ func (s *CatalogService) CreateLiquidity(ctx context.Context, principal authz.Pr
 }
 
 func (s *CatalogService) MatchLiquidityToForm(ctx context.Context, principal authz.Principal, offerID, formID string) (domain.LiquidityOffer, error) {
-	if err := authz.RequireRoles(principal, domain.RoleManager, domain.RoleRoot); err != nil {
+	if err := authz.AuthorizeRoles(principal, domain.RoleManager, domain.RoleRoot); err != nil {
 		return domain.LiquidityOffer{}, err
 	}
 	offers, err := s.store.ListLiquidity(ctx, "")
@@ -90,7 +90,7 @@ func (s *CatalogService) CreateVirtualAccount(ctx context.Context, principal aut
 		a.AccountID = principal.AccountID
 	}
 	if a.AccountID != principal.AccountID {
-		if err := authz.RequireRoles(principal, domain.RoleManager, domain.RoleRoot, domain.RoleTreasurer); err != nil {
+		if err := authz.AuthorizeRoles(principal, domain.RoleManager, domain.RoleRoot, domain.RoleTreasurer); err != nil {
 			return domain.VirtualAccount{}, err
 		}
 	}
@@ -117,7 +117,7 @@ func (s *CatalogService) CreateVirtualAccount(ctx context.Context, principal aut
 }
 
 func (s *CatalogService) AdjustVirtualAccount(ctx context.Context, principal authz.Principal, id, delta string) (domain.VirtualAccount, error) {
-	if err := authz.RequireRoles(principal, domain.RoleManager, domain.RoleTreasurer, domain.RoleRoot); err != nil {
+	if err := authz.AuthorizeRoles(principal, domain.RoleManager, domain.RoleTreasurer, domain.RoleRoot); err != nil {
 		return domain.VirtualAccount{}, err
 	}
 	found, err := s.store.VirtualAccountByID(ctx, id)
@@ -136,7 +136,7 @@ func (s *CatalogService) AdjustVirtualAccount(ctx context.Context, principal aut
 // --- TreasurerTask ---
 
 func (s *CatalogService) CreateTreasurerTaskFull(ctx context.Context, principal authz.Principal, t domain.TreasurerTask) (domain.TreasurerTask, error) {
-	if err := authz.RequireRoles(principal, domain.RoleManager, domain.RoleTreasurer, domain.RoleRoot); err != nil {
+	if err := authz.AuthorizeRoles(principal, domain.RoleManager, domain.RoleTreasurer, domain.RoleRoot); err != nil {
 		return domain.TreasurerTask{}, err
 	}
 	if t.FormPaymentID == "" {
@@ -161,7 +161,7 @@ func (s *CatalogService) CreateTreasurerTaskFull(ctx context.Context, principal 
 }
 
 func (s *CatalogService) UpdateTreasurerTask(ctx context.Context, principal authz.Principal, id string, status, assignee string) (domain.TreasurerTask, error) {
-	if err := authz.RequireRoles(principal, domain.RoleTreasurer, domain.RoleManager, domain.RoleRoot); err != nil {
+	if err := authz.AuthorizeRoles(principal, domain.RoleTreasurer, domain.RoleManager, domain.RoleRoot); err != nil {
 		return domain.TreasurerTask{}, err
 	}
 	t, err := s.store.TreasurerTaskByID(ctx, id)
@@ -185,7 +185,7 @@ func (s *CatalogService) GetAgent(ctx context.Context, id string) (domain.Agent,
 }
 
 func (s *CatalogService) UpdateAgent(ctx context.Context, principal authz.Principal, id string, patch domain.Agent, active *bool) (domain.Agent, error) {
-	if err := authz.RequireRoles(principal, domain.RoleManager, domain.RoleRoot); err != nil {
+	if err := authz.AuthorizeRoles(principal, domain.RoleManager, domain.RoleRoot); err != nil {
 		return domain.Agent{}, err
 	}
 	cur, err := s.store.AgentByID(ctx, id)
@@ -211,7 +211,7 @@ func (s *CatalogService) UpdateAgent(ctx context.Context, principal authz.Princi
 }
 
 func (s *CatalogService) CreateAgent(ctx context.Context, principal authz.Principal, a domain.Agent) (domain.Agent, error) {
-	if err := authz.RequireRoles(principal, domain.RoleManager, domain.RoleRoot); err != nil {
+	if err := authz.AuthorizeRoles(principal, domain.RoleManager, domain.RoleRoot); err != nil {
 		return domain.Agent{}, err
 	}
 	if a.Name == "" {
@@ -222,7 +222,7 @@ func (s *CatalogService) CreateAgent(ctx context.Context, principal authz.Princi
 }
 
 func (s *CatalogService) CreateHsCode(ctx context.Context, principal authz.Principal, h domain.HsCode) (domain.HsCode, error) {
-	if err := authz.RequireRoles(principal, domain.RoleRoot, domain.RoleManager); err != nil {
+	if err := authz.AuthorizeRoles(principal, domain.RoleRoot, domain.RoleManager); err != nil {
 		return domain.HsCode{}, err
 	}
 	if h.Code == "" {

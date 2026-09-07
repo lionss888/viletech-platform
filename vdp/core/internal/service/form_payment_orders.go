@@ -31,7 +31,7 @@ func (s *FormPaymentService) GetActiveOrder(ctx context.Context, principal authz
 }
 
 func (s *FormPaymentService) GetProviderView(ctx context.Context, principal authz.Principal, formID string) (formpayment.ProviderView, error) {
-	if err := authz.RequireRoles(principal, domain.RoleProvider, domain.RoleSeniorProvider); err != nil {
+	if err := authz.AuthorizeRoles(principal, domain.RoleProvider, domain.RoleSeniorProvider); err != nil {
 		return formpayment.ProviderView{}, err
 	}
 	form, err := s.Get(ctx, principal, formID)

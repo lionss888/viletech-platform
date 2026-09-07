@@ -49,7 +49,7 @@ func (s *Server) handleAttachOrderFile(w http.ResponseWriter, r *http.Request, p
 }
 
 func (s *Server) handleProviderActiveOrder(w http.ResponseWriter, r *http.Request, principal authz.Principal) {
-	if err := authz.RequireRoles(principal, domain.RoleProvider, domain.RoleSeniorProvider); err != nil {
+	if err := authz.AuthorizeRoles(principal, domain.RoleProvider, domain.RoleSeniorProvider); err != nil {
 		writeError(w, err)
 		return
 	}
@@ -62,7 +62,7 @@ func (s *Server) handleProviderActiveOrder(w http.ResponseWriter, r *http.Reques
 }
 
 func (s *Server) handleShipmentWaiting(w http.ResponseWriter, r *http.Request, principal authz.Principal) {
-	if err := authz.RequireRoles(principal, domain.RoleManager, domain.RoleRoot); err != nil {
+	if err := authz.AuthorizeRoles(principal, domain.RoleManager, domain.RoleRoot); err != nil {
 		writeError(w, err)
 		return
 	}

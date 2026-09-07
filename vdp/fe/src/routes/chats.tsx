@@ -4,7 +4,7 @@ import { ChatsPage } from "@/components/ved/pages/chats-page";
 
 export const Route = createFileRoute("/chats")({
   head: () => ({
-    meta: [{ title: "Рабочие чаты — ВЭД от Вилетех" }],
+    meta: [{ title: "Рабочие чаты — ⚡ ВЭД от Вилетех ₽" }],
   }),
   component: ChatsPage,
 });

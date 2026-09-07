@@ -17,9 +17,9 @@ import { cn } from "@/lib/utils";
 export const Route = createFileRoute("/demo/organizations")({
   head: () => ({
     meta: [
-      { title: "Организации клиентов — ВЭД от Вилетех" },
+      { title: "Организации клиентов — ⚡ ВЭД от Вилетех ₽" },
       { name: "description", content: "Организации клиентов ВЭД: ИНН, юридический адрес и статус верификации комплаенсом." },
-      { property: "og:title", content: "Организации клиентов — ВЭД от Вилетех" },
+      { property: "og:title", content: "Организации клиентов — ⚡ ВЭД от Вилетех ₽" },
       { property: "og:description", content: "ИНН, адрес и статус верификации по каждой организации." },
     ],
   }),

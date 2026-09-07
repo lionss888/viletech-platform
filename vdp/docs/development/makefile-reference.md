@@ -28,11 +28,11 @@ Hub adapter HTTP tests docs mail sms telegram diadoc onec. Команда make t
 
 ## compose-up
 
-docker compose up с Postgres, core, hub, fe dev на порту 5173. Health wait, compose-fe-smoke, вывод URL. Команда make compose-up.
+Порядок: postgres → `compose-db-migrate` → остальной стек (core/hub/fe). Initdb mounts на уже существующих volumes не переигрываются; migrate до seed core обязателен. Health wait, compose-fe-smoke, URL. Команда make compose-up.
 
 ## compose-up-prod
 
-Профиль prod: fe-prod на порту 3000. Команда make compose-up-prod.
+Тот же порядок migrate, профиль prod: fe-prod на порту 3000. Команда make compose-up-prod.
 
 ## compose-down и compose-ps
 

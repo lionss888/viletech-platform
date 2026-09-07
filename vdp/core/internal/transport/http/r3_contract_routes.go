@@ -158,7 +158,7 @@ func (s *Server) handleContractUpdate(w http.ResponseWriter, r *http.Request, pr
 }
 
 func (s *Server) handleContractListAdmin(w http.ResponseWriter, r *http.Request, principal authz.Principal) {
-	if err := authz.RequireRoles(principal, domain.RoleManager, domain.RoleRoot, domain.RoleTreasurer); err != nil {
+	if err := authz.AuthorizeRoles(principal, domain.RoleManager, domain.RoleRoot, domain.RoleTreasurer); err != nil {
 		writeError(w, err)
 		return
 	}
@@ -184,7 +184,7 @@ func (s *Server) handleContractListAdmin(w http.ResponseWriter, r *http.Request,
 }
 
 func (s *Server) handleContractCountAdmin(w http.ResponseWriter, r *http.Request, principal authz.Principal) {
-	if err := authz.RequireRoles(principal, domain.RoleManager, domain.RoleRoot); err != nil {
+	if err := authz.AuthorizeRoles(principal, domain.RoleManager, domain.RoleRoot); err != nil {
 		writeError(w, err)
 		return
 	}
@@ -335,7 +335,7 @@ func (s *Server) handleOnBehalfRequired(w http.ResponseWriter, r *http.Request, 
 }
 
 func (s *Server) handleOrgContractsHistory(w http.ResponseWriter, r *http.Request, principal authz.Principal) {
-	if err := authz.RequireRoles(principal, domain.RoleManager, domain.RoleRoot, domain.RoleInternalComplianceOfficer, domain.RoleUser); err != nil {
+	if err := authz.AuthorizeRoles(principal, domain.RoleManager, domain.RoleRoot, domain.RoleInternalComplianceOfficer, domain.RoleUser); err != nil {
 		writeError(w, err)
 		return
 	}

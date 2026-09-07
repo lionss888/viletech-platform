@@ -1,10 +1,12 @@
 import { createFileRoute } from "@tanstack/react-router";
 
+import { pageTitle } from "@/lib/brand";
+
 import { AdminPage } from "./demo/admin";
 
 export const Route = createFileRoute("/admin")({
   head: () => ({
-    meta: [{ title: "Пользователи — ВЭД от Вилетех" }],
+    meta: [{ title: pageTitle("Пользователи") }],
   }),
   component: AdminPage,
 });

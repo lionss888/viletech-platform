@@ -97,8 +97,9 @@ export function ProcessRolesPage() {
         <div className="panel space-y-2 p-4 text-sm">
           <p className="font-semibold text-foreground">Участие ролей в фиксированном процессе</p>
           <p className="text-muted-foreground">
-            {note || "Порядок ролей ≠ изменение этапов заявки. Обязательные роли (комплаенс, менеджер, провайдер…) нельзя выключить."}
+            {note || "Порядок ролей ≠ изменение этапов заявки. Суперадмин (admin) вне бизнес-процесса. Обязательные роли нельзя выключить."}
           </p>
+          <p className="text-xs text-muted-foreground">Бизнес-возможности — в таблице ниже; системные (accounts/directories) — у admin-роли отдельно.</p>
           <p className="text-xs text-muted-foreground">Версия конфигурации: {version}</p>
         </div>
         {error && <p className="text-sm text-destructive">{error}</p>}
@@ -148,10 +149,21 @@ export function ProcessRolesPage() {
                       <button
                         type="button"
                         disabled={busy || (row.mandatory && row.enabled)}
+                        title={
+                          row.mandatory && row.enabled
+                            ? "Обязательную роль процесса нельзя отключить"
+                            : undefined
+                        }
                         onClick={() => void toggleEnabled(row)}
-                        className={cn("rounded px-2 py-1 text-xs hover:bg-muted", busy && "opacity-50")}
+                        className={cn(
+                          "rounded px-2 py-1 text-xs",
+                          row.mandatory && row.enabled
+                            ? "cursor-not-allowed text-muted-foreground opacity-60"
+                            : "hover:bg-muted",
+                          busy && "opacity-50",
+                        )}
                       >
-                        {row.enabled ? "Отключить" : "Включить"}
+                        {row.mandatory && row.enabled ? "Обязательная" : row.enabled ? "Отключить" : "Включить"}
                       </button>
                     </div>
                   </td>

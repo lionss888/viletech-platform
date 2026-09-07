@@ -4,13 +4,13 @@ overview: "Починить красный VDP CI на пути в main: docs-fo
 todos:
   - id: w1-docs-format
     content: Убрать backticks/bold в 4 operations md; make docs-format-check OK
-    status: pending
+    status: completed
   - id: w2-playwright-npm
     content: Диагноз npm ci в compose-playwright + фикс (lock/rm node_modules/optional deps); CI=true playwright green
-    status: pending
+    status: completed
   - id: w3-push-verify
     content: Push, дождаться зелёного VDP CI; merge path к main/alpha
-    status: pending
+    status: completed
 isProject: false
 ---
 

@@ -18,6 +18,8 @@ export type ProcessRolesResponse = {
   updated_by?: string;
   roles: ProcessRoleRow[];
   capabilities: string[];
+  system_capabilities?: string[];
+  admin_system_by_role?: Record<string, string[]>;
   mandatory_roles: string[];
   note?: string;
 };
@@ -40,5 +42,12 @@ export function updateProcessRolePriorities(order: string[]): Promise<{ version:
   return apiFetch("/api/v1/admin/process-roles/priorities", {
     method: "PUT",
     body: JSON.stringify({ order }),
+  });
+}
+
+export function updateSystemRole(role: string, systemCapabilities: string[]): Promise<{ status: string }> {
+  return apiFetch(`/api/v1/admin/system-roles/${encodeURIComponent(role)}`, {
+    method: "PUT",
+    body: JSON.stringify({ system_capabilities: systemCapabilities }),
   });
 }

@@ -28,6 +28,7 @@ services:
       - ./core/migrations/013_bank_org_client_type.sql:/docker-entrypoint-initdb.d/013_bank_org_client_type.sql:ro
       - ./core/migrations/014_notifications.sql:/docker-entrypoint-initdb.d/014_notifications.sql:ro
       - ./core/migrations/015_role_process_config.sql:/docker-entrypoint-initdb.d/015_role_process_config.sql:ro
+      - ./core/migrations/016_account_kind_caps.sql:/docker-entrypoint-initdb.d/016_account_kind_caps.sql:ro
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U vdp_core -d vdp_core"]
       interval: 3s

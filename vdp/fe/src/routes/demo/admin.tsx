@@ -15,18 +15,18 @@ import { cn } from "@/lib/utils";
 export const Route = createFileRoute("/demo/admin")({
   head: () => ({
     meta: [
-      { title: "Пользователи и роли — ВЭД от Вилетех" },
+      { title: "Пользователи и роли — ⚡ ВЭД от Вилетех ₽" },
       { name: "description", content: "Управление пользователями платформы ВЭД: создание, редактирование, блокировка и удаление учётных записей." },
-      { property: "og:title", content: "Пользователи и роли — ВЭД от Вилетех" },
+      { property: "og:title", content: "Пользователи и роли — ⚡ ВЭД от Вилетех ₽" },
       { property: "og:description", content: "Создание, редактирование, блокировка и удаление учётных записей." },
     ],
   }),
   component: AdminPage,
 });
 
-type Draft = { name: string; email: string; role: VedRole; organization: string };
+type Draft = { name: string; email: string; role: VedRole; organization: string; accountKind: "user" | "admin" };
 
-const EMPTY: Draft = { name: "", email: "", role: "user", organization: "" };
+const EMPTY: Draft = { name: "", email: "", role: "user", organization: "", accountKind: "user" };
 
 const USERS_CSV = { fields: USER_IMPORT_FIELDS };
 
@@ -85,15 +85,22 @@ export function AdminPage() {
   }
 
   function openEdit(user: PlatformUser) {
-    setDraft({ name: user.name, email: user.email, role: user.role, organization: user.organization ?? "" });
+    setDraft({
+      name: user.name,
+      email: user.email,
+      role: user.role,
+      organization: user.organization ?? "",
+      accountKind: user.role === "root" ? "admin" : "user",
+    });
     setEditing(user);
   }
 
   function submit() {
+    const role = draft.accountKind === "admin" ? ("root" as VedRole) : draft.role === "root" ? ("user" as VedRole) : draft.role;
     const payload = {
       name: draft.name.trim(),
       email: draft.email.trim(),
-      role: draft.role,
+      role,
       organization: draft.organization || undefined,
     };
     if (editing) {
@@ -101,7 +108,7 @@ export function AdminPage() {
     } else {
       void createUser(payload);
       if (isApp) {
-        setNotice(`Создан ${payload.email}. Временный пароль: ChangeMe2024!`);
+        setNotice(`Создан ${payload.email} (${draft.accountKind}). Временный пароль: ChangeMe2024!`);
       }
     }
     setEditing(null);
@@ -133,9 +140,32 @@ export function AdminPage() {
         <input value={draft.email} onChange={(e) => setDraft({ ...draft, email: e.target.value })} className="field mt-1" placeholder="user@company.ru" />
       </label>
       <label className="block">
+        <span className="label-caps">Тип аккаунта</span>
+        <select
+          value={draft.accountKind}
+          onChange={(e) => {
+            const accountKind = e.target.value as "user" | "admin";
+            setDraft({
+              ...draft,
+              accountKind,
+              role: accountKind === "admin" ? "root" : draft.role === "root" ? "user" : draft.role,
+            });
+          }}
+          className="field mt-1 text-sm"
+        >
+          <option value="user">Пользователь (бизнес-роли)</option>
+          <option value="admin">Администратор (суперадмин)</option>
+        </select>
+      </label>
+      <label className="block">
         <span className="label-caps">Роль</span>
-        <select value={draft.role} onChange={(e) => setDraft({ ...draft, role: e.target.value as VedRole })} className="field mt-1 text-sm">
-          {ROLES.map((r) => (
+        <select
+          value={draft.role}
+          disabled={draft.accountKind === "admin"}
+          onChange={(e) => setDraft({ ...draft, role: e.target.value as VedRole })}
+          className="field mt-1 text-sm"
+        >
+          {ROLES.filter((r) => (draft.accountKind === "admin" ? r.id === "root" : r.id !== "root")).map((r) => (
             <option key={r.id} value={r.id}>
               {r.title}
             </option>
@@ -207,6 +237,7 @@ export function AdminPage() {
               <tr className="border-b border-border text-left">
                 <th className="label-caps py-2 pr-4">Пользователь</th>
                 <th className="label-caps py-2 pr-4">Email</th>
+                <th className="label-caps py-2 pr-4">Тип</th>
                 <th className="label-caps py-2 pr-4">Роль</th>
                 <th className="label-caps py-2 pr-4">Организация</th>
                 <th className="label-caps py-2 pr-4">Создан</th>
@@ -218,6 +249,7 @@ export function AdminPage() {
                 <tr key={u.id} className="border-b border-border/60">
                   <td className="py-2 pr-4 font-medium">{u.name}</td>
                   <td className="py-2 pr-4 font-mono text-xs">{u.email}</td>
+                  <td className="py-2 pr-4 text-xs">{u.role === "root" ? "admin" : "user"}</td>
                   <td className="py-2 pr-4 text-xs">{roleTitle(u.role)}</td>
                   <td className="py-2 pr-4 text-xs text-muted-foreground">{u.organization ?? "—"}</td>
                   <td className="py-2 pr-4 font-mono text-[11px] text-muted-foreground">{dateOnly(u.createdAt)}</td>

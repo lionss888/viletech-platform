@@ -12,6 +12,7 @@ import (
 
 	"github.com/viletech/vdp/core/internal/authz"
 	"github.com/viletech/vdp/core/internal/domain"
+	"github.com/viletech/vdp/core/internal/domain/systemcap"
 	"github.com/viletech/vdp/core/internal/repository"
 	apperrors "github.com/viletech/vdp/core/pkg/errors"
 )
@@ -75,6 +76,7 @@ func (s *AuthService) Register(ctx context.Context, email, password, fullName st
 		Email:        email,
 		PasswordHash: HashPassword(password),
 		Role:         domain.RoleUser,
+		AccountKind:  domain.AccountKindUser,
 		FullName:     fullName,
 		Active:       false,
 	}
@@ -163,13 +165,23 @@ func (s *AuthService) Parse(tokenString string) (authz.Principal, error) {
 		return authz.Principal{}, apperrors.ErrUnauthorized
 	}
 	sub, _ := claims["sub"].(string)
-	roleRaw, _ := claims["role"].(string)
-	orgID, _ := claims["organization_id"].(string)
-	role, ok := domain.ParseRole(roleRaw)
-	if !ok || sub == "" {
+	if sub == "" {
 		return authz.Principal{}, apperrors.ErrUnauthorized
 	}
-	return authz.Principal{AccountID: sub, Role: role, OrganizationID: orgID}, nil
+	account, err := s.store.AccountByID(context.Background(), sub)
+	if err != nil {
+		return authz.Principal{}, apperrors.ErrUnauthorized
+	}
+	if account.Blocked || !account.Active {
+		return authz.Principal{}, apperrors.ErrUnauthorized
+	}
+	snap, _ := s.store.GetProcessPolicySnapshot(context.Background())
+	sysRaw, _ := s.store.GetRoleSystemCapabilities(context.Background(), account.Role)
+	sysCaps := make([]systemcap.Capability, 0, len(sysRaw))
+	for _, c := range sysRaw {
+		sysCaps = append(sysCaps, systemcap.Capability(c))
+	}
+	return authz.PrincipalFromAccount(account, snap, sysCaps)
 }
 
 func (s *AuthService) issueSession(ctx context.Context, account domain.Account) (AuthSession, error) {

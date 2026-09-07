@@ -2,13 +2,14 @@ import { createFileRoute, Link, Navigate, useNavigate } from "@tanstack/react-ro
 import { useState } from "react";
 import { ApiError } from "@/lib/api/client";
 import { useAuth } from "@/lib/auth/session";
+import { BRAND_MARK, BRAND_NAME, pageTitle } from "@/lib/brand";
 
 export const Route = createFileRoute("/login")({
   head: () => ({
     meta: [
-      { title: "Вход — ВЭД от Вилетех" },
+      { title: pageTitle("Вход") },
       { name: "description", content: "Вход в операционный контур платежей ВЭД: сделки, документы и платежи." },
-      { property: "og:title", content: "Вход — ВЭД от Вилетех" },
+      { property: "og:title", content: pageTitle("Вход") },
       { property: "og:description", content: "Авторизация в платформе управления сделками и платежами." },
     ],
   }),
@@ -50,9 +51,9 @@ function LoginPage() {
       <div className="w-full max-w-sm">
         <Link to="/" className="flex items-center gap-2">
           <span className="grid size-9 place-items-center rounded-lg bg-primary font-mono text-sm font-bold text-primary-foreground">
-            V
+            {BRAND_MARK}
           </span>
-          <span className="text-sm font-semibold tracking-tight">ВЭД от Вилетех</span>
+          <span className="text-sm font-semibold tracking-tight">{BRAND_NAME}</span>
         </Link>
 
         <h1 className="mt-8 text-2xl font-semibold tracking-tight">Вход в платформу</h1>

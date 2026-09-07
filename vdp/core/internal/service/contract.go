@@ -21,7 +21,7 @@ func (s *CatalogService) CreateContract(ctx context.Context, principal authz.Pri
 }
 
 func (s *CatalogService) CreateContractFull(ctx context.Context, principal authz.Principal, in domain.Contract) (domain.Contract, error) {
-	if err := authz.RequireRoles(principal, domain.RoleUser, domain.RoleManager, domain.RoleRoot); err != nil {
+	if err := authz.AuthorizeRoles(principal, domain.RoleUser, domain.RoleManager, domain.RoleRoot); err != nil {
 		return domain.Contract{}, err
 	}
 	if in.Type == "" {
@@ -50,7 +50,7 @@ func (s *CatalogService) CreateContractFull(ctx context.Context, principal authz
 }
 
 func (s *CatalogService) CreateContractTemplate(ctx context.Context, principal authz.Principal, agentID, name, fileID string, ctype domain.ContractType) (domain.Contract, error) {
-	if err := authz.RequireRoles(principal, domain.RoleManager, domain.RoleRoot); err != nil {
+	if err := authz.AuthorizeRoles(principal, domain.RoleManager, domain.RoleRoot); err != nil {
 		return domain.Contract{}, err
 	}
 	if agentID == "" {
@@ -88,7 +88,7 @@ func (s *CatalogService) TemplatesForAgent(ctx context.Context, agentID string) 
 }
 
 func (s *CatalogService) UpdateContract(ctx context.Context, principal authz.Principal, id string, patch domain.Contract) (domain.Contract, error) {
-	if err := authz.RequireRoles(principal, domain.RoleManager, domain.RoleRoot, domain.RoleUser); err != nil {
+	if err := authz.AuthorizeRoles(principal, domain.RoleManager, domain.RoleRoot, domain.RoleUser); err != nil {
 		return domain.Contract{}, err
 	}
 	cur, err := s.store.ContractByID(ctx, id)
@@ -129,7 +129,7 @@ func (s *CatalogService) UpdateContract(ctx context.Context, principal authz.Pri
 }
 
 func (s *CatalogService) AcceptContract(ctx context.Context, principal authz.Principal, id string) (domain.Contract, error) {
-	if err := authz.RequireRoles(principal, domain.RoleManager, domain.RoleRoot); err != nil {
+	if err := authz.AuthorizeRoles(principal, domain.RoleManager, domain.RoleRoot); err != nil {
 		return domain.Contract{}, err
 	}
 	cur, err := s.store.ContractByID(ctx, id)
@@ -144,7 +144,7 @@ func (s *CatalogService) AcceptContract(ctx context.Context, principal authz.Pri
 }
 
 func (s *CatalogService) RejectContract(ctx context.Context, principal authz.Principal, id, text string) (domain.Contract, error) {
-	if err := authz.RequireRoles(principal, domain.RoleManager, domain.RoleRoot); err != nil {
+	if err := authz.AuthorizeRoles(principal, domain.RoleManager, domain.RoleRoot); err != nil {
 		return domain.Contract{}, err
 	}
 	cur, err := s.store.ContractByID(ctx, id)
@@ -160,7 +160,7 @@ func (s *CatalogService) RejectContract(ctx context.Context, principal authz.Pri
 }
 
 func (s *CatalogService) ChangeContractType(ctx context.Context, principal authz.Principal, id string, ctype domain.ContractType) (domain.Contract, error) {
-	if err := authz.RequireRoles(principal, domain.RoleRoot, domain.RoleManager); err != nil {
+	if err := authz.AuthorizeRoles(principal, domain.RoleRoot, domain.RoleManager); err != nil {
 		return domain.Contract{}, err
 	}
 	cur, err := s.store.ContractByID(ctx, id)
@@ -179,7 +179,7 @@ func (s *CatalogService) ChangeContractType(ctx context.Context, principal authz
 
 // ManualAttachAndConfirm §2: manager uploads contract → auto-accepted + form leaves CONTRACT_*.
 func (s *FormPaymentService) ManualAttachContract(ctx context.Context, principal authz.Principal, formID string, ctype domain.ContractType, fileID, number string, accountRef string) (formpayment.Form, domain.Contract, error) {
-	if err := authz.RequireRoles(principal, domain.RoleManager, domain.RoleRoot); err != nil {
+	if err := authz.AuthorizeRoles(principal, domain.RoleManager, domain.RoleRoot); err != nil {
 		return formpayment.Form{}, domain.Contract{}, err
 	}
 	form, err := s.Get(ctx, principal, formID)
@@ -232,7 +232,7 @@ func (s *FormPaymentService) ManualAttachContract(ctx context.Context, principal
 
 // ResolveContractBranch after agent assign: set form CONTRACT_* or ready for order.
 func (s *FormPaymentService) ResolveContractBranch(ctx context.Context, principal authz.Principal, formID string) (formpayment.Form, error) {
-	if err := authz.RequireRoles(principal, domain.RoleManager, domain.RoleRoot); err != nil {
+	if err := authz.AuthorizeRoles(principal, domain.RoleManager, domain.RoleRoot); err != nil {
 		return formpayment.Form{}, err
 	}
 	form, err := s.Get(ctx, principal, formID)

@@ -25,19 +25,34 @@ func NewStore(db *sql.DB) *Store {
 var _ repository.Store = (*Store)(nil)
 
 func (s *Store) SaveAccount(ctx context.Context, a domain.Account) error {
+	kind := string(a.EffectiveKind())
+	var bizOverride any
+	var sysOverride any
+	if a.BusinessCapOverrides != nil {
+		raw, _ := json.Marshal(*a.BusinessCapOverrides)
+		bizOverride = raw
+	}
+	if a.SystemCapOverrides != nil {
+		raw, _ := json.Marshal(*a.SystemCapOverrides)
+		sysOverride = raw
+	}
 	_, err := s.db.ExecContext(ctx, `
-		INSERT INTO accounts (id, email, password_hash, role, organization_id, blocked, full_name, phone, passport, refresh_token, active, lang, rate_settings, bank_rate_readonly, telegram_chat_id, telegram_notify_enabled, sms_notify_enabled)
-		VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17)
+		INSERT INTO accounts (id, email, password_hash, role, organization_id, blocked, full_name, phone, passport, refresh_token, active, lang, rate_settings, bank_rate_readonly, telegram_chat_id, telegram_notify_enabled, sms_notify_enabled, account_kind, business_cap_overrides, system_cap_overrides)
+		VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20)
 		ON CONFLICT (id) DO UPDATE SET email=EXCLUDED.email, password_hash=EXCLUDED.password_hash,
 			role=EXCLUDED.role, organization_id=EXCLUDED.organization_id, blocked=EXCLUDED.blocked,
 			full_name=EXCLUDED.full_name, phone=EXCLUDED.phone, passport=EXCLUDED.passport,
 			refresh_token=EXCLUDED.refresh_token, active=EXCLUDED.active, lang=EXCLUDED.lang,
 			rate_settings=EXCLUDED.rate_settings, bank_rate_readonly=EXCLUDED.bank_rate_readonly,
 			telegram_chat_id=EXCLUDED.telegram_chat_id, telegram_notify_enabled=EXCLUDED.telegram_notify_enabled,
-			sms_notify_enabled=EXCLUDED.sms_notify_enabled`,
+			sms_notify_enabled=EXCLUDED.sms_notify_enabled,
+			account_kind=EXCLUDED.account_kind,
+			business_cap_overrides=EXCLUDED.business_cap_overrides,
+			system_cap_overrides=EXCLUDED.system_cap_overrides`,
 		a.ID, a.Email, a.PasswordHash, string(a.Role), nullStr(a.OrganizationID), a.Blocked, a.FullName, a.Phone, a.Passport,
 		nullStr(a.RefreshToken), a.Active, a.Lang, a.RateSettingsJSON, a.BankRateReadonly,
-		nullStr(a.TelegramChatID), a.TelegramNotifyEnabled, a.SMSNotifyEnabled)
+		nullStr(a.TelegramChatID), a.TelegramNotifyEnabled, a.SMSNotifyEnabled,
+		kind, bizOverride, sysOverride)
 	return err
 }
 
@@ -46,16 +61,21 @@ func (s *Store) AccountByID(ctx context.Context, id string) (domain.Account, err
 	var role string
 	var org sql.NullString
 	var rateSettings sql.NullString
+	var kind sql.NullString
+	var bizRaw []byte
+	var sysRaw []byte
 	err := s.db.QueryRowContext(ctx, `
 		SELECT id, email, password_hash, role, organization_id, blocked,
 			COALESCE(full_name,''), COALESCE(phone,''), COALESCE(passport,''),
 			COALESCE(refresh_token,''), COALESCE(active, TRUE), COALESCE(lang,''),
 			COALESCE(rate_settings,''), COALESCE(bank_rate_readonly, FALSE),
-			COALESCE(telegram_chat_id,''), COALESCE(telegram_notify_enabled, TRUE), COALESCE(sms_notify_enabled, FALSE)
+			COALESCE(telegram_chat_id,''), COALESCE(telegram_notify_enabled, TRUE), COALESCE(sms_notify_enabled, FALSE),
+			COALESCE(account_kind, ''), business_cap_overrides, system_cap_overrides
 		FROM accounts WHERE id=$1`, id).Scan(
 		&a.ID, &a.Email, &a.PasswordHash, &role, &org, &a.Blocked,
 		&a.FullName, &a.Phone, &a.Passport, &a.RefreshToken, &a.Active, &a.Lang,
-		&rateSettings, &a.BankRateReadonly, &a.TelegramChatID, &a.TelegramNotifyEnabled, &a.SMSNotifyEnabled)
+		&rateSettings, &a.BankRateReadonly, &a.TelegramChatID, &a.TelegramNotifyEnabled, &a.SMSNotifyEnabled,
+		&kind, &bizRaw, &sysRaw)
 	if err == sql.ErrNoRows {
 		return domain.Account{}, apperrors.ErrResourceNotFound
 	}
@@ -63,11 +83,28 @@ func (s *Store) AccountByID(ctx context.Context, id string) (domain.Account, err
 		return domain.Account{}, err
 	}
 	a.Role = domain.Role(role)
+	if kind.Valid && kind.String != "" {
+		a.AccountKind = domain.AccountKind(kind.String)
+	} else {
+		a.AccountKind = domain.KindForRole(a.Role)
+	}
 	if org.Valid {
 		a.OrganizationID = org.String
 	}
 	if rateSettings.Valid {
 		a.RateSettingsJSON = rateSettings.String
+	}
+	if len(bizRaw) > 0 && string(bizRaw) != "null" {
+		var list []string
+		if json.Unmarshal(bizRaw, &list) == nil {
+			a.BusinessCapOverrides = &list
+		}
+	}
+	if len(sysRaw) > 0 && string(sysRaw) != "null" {
+		var list []string
+		if json.Unmarshal(sysRaw, &list) == nil {
+			a.SystemCapOverrides = &list
+		}
 	}
 	return a, nil
 }

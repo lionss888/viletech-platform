@@ -182,7 +182,7 @@ func (s *Server) handleAccountMe(w http.ResponseWriter, r *http.Request, princip
 		writeError(w, err)
 		return
 	}
-	writeJSON(w, http.StatusOK, acc.Public())
+	writeJSON(w, http.StatusOK, acc)
 }
 
 func (s *Server) handleAccountFull(w http.ResponseWriter, r *http.Request, principal authz.Principal) {
@@ -192,7 +192,7 @@ func (s *Server) handleAccountFull(w http.ResponseWriter, r *http.Request, princ
 		return
 	}
 	orgs, _ := s.orgs.List(r.Context(), principal)
-	writeJSON(w, http.StatusOK, map[string]any{"account": acc.Public(), "organizations": orgs})
+	writeJSON(w, http.StatusOK, map[string]any{"account": acc, "organizations": orgs})
 }
 
 func (s *Server) handleAccountPatchSelf(w http.ResponseWriter, r *http.Request, principal authz.Principal) {
@@ -203,7 +203,7 @@ func (s *Server) handleAccountPatchSelf(w http.ResponseWriter, r *http.Request, 
 		writeError(w, err)
 		return
 	}
-	writeJSON(w, http.StatusOK, acc.Public())
+	writeJSON(w, http.StatusOK, acc)
 }
 
 func (s *Server) handleAccountByID(w http.ResponseWriter, r *http.Request, principal authz.Principal) {
@@ -212,7 +212,7 @@ func (s *Server) handleAccountByID(w http.ResponseWriter, r *http.Request, princ
 		writeError(w, err)
 		return
 	}
-	writeJSON(w, http.StatusOK, acc.Public())
+	writeJSON(w, http.StatusOK, acc)
 }
 
 func (s *Server) handleAdminAccountList(w http.ResponseWriter, r *http.Request, principal authz.Principal) {
@@ -221,11 +221,7 @@ func (s *Server) handleAdminAccountList(w http.ResponseWriter, r *http.Request, 
 		writeError(w, err)
 		return
 	}
-	out := make([]map[string]any, 0, len(items))
-	for _, a := range items {
-		out = append(out, a.Public())
-	}
-	writeJSON(w, http.StatusOK, out)
+	writeJSON(w, http.StatusOK, items)
 }
 
 func (s *Server) handleAdminAccountCount(w http.ResponseWriter, r *http.Request, principal authz.Principal) {
@@ -238,18 +234,14 @@ func (s *Server) handleAdminAccountCount(w http.ResponseWriter, r *http.Request,
 }
 
 func (s *Server) handleAdminAccountCreate(w http.ResponseWriter, r *http.Request, principal authz.Principal) {
-	var body struct {
-		Email    string      `json:"email"`
-		Password string      `json:"password"`
-		Role     domain.Role `json:"role"`
-	}
+	var body service.AccountCreateInput
 	_ = json.NewDecoder(r.Body).Decode(&body)
-	acc, err := s.accounts.CreateAdmin(r.Context(), principal, body.Email, body.Password, body.Role)
+	acc, err := s.accounts.CreateAdmin(r.Context(), principal, body)
 	if err != nil {
 		writeError(w, err)
 		return
 	}
-	writeJSON(w, http.StatusCreated, acc.Public())
+	writeJSON(w, http.StatusCreated, acc)
 }
 
 func (s *Server) handleAdminAccountPatch(w http.ResponseWriter, r *http.Request, principal authz.Principal) {
@@ -260,7 +252,7 @@ func (s *Server) handleAdminAccountPatch(w http.ResponseWriter, r *http.Request,
 		writeError(w, err)
 		return
 	}
-	writeJSON(w, http.StatusOK, acc.Public())
+	writeJSON(w, http.StatusOK, acc)
 }
 
 func (s *Server) handleOrgList(w http.ResponseWriter, r *http.Request, principal authz.Principal) {

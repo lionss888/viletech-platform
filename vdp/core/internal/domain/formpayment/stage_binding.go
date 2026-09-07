@@ -40,10 +40,8 @@ func StageBindings() []StageBinding {
 }
 
 // IsMandatoryProcessRole is true when the role is a required actor on a mandatory stage.
+// Admin/root is not a process actor; methodology bindings only.
 func IsMandatoryProcessRole(role domain.Role) bool {
-	if role == domain.RoleRoot {
-		return true
-	}
 	for _, b := range StageBindings() {
 		if !b.Mandatory {
 			continue
@@ -55,4 +53,9 @@ func IsMandatoryProcessRole(role domain.Role) bool {
 		}
 	}
 	return false
+}
+
+// IsProcessEligibleRole is true when the role may appear in process participation config.
+func IsProcessEligibleRole(role domain.Role) bool {
+	return domain.KindForRole(role) == domain.AccountKindUser
 }

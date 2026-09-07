@@ -10,6 +10,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Modal, ModalButton } from "@/components/ved/Modal";
+import { BRAND_MARK, BRAND_NAME } from "@/lib/brand";
 import { ROLES } from "@/lib/ved/roles";
 import { useVed, visibleForms } from "@/lib/ved/store";
 import { actionsFor } from "@/lib/ved/actions";
@@ -85,9 +86,9 @@ export function AppShell({ children, title, subtitle }: { children: ReactNode; t
       <aside className="hidden w-64 shrink-0 flex-col overflow-y-auto border-r border-border bg-sidebar p-4 lg:flex">
         <Link to="/dashboard" className="flex items-center gap-2">
           <span className="grid size-8 place-items-center rounded-md bg-primary font-mono text-sm font-bold text-primary-foreground">
-            V
+            {BRAND_MARK}
           </span>
-          <span className="text-sm font-semibold tracking-tight">ВЭД от Вилетех</span>
+          <span className="text-sm font-semibold tracking-tight">{BRAND_NAME}</span>
         </Link>
 
         {role && CAN_CREATE.includes(role) && (
@@ -204,7 +205,7 @@ export function AppShell({ children, title, subtitle }: { children: ReactNode; t
         <main className="min-h-0 flex-1 overflow-y-auto p-4 lg:p-6">{children}</main>
 
         <footer className="shrink-0 border-t border-border bg-card px-4 py-3 text-[11px] text-muted-foreground lg:px-6">
-          ВЭД от Вилетех · сделок в системе: {forms.length}
+          {BRAND_NAME} · сделок в системе: {forms.length}
         </footer>
       </div>
 

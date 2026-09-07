@@ -54,8 +54,16 @@ export type CoreAdminAccount = {
   email: string;
   full_name?: string;
   role?: string;
+  account_kind?: string;
   blocked?: boolean;
   created_at?: string;
+  business_cap_overrides?: string[] | null;
+  system_cap_overrides?: string[] | null;
+  effective_capabilities?: {
+    business?: string[];
+    system?: string[];
+    influence?: string;
+  };
 };
 
 export function listOrganizations(): Promise<CoreOrganization[]> {

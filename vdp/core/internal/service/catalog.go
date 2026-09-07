@@ -142,7 +142,7 @@ func (s *CatalogService) ListUnblockRequests(ctx context.Context) ([]domain.Unbl
 }
 
 func (s *CatalogService) ResolveUnblock(ctx context.Context, principal authz.Principal, reqID string, approve bool) (domain.UnblockRequest, error) {
-	if err := authz.RequireRoles(principal, domain.RoleInternalComplianceOfficer, domain.RoleManager); err != nil {
+	if err := authz.AuthorizeRoles(principal, domain.RoleInternalComplianceOfficer, domain.RoleManager); err != nil {
 		return domain.UnblockRequest{}, err
 	}
 	list, err := s.store.ListUnblockRequests(ctx)
