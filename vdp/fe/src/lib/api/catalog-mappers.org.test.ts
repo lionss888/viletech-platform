@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 
-import { mapCoreOrganization, mapOrgStatus } from "./catalog-mappers";
-import type { CoreOrganization } from "./catalog";
+import { mapCoreAdminAccount, mapCoreOrganization, mapOrgStatus } from "./catalog-mappers";
+import type { CoreAdminAccount, CoreOrganization } from "./catalog";
 
 describe("mapOrgStatus", () => {
   it("keeps blocked status for orgBlocksApproval", () => {
@@ -26,5 +26,30 @@ describe("mapCoreOrganization", () => {
       inn: "1",
     } as CoreOrganization;
     expect(mapCoreOrganization(org).status).toBe("blocked");
+  });
+});
+
+describe("mapCoreAdminAccount", () => {
+  it("falls back to email when full_name is empty (root admin list)", () => {
+    const input: CoreAdminAccount = {
+      id: "a1",
+      email: "manager@vdp.local",
+      role: "manager",
+      full_name: "",
+      blocked: false,
+    };
+    const actual = mapCoreAdminAccount(input);
+    expect(actual.name).toBe("manager@vdp.local");
+  });
+
+  it("uses trimmed full_name when present", () => {
+    const input: CoreAdminAccount = {
+      id: "a2",
+      email: "root@vdp.local",
+      role: "root",
+      full_name: "  Root Admin  ",
+      blocked: false,
+    };
+    expect(mapCoreAdminAccount(input).name).toBe("Root Admin");
   });
 });

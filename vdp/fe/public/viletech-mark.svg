@@ -1,11 +1,12 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" role="img" aria-label="??? ?? ???????">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" role="img" aria-label="ВЭД от Вилетех">
   <rect width="32" height="32" rx="7" fill="#141418"/>
-  <!-- lightning -->
-  <path fill="#F5C518" d="M12.2 4.2 6.4 16.2h4.2L8.9 27.6l9.8-13.8h-4.4L16.8 4.2z"/>
-  <!-- ruble (vector, no font) -->
-  <g fill="#FFFFFF">
-    <path d="M18.6 7.2h5.1c2.2 0 3.7 1.3 3.7 3.3 0 1.9-1.4 3.2-3.4 3.2h-3.2v2.1h3.8v1.7h-3.8V20h-2.2V7.2zm2.2 1.8v3h2.7c1.1 0 1.8-.6 1.8-1.5s-.7-1.5-1.8-1.5h-2.7z"/>
-    <rect x="18.6" y="21.2" width="8.2" height="1.7" rx="0.3"/>
-    <rect x="18.6" y="24.2" width="8.2" height="1.7" rx="0.3"/>
-  </g>
+  <text
+    x="16"
+    y="22"
+    text-anchor="middle"
+    font-family="Arial Black, Helvetica Neue, Arial, sans-serif"
+    font-size="16"
+    font-weight="700"
+    fill="#F5C518"
+  >V</text>
 </svg>

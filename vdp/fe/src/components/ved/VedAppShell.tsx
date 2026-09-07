@@ -10,6 +10,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Modal, ModalButton } from "@/components/ved/Modal";
+import { RowNavContextMenu } from "@/components/ved/RowNavContextMenu";
 import { useAuth } from "@/lib/auth/session";
 import { BRAND_MARK, BRAND_NAME } from "@/lib/brand";
 import { actionsFor } from "@/lib/ved/actions";
@@ -280,7 +281,11 @@ export function VedAppShell({ children, title, subtitle }: { children: ReactNode
           })}
         </nav>
 
-        <main className="min-h-0 flex-1 overflow-y-auto p-4 lg:p-6">{children}</main>
+        <main className="min-h-0 flex-1 overflow-y-auto p-4 lg:p-6">
+          <RowNavContextMenu basePath={base} role={role} onOpenRefs={() => setRefsOpen(true)}>
+            {children}
+          </RowNavContextMenu>
+        </main>
 
         <footer className="shrink-0 border-t border-border bg-card px-4 py-3 text-[11px] text-muted-foreground lg:px-6">
           {footerText}

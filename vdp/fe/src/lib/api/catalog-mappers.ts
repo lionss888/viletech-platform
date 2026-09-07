@@ -89,9 +89,10 @@ export function mapCoreHs(h: CoreHsCode): HsCodeRecord {
 
 export function mapCoreAdminAccount(a: CoreAdminAccount): PlatformUser {
   const role = (a.role ?? "user") as VedRole;
+  const fullName = a.full_name?.trim() ?? "";
   return {
     id: a.id,
-    name: a.full_name ?? a.email,
+    name: fullName || a.email,
     email: a.email,
     role,
     blocked: Boolean(a.blocked),

@@ -28,12 +28,12 @@ func Dev(store repository.Store) error {
 	ctx := context.Background()
 	accounts := []domain.Account{
 		{ID: UserID, Email: "user@vdp.local", PasswordHash: service.HashPassword("user"), Role: domain.RoleUser, AccountKind: domain.AccountKindUser, OrganizationID: OrgID, FullName: "Ivan Petrov", Phone: "+79990000000", Passport: "4510 123456", Active: true, TelegramNotifyEnabled: true},
-		{ID: ManagerID, Email: "manager@vdp.local", PasswordHash: service.HashPassword("manager"), Role: domain.RoleManager, AccountKind: domain.AccountKindUser, Active: true},
-		{ID: ICOID, Email: "ico@vdp.local", PasswordHash: service.HashPassword("ico"), Role: domain.RoleInternalComplianceOfficer, AccountKind: domain.AccountKindUser, Active: true},
-		{ID: ECOID, Email: "eco@vdp.local", PasswordHash: service.HashPassword("eco"), Role: domain.RoleComplianceOfficer, AccountKind: domain.AccountKindUser, Active: true},
-		{ID: ProviderID, Email: "provider@vdp.local", PasswordHash: service.HashPassword("provider"), Role: domain.RoleProvider, AccountKind: domain.AccountKindUser, Active: true},
+		{ID: ManagerID, Email: "manager@vdp.local", PasswordHash: service.HashPassword("manager"), Role: domain.RoleManager, AccountKind: domain.AccountKindUser, FullName: "Manager Seed", Active: true},
+		{ID: ICOID, Email: "ico@vdp.local", PasswordHash: service.HashPassword("ico"), Role: domain.RoleInternalComplianceOfficer, AccountKind: domain.AccountKindUser, FullName: "ICO Seed", Active: true},
+		{ID: ECOID, Email: "eco@vdp.local", PasswordHash: service.HashPassword("eco"), Role: domain.RoleComplianceOfficer, AccountKind: domain.AccountKindUser, FullName: "ECO Seed", Active: true},
+		{ID: ProviderID, Email: "provider@vdp.local", PasswordHash: service.HashPassword("provider"), Role: domain.RoleProvider, AccountKind: domain.AccountKindUser, FullName: "Provider Seed", Active: true},
 		{ID: RootID, Email: "root@vdp.local", PasswordHash: service.HashPassword("root"), Role: domain.RoleRoot, AccountKind: domain.AccountKindAdmin, FullName: "Root Admin", Active: true},
-		{ID: BankID, Email: "bank@vdp.local", PasswordHash: service.HashPassword("bank"), Role: domain.RoleBank, AccountKind: domain.AccountKindUser, OrganizationID: BankOrgID, Active: true, BankRateReadonly: true},
+		{ID: BankID, Email: "bank@vdp.local", PasswordHash: service.HashPassword("bank"), Role: domain.RoleBank, AccountKind: domain.AccountKindUser, OrganizationID: BankOrgID, FullName: "Bank Seed", Active: true, BankRateReadonly: true},
 	}
 	for _, account := range accounts {
 		if err := store.SaveAccount(ctx, account); err != nil {
