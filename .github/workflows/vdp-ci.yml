@@ -132,7 +132,7 @@ jobs:
         env:
           CI: "true"
           # PR: narrow required journeys. Otherwise (main push, schedule, dispatch): full suite.
-          PLAYWRIGHT_ARGS: ${{ github.event_name == 'pull_request' && 'e2e/login-form.spec.ts e2e/user-submit.spec.ts e2e/provider-acl.spec.ts' || '' }}
+          PLAYWRIGHT_ARGS: ${{ github.event_name == 'pull_request' && 'e2e/login-form.spec.ts e2e/user-submit.spec.ts e2e/provider-acl.spec.ts e2e/reject-path.spec.ts' || '' }}
         run: |
           make compose-up
           make playwright-e2e

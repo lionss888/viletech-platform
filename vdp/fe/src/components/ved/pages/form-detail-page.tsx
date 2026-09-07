@@ -11,6 +11,7 @@ import {
   rejectFromHistory,
 } from "@/lib/api/mappers";
 import { ExtractionReviewPanel } from "@/components/ved/ExtractionReviewPanel";
+import { CorrectionGuidancePanel } from "@/components/ved/CorrectionGuidancePanel";
 import { ActionPanel } from "@/components/ved/ActionPanel";
 import { DocumentList } from "@/components/ved/DocumentViewer";
 import { RefundPanel } from "@/components/ved/RefundPanel";
@@ -69,6 +70,14 @@ export function FormDetail() {
     const fromStore = forms.find((f) => f.id === formId);
     const timeline = historyQuery.data ? mapComplianceHistory(historyQuery.data, users) : [];
     const reject = historyQuery.data ? rejectFromHistory(historyQuery.data) : {};
+    if (mode === "app" && formQuery.data) {
+      const mapped = mapCoreFormToPaymentForm(formQuery.data, auth.displayName, timeline);
+      return {
+        ...mapped,
+        ...(fromStore?.documents?.length ? { documents: fromStore.documents } : {}),
+        ...reject,
+      };
+    }
     if (fromStore) {
       return { ...fromStore, ...(timeline.length > 0 ? { timeline } : {}), ...reject };
     }
@@ -76,7 +85,7 @@ export function FormDetail() {
       return { ...mapCoreFormToPaymentForm(formQuery.data, auth.displayName, timeline), ...reject };
     }
     return undefined;
-  }, [forms, formId, formQuery.data, historyQuery.data, auth.displayName, users]);
+  }, [forms, formId, formQuery.data, historyQuery.data, auth.displayName, users, mode]);
 
   const role = session?.role ?? auth.role ?? "user";
 
@@ -191,21 +200,30 @@ export function FormDetail() {
             formId={form.id}
             invoiceJson={form.invoiceJson ?? formQuery.data?.invoice_json}
             role={role}
+            canConfirm={role === "user" || role === "manager" || role === "root"}
           />
         </div>
       )}
 
       {(form.rejectText || form.rejectMark) && (
-        <div className="mt-4 rounded-lg bg-return-soft p-4">
+        <div className="mt-4 rounded-lg bg-return-soft p-4" data-testid="return-banner">
           <p className="label-caps text-return">Возврат на доработку</p>
           {form.rejectMark && <p className="mt-1 text-sm font-semibold text-return">Отметка: {form.rejectMark}</p>}
           {form.rejectText && <p className="mt-1 text-sm text-return">{form.rejectText}</p>}
+          {String(form.status).includes("correction") && (
+            <CorrectionGuidancePanel
+              formId={form.id}
+              rejectMark={form.rejectMark}
+              rejectText={form.rejectText}
+              canEdit={role === "user"}
+            />
+          )}
         </div>
       )}
 
       <div className="mt-4 grid gap-4 xl:grid-cols-[1.6fr_1fr]">
         <div className="space-y-4">
-          <div className="panel p-4">
+          <div className="panel p-4" id="form-params" data-testid="form-params">
             <p className="label-caps">Параметры заявки</p>
             <dl className="mt-3 grid gap-x-6 gap-y-3 sm:grid-cols-2">
               {facts.map(([k, v]) => (
@@ -225,13 +243,32 @@ export function FormDetail() {
                 <p className="font-mono text-xs text-muted-foreground">ИНН {org?.inn ?? "—"}</p>
                 <p className="mt-1 text-xs text-muted-foreground">{org?.legalAddress ?? "—"}</p>
               </div>
-              <div className="panel p-4">
+              <div className="panel p-4" data-testid="counterparty-block">
                 <p className="label-caps">Контрагент</p>
-                <p className="mt-2 text-sm font-semibold">{cp?.name ?? form.counterpartyId}</p>
-                <p className="text-xs text-muted-foreground">
-                  {cp?.country ?? "—"} · {cp?.bank ?? "—"}
-                </p>
-                <p className="font-mono text-xs text-muted-foreground">SWIFT {cp?.swift ?? "—"}</p>
+                {cp && form.counterpartyId && form.counterpartyId !== "—" ? (
+                  <>
+                    <p className="mt-2 text-sm font-semibold">{cp.name}</p>
+                    <p className="text-xs text-muted-foreground">
+                      {cp.country ?? "—"} · {cp.bank ?? "—"}
+                    </p>
+                    <p className="font-mono text-xs text-muted-foreground">SWIFT {cp.swift ?? "—"}</p>
+                  </>
+                ) : (
+                  <>
+                    <p className="mt-2 text-sm text-muted-foreground">Контрагент не выбран</p>
+                    <p className="mt-1 text-xs text-muted-foreground">
+                      Укажите контрагента в справочнике и при создании или правке заявки — иначе реквизиты получателя пустые.
+                    </p>
+                    {!isProvider && (
+                      <VedLink
+                        segment="/counterparties"
+                        className="mt-2 inline-block text-sm font-semibold text-accent hover:underline"
+                      >
+                        Открыть справочник контрагентов
+                      </VedLink>
+                    )}
+                  </>
+                )}
               </div>
             </div>
           )}

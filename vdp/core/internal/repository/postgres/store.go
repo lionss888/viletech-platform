@@ -469,6 +469,20 @@ func (s *Store) ListForms(ctx context.Context) []formpayment.Form {
 	return out
 }
 
+func (s *Store) DeleteForm(ctx context.Context, id string) error {
+	if _, err := s.db.ExecContext(ctx, `DELETE FROM compliance_history WHERE form_payment_id = $1`, id); err != nil {
+		return err
+	}
+	if _, err := s.db.ExecContext(ctx, `DELETE FROM documents WHERE form_payment_id = $1`, id); err != nil {
+		return err
+	}
+	if _, err := s.db.ExecContext(ctx, `DELETE FROM form_orders WHERE form_payment_id = $1`, id); err != nil {
+		return err
+	}
+	_, err := s.db.ExecContext(ctx, `DELETE FROM form_payments WHERE id = $1`, id)
+	return err
+}
+
 func (s *Store) AppendHistory(ctx context.Context, e formpayment.ComplianceHistoryEntry) error {
 	_, err := s.db.ExecContext(ctx, `
 		INSERT INTO compliance_history (id, form_payment_id, actor_id, from_status, to_status, comment, created_at)

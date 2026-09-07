@@ -87,16 +87,45 @@ async function formStatus(token: string, path: string): Promise<string> {
   return json.status;
 }
 
+async function tryPut(token: string, path: string, body: Record<string, unknown> = {}): Promise<boolean> {
+  try {
+    await authPut(token, path, body);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+async function tryPost(token: string, path: string, body: Record<string, unknown> = {}): Promise<boolean> {
+  try {
+    await authPost(token, path, body);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
 async function advanceCompliance(tokens: ApiTokens, formId: string): Promise<void> {
   const st = await formStatus(tokens.user, `/api/v1/site/form-payment/${formId}`);
-  if (st === "organization_waiting_verification") {
-    await authPut(tokens.ico, `/api/v1/admin/internal-compliance-officer/organization/${ORG_ID}/approve`);
-    await authPut(tokens.ico, `/api/v1/ico/form-payment/${formId}/form/start`);
-    await authPut(tokens.ico, `/api/v1/ico/form-payment/${formId}/form/accept`);
+  if (st === "organization_waiting_verification" || st === "organization_verification") {
+    await tryPut(tokens.ico, `/api/v1/admin/internal-compliance-officer/organization/${ORG_ID}/approve`);
+    if (!(await tryPut(tokens.ico, `/api/v1/ico/form-payment/${formId}/form/start`))) {
+      await authPost(tokens.manager, `/api/v1/forms/${formId}/actions/ico_start`, {});
+    }
+    if (!(await tryPut(tokens.ico, `/api/v1/ico/form-payment/${formId}/form/accept`))) {
+      await authPost(tokens.manager, `/api/v1/forms/${formId}/actions/ico_approve`, {});
+    }
   }
-  await authPut(tokens.eco, `/api/v1/eco/form-payment/${formId}/form/start`);
-  await authPut(tokens.eco, `/api/v1/eco/form-payment/${formId}/form/accept`);
+  const after = await formStatus(tokens.user, `/api/v1/site/form-payment/${formId}`);
+  if (after === "form_accepted") return;
+  if (!(await tryPut(tokens.eco, `/api/v1/eco/form-payment/${formId}/form/start`))) {
+    await authPost(tokens.manager, `/api/v1/forms/${formId}/actions/eco_start`, {});
+  }
+  if (!(await tryPut(tokens.eco, `/api/v1/eco/form-payment/${formId}/form/accept`))) {
+    await authPost(tokens.manager, `/api/v1/forms/${formId}/actions/eco_accept`, {});
+  }
 }
+
 
 /** Create draft form and run recognize_complete. */
 export async function createDraftForm(tokens: ApiTokens, suffix: string): Promise<string> {
@@ -125,14 +154,33 @@ export async function createFormAccepted(tokens: ApiTokens, suffix: string): Pro
   return id;
 }
 
-/** ECO reject → form_waiting_corrections. */
+/** ECO/manager reject → form_waiting_corrections (continuity when ECO slot off). */
 export async function createRejectedForm(tokens: ApiTokens, suffix: string): Promise<string> {
   const id = await createSubmittedForm(tokens, suffix);
-  await authPut(tokens.eco, `/api/v1/eco/form-payment/${id}/form/start`);
-  await authPut(tokens.eco, `/api/v1/eco/form-payment/${id}/form/reject`, {
-    reason: "Playwright: уточните контракт",
-    mark: "docs",
-  });
+  let st = await formStatus(tokens.user, `/api/v1/site/form-payment/${id}`);
+  if (st === "organization_waiting_verification" || st === "organization_verification") {
+    await tryPut(tokens.ico, `/api/v1/admin/internal-compliance-officer/organization/${ORG_ID}/approve`);
+    if (!(await tryPut(tokens.ico, `/api/v1/ico/form-payment/${id}/form/start`))) {
+      await authPost(tokens.manager, `/api/v1/forms/${id}/actions/ico_start`, {});
+    }
+    if (!(await tryPut(tokens.ico, `/api/v1/ico/form-payment/${id}/form/accept`))) {
+      await authPost(tokens.manager, `/api/v1/forms/${id}/actions/ico_approve`, {});
+    }
+    st = await formStatus(tokens.user, `/api/v1/site/form-payment/${id}`);
+  }
+  const body = { reason: "Playwright: уточните контракт", mark: "docs", comment: "Playwright: уточните контракт" };
+  if (st === "form_waiting_verification" || st === "form_verification") {
+    if (!(await tryPut(tokens.eco, `/api/v1/eco/form-payment/${id}/form/start`))) {
+      await tryPost(tokens.manager, `/api/v1/forms/${id}/actions/eco_start`, {});
+    }
+    if (!(await tryPut(tokens.eco, `/api/v1/eco/form-payment/${id}/form/reject`, body))) {
+      await authPost(tokens.manager, `/api/v1/forms/${id}/actions/eco_reject`, body);
+    }
+    return id;
+  }
+  if (st === "form_accepted") {
+    await authPost(tokens.manager, `/api/v1/forms/${id}/actions/manager_form_reject`, body);
+  }
   return id;
 }
 

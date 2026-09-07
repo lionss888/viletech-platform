@@ -191,6 +191,8 @@ services:
     environment:
       PORT: "8080"
       STORE_DRIVER: postgres
+      ENVIRONMENT: ${ENVIRONMENT:-development}
+      SEED_WIPE_FORMS: ${SEED_WIPE_FORMS:-1}
       HUB_URL: http://hub:8081
       HUB_SHARED_SECRET: vdp-s2s-dev-secret
       JWT_SECRET: vdp-core-dev-secret

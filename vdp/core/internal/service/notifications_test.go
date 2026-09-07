@@ -53,6 +53,9 @@ func TestWorkChatJoinIdempotentAndUserCannotApprove(t *testing.T) {
 	ctx := context.Background()
 	store := repository.NewStore()
 	seed.MustDev(t, store)
+	if err := store.SaveWorkChat(ctx, domain.WorkChat{ID: "wc-ops", Title: "Операционка", ChatID: "ops-chat", Kind: "ops", Active: true}); err != nil {
+		t.Fatal(err)
+	}
 	svc := service.NewNotificationService(store)
 	user := authz.Principal{AccountID: seed.UserID, Role: domain.RoleUser}
 	manager := authz.Principal{AccountID: seed.ManagerID, Role: domain.RoleManager}

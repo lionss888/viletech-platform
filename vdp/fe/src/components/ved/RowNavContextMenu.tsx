@@ -36,8 +36,9 @@ type AppRoute =
 type MenuPoint = { x: number; y: number };
 
 /**
- * Global menu on left-click (and right-click) of table rows/cells.
- * Profile lives here, not in the left sidebar.
+ * Optional quick-nav menu only on elements marked `data-row-menu`.
+ * Table cells (td/tr) do not open this menu — row click navigates to the form.
+ * Profile remains in the shell header.
  */
 export function RowNavContextMenu({
   basePath,
@@ -81,10 +82,9 @@ export function RowNavContextMenu({
     const target = event.target;
     if (!(target instanceof Element)) return false;
     if (target.closest("a, button, input, textarea, select, [data-no-row-menu]")) return false;
-    const cell = target.closest("td, [data-row-menu]");
-    const row = cell?.closest("tr") ?? target.closest("tbody tr");
-    if (!row || !rootRef.current?.contains(row)) return false;
-    if (row.closest("thead, tfoot")) return false;
+    const trigger = target.closest("[data-row-menu]");
+    if (!trigger || !rootRef.current?.contains(trigger)) return false;
+    if (trigger.closest("table, thead, tbody, tfoot, tr, td, th")) return false;
     event.preventDefault();
     event.stopPropagation();
     setPoint({ x: event.clientX, y: event.clientY });
@@ -94,17 +94,11 @@ export function RowNavContextMenu({
   useEffect(() => {
     const root = rootRef.current;
     if (!root) return;
-    const onClick = (event: MouseEvent) => {
-      if (event.button !== 0) return;
-      openAt(event);
-    };
     const onContextMenu = (event: MouseEvent) => {
       openAt(event);
     };
-    root.addEventListener("click", onClick);
     root.addEventListener("contextmenu", onContextMenu);
     return () => {
-      root.removeEventListener("click", onClick);
       root.removeEventListener("contextmenu", onContextMenu);
     };
   }, [openAt]);
@@ -126,7 +120,8 @@ export function RowNavContextMenu({
     };
   }, [close, point]);
 
-  const itemCls = "w-full rounded-md px-3 py-2 text-left text-sm font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground";
+  const itemCls =
+    "w-full rounded-md px-3 py-2 text-left text-sm font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground";
 
   return (
     <>

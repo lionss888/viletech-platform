@@ -76,6 +76,9 @@ func TestCreateToICOPath(t *testing.T) {
 	ctx := context.Background()
 	store := repository.NewStore()
 	seed.MustDev(t, store)
+	if err := seed.ForceOrgNotApproved(store); err != nil {
+		t.Fatal(err)
+	}
 	svc := service.NewFormPaymentService(store, outbox.NewMemoryStore(), seqID())
 	enableComplianceActors(t, svc)
 	user := authz.Principal{AccountID: seed.UserID, Role: domain.RoleUser, OrganizationID: seed.OrgID}

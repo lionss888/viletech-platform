@@ -3,8 +3,9 @@ package seed
 import (
 	"context"
 	"fmt"
+	"os"
+	"strings"
 	"testing"
-	"time"
 
 	"github.com/viletech/vdp/core/internal/domain"
 	"github.com/viletech/vdp/core/internal/repository"
@@ -21,13 +22,10 @@ const (
 	BankID     = "77777777-7777-7777-7777-777777777777"
 	BankOrgID  = "88888888-8888-8888-8888-888888888888"
 	RootID     = "99999999-9999-9999-9999-999999999999"
-	Cp1ID      = "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaa1"
-	Cp2ID      = "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaa2"
-	Cp3ID      = "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaa3"
 )
 
-// Dev upserts demo accounts/orgs. Errors must not be ignored — schema drift
-// previously surfaced only as login 401 while health stayed green.
+// Dev upserts demo accounts/orgs only (no sample forms, counterparties, or work chats).
+// Errors must not be ignored — schema drift previously surfaced only as login 401 while health stayed green.
 func Dev(store repository.Store) error {
 	ctx := context.Background()
 	accounts := []domain.Account{
@@ -47,7 +45,8 @@ func Dev(store repository.Store) error {
 	if err := store.SaveOrganization(ctx, domain.Organization{
 		ID:         OrgID,
 		AccountID:  UserID,
-		Status:     domain.OrgNotApproved,
+		Status:     domain.OrgApproved,
+		IsActive:   true,
 		Name:       "ООО Пример",
 		INN:        "7700000000",
 		Country:    "RU",
@@ -69,36 +68,49 @@ func Dev(store repository.Store) error {
 	}); err != nil {
 		return fmt.Errorf("seed bank org: %w", err)
 	}
-	now := time.Now().UTC()
-	counterparties := []domain.Counterparty{
-		{
-			ID: Cp1ID, CreatedBy: UserID, Name: "Shenzhen Kaiyuan Electronics Co., Ltd", Country: "CN", INN: "CN91440300MA5F",
-			Banks: `[{"uuid":"bank-cp1","name":"Bank of China, Shenzhen Branch","accounts":[{"uuid":"acc-cp1","number":"6222","currency":"CNY","iban":""}]}]`,
-			LastApprovalStatus: domain.CounterpartyApprovalApproved, CreatedAt: now,
-		},
-		{
-			ID: Cp2ID, CreatedBy: UserID, Name: "Anadolu Makina Sanayi A.Ş.", Country: "TR", INN: "TR1234567890",
-			Banks: `[{"uuid":"bank-cp2","name":"Türkiye İş Bankası","accounts":[{"uuid":"acc-cp2","number":"1001","currency":"TRY","iban":""}]}]`,
-			LastApprovalStatus: domain.CounterpartyApprovalApproved, CreatedAt: now,
-		},
-		{
-			ID: Cp3ID, CreatedBy: UserID, Name: "Emirates General Trading LLC", Country: "AE", INN: "AE100200300",
-			Banks: `[{"uuid":"bank-cp3","name":"Emirates NBD","accounts":[{"uuid":"acc-cp3","number":"3001","currency":"AED","iban":""}]}]`,
-			LastApprovalStatus: domain.CounterpartyApprovalApproved, CreatedAt: now,
-		},
+	return nil
+}
+
+// ShouldWipeForms reports whether local/compose should clear probe forms on boot.
+// Default wipe on local environments unless SEED_WIPE_FORMS=0. Never wipe on staging/prod.
+func ShouldWipeForms(environment string) bool {
+	env := strings.ToLower(strings.TrimSpace(environment))
+	switch env {
+	case "production", "prod", "staging", "alpha", "beta", "gamma", "demo":
+		return false
 	}
-	for _, cp := range counterparties {
-		if err := store.SaveCounterparty(ctx, cp); err != nil {
-			return fmt.Errorf("seed counterparty %s: %w", cp.Name, err)
+	flag := strings.TrimSpace(os.Getenv("SEED_WIPE_FORMS"))
+	if flag == "0" || strings.EqualFold(flag, "false") || strings.EqualFold(flag, "off") {
+		return false
+	}
+	if flag == "1" || strings.EqualFold(flag, "true") || strings.EqualFold(flag, "on") {
+		return true
+	}
+	// Default: wipe on empty / development / local / test / ci.
+	return true
+}
+
+// WipeForms deletes all form payments and related rows (local probe cleanup).
+func WipeForms(store repository.Store) error {
+	ctx := context.Background()
+	for _, form := range store.ListForms(ctx) {
+		if err := store.DeleteForm(ctx, form.ID); err != nil {
+			return fmt.Errorf("wipe form %s: %w", form.ID, err)
 		}
 	}
-	if err := store.SaveWorkChat(ctx, domain.WorkChat{ID: "wc-ops", Title: "Операционка", ChatID: "ops-chat", Kind: "ops", Active: true}); err != nil {
-		return fmt.Errorf("seed work chat ops: %w", err)
-	}
-	if err := store.SaveWorkChat(ctx, domain.WorkChat{ID: "wc-compliance", Title: "Комплаенс", ChatID: "compliance-chat", Kind: "compliance", Active: true}); err != nil {
-		return fmt.Errorf("seed work chat compliance: %w", err)
-	}
 	return nil
+}
+
+// ForceOrgNotApproved sets the pilot client org to not approved (for ICO-path tests).
+func ForceOrgNotApproved(store repository.Store) error {
+	ctx := context.Background()
+	org, err := store.OrganizationByID(ctx, OrgID)
+	if err != nil {
+		return err
+	}
+	org.Status = domain.OrgNotApproved
+	org.IsActive = false
+	return store.SaveOrganization(ctx, org)
 }
 
 // MustDev seeds or fails the test immediately.

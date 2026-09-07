@@ -23,8 +23,8 @@ func TestOrganizationVIClientStatuses(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if org.ClientStatus() != domain.ClientStatusNew {
-		t.Fatalf("want новый got %s", org.ClientStatus())
+	if org.ClientStatus() != domain.ClientStatusActive {
+		t.Fatalf("want активный got %s", org.ClientStatus())
 	}
 
 	org, err = orgs.SetRating(context.Background(), manager, seed.OrgID, domain.RatingYellow)

@@ -14,12 +14,15 @@ type Props = {
   formId: string;
   invoiceJson?: string;
   role: string;
+  /** When false, fields stay read-only (e.g. waiting on another actor). */
+  canConfirm?: boolean;
 };
 
-export function ExtractionReviewPanel({ formId, invoiceJson, role }: Props) {
+export function ExtractionReviewPanel({ formId, invoiceJson, role, canConfirm = true }: Props) {
   const qc = useQueryClient();
   const parsed = parseExtractionResult(invoiceJson);
   const [draft, setDraft] = useState<ExtractionResult | null>(parsed);
+  const [savedNote, setSavedNote] = useState<string | null>(null);
   useEffect(() => {
     setDraft(parseExtractionResult(invoiceJson));
   }, [invoiceJson]);
@@ -29,8 +32,21 @@ export function ExtractionReviewPanel({ formId, invoiceJson, role }: Props) {
       if (!draft) throw new Error("no extraction");
       return confirmExtraction(formId, { ...draft, meta: { ...draft.meta, confirmed: true } });
     },
-    onSuccess: () => {
+    onSuccess: (form) => {
+      const amount = form.invoice_amount ?? draft?.header.invoice_amount ?? "";
+      const currency = form.currency ?? draft?.header.currency ?? "";
+      setSavedNote(
+        `Сохранено в параметры заявки: сумма ${amount || "—"} ${currency || ""}`.trim(),
+      );
       void qc.invalidateQueries({ queryKey: ["form", formId] });
+      void qc.invalidateQueries({ queryKey: ["forms"] });
+      requestAnimationFrame(() => {
+        document.getElementById("form-params")?.scrollIntoView({ behavior: "smooth", block: "start" });
+        document.getElementById("form-params")?.classList.add("ring-2", "ring-accent");
+        window.setTimeout(() => {
+          document.getElementById("form-params")?.classList.remove("ring-2", "ring-accent");
+        }, 2500);
+      });
     },
   });
 
@@ -47,6 +63,7 @@ export function ExtractionReviewPanel({ formId, invoiceJson, role }: Props) {
   }
 
   const confirmed = Boolean(draft.meta.confirmed);
+  const editable = canConfirm && !confirmed;
   const updateHeader = (key: keyof ExtractionResult["header"], value: string) => {
     setDraft({ ...draft, header: { ...draft.header, [key]: value } });
   };
@@ -63,6 +80,16 @@ export function ExtractionReviewPanel({ formId, invoiceJson, role }: Props) {
           {draft.meta.engine_id ?? "engine"} · проверьте позиции перед подтверждением
         </p>
       </div>
+      <p className="text-xs text-muted-foreground">
+        Подтверждение переносит сумму, валюту и номера договора/инвойса в параметры заявки и сохраняет эталон
+        для обучения. Это не отправка заявки на проверку — статус заявки не меняется.
+      </p>
+      {!canConfirm && !confirmed ? (
+        <p className="text-xs text-muted-foreground">
+          Сейчас подтверждение недоступно для вашей роли или статуса — дождитесь своего шага или правьте
+          параметры после возврата.
+        </p>
+      ) : null}
       <div className="grid gap-2 sm:grid-cols-2">
         <label className="text-xs text-muted-foreground">
           Сумма
@@ -70,7 +97,7 @@ export function ExtractionReviewPanel({ formId, invoiceJson, role }: Props) {
             className="mt-1 w-full rounded-md border border-border bg-background px-2 py-1.5 text-sm"
             value={draft.header.invoice_amount ?? ""}
             onChange={(e) => updateHeader("invoice_amount", e.target.value)}
-            disabled={confirmed}
+            disabled={!editable}
           />
         </label>
         <label className="text-xs text-muted-foreground">
@@ -79,7 +106,7 @@ export function ExtractionReviewPanel({ formId, invoiceJson, role }: Props) {
             className="mt-1 w-full rounded-md border border-border bg-background px-2 py-1.5 text-sm"
             value={draft.header.currency ?? ""}
             onChange={(e) => updateHeader("currency", e.target.value)}
-            disabled={confirmed}
+            disabled={!editable}
           />
         </label>
         <label className="text-xs text-muted-foreground">
@@ -88,7 +115,7 @@ export function ExtractionReviewPanel({ formId, invoiceJson, role }: Props) {
             className="mt-1 w-full rounded-md border border-border bg-background px-2 py-1.5 text-sm"
             value={draft.header.contract_number ?? ""}
             onChange={(e) => updateHeader("contract_number", e.target.value)}
-            disabled={confirmed}
+            disabled={!editable}
           />
         </label>
         <label className="text-xs text-muted-foreground">
@@ -97,7 +124,7 @@ export function ExtractionReviewPanel({ formId, invoiceJson, role }: Props) {
             className="mt-1 w-full rounded-md border border-border bg-background px-2 py-1.5 text-sm"
             value={draft.header.invoice_number ?? ""}
             onChange={(e) => updateHeader("invoice_number", e.target.value)}
-            disabled={confirmed}
+            disabled={!editable}
           />
         </label>
       </div>
@@ -123,7 +150,7 @@ export function ExtractionReviewPanel({ formId, invoiceJson, role }: Props) {
                   <input
                     className="w-full rounded border border-border bg-background px-1 py-0.5"
                     value={row.description ?? ""}
-                    disabled={confirmed}
+                    disabled={!editable}
                     onChange={(e) => updateLine(idx, { description: e.target.value })}
                   />
                 </td>
@@ -131,7 +158,7 @@ export function ExtractionReviewPanel({ formId, invoiceJson, role }: Props) {
                   <input
                     className="w-20 rounded border border-border bg-background px-1 py-0.5"
                     value={row.qty ?? ""}
-                    disabled={confirmed}
+                    disabled={!editable}
                     onChange={(e) => updateLine(idx, { qty: e.target.value })}
                   />
                 </td>
@@ -139,7 +166,7 @@ export function ExtractionReviewPanel({ formId, invoiceJson, role }: Props) {
                   <input
                     className="w-24 rounded border border-border bg-background px-1 py-0.5"
                     value={row.line_amount ?? ""}
-                    disabled={confirmed}
+                    disabled={!editable}
                     onChange={(e) => updateLine(idx, { line_amount: e.target.value })}
                   />
                 </td>
@@ -147,7 +174,7 @@ export function ExtractionReviewPanel({ formId, invoiceJson, role }: Props) {
                   <input
                     className="w-24 rounded border border-border bg-background px-1 py-0.5"
                     value={row.hs_code ?? ""}
-                    disabled={confirmed}
+                    disabled={!editable}
                     onChange={(e) => updateLine(idx, { hs_code: e.target.value })}
                   />
                 </td>
@@ -156,7 +183,7 @@ export function ExtractionReviewPanel({ formId, invoiceJson, role }: Props) {
           </tbody>
         </table>
       </div>
-      {!confirmed ? (
+      {!confirmed && canConfirm ? (
         <button
           type="button"
           className="rounded-md bg-accent px-3 py-2 text-sm font-medium text-accent-foreground disabled:opacity-50"
@@ -165,9 +192,14 @@ export function ExtractionReviewPanel({ formId, invoiceJson, role }: Props) {
         >
           {mutation.isPending ? "Сохранение…" : "Подтвердить распознавание"}
         </button>
-      ) : (
+      ) : confirmed ? (
         <p className="text-xs text-muted-foreground">Распознавание подтверждено — данные в gold для обучения.</p>
-      )}
+      ) : null}
+      {savedNote ? (
+        <p className="text-xs font-medium text-accent" data-testid="extraction-saved">
+          {savedNote}
+        </p>
+      ) : null}
       {mutation.isError ? (
         <p className="text-xs text-destructive">Не удалось сохранить. Повторите или заполните вручную.</p>
       ) : null}

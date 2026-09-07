@@ -39,6 +39,14 @@ func TestResolveRateMarkupAndBankReadonly(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+	form, err = svc.Transition(ctx, user, form.ID, formpayment.ActionRecognizeComplete)
+	if err != nil {
+		t.Fatal(err)
+	}
+	form, err = svc.Transition(ctx, user, form.ID, formpayment.ActionSubmit)
+	if err != nil {
+		t.Fatal(err)
+	}
 	override := 90.0
 	_, _, err = svc.ResolveAndSetRate(ctx, user, form.ID, &override, "rub", "usd", nil)
 	if err == nil {
@@ -77,6 +85,14 @@ func TestPOGEnqueueAttachAndTemplateImportXLSX(t *testing.T) {
 	form, err := svc.Create(ctx, user, service.CreateInput{
 		InvoiceAmount: "500", Currency: "EUR", Direction: formpayment.DirectionExport,
 	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	form, err = svc.Transition(ctx, user, form.ID, formpayment.ActionRecognizeComplete)
+	if err != nil {
+		t.Fatal(err)
+	}
+	form, err = svc.Transition(ctx, user, form.ID, formpayment.ActionSubmit)
 	if err != nil {
 		t.Fatal(err)
 	}

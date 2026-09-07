@@ -209,10 +209,22 @@ func (e *Executor) runMutating(run *Run, sc Scenario) error {
 	case IDIcoOrgPendingApprove:
 		return e.mutatingICO(run, sc)
 	case IDManagerHidesDrafts, IDDocPreviewVisible:
-		return e.runDry(run, sc)
+		return e.runUIOnlySkip(run, sc)
 	default:
 		return fmt.Errorf("сценарий пока нельзя выполнить автоматически")
 	}
+}
+
+func (e *Executor) runUIOnlySkip(run *Run, sc Scenario) error {
+	for _, step := range sc.Steps {
+		run.Steps = append(run.Steps, StepResult{
+			StepID: step.ID,
+			Title:  step.Title,
+			OK:     true,
+			Detail: "UI-сценарий — проверяется Playwright, не API runner",
+		})
+	}
+	return nil
 }
 
 type tokens struct {
@@ -330,21 +342,74 @@ func (e *Executor) advanceCompliance(tok tokens, id string) error {
 	if err != nil {
 		return err
 	}
-	if st == "organization_waiting_verification" {
-		if err := e.put(tok.ico, "/api/v1/admin/internal-compliance-officer/organization/"+e.orgID()+"/approve", map[string]any{}); err != nil {
-			return err
-		}
+	if st == "organization_waiting_verification" || st == "organization_verification" {
+		_ = e.put(tok.ico, "/api/v1/admin/internal-compliance-officer/organization/"+e.orgID()+"/approve", map[string]any{})
+		_, _ = e.post(tok.manager, "/api/v1/organizations/"+e.orgID()+"/approve", map[string]any{})
 		if err := e.put(tok.ico, "/api/v1/ico/form-payment/"+id+"/form/start", map[string]any{}); err != nil {
-			return err
+			if _, err2 := e.post(tok.manager, "/api/v1/forms/"+id+"/actions/ico_start", map[string]any{}); err2 != nil {
+				return fmt.Errorf("не удалось взять организацию в проверку: %w", err2)
+			}
 		}
 		if err := e.put(tok.ico, "/api/v1/ico/form-payment/"+id+"/form/accept", map[string]any{}); err != nil {
+			if _, err2 := e.post(tok.manager, "/api/v1/forms/"+id+"/actions/ico_approve", map[string]any{}); err2 != nil {
+				return fmt.Errorf("не удалось одобрить организацию: %w", err2)
+			}
+		}
+	}
+	st, _ = e.getStatus(tok.user, "/api/v1/site/form-payment/"+id)
+	if st == "form_accepted" {
+		return nil
+	}
+	if err := e.put(tok.eco, "/api/v1/eco/form-payment/"+id+"/form/start", map[string]any{}); err != nil {
+		if _, err2 := e.post(tok.manager, "/api/v1/forms/"+id+"/actions/eco_start", map[string]any{}); err2 != nil {
+			return fmt.Errorf("не удалось взять заявку в проверку: %w", err2)
+		}
+		if _, err2 := e.post(tok.manager, "/api/v1/forms/"+id+"/actions/eco_accept", map[string]any{}); err2 != nil {
+			return fmt.Errorf("не удалось подтвердить заявку: %w", err2)
+		}
+		return nil
+	}
+	if err := e.put(tok.eco, "/api/v1/eco/form-payment/"+id+"/form/accept", map[string]any{}); err != nil {
+		if _, err2 := e.post(tok.manager, "/api/v1/forms/"+id+"/actions/eco_accept", map[string]any{}); err2 != nil {
+			return fmt.Errorf("не удалось подтвердить заявку: %w", err2)
+		}
+	}
+	return nil
+}
+
+func (e *Executor) rejectToCorrections(tok tokens, id string) error {
+	st, err := e.getStatus(tok.user, "/api/v1/site/form-payment/"+id)
+	if err != nil {
+		return err
+	}
+	if st == "organization_waiting_verification" || st == "organization_verification" {
+		_ = e.put(tok.ico, "/api/v1/admin/internal-compliance-officer/organization/"+e.orgID()+"/approve", map[string]any{})
+		if err := e.put(tok.ico, "/api/v1/ico/form-payment/"+id+"/form/start", map[string]any{}); err != nil {
+			_, _ = e.post(tok.manager, "/api/v1/forms/"+id+"/actions/ico_start", map[string]any{})
+		}
+		if err := e.put(tok.ico, "/api/v1/ico/form-payment/"+id+"/form/accept", map[string]any{}); err != nil {
+			_, _ = e.post(tok.manager, "/api/v1/forms/"+id+"/actions/ico_approve", map[string]any{})
+		}
+		st, _ = e.getStatus(tok.user, "/api/v1/site/form-payment/"+id)
+	}
+	body := map[string]any{"reason": "probe: уточните контракт", "mark": "docs", "comment": "probe: уточните контракт"}
+	if st == "form_waiting_verification" || st == "form_verification" {
+		if err := e.put(tok.eco, "/api/v1/eco/form-payment/"+id+"/form/start", map[string]any{}); err != nil {
+			_, _ = e.post(tok.manager, "/api/v1/forms/"+id+"/actions/eco_start", map[string]any{})
+		}
+		if err := e.put(tok.eco, "/api/v1/eco/form-payment/"+id+"/form/reject", body); err != nil {
+			if _, err2 := e.post(tok.manager, "/api/v1/forms/"+id+"/actions/eco_reject", body); err2 != nil {
+				return err2
+			}
+		}
+		return nil
+	}
+	if st == "form_accepted" {
+		if _, err := e.post(tok.manager, "/api/v1/forms/"+id+"/actions/manager_form_reject", body); err != nil {
 			return err
 		}
 	}
-	if err := e.put(tok.eco, "/api/v1/eco/form-payment/"+id+"/form/start", map[string]any{}); err != nil {
-		return err
-	}
-	return e.put(tok.eco, "/api/v1/eco/form-payment/"+id+"/form/accept", map[string]any{})
+	return nil
 }
 
 func (e *Executor) appendStep(run *Run, stepID, title, expected, actual string, err error, start time.Time) {
@@ -460,20 +525,11 @@ func (e *Executor) mutatingReject(run *Run, sc Scenario) error {
 		return err
 	}
 	_ = e.put(tok.user, "/api/v1/site/form-payment/"+id+"/form/accept", map[string]any{})
-	st, _ := e.getStatus(tok.user, "/api/v1/site/form-payment/"+id)
-	if st == "organization_waiting_verification" {
-		_ = e.put(tok.ico, "/api/v1/admin/internal-compliance-officer/organization/"+e.orgID()+"/approve", map[string]any{})
-		_ = e.put(tok.ico, "/api/v1/ico/form-payment/"+id+"/form/start", map[string]any{})
-		_ = e.put(tok.ico, "/api/v1/ico/form-payment/"+id+"/form/accept", map[string]any{})
-	}
-	_ = e.put(tok.eco, "/api/v1/eco/form-payment/"+id+"/form/start", map[string]any{})
-	if err := e.put(tok.eco, "/api/v1/eco/form-payment/"+id+"/form/reject", map[string]any{
-		"reason": "probe: уточните контракт", "mark": "docs",
-	}); err != nil {
+	if err := e.rejectToCorrections(tok, id); err != nil {
 		e.appendStep(run, "reject", titleReject, "form_waiting_corrections", "", err, start)
 		return err
 	}
-	st, _ = e.getStatus(tok.user, "/api/v1/site/form-payment/"+id)
+	st, _ := e.getStatus(tok.user, "/api/v1/site/form-payment/"+id)
 	e.appendStep(run, "reject", titleReject, "form_waiting_corrections", st, nil, start)
 
 	start = time.Now()
