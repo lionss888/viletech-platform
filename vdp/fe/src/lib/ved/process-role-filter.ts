@@ -91,3 +91,23 @@ export function effectiveAllowsUiAction(
 export function findProcessRole(rows: ProcessRoleRow[] | undefined, role: string): ProcessRoleRow | undefined {
   return rows?.find((r) => r.role === role);
 }
+
+/** Slot actor is off process or not an actor → continuity may transfer to manager.ops. */
+export function isProcessSlotDisabled(rows: ProcessRoleRow[] | undefined, role: string): boolean {
+  const cfg = findProcessRole(rows, role);
+  if (!cfg) return true;
+  return !cfg.enabled || cfg.influence !== "actor";
+}
+
+/** Manager (or any row with manager.ops) may close disabled ICO/ECO slots. */
+export function canContinuityAdvance(
+  rows: ProcessRoleRow[] | undefined,
+  actorRole: string,
+  slotRole: "internal_compliance_officer" | "compliance_officer",
+): boolean {
+  if (!rows?.length) return false;
+  if (!isProcessSlotDisabled(rows, slotRole)) return false;
+  const actor = findProcessRole(rows, actorRole);
+  if (!actor?.enabled || actor.influence !== "actor") return false;
+  return actor.capabilities.includes("manager.ops");
+}

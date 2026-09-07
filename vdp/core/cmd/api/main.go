@@ -15,6 +15,7 @@ import (
 	"github.com/viletech/vdp/core/internal/repository/postgres"
 	"github.com/viletech/vdp/core/internal/repository/seed"
 	"github.com/viletech/vdp/core/internal/service"
+	"github.com/viletech/vdp/core/internal/storage"
 	httpapi "github.com/viletech/vdp/core/internal/transport/http"
 	"github.com/viletech/vdp/core/pkg/config"
 	"github.com/viletech/vdp/core/pkg/logger"
@@ -41,9 +42,17 @@ func main() {
 		log.Error("dev seed failed", "error", err)
 		os.Exit(1)
 	}
-	forms := service.NewFormPaymentService(store, box, newID)
+	forms := service.NewFormPaymentService(store, box, newID).
+		WithExtractionURL(cfg.ExtractionURL, cfg.HubSharedSecret)
 	orgs := service.NewOrganizationService(store).WithOutbox(box)
 	catalog := service.NewCatalogService(store, box, newID)
+	if blobs, err := openBlobStore(cfg); err != nil {
+		log.Error("blob store init failed", "error", err, "dir", cfg.BlobDir)
+		os.Exit(1)
+	} else if blobs != nil {
+		catalog = catalog.WithBlobStore(blobs)
+		log.Info("blob store ready", "driver", "disk", "dir", cfg.BlobDir)
+	}
 	auth := service.NewAuthService(store, cfg.JWTSecret, cfg.JWTExpirationHours)
 	accounts := service.NewAccountService(store)
 	notify := service.NewNotificationService(store)
@@ -56,6 +65,18 @@ func main() {
 	if err := http.ListenAndServe(addr, server.Handler()); err != nil {
 		log.Error("server stopped", "error", err)
 	}
+}
+
+func openBlobStore(cfg *config.Config) (storage.BlobStore, error) {
+	driver := storeDriver()
+	if driver == "memory" {
+		return nil, nil // keep CatalogService default MemoryBlobStore for unit/dev memory mode
+	}
+	dir := strings.TrimSpace(cfg.BlobDir)
+	if dir == "" || dir == "memory" {
+		return nil, nil
+	}
+	return storage.NewDiskBlobStore(dir)
 }
 
 func openStores(ctx context.Context, databaseURL string) (repository.Store, outbox.Store, error) {

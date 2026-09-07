@@ -2,7 +2,17 @@ import type { ComplianceHistoryEntry, CoreForm } from "./forms";
 import { actionsFor } from "@/lib/ved/actions";
 import { roleTitle } from "@/lib/ved/roles";
 import { statusMeta } from "@/lib/ved/statuses";
-import type { AttachedDocument, FormDirection, FormKind, FormStatus, PaymentForm, TimelineEntry, VedRole } from "@/lib/ved/types";
+import type {
+  AttachedDocument,
+  FormDirection,
+  FormKind,
+  FormStatus,
+  PaymentForm,
+  PlatformUser,
+  TimelineEntry,
+  VedRole,
+} from "@/lib/ved/types";
+import type { ProcessRoleRow } from "@/lib/api/process-roles";
 
 function parseAmountMinor(raw: string | undefined): number {
   if (!raw) return 0;
@@ -69,16 +79,21 @@ export function parseDocsJson(raw: string | undefined, formId: string): Attached
 }
 
 /** Maps compliance history API rows to timeline entries with human-readable status labels. */
-export function mapComplianceHistory(entries: ComplianceHistoryEntry[]): TimelineEntry[] {
+export function mapComplianceHistory(
+  entries: ComplianceHistoryEntry[],
+  users: PlatformUser[] = [],
+): TimelineEntry[] {
   return entries.map((entry) => {
     const fromLabel = statusMeta(entry.from_status as FormStatus).label;
     const toLabel = statusMeta(entry.to_status as FormStatus).label;
     const transition = `${fromLabel} → ${toLabel}`;
+    const actor = users.find((u) => u.id === entry.actor_id);
     return {
       id: entry.id,
       title: entry.comment ? `${transition}: ${entry.comment}` : transition,
       at: entry.created_at,
-      actorRole: inferTimelineActor(entry.from_status),
+      actorRole: actor?.role ?? inferTimelineActor(entry.from_status),
+      actorName: actor?.name,
       done: true,
     };
   });
@@ -101,9 +116,9 @@ function inferTimelineActor(fromStatus: string): VedRole {
 
 /**
  * Role(s) that currently own CTAs on this status (for guided next-step copy).
- * Excludes root union.
+ * Excludes root union. Pass processRoles so disabled ICO/ECO transfer to manager.
  */
-export function waitingActorRoles(status: FormStatus): VedRole[] {
+export function waitingActorRoles(status: FormStatus, processRoles?: ProcessRoleRow[]): VedRole[] {
   const roles: VedRole[] = [
     "user",
     "internal_compliance_officer",
@@ -111,12 +126,12 @@ export function waitingActorRoles(status: FormStatus): VedRole[] {
     "manager",
     "provider",
   ];
-  return roles.filter((role) => actionsFor(role, status).length > 0);
+  return roles.filter((role) => actionsFor(role, status, processRoles).length > 0);
 }
 
 /** Human label for who should act next on this status. */
-export function waitingActorLabel(status: FormStatus): string | null {
-  const roles = waitingActorRoles(status);
+export function waitingActorLabel(status: FormStatus, processRoles?: ProcessRoleRow[]): string | null {
+  const roles = waitingActorRoles(status, processRoles);
   if (roles.length === 0) return null;
   return roles.map((r) => roleTitle(r)).join(", ");
 }
@@ -169,7 +184,8 @@ export function mapCoreFormToPaymentForm(
     hsCode: "—",
     invoiceNumber: form.contract_number || "—",
     ownerName,
-    managerName: form.manager_id || undefined,
+    managerId: form.manager_id || undefined,
+    managerName: undefined,
     providerId: form.provider_id || undefined,
     providerName: form.provider_id || undefined,
     channel: form.channel === "bank" ? "bank" : form.channel === "ui" ? "ui" : undefined,
@@ -177,6 +193,7 @@ export function mapCoreFormToPaymentForm(
     agentId: form.agent_id || undefined,
     contractId: form.contract_id || undefined,
     noDocuments: form.no_documents || undefined,
+    invoiceJson: form.invoice_json || undefined,
     createdAt: form.created_at,
     updatedAt: form.updated_at,
     documents: parseDocsJson(form.docs_json, id),
@@ -184,13 +201,13 @@ export function mapCoreFormToPaymentForm(
   };
 }
 
-export function nextStepHint(status: string, role?: VedRole): string {
+export function nextStepHint(status: string, role?: VedRole, processRoles?: ProcessRoleRow[]): string {
   const formStatus = status as FormStatus;
-  const myActions = role ? actionsFor(role, formStatus) : [];
+  const myActions = role ? actionsFor(role, formStatus, processRoles) : [];
   if (myActions.length > 0) {
     return `Следующий шаг: ${myActions[0]!.label}.`;
   }
-  const waiting = waitingActorLabel(formStatus);
+  const waiting = waitingActorLabel(formStatus, processRoles);
   if (waiting) {
     return `Сейчас действует: ${waiting}. Для вашей роли действий нет — дождитесь их решения.`;
   }

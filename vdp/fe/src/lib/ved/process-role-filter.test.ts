@@ -39,4 +39,29 @@ describe("actionsFor with process roles", () => {
     const ids = actionsFor("manager", "form_accepted", rows).map((a) => a.id);
     expect(ids).not.toContain("mgr_assign_agent");
   });
+
+  it("does not require org.compliance on manager for continuity inject", () => {
+    const rows: ProcessRoleRow[] = [
+      {
+        role: "internal_compliance_officer",
+        enabled: false,
+        priority: 20,
+        influence: "actor",
+        capabilities: ["form.view", "org.compliance"],
+        removable: false,
+        mandatory: false,
+      },
+      {
+        role: "manager",
+        enabled: true,
+        priority: 40,
+        influence: "actor",
+        capabilities: ["form.view", "manager.ops"],
+        removable: false,
+        mandatory: true,
+      },
+    ];
+    const ids = actionsFor("manager", "organization_waiting_verification", rows).map((a) => a.id);
+    expect(ids).toContain("ico_form_start");
+  });
 });

@@ -107,7 +107,7 @@ function LoginPage() {
         </p>
         <p className="mt-3 text-center text-xs text-muted-foreground">
           <Link to="/demo/login" className="font-semibold text-foreground hover:underline">
-            Демо без бэкенда
+            Открыть демо-контур
           </Link>
           {" · "}
           <Link to="/demo/start" className="font-semibold text-foreground hover:underline">

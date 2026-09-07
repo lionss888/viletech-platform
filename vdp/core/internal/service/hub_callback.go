@@ -11,6 +11,7 @@ import (
 	"github.com/viletech/vdp/core/internal/domain/formpayment"
 	apperrors "github.com/viletech/vdp/core/pkg/errors"
 	"github.com/viletech/vdp/core/pkg/logger"
+	"github.com/viletech/vdp/shared/extraction"
 )
 
 // ApplyHubCallback applies hub results via SM Transition / field patch only.
@@ -48,25 +49,54 @@ func (s *FormPaymentService) ApplyOCRRecognized(ctx context.Context, principal a
 	}
 	form.UnpackDocsJSON()
 	fields, _ := body["fields"].(map[string]any)
-	applyField := func(key string, set func(string)) {
-		if v, ok := body[key].(string); ok && v != "" {
-			set(v)
-			return
-		}
-		if fields != nil {
-			if v, ok := fields[key].(string); ok && v != "" {
-				set(v)
+	eventID, _ := body["event_id"].(string)
+	if result, hasResult := mergeExtractionResult(body, fields); hasResult {
+		hash := extraction.ContentHash(result)
+		if form.InvoiceJSON != "" {
+			if prev, ok := extraction.ParseFromInvoiceJSON(form.InvoiceJSON); ok && prev.Meta.ContentHash != "" && prev.Meta.ContentHash == hash && prev.Meta.EventID == eventID {
+				logger.FromContext(ctx, nil).Info("ocr idempotent skip", "event_id", eventID)
+				return form, nil
 			}
 		}
-	}
-	applyField("contract_number", func(v string) { form.ContractNumber = v })
-	applyField("contract_date", func(v string) { form.ContractDate = v })
-	applyField("invoice_amount", func(v string) { form.InvoiceAmount = v })
-	applyField("currency", func(v string) { form.Currency = v })
-	applyField("invoice_json", func(v string) { form.InvoiceJSON = v })
-	if form.InvoiceJSON == "" && fields != nil {
-		raw, _ := json.Marshal(fields)
-		form.InvoiceJSON = string(raw)
+		result.Meta.ContentHash = hash
+		if eventID != "" {
+			result.Meta.EventID = eventID
+		}
+		result.Meta.FormPaymentID = formID
+		form.InvoiceJSON = extraction.ToInvoiceJSON(result)
+		if result.Header.ContractNumber != "" {
+			form.ContractNumber = result.Header.ContractNumber
+		}
+		if result.Header.ContractDate != "" {
+			form.ContractDate = result.Header.ContractDate
+		}
+		if result.Header.InvoiceAmount != "" {
+			form.InvoiceAmount = result.Header.InvoiceAmount
+		}
+		if result.Header.Currency != "" {
+			form.Currency = result.Header.Currency
+		}
+	} else {
+		applyField := func(key string, set func(string)) {
+			if v, ok := body[key].(string); ok && v != "" {
+				set(v)
+				return
+			}
+			if fields != nil {
+				if v, ok := fields[key].(string); ok && v != "" {
+					set(v)
+				}
+			}
+		}
+		applyField("contract_number", func(v string) { form.ContractNumber = v })
+		applyField("contract_date", func(v string) { form.ContractDate = v })
+		applyField("invoice_amount", func(v string) { form.InvoiceAmount = v })
+		applyField("currency", func(v string) { form.Currency = v })
+		applyField("invoice_json", func(v string) { form.InvoiceJSON = v })
+		if form.InvoiceJSON == "" && fields != nil {
+			raw, _ := json.Marshal(fields)
+			form.InvoiceJSON = string(raw)
+		}
 	}
 	form.UpdatedAt = time.Now().UTC()
 	form.PackDocsJSON()

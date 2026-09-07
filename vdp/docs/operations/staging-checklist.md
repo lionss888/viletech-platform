@@ -28,9 +28,14 @@ CI partial (bind AuthZ plus fixture notify). Staging: TELEGRAM_BOT_TOKEN and TEL
 
 CI adapter tests (cover/fee, 409 idempotent, timeout). Not a new service. Staging: ONEC_URL in env when a stand exists. Empty URL uses fixture. Do not claim 1C ready without URL.
 
-## OCR recognition
+## Document extraction (OCR / IE)
 
-Policy: optional side-path only. recognize_complete in core advances draft without vendor OCR. Staging OCR worker optional — not on payment commit path. If OCR unavailable, user manual entry remains. Do not auto-approve or auto-pay from OCR output.
+Policy: optional side-path only. See [architecture/extraction.md](../architecture/extraction.md).
+Compose: extraction service on port 8093; hub `OCR_URL=http://extraction:8093/recognize`.
+`EXTRACTION_PRIMARY=fixture` without Yandex keys; `yandex` needs `YANDEX_API_KEY` + folder + model URI.
+Gold JSONL under `EXTRACTION_GOLD_DIR`. HITL confirm required for `human_out`.
+`EXTRACTION_PRIMARY=own` only after Wave 6 eval — otherwise stub/partial.
+recognize_complete in core advances draft without vendor. Never auto-approve or auto-pay from extraction.
 
 ## Telegram 1C partner
 

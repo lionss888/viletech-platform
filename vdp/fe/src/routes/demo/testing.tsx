@@ -1,11 +1,21 @@
-import { createFileRoute } from '@tanstack/react-router'
-import { useMemo, useState } from "react";
+import { createFileRoute } from "@tanstack/react-router";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { VedFormLink } from "@/components/ved/VedLink";
 
 import { VedAppShell } from "@/components/ved/VedAppShell";
 import { StatusBadge } from "@/components/ved/StatusBadge";
 import { smokeCreateBankForm } from "@/lib/api/bank";
+import {
+  fetchScenarioCatalog,
+  fetchScenarioPolicy,
+  listScenarioRuns,
+  startScenarioRuns,
+  type ScenarioCatalogItem,
+  type ScenarioPolicy,
+  type ScenarioRun,
+} from "@/lib/api/scenarios";
+import { ApiError } from "@/lib/api/client";
 import { actionsFor } from "@/lib/ved/actions";
 import { APP_SEED_ACCOUNTS } from "@/lib/ved/app-seed-accounts";
 import { BANK_ORG_ID } from "@/lib/ved/bank-channel";
@@ -18,62 +28,18 @@ import { usePlatformStore } from "@/lib/ved/platform-store";
 export const Route = createFileRoute("/demo/testing")({
   head: () => ({
     meta: [
-      { title: "Тестовые данные и сценарии — ⚡ Веди ВЭД ₽" },
-      { name: "description", content: "Тестовые аккаунты всех шести ролей, набор заявок по каждой стадии и сценарии ручной проверки интерфейса ВЭД." },
-      { property: "og:title", content: "Тестовые данные и сценарии — ⚡ Веди ВЭД ₽" },
-      { property: "og:description", content: "Аккаунты ролей, заявки по стадиям и пошаговые сценарии ручного тестирования." },
+      {
+        title: "Тестовые данные и сценарии — ⚡ Веди ВЭД ₽",
+      },
+      {
+        name: "description",
+        content:
+          "Проверка основных процессов платформы для суперадмина: заявки, роли, безопасность.",
+      },
     ],
   }),
   component: TestingPage,
 });
-
-const SCENARIOS: { title: string; steps: string[] }[] = [
-  {
-    title: "Сквозной happy path (все роли)",
-    steps: [
-      "Клиент: заявка «Черновик» → «Отправить на проверку».",
-      "Внутренний комплаенс: «Взять в проверку» → «Одобрить организацию и заявку».",
-      "Внешний комплаенс: «Взять в проверку» → «Подтвердить заявку».",
-      "Менеджер: «Прикрепить агентский договор», затем «Сформировать поручение принципала».",
-      "Клиент: «Загрузить подписанное поручение», далее «Загрузить платёжное поручение».",
-      "Менеджер: «Назначить провайдера» → «Запустить исполнение платежа».",
-      "Провайдер: «Платёж отправлен».",
-      "Менеджер: отчёт агента → подтверждение → отгрузка → «Закрыть заявку».",
-    ],
-  },
-  {
-    title: "Возвраты и коррекции",
-    steps: [
-      "Комплаенс: «Вернуть на коррекцию» с причиной — проверьте баннер комментария в карточке.",
-      "Клиент: статус «Возвращена на коррекцию» → «Отправить исправления».",
-      "Провайдер: «Вернуть менеджеру» — заявка уходит в «Уточнение».",
-    ],
-  },
-  {
-    title: "Права и видимость",
-    steps: [
-      "Провайдер видит только платёжные статусы и не видит ПДн клиента (колонка «Клиент» скрыта).",
-      "Клиент видит только собственные заявки.",
-      "Суперадмин: union CTA на карточке + «Отменить заявку» в блоке администрирования; `/admin` — CRUD и блокировка.",
-    ],
-  },
-  {
-    title: "Bank API channel",
-    steps: [
-      "POST /api/v1/bank/forms от bank@vdp.local с Idempotency-Key и correlation_id.",
-      "На карточке заявки: badge «Канал: Bank API» и corr: …",
-      "В /organizations (manager/root): Bank settings для org с client_type=bank.",
-    ],
-  },
-  {
-    title: "Реестр и массовые действия",
-    steps: [
-      "Фильтр «Только мои действия» оставляет заявки с доступными CTA.",
-      "Выберите 2–3 заявки в одном статусе — появятся общие массовые действия.",
-      "«Сбросить тестовые данные» в сайдбаре возвращает исходный набор.",
-    ],
-  },
-];
 
 export function TestingPage() {
   const { forms, users, organizations, counterparties } = usePlatformStore();
@@ -83,6 +49,15 @@ export function TestingPage() {
   const [bankBusy, setBankBusy] = useState(false);
   const [bankResult, setBankResult] = useState<string | null>(null);
   const [bankError, setBankError] = useState<string | null>(null);
+
+  const [catalog, setCatalog] = useState<ScenarioCatalogItem[]>([]);
+  const [policy, setPolicy] = useState<ScenarioPolicy | null>(null);
+  const [selected, setSelected] = useState<Record<string, boolean>>({});
+  const [runs, setRuns] = useState<ScenarioRun[]>([]);
+  const [history, setHistory] = useState<ScenarioRun[]>([]);
+  const [runBusy, setRunBusy] = useState(false);
+  const [runError, setRunError] = useState<string | null>(null);
+  const [catalogError, setCatalogError] = useState<string | null>(null);
 
   const accountRows = useMemo(() => {
     if (isApp) {
@@ -103,6 +78,42 @@ export function TestingPage() {
     }));
   }, [isApp]);
 
+  const loadScenarioPanel = useCallback(async () => {
+    if (!isApp) return;
+    setCatalogError(null);
+    try {
+      const [cat, pol, hist] = await Promise.all([
+        fetchScenarioCatalog(),
+        fetchScenarioPolicy(),
+        listScenarioRuns(10),
+      ]);
+      setCatalog(Array.isArray(cat) ? cat : []);
+      setPolicy(pol);
+      setHistory(Array.isArray(hist) ? hist : []);
+      setSelected((prev) => {
+        const next = { ...prev };
+        for (const item of cat) {
+          if (next[item.id] === undefined) {
+            next[item.id] = item.tags.includes("smoke");
+          }
+        }
+        return next;
+      });
+    } catch (e) {
+      const msg =
+        e instanceof ApiError
+          ? e.message
+          : e instanceof Error
+            ? e.message
+            : "Не удалось загрузить каталог";
+      setCatalogError(msg);
+    }
+  }, [isApp]);
+
+  useEffect(() => {
+    void loadScenarioPanel();
+  }, [loadScenarioPanel]);
+
   async function simulateBankCreate() {
     setBankBusy(true);
     setBankError(null);
@@ -112,7 +123,7 @@ export function TestingPage() {
       const form = await smokeCreateBankForm(
         {
           organization_id: BANK_ORG_ID,
-          counterparty_id: counterparties[0]?.id,
+          ...(counterparties[0]?.id ? { counterparty_id: counterparties[0].id } : {}),
           invoice_amount: "1500",
           currency: "USD",
           direction: "import",
@@ -125,22 +136,187 @@ export function TestingPage() {
       );
       await queryClient.invalidateQueries({ queryKey: ["forms"] });
       setBankResult(
-        `Создана заявка ${form.id} · channel=${form.channel} · corr=${form.correlation_id ?? correlationId} · откройте карточку для badge`,
+        "Тестовая заявка от банка создана. Откройте её в реестре — рядом должна быть метка «от банка».",
       );
     } catch (e) {
-      setBankError(e instanceof Error ? e.message : "Bank API error");
+      setBankError(e instanceof Error ? e.message : "Не удалось создать заявку от банка");
     } finally {
       setBankBusy(false);
     }
   }
 
+  async function runSelectedScenarios() {
+    const ids = Object.entries(selected)
+      .filter(([, on]) => on)
+      .map(([id]) => id);
+    if (ids.length === 0) {
+      setRunError("Выберите хотя бы один сценарий");
+      return;
+    }
+    setRunBusy(true);
+    setRunError(null);
+    setRuns([]);
+    try {
+      const modeHint = policy?.allows_mutating_runs ? "mutating" : "dry_run";
+      const res = await startScenarioRuns({ scenario_ids: ids, mode: modeHint });
+      setRuns(res.runs);
+      const hist = await listScenarioRuns(10);
+      setHistory(hist);
+    } catch (e) {
+      setRunError(e instanceof Error ? e.message : "Ошибка запуска");
+    } finally {
+      setRunBusy(false);
+    }
+  }
+
+  const selectedCount = Object.values(selected).filter(Boolean).length;
+
+  const modeLabel =
+    policy?.default_mode === "mutating"
+      ? "полная проверка (создаются тестовые заявки)"
+      : policy?.default_mode === "dry_run"
+        ? "только сверка правил (без изменений в заявках)"
+        : policy?.default_mode === "health"
+          ? "проверка доступности"
+          : policy?.default_mode ?? "…";
+
   return (
-    <VedAppShell title="Тестовые данные и сценарии" subtitle="Для ручной проверки интерфейса по всем ролям">
-      {mode === "app" && (
+    <VedAppShell
+      title="Проверка сценариев"
+      subtitle="Контроль основных процессов платформы — для суперадмина"
+    >
+      {isApp && (
         <div className="panel p-4">
-          <p className="label-caps">Bank API smoke</p>
+          <p className="label-caps">Что проверить</p>
           <p className="mt-1 text-xs text-muted-foreground">
-            Логин bank@vdp.local (отдельный токен, сессия UI не меняется) · org {BANK_ORG_ID}
+            Отметьте сценарии и нажмите «Запустить». Система сама пройдёт шаги ролей на тестовых
+            данных и покажет, где всё хорошо, а где сбой. Режим: {modeLabel}
+            {policy && !policy.allows_mutating_runs
+              ? ". В этой среде нельзя менять заявки — только безопасная сверка."
+              : ""}
+          </p>
+          {catalogError && <p className="mt-2 text-xs text-destructive">{catalogError}</p>}
+          {catalog.length > 0 && (
+            <ul className="mt-3 space-y-2">
+              {catalog.map((item) => (
+                <li key={item.id} className="flex items-start gap-2 text-sm">
+                  <input
+                    id={`sc-${item.id}`}
+                    type="checkbox"
+                    className="mt-1"
+                    checked={Boolean(selected[item.id])}
+                    onChange={(ev) =>
+                      setSelected((prev) => ({ ...prev, [item.id]: ev.target.checked }))
+                    }
+                  />
+                  <label htmlFor={`sc-${item.id}`} className="cursor-pointer">
+                    <span className="font-medium">{item.title}</span>
+                    <span className="mt-0.5 block text-xs text-muted-foreground">{item.description}</span>
+                  </label>
+                </li>
+              ))}
+            </ul>
+          )}
+          <button
+            type="button"
+            disabled={runBusy || catalog.length === 0 || selectedCount === 0}
+            onClick={() => void runSelectedScenarios()}
+            className="mt-3 rounded-md bg-accent px-3 py-2 text-sm font-semibold text-accent-foreground disabled:opacity-50"
+          >
+            {runBusy
+              ? "Идёт проверка…"
+              : selectedCount === 0
+                ? "Выберите сценарии"
+                : `Запустить проверку (${selectedCount})`}
+          </button>
+          {runError && <p className="mt-2 text-xs text-destructive">{runError}</p>}
+          {runs.length > 0 && (
+            <div className="mt-4 space-y-3">
+              {runs.map((run) => {
+                const title =
+                  catalog.find((c) => c.id === run.scenario_id)?.title ?? run.scenario_id;
+                const statusRu =
+                  run.status === "passed"
+                    ? "успешно"
+                    : run.status === "failed"
+                      ? "есть ошибки"
+                      : run.status === "running"
+                        ? "выполняется"
+                        : run.status;
+                const modeRu =
+                  run.mode === "mutating"
+                    ? "с тестовыми заявками"
+                    : run.mode === "dry_run"
+                      ? "без изменений"
+                      : run.mode === "health"
+                        ? "доступность"
+                        : run.mode;
+                return (
+                  <div key={run.id} className="rounded-md border border-border p-3 text-xs">
+                    <p className="font-semibold">
+                      {title} — {statusRu} ({modeRu})
+                      {run.form_id ? (
+                        <>
+                          {" "}
+                          ·{" "}
+                          <VedFormLink id={run.form_id} className="underline">
+                            открыть тестовую заявку
+                          </VedFormLink>
+                        </>
+                      ) : null}
+                    </p>
+                    {run.error && (
+                      <p className="text-destructive">{humanizeScenarioDetail(run.error)}</p>
+                    )}
+                    <ol className="mt-2 list-decimal space-y-1 pl-4">
+                      {run.steps?.map((st) => {
+                        const stepTitle =
+                          catalog
+                            .find((c) => c.id === run.scenario_id)
+                            ?.steps?.find((s) => s.id === st.step_id)?.title ?? st.title;
+                        const detail = humanizeScenarioDetail(st.detail);
+                        return (
+                          <li key={st.step_id} className={st.ok ? "text-done" : "text-destructive"}>
+                            {st.ok ? "Готово" : "Сбой"}: {stepTitle}
+                            {st.actual_status
+                              ? ` — ${statusMeta(st.actual_status).label}`
+                              : ""}
+                            {detail ? ` — ${detail}` : ""}
+                          </li>
+                        );
+                      })}
+                    </ol>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+          {(history ?? []).length > 0 && (
+            <div className="mt-4">
+              <p className="label-caps">Недавние проверки</p>
+              <ul className="mt-2 space-y-1 text-xs text-muted-foreground">
+                {(history ?? []).map((h) => {
+                  const title =
+                    catalog.find((c) => c.id === h.scenario_id)?.title ?? h.scenario_id;
+                  const statusRu = h.status === "passed" ? "успешно" : h.status === "failed" ? "ошибка" : h.status;
+                  return (
+                    <li key={h.id}>
+                      {title} — {statusRu}
+                    </li>
+                  );
+                })}
+              </ul>
+            </div>
+          )}
+        </div>
+      )}
+
+      {mode === "app" && (
+        <div className="panel mt-4 p-4">
+          <p className="label-caps">Заявка от банка (не из кабинета клиента)</p>
+          <p className="mt-1 text-xs text-muted-foreground">
+            Иногда заявки приходят от банка-партнёра, а не из кабинета клиента. Кнопка создаёт
+            такую тестовую заявку — в реестре у неё будет метка «от банка».
           </p>
           <button
             type="button"
@@ -148,14 +324,17 @@ export function TestingPage() {
             onClick={() => void simulateBankCreate()}
             className="mt-3 rounded-md bg-accent px-3 py-2 text-sm font-semibold text-accent-foreground disabled:opacity-50"
           >
-            {bankBusy ? "Запрос…" : "Создать bank-заявку"}
+            {bankBusy ? "Создаём…" : "Создать тестовую заявку от банка"}
           </button>
           {bankResult && <p className="mt-2 text-xs text-done">{bankResult}</p>}
           {bankError && <p className="mt-2 text-xs text-destructive">{bankError}</p>}
         </div>
       )}
-      <div className="panel p-4">
-        <p className="label-caps">{isApp ? "Seed-аккаунты app (вход на /login)" : "Тестовые аккаунты (вход на /demo/login)"}</p>
+
+      <div className="panel mt-4 p-4">
+        <p className="label-caps">
+          {isApp ? "Тестовые входы по ролям" : "Демо-входы по ролям"}
+        </p>
         <div className="mt-3 overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
@@ -184,33 +363,20 @@ export function TestingPage() {
         </div>
         <p className="mt-3 text-xs text-muted-foreground">
           {isApp
-            ? `App-контур: JWT через /login, API core на :8080. Аккаунтов в БД: ${users.length}. E2E: make compose-e2e.`
-            : `Демо: пароль не проверяется — вход по кнопке роли. Аккаунтов в наборе: ${users.length}.`}
+            ? `Вход через страницу «Вход». Аккаунтов в системе: ${users.length}. Организаций: ${organizations.length}.`
+            : `Демо-режим: вход выбором роли. Аккаунтов: ${users.length}.`}
         </p>
       </div>
 
-      <div className="mt-4 grid gap-4 xl:grid-cols-2">
-        {SCENARIOS.map((s) => (
-          <div key={s.title} className="panel p-4">
-            <p className="text-sm font-semibold">{s.title}</p>
-            <ol className="mt-2 list-decimal space-y-1 pl-5 text-xs text-muted-foreground">
-              {s.steps.map((step) => (
-                <li key={step}>{step}</li>
-              ))}
-            </ol>
-          </div>
-        ))}
-      </div>
-
       <div className="panel mt-4 p-4">
-        <p className="label-caps">Заявки набора ({forms.length}) — по одной на каждый ключевой статус</p>
+        <p className="label-caps">Заявки набора ({forms.length})</p>
         <div className="mt-3 overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
               <tr className="border-b border-border text-left">
                 <th className="label-caps py-2 pr-4">Номер</th>
                 <th className="label-caps py-2 pr-4">Статус</th>
-                <th className="label-caps py-2 pr-4">Канал</th>
+                <th className="label-caps py-2 pr-4">Откуда</th>
                 <th className="label-caps py-2 pr-4">Стадия</th>
                 <th className="label-caps py-2 pr-4">Кто действует</th>
                 <th className="label-caps py-2 pr-4 text-right">Сумма</th>
@@ -231,14 +397,18 @@ export function TestingPage() {
                     </td>
                     <td className="py-2 pr-4 text-xs">
                       {f.channel === "bank" ? (
-                        <span className="rounded-md bg-wait-soft px-1.5 py-0.5 font-semibold text-wait">Bank API</span>
+                        <span className="rounded-md bg-wait-soft px-1.5 py-0.5 font-semibold text-wait">
+                          от банка
+                        </span>
                       ) : (
-                        <span className="text-muted-foreground">UI</span>
+                        <span className="text-muted-foreground">кабинет клиента</span>
                       )}
                     </td>
                     <td className="py-2 pr-4 text-xs text-muted-foreground">{statusMeta(f.status).stage}</td>
                     <td className="py-2 pr-4 text-xs">{actors.map((a) => a.title).join(", ") || "—"}</td>
-                    <td className="py-2 pr-4 text-right font-mono text-xs">{money(f.amountMinor, f.currency)}</td>
+                    <td className="py-2 pr-4 text-right font-mono text-xs">
+                      {money(f.amountMinor, f.currency)}
+                    </td>
                   </tr>
                 );
               })}
@@ -248,4 +418,21 @@ export function TestingPage() {
       </div>
     </VedAppShell>
   );
+}
+
+/** Soften leftover technical API text for managers. */
+function humanizeScenarioDetail(detail: string | undefined): string {
+  if (!detail) return "";
+  const trimmed = detail.trim();
+  if (/^PUT\s+\/api\//i.test(trimmed) || /^POST\s+\/api\//i.test(trimmed) || /^GET\s+\/api\//i.test(trimmed)) {
+    if (trimmed.includes("403")) return "у роли нет права на это действие";
+    if (trimmed.includes("409")) return "действие сейчас нельзя выполнить из‑за текущего статуса заявки";
+    if (trimmed.includes("401")) return "не удалось войти под нужной ролью";
+    if (trimmed.includes("404")) return "заявка или объект не найдены";
+    return "система отклонила шаг проверки";
+  }
+  if (/code=\d+/i.test(trimmed) || /channel=/i.test(trimmed) || /want\s+\d+/i.test(trimmed)) {
+    return "результат шага не совпал с ожидаемым";
+  }
+  return trimmed;
 }

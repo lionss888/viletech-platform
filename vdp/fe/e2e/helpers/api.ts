@@ -11,6 +11,15 @@ export type ApiTokens = {
   root: string;
 };
 
+/** Seed helpers keyed by scenarioverify catalog ids. */
+export type ScenarioSeedId =
+  | "happy_path_to_completed"
+  | "eco_reject_resubmit"
+  | "ico_org_pending_approve"
+  | "manager_payment_assign_provider"
+  | "provider_payment_no_pii"
+  | "manager_hides_drafts";
+
 async function loginApi(email: string, password: string): Promise<string> {
   const res = await fetch(`${CORE_URL}/api/v1/auth/login`, {
     method: "POST",
@@ -142,6 +151,38 @@ export async function createProviderProcessingForm(tokens: ApiTokens, suffix: st
   await authPut(tokens.manager, `/api/v1/manager/form-payment/${id}/payment/start`);
   await authPut(tokens.provider, `/api/v1/provider/form-payment/${id}/payment/start`);
   return id;
+}
+
+/** API-seed a form to completed. */
+export async function createCompletedForm(tokens: ApiTokens, suffix: string): Promise<string> {
+  const id = await createProviderProcessingForm(tokens, suffix);
+  await authPut(tokens.provider, `/api/v1/provider/form-payment/${id}/payment/sent`);
+  await authPut(tokens.manager, `/api/v1/manager/form-payment/${id}/report/signing`);
+  await authPut(tokens.manager, `/api/v1/manager/form-payment/${id}/report/accept`);
+  await authPut(tokens.manager, `/api/v1/manager/form-payment/${id}/completed`);
+  return id;
+}
+
+/**
+ * Seed by scenarioverify catalog id for Playwright UI journeys.
+ */
+export async function seedForScenario(scenarioId: ScenarioSeedId, tokens: ApiTokens, suffix: string): Promise<string> {
+  switch (scenarioId) {
+    case "happy_path_to_completed":
+      return createCompletedForm(tokens, suffix);
+    case "eco_reject_resubmit":
+      return createRejectedForm(tokens, suffix);
+    case "ico_org_pending_approve":
+      return createSubmittedForm(tokens, suffix);
+    case "manager_payment_assign_provider":
+      return createFormAccepted(tokens, suffix);
+    case "provider_payment_no_pii":
+      return createProviderProcessingForm(tokens, suffix);
+    case "manager_hides_drafts":
+      return createDraftForm(tokens, suffix);
+    default:
+      throw new Error(`unsupported scenario seed: ${scenarioId}`);
+  }
 }
 
 export async function assertCoreHealthy(): Promise<void> {

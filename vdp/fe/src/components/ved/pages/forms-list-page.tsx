@@ -10,11 +10,13 @@ import { actionsFor } from "@/lib/ved/actions";
 import { money } from "@/lib/ved/format";
 import { daysIdle, stuckForms } from "@/lib/ved/health";
 import type { FormsSearch } from "@/lib/ved/forms-search";
+import { verificationQueueLabel } from "@/lib/ved/process-stage-filters";
 import { roleTitle } from "@/lib/ved/roles";
 import { STAGES, STATUS_FILTERS, statusMeta } from "@/lib/ved/statuses";
 import { cpByIdFrom, orgByIdFrom, usePlatformStore, visibleForms } from "@/lib/ved/platform-store";
 import { providerCsvHeader, providerCsvRow, providerFormSearchHaystack } from "@/lib/ved/provider-acl";
 import { dateTime } from "@/lib/ved/format";
+import { useProcessRolesRows } from "@/lib/ved/use-process-roles-snapshot";
 import { cn } from "@/lib/utils";
 import type { FormAction, VedRole } from "@/lib/ved/types";
 export function FormsList() {
@@ -28,12 +30,14 @@ export function FormsList() {
   const [stageFilter, setStageFilter] = useState(preset.stage ?? "");
   const [bulkPending, setBulkPending] = useState<FormAction | null>(null);
   const [bulkReason, setBulkReason] = useState("");
+  const processRoles = useProcessRolesRows();
 
   const role = session?.role ?? "user";
   const scoped = visibleForms(forms, role, session?.name);
 
   const stuck = useMemo(() => stuckForms(scoped), [scoped]);
   const stuckIds = useMemo(() => new Set(stuck.map((f) => f.id)), [stuck]);
+  const verificationLabel = verificationQueueLabel(processRoles);
 
   const rows = useMemo(() => {
     const statusPreset = STATUS_FILTERS.find((f) => f.value === filter);
@@ -43,7 +47,7 @@ export function FormsList() {
         const stage = statusMeta(form.status).stage;
         if (stage !== "organization_verification" && stage !== "form_verification") return false;
       } else if (stageFilter && statusMeta(form.status).stage !== stageFilter) return false;
-      if (onlyMine && actionsFor(role, form.status).length === 0) return false;
+      if (onlyMine && actionsFor(role, form.status, processRoles).length === 0) return false;
       if (onlyStuck && !stuckIds.has(form.id)) return false;
       if (query) {
         const cpName = cpByIdFrom(counterparties, form.counterpartyId)?.name ?? "";
@@ -56,14 +60,16 @@ export function FormsList() {
       }
       return true;
     });
-  }, [scoped, filter, stageFilter, onlyMine, onlyStuck, stuckIds, query, role, counterparties, organizations]);
+  }, [scoped, filter, stageFilter, onlyMine, onlyStuck, stuckIds, query, role, counterparties, organizations, processRoles]);
 
   const bulkActions = useMemo(() => {
     const chosen = rows.filter((f) => selected.includes(f.id));
     if (chosen.length === 0) return [];
-    const first = actionsFor(role, chosen[0]!.status);
-    return first.filter((a) => chosen.every((f) => actionsFor(role, f.status).some((x) => x.id === a.id)));
-  }, [rows, selected, role]);
+    const first = actionsFor(role, chosen[0]!.status, processRoles);
+    return first.filter((a) =>
+      chosen.every((f) => actionsFor(role, f.status, processRoles).some((x) => x.id === a.id)),
+    );
+  }, [rows, selected, role, processRoles]);
 
   const counters = useMemo(() => {
     const map = new Map<string, number>();
@@ -87,12 +93,12 @@ export function FormsList() {
               }
             : {
                 label: "Требуют моего действия",
-                value: scoped.filter((f) => actionsFor(role, f.status).length > 0).length,
+                value: scoped.filter((f) => actionsFor(role, f.status, processRoles).length > 0).length,
                 active: onlyMine,
                 onClick: () => setOnlyMine((v) => !v),
               },
           {
-            label: "На комплаенсе",
+            label: verificationLabel,
             value: (counters.get("organization_verification") ?? 0) + (counters.get("form_verification") ?? 0),
             active: stageFilter === "verification",
             onClick: () => setStageFilter((v) => (v === "verification" ? "" : "verification")),
@@ -178,7 +184,7 @@ export function FormsList() {
           </select>
           <select value={stageFilter} onChange={(e) => setStageFilter(e.target.value)} className="field max-w-[180px] text-sm">
             <option value="">Все этапы</option>
-            <option value="verification">Этап: на комплаенсе</option>
+            <option value="verification">{verificationLabel}</option>
             {STAGES.map((s) => (
               <option key={s.id} value={s.id}>
                 Этап: {s.label}

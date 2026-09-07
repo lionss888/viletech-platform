@@ -123,15 +123,16 @@ jobs:
   playwright:
     name: playwright (browser E2E)
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 45
     needs: [fast]
     steps:
       - uses: actions/checkout@v4
-      - name: Compose up + required User journeys
+      - name: Compose up + Playwright journeys
         working-directory: vdp
         env:
           CI: "true"
-          PLAYWRIGHT_ARGS: e2e/login-form.spec.ts e2e/user-submit.spec.ts
+          # PR: narrow required journeys. Otherwise (main push, schedule, dispatch): full suite.
+          PLAYWRIGHT_ARGS: ${{ github.event_name == 'pull_request' && 'e2e/login-form.spec.ts e2e/user-submit.spec.ts e2e/provider-acl.spec.ts' || '' }}
         run: |
           make compose-up
           make playwright-e2e

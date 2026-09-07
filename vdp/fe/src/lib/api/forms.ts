@@ -20,6 +20,7 @@ export type CoreForm = {
   contract_date?: string;
   no_documents?: boolean;
   docs_json?: string;
+  invoice_json?: string;
   confirmation_hash?: string;
   created_at: string;
   updated_at: string;
@@ -87,4 +88,11 @@ export type { ContractType } from "./contract";
 
 export function getComplianceHistory(formId: string): Promise<ComplianceHistoryEntry[]> {
   return apiFetch<ComplianceHistoryEntry[]>(`/api/v1/compliance-history/${formId}`);
+}
+
+export function confirmExtraction(formId: string, human: unknown): Promise<CoreForm> {
+  return apiFetch<CoreForm>(`/api/v1/forms/${formId}/extraction/confirm`, {
+    method: "POST",
+    body: JSON.stringify({ human }),
+  });
 }

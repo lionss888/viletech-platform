@@ -8,6 +8,7 @@ import (
 	"github.com/viletech/vdp/core/internal/domain"
 	"github.com/viletech/vdp/core/internal/service"
 	apperrors "github.com/viletech/vdp/core/pkg/errors"
+	"github.com/viletech/vdp/shared/extraction"
 )
 
 func (s *Server) registerExtendedRoutes() {
@@ -22,6 +23,7 @@ func (s *Server) registerExtendedRoutes() {
 	s.registerR9ExtendedRoutes()
 	s.registerBankRoutes()
 	s.registerNotificationRoutes()
+	s.registerScenarioVerifyRoutes()
 	s.mux.HandleFunc("POST /api/v1/counterparties", s.withAuth(s.handleCreateCounterparty))
 	s.mux.HandleFunc("GET /api/v1/counterparties", s.withAuth(s.handleListCounterparties))
 	s.mux.HandleFunc("POST /api/v1/comments", s.withAuth(s.handleCreateComment))
@@ -45,6 +47,7 @@ func (s *Server) registerExtendedRoutes() {
 	s.mux.HandleFunc("POST /api/v1/unblock-requests/{id}/resolve", s.withAuth(s.handleResolveUnblock))
 	s.mux.HandleFunc("POST /api/v1/forms/{id}/confirmation", s.withAuth(s.handleConfirmation))
 	s.mux.HandleFunc("PUT /api/v1/forms/{id}/important", s.withAuth(s.handleImportant))
+	s.mux.HandleFunc("POST /api/v1/forms/{id}/extraction/confirm", s.withAuth(s.handleExtractionConfirm))
 	s.mux.HandleFunc("POST /api/v1/internal/hub/callback", s.withS2S(s.handleHubCallback))
 	s.mux.HandleFunc("POST /api/v1/forms/import", s.withAuth(s.handleExcelImport))
 	s.mux.HandleFunc("GET /api/v1/sse/forms/{id}", s.withAuth(s.handleSSE))
@@ -349,6 +352,22 @@ func (s *Server) handleHubCallback(w http.ResponseWriter, r *http.Request) {
 	}
 	// Sole integration write path: Transition / field patch via service (hub does not touch core DB).
 	form, err := s.forms.ApplyHubCallback(r.Context(), formID, action, body)
+	if err != nil {
+		writeError(w, err)
+		return
+	}
+	writeJSON(w, http.StatusOK, form)
+}
+
+func (s *Server) handleExtractionConfirm(w http.ResponseWriter, r *http.Request, principal authz.Principal) {
+	var body struct {
+		Human extraction.Result `json:"human"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		writeError(w, apperrors.ErrInvalidInput)
+		return
+	}
+	form, err := s.forms.ConfirmExtraction(r.Context(), principal, r.PathValue("id"), body.Human)
 	if err != nil {
 		writeError(w, err)
 		return

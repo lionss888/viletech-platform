@@ -27,7 +27,12 @@ export async function fetchPrivateFileBlob(fileId: string): Promise<{ blob: Blob
   if (tokens?.token) headers.set("Authorization", `Bearer ${tokens.token}`);
   const response = await fetch(previewPrivatePath(fileId), { headers });
   if (!response.ok) {
-    throw new Error(response.status === 404 ? "Файл не найден" : "Не удалось открыть документ");
+    if (response.status === 404) {
+      throw new Error(
+        "Файл недоступен в хранилище. Загрузите документ заново (старые вложения могли потеряться после перезапуска сервера).",
+      );
+    }
+    throw new Error("Не удалось открыть документ");
   }
   const blob = await response.blob();
   return { blob, objectUrl: URL.createObjectURL(blob) };

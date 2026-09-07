@@ -7,4 +7,9 @@ describe("docs preview helpers", () => {
     const path = previewPrivatePath("file-abc");
     expect(path).toContain("/api/v1/file-store/preview/private/file-abc");
   });
+
+  it("keeps uuid-style file ids intact in the path", () => {
+    const id = "a1b2c3d4-e5f6-7890-abcd-ef1234567890";
+    expect(previewPrivatePath(id)).toContain(`/preview/private/${id}`);
+  });
 });

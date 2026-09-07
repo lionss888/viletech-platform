@@ -6,7 +6,7 @@ Recorded for wave 0. Override via workshop with customer.
 
 ID D1. Decision Diadoc on pilot. Default manual upload and download only; SM and hub Diadoc branches remain for post-pilot.
 
-ID D2. Decision OCR invoice and contract. Default optional side-path; manual entry mandatory; recognize_complete without vendor.
+ID D2. Decision document extraction (invoice/contract). Optional side-path behind hub OCR_URL; manual entry mandatory; recognize_complete without vendor. Dual-track: PRIMARY Yandex (or fixture) for operator prefill; SHADOW + HITL confirm write GoldRecord JSONL for offline train; EXTRACTION_PRIMARY=own only after held-out eval (fallback Yandex). Never auto-pay or auto-approve from extraction.
 
 ID D3. Decision docs engine. Default Variant A, external DOCS_URL; reference implementation is docs-service/ in repo.
 

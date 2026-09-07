@@ -20,6 +20,8 @@ type Config struct {
 	HubSharedSecret    string
 	RateLimitPerMinute int
 	GatewayTimeoutSec  int
+	BlobDir            string
+	ExtractionURL      string
 }
 
 func Load() *Config {
@@ -36,6 +38,8 @@ func Load() *Config {
 		HubSharedSecret:    getEnv("HUB_SHARED_SECRET", "vdp-s2s-dev-secret"),
 		RateLimitPerMinute: getEnvAsInt("GATEWAY_RATE_LIMIT", 120),
 		GatewayTimeoutSec:  getEnvAsInt("GATEWAY_TIMEOUT", 15),
+		BlobDir:            getEnv("VDP_BLOB_DIR", "data/blobs"),
+		ExtractionURL:      getEnv("EXTRACTION_URL", "http://localhost:8093"),
 	}
 }
 

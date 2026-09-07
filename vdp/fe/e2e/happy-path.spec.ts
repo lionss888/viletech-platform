@@ -1,6 +1,7 @@
 import { test, expect } from "./fixtures/auth.fixture";
 import { assertCoreHealthy, createDraftForm, createFormAccepted, loginAllRoles } from "./helpers/api";
 
+/** Catalog: happy_path_to_completed (UI partial — submit → ECO → manager CTA). */
 test.describe("Happy path (app UI)", () => {
   test.beforeAll(async () => {
     await assertCoreHealthy();

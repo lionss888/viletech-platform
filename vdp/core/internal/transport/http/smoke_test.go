@@ -127,7 +127,7 @@ func newStack(t *testing.T) (http.Handler, string, *inboxProbe) {
 		n++
 		return "c" + itoa(n)
 	})
-	cfg := &config.Config{JWTSecret: "test-jwt", JWTExpirationHours: 1, HubSharedSecret: secret, HubURL: hub.URL, RateLimitPerMinute: 1000, GatewayTimeoutSec: 2}
+	cfg := &config.Config{Environment: "development", JWTSecret: "test-jwt", JWTExpirationHours: 1, HubSharedSecret: secret, HubURL: hub.URL, RateLimitPerMinute: 1000, GatewayTimeoutSec: 2}
 	auth := service.NewAuthService(store, cfg.JWTSecret, cfg.JWTExpirationHours)
 	accounts := service.NewAccountService(store)
 	notify := service.NewNotificationService(store)

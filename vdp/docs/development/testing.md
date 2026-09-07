@@ -58,7 +58,11 @@ npx playwright install chromium
 PLAYWRIGHT_BASE_URL=http://127.0.0.1:5173 CORE_URL=http://127.0.0.1:8080 npm run test:e2e
 ```
 
-Спеки e2e/: happy-path, reject-path, provider-acl, bank-badge, completed-journey, manager-payment. Матрица покрытия: [e2e-coverage-matrix.md](e2e-coverage-matrix.md).
+Спеки e2e/: login-form, user-submit, happy-path, completed-journey, reject-path, ico-org, provider-acl, bank-badge, manager-payment, manager-hides-drafts. Каталог id: `scenarioverify` / `src/lib/ved/scenario-catalog.ts`. Матрица: [e2e-coverage-matrix.md](e2e-coverage-matrix.md).
+
+CI PR: `login-form` + `user-submit` + `provider-acl`. Nightly / main push / `make release-gate`: полный `make playwright-e2e`.
+
+Root on-demand: `/testing` → POST `/api/v1/admin/scenario-runs` (system.admin). Mutating только non-prod; gamma/prod → dry_run.
 
 ## Слои backend тестов RH1
 

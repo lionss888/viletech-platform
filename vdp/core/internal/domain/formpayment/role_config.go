@@ -149,6 +149,11 @@ func slotActorForCapability(cap Capability) domain.Role {
 	}
 }
 
+// CanAdvanceDisabledSlot reports manager continuity take (manager.ops advancing a disabled ICO/ECO slot).
+func CanAdvanceDisabledSlot(role domain.Role, action Action, snap *ProcessPolicySnapshot) bool {
+	return canAdvanceDisabledSlot(role, action, snap)
+}
+
 // canAdvanceDisabledSlot allows manager.ops when the dedicated slot actor is disabled.
 func canAdvanceDisabledSlot(role domain.Role, action Action, snap *ProcessPolicySnapshot) bool {
 	cap := CapabilityForAction(action)

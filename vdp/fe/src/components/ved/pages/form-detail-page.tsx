@@ -10,6 +10,7 @@ import {
   nextStepHint,
   rejectFromHistory,
 } from "@/lib/api/mappers";
+import { ExtractionReviewPanel } from "@/components/ved/ExtractionReviewPanel";
 import { ActionPanel } from "@/components/ved/ActionPanel";
 import { DocumentList } from "@/components/ved/DocumentViewer";
 import { RefundPanel } from "@/components/ved/RefundPanel";
@@ -38,6 +39,7 @@ import {
 } from "@/lib/ved/provider-acl";
 import { roleTitle } from "@/lib/ved/roles";
 import { statusMeta } from "@/lib/ved/statuses";
+import { useProcessRolesRows } from "@/lib/ved/use-process-roles-snapshot";
 import { cn } from "@/lib/utils";
 
 export function FormDetail() {
@@ -46,6 +48,7 @@ export function FormDetail() {
   const mode = usePlatformMode();
   const auth = useAuth();
   const { forms, session, organizations, counterparties, users } = usePlatformStore();
+  const processRoles = useProcessRolesRows();
   const formQuery = useQuery({
     queryKey: ["form", formId],
     queryFn: () => getForm(formId),
@@ -64,7 +67,7 @@ export function FormDetail() {
 
   const form = useMemo(() => {
     const fromStore = forms.find((f) => f.id === formId);
-    const timeline = historyQuery.data ? mapComplianceHistory(historyQuery.data) : [];
+    const timeline = historyQuery.data ? mapComplianceHistory(historyQuery.data, users) : [];
     const reject = historyQuery.data ? rejectFromHistory(historyQuery.data) : {};
     if (fromStore) {
       return { ...fromStore, ...(timeline.length > 0 ? { timeline } : {}), ...reject };
@@ -73,7 +76,7 @@ export function FormDetail() {
       return { ...mapCoreFormToPaymentForm(formQuery.data, auth.displayName, timeline), ...reject };
     }
     return undefined;
-  }, [forms, formId, formQuery.data, historyQuery.data, auth.displayName]);
+  }, [forms, formId, formQuery.data, historyQuery.data, auth.displayName, users]);
 
   const role = session?.role ?? auth.role ?? "user";
 
@@ -110,6 +113,8 @@ export function FormDetail() {
   const isProvider = role === "provider";
   const providerLabel =
     users.find((u) => u.id === form.providerId)?.name ?? form.providerName ?? "не назначен";
+  const managerLabel =
+    users.find((u) => u.id === form.managerId)?.name ?? form.managerName ?? "не назначен";
   const icoOrgStage =
     role === "internal_compliance_officer" && String(form.status).startsWith("organization");
   const actionLock = hasBlocked
@@ -180,6 +185,16 @@ export function FormDetail() {
         </div>
       </div>
 
+      {mode === "app" && !isProvider && (
+        <div className="mt-4">
+          <ExtractionReviewPanel
+            formId={form.id}
+            invoiceJson={form.invoiceJson ?? formQuery.data?.invoice_json}
+            role={role}
+          />
+        </div>
+      )}
+
       {(form.rejectText || form.rejectMark) && (
         <div className="mt-4 rounded-lg bg-return-soft p-4">
           <p className="label-caps text-return">Возврат на доработку</p>
@@ -238,7 +253,7 @@ export function FormDetail() {
         <div className="space-y-4">
           <div className="panel p-4">
             <p className="label-caps">Следующий шаг</p>
-            <p className="mt-2 text-sm">{nextStepHint(form.status, role)}</p>
+            <p className="mt-2 text-sm">{nextStepHint(form.status, role, processRoles)}</p>
           </div>
 
           {compliance ? (
@@ -262,7 +277,7 @@ export function FormDetail() {
               <p className="label-caps">Участники</p>
               <ul className="mt-2 space-y-1 text-sm">
                 <li>Клиент: {form.ownerName}</li>
-                <li>Менеджер: {form.managerName ?? "не назначен"}</li>
+                <li>Назначенный менеджер: {managerLabel}</li>
                 <li>Провайдер: {providerLabel}</li>
               </ul>
             </div>
@@ -294,7 +309,10 @@ export function FormDetail() {
                   <span className="min-w-0">
                     <span className={cn("block text-sm", entry.done ? "font-medium" : "text-muted-foreground")}>{entry.title}</span>
                     <span className="font-mono text-[11px] text-muted-foreground">
-                      {dateTime(entry.at)} · {roleTitle(entry.actorRole)}
+                      {dateTime(entry.at)} ·{" "}
+                      {entry.actorName
+                        ? `${entry.actorName} · ${roleTitle(entry.actorRole)}`
+                        : roleTitle(entry.actorRole)}
                     </span>
                   </span>
                 </li>
