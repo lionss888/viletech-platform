@@ -22,6 +22,10 @@ type Config struct {
 	GatewayTimeoutSec  int
 	BlobDir            string
 	ExtractionURL      string
+	DocsHealthURL      string
+	MailHealthURL      string
+	SMSHealthURL       string
+	ManagerOpsHealthURL string
 }
 
 func Load() *Config {
@@ -40,6 +44,10 @@ func Load() *Config {
 		GatewayTimeoutSec:  getEnvAsInt("GATEWAY_TIMEOUT", 15),
 		BlobDir:            getEnv("VDP_BLOB_DIR", "data/blobs"),
 		ExtractionURL:      getEnv("EXTRACTION_URL", "http://localhost:8093"),
+		DocsHealthURL:      getEnv("DOCS_HEALTH_URL", "http://localhost:8090/health"),
+		MailHealthURL:      getEnv("MAIL_HEALTH_URL", "http://localhost:8091/health"),
+		SMSHealthURL:       getEnv("SMS_HEALTH_URL", "http://localhost:8092/health"),
+		ManagerOpsHealthURL: getEnv("MANAGER_OPS_HEALTH_URL", ""),
 	}
 }
 

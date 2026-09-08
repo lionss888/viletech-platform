@@ -226,6 +226,11 @@ services:
       GATEWAY_RATE_LIMIT: ${GATEWAY_RATE_LIMIT:-2000}
       TELEGRAM_BOT_USERNAME: ${TELEGRAM_BOT_USERNAME:-vdp_notify_bot}
       EXTRACTION_URL: http://extraction:8093
+      DOCS_HEALTH_URL: http://docs-service:8090/health
+      MAIL_HEALTH_URL: http://mail-gateway:8091/health
+      SMS_HEALTH_URL: http://sms-gateway:8092/health
+      # Optional: set when COMPOSE_PROFILES=manager-ops
+      # MANAGER_OPS_HEALTH_URL: http://manager-ops:8094/health
       DATABASE_URL: postgres://vdp_core:vdp_core@postgres-core:5432/vdp_core?sslmode=disable
       VDP_BLOB_DIR: /var/vdp/blobs
     volumes:
