@@ -247,7 +247,7 @@ export function FormsList() {
                       <span className="truncate">{form.number}</span>
                       <ChannelBadge channel={form.channel} />
                     </VedFormLink>
-                    <StatusBadge status={form.status} />
+                    <StatusBadge status={form.status} processRoles={processRoles} />
                   </div>
                   <p className="mt-1 truncate text-xs">{cpByIdFrom(counterparties, form.counterpartyId)?.name}</p>
                   <div className="mt-1 flex flex-wrap items-baseline justify-between gap-x-2 gap-y-0.5">
@@ -275,7 +275,20 @@ export function FormsList() {
           <table className="w-full border-collapse text-sm">
             <thead>
               <tr className="border-b border-border text-left">
-                <th className="w-8 py-2"></th>
+                <th className="w-8 py-2">
+                  <input
+                    type="checkbox"
+                    aria-label="Выбрать все видимые заявки"
+                    checked={rows.length > 0 && selected.length === rows.length}
+                    onChange={(e) => {
+                      if (e.target.checked) {
+                        setSelected(rows.map((f) => f.id));
+                      } else {
+                        setSelected([]);
+                      }
+                    }}
+                  />
+                </th>
                 <th className="label-caps py-2 pr-4">Заявка</th>
                 <th className="label-caps py-2 pr-4">Статус</th>
                 <th className="label-caps py-2 pr-4">Контрагент</th>
@@ -306,7 +319,7 @@ export function FormsList() {
                     <span className="text-[11px] text-muted-foreground">{orgByIdFrom(organizations, form.organizationId)?.name}</span>
                   </td>
                   <td className="py-2 pr-4">
-                    <StatusBadge status={form.status} />
+                    <StatusBadge status={form.status} processRoles={processRoles} />
                   </td>
                   <td className="py-2 pr-4">
                     <span className="block max-w-[180px] truncate text-xs">{cpByIdFrom(counterparties, form.counterpartyId)?.name}</span>

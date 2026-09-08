@@ -84,8 +84,18 @@ func TestShouldWipeForms(t *testing.T) {
 	if seed.ShouldWipeForms("production") {
 		t.Fatal("production must never wipe")
 	}
+	if seed.ShouldWipeForms("demo") {
+		t.Fatal("demo without flag must not wipe")
+	}
 	t.Setenv("SEED_WIPE_FORMS", "0")
 	if seed.ShouldWipeForms("development") {
 		t.Fatal("SEED_WIPE_FORMS=0 disables wipe")
+	}
+	t.Setenv("SEED_WIPE_FORMS", "1")
+	if !seed.ShouldWipeForms("demo") {
+		t.Fatal("SEED_WIPE_FORMS=1 must wipe even on demo")
+	}
+	if !seed.ShouldWipeForms("development") {
+		t.Fatal("SEED_WIPE_FORMS=1 enables wipe on development")
 	}
 }

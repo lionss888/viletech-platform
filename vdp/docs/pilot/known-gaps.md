@@ -32,7 +32,7 @@ Playwright: login-form, user-submit, happy-path, completed-journey, reject-path,
 
 ## CTA / process-roles touchpoints
 
-Status or CTA copy changes must land in FE actions.ts (+ continuity labels), action-bridge, core AuthZ, and scenarioverify when journeys depend on them. Continuity contract test: cta-continuity-contract.test.ts. Seed wipe on local compose: SEED_WIPE_FORMS / make core-seed-reset — accounts kept, forms cleared.
+Status or CTA copy changes must land in FE actions.ts (+ continuity labels), action-bridge, core AuthZ, and scenarioverify when journeys depend on them. Continuity contract test: cta-continuity-contract.test.ts. Seed wipe on local compose: SEED_WIPE_FORMS=1 (явный флаг перекрывает demo) / make core-seed-reset / кнопка «Очистить все заявки» на /testing (POST admin/probe-data/wipe) — accounts kept, forms cleared.
 
 ## Postgres test coverage
 

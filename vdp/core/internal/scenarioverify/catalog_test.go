@@ -18,6 +18,12 @@ func TestCatalogHasRequiredIDs(t *testing.T) {
 		IDManagerHidesDrafts,
 		IDDocPreviewVisible,
 		IDHealthCore,
+		IDContinuityManagerForm,
+		IDManagerRejectCorrections,
+		IDUserResubmitAfterReject,
+		IDProviderReturnToManager,
+		IDExtractionConfirmAmount,
+		IDRateSetByManager,
 	}
 	for _, id := range want {
 		id := id

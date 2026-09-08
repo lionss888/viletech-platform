@@ -77,6 +77,7 @@ type NestPatchInput struct {
 	DocsJSON            string `json:"docs_json"`
 	ProviderID          string `json:"provider_id"`
 	AgentID             string `json:"agent_id"`
+	CounterpartyID      string `json:"counterparty_id"`
 	Important           *bool  `json:"important"`
 }
 
@@ -131,6 +132,9 @@ func (s *FormPaymentService) PatchForm(ctx context.Context, principal authz.Prin
 	}
 	if input.AgentID != "" && (principal.Role == domain.RoleManager || principal.Role == domain.RoleRoot) {
 		form.AgentID = input.AgentID
+	}
+	if input.CounterpartyID != "" {
+		form.CounterpartyID = input.CounterpartyID
 	}
 	if input.Important != nil && (principal.Role == domain.RoleManager || principal.Role == domain.RoleProvider || principal.Role == domain.RoleRoot) {
 		form.Important = *input.Important

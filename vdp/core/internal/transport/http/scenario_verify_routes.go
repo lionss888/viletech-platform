@@ -6,6 +6,7 @@ import (
 	"strconv"
 
 	"github.com/viletech/vdp/core/internal/authz"
+	"github.com/viletech/vdp/core/internal/repository/seed"
 	"github.com/viletech/vdp/core/internal/service"
 	apperrors "github.com/viletech/vdp/core/pkg/errors"
 )
@@ -16,6 +17,7 @@ func (s *Server) registerScenarioVerifyRoutes() {
 	s.mux.HandleFunc("POST /api/v1/admin/scenario-runs", s.withAuth(s.handleScenarioRunsCreate))
 	s.mux.HandleFunc("GET /api/v1/admin/scenario-runs", s.withAuth(s.handleScenarioRunsList))
 	s.mux.HandleFunc("GET /api/v1/admin/scenario-runs/{id}", s.withAuth(s.handleScenarioRunsGet))
+	s.mux.HandleFunc("POST /api/v1/admin/probe-data/wipe", s.withAuth(s.handleProbeDataWipe))
 }
 
 func (s *Server) handleScenarioCatalog(w http.ResponseWriter, r *http.Request, principal authz.Principal) {
@@ -88,4 +90,21 @@ func (s *Server) handleScenarioRunsGet(w http.ResponseWriter, r *http.Request, p
 		return
 	}
 	writeJSON(w, http.StatusOK, run)
+}
+
+func (s *Server) handleProbeDataWipe(w http.ResponseWriter, r *http.Request, principal authz.Principal) {
+	if s.forms == nil {
+		writeError(w, apperrors.New(apperrors.ErrCodeInternal, "forms not configured"))
+		return
+	}
+	env := ""
+	if s.cfg != nil {
+		env = s.cfg.Environment
+	}
+	result, err := s.forms.WipeProbeData(r.Context(), principal, seed.ShouldWipeForms(env))
+	if err != nil {
+		writeError(w, err)
+		return
+	}
+	writeJSON(w, http.StatusOK, result)
 }
