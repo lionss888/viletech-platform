@@ -40,6 +40,7 @@ func TestR6EnqueueHubAttachAndExcelImport(t *testing.T) {
 	form := postJSON(t, core, user, "/api/v1/forms", map[string]string{"currency": "USD", "invoice_amount": "1000"})
 	formID, _ := form["id"].(string)
 	_ = postJSON(t, core, user, "/api/v1/forms/"+formID+"/actions/recognize_complete", nil)
+	_ = postJSON(t, core, user, "/api/v1/forms/"+formID+"/actions/submit", nil)
 
 	// rate resolve + commission
 	rbody, _ := json.Marshal(map[string]any{"override_rate": 90.5, "client_currency": "rub", "counterparty_currency": "usd"})

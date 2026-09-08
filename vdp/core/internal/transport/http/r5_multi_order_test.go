@@ -12,7 +12,6 @@ func TestR5MultiOrderAndProviderActive(t *testing.T) {
 	core, _, _ := newStack(t)
 	user := login(t, core, "user@vdp.local", "user")
 	manager := login(t, core, "manager@vdp.local", "manager")
-	ico := login(t, core, "ico@vdp.local", "ico")
 	eco := login(t, core, "eco@vdp.local", "eco")
 	provider := login(t, core, "provider@vdp.local", "provider")
 
@@ -28,9 +27,6 @@ func TestR5MultiOrderAndProviderActive(t *testing.T) {
 
 	mustOK(t, core, user, http.MethodPost, "/api/v1/forms/"+id+"/actions/recognize_complete", nil)
 	mustStatus(t, core, user, http.MethodPut, "/api/v1/site/form-payment/"+id+"/form/accept", nil, 200)
-	mustOK(t, core, ico, http.MethodPut, "/api/v1/admin/internal-compliance-officer/organization/66666666-6666-6666-6666-666666666666/approve", nil)
-	mustOK(t, core, ico, http.MethodPut, "/api/v1/ico/form-payment/"+id+"/form/start", nil)
-	mustOK(t, core, ico, http.MethodPut, "/api/v1/ico/form-payment/"+id+"/form/accept", nil)
 	mustOK(t, core, eco, http.MethodPut, "/api/v1/eco/form-payment/"+id+"/form/start", nil)
 	mustOK(t, core, eco, http.MethodPut, "/api/v1/eco/form-payment/"+id+"/form/accept", nil)
 

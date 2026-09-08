@@ -11,7 +11,6 @@ import (
 func TestR1SmokeCreateDraftICOECOManagerOrder(t *testing.T) {
 	core, _, _ := newStack(t)
 	user := login(t, core, "user@vdp.local", "user")
-	ico := login(t, core, "ico@vdp.local", "ico")
 	eco := login(t, core, "eco@vdp.local", "eco")
 	manager := login(t, core, "manager@vdp.local", "manager")
 
@@ -33,9 +32,6 @@ func TestR1SmokeCreateDraftICOECOManagerOrder(t *testing.T) {
 
 	mustOK(t, core, user, http.MethodPost, "/api/v1/forms/"+id+"/actions/recognize_complete", nil)
 	mustStatus(t, core, user, http.MethodPut, "/api/v1/site/form-payment/"+id+"/form/accept", nil, 200)
-	mustOK(t, core, ico, http.MethodPut, "/api/v1/admin/internal-compliance-officer/organization/66666666-6666-6666-6666-666666666666/approve", nil)
-	mustOK(t, core, ico, http.MethodPut, "/api/v1/ico/form-payment/"+id+"/form/start", nil)
-	mustOK(t, core, ico, http.MethodPut, "/api/v1/ico/form-payment/"+id+"/form/accept", nil)
 	mustOK(t, core, eco, http.MethodPut, "/api/v1/eco/form-payment/"+id+"/form/start", nil)
 	mustOK(t, core, eco, http.MethodPut, "/api/v1/eco/form-payment/"+id+"/form/accept", nil)
 	mustOK(t, core, manager, http.MethodPut, "/api/v1/manager/form-payment/"+id+"/order/signing", nil)
@@ -72,6 +68,7 @@ func TestR1ForbiddenRoleAndConflictTransition(t *testing.T) {
 	_ = json.Unmarshal(res.Body.Bytes(), &form)
 	id, _ := form["id"].(string)
 	mustOK(t, core, user, http.MethodPost, "/api/v1/forms/"+id+"/actions/recognize_complete", nil)
+	mustOK(t, core, user, http.MethodPut, "/api/v1/site/form-payment/"+id+"/form/accept", nil)
 
 	// wrong role on nest path → 403
 	res = httptest.NewRecorder()

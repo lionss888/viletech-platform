@@ -107,7 +107,8 @@ func TestR4UploadAttachHistorySmoke(t *testing.T) {
 	formID, _ := form["id"].(string)
 	_ = postJSON(t, core, user, "/api/v1/forms/"+formID+"/actions/recognize_complete", nil)
 	_ = postJSON(t, core, user, "/api/v1/forms/"+formID+"/actions/submit", nil)
-	_ = postJSON(t, core, ico, "/api/v1/forms/"+formID+"/actions/ico_start", nil)
+	eco := login(t, core, "eco@vdp.local", "eco")
+	_ = postJSON(t, core, eco, "/api/v1/forms/"+formID+"/actions/eco_start", nil)
 
 	var buf bytes.Buffer
 	mw := multipart.NewWriter(&buf)
@@ -173,7 +174,6 @@ func TestR4UploadAttachHistorySmoke(t *testing.T) {
 	if mres.Code != http.StatusOK {
 		t.Fatalf("mark-as-read %d %s", mres.Code, mres.Body.String())
 	}
-	eco := login(t, core, "eco@vdp.local", "eco")
 	clients := httptest.NewRecorder()
 	clreq := httptest.NewRequest(http.MethodGet, "/api/v1/admin/compliance-officer/clients", nil)
 	clreq.Header.Set("Authorization", "Bearer "+eco)

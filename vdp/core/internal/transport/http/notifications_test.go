@@ -2,14 +2,22 @@ package httpapi_test
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
 	"testing"
+
+	"github.com/viletech/vdp/core/internal/domain"
+	"github.com/viletech/vdp/core/internal/repository"
 )
 
 func TestTelegramLinkAndWorkChatJoin(t *testing.T) {
-	core, secret, _ := newStack(t)
+	core, secret, _ := newStackWith(t, func(store repository.Store) {
+		_ = store.SaveWorkChat(context.Background(), domain.WorkChat{
+			ID: "wc-ops", Title: "Операционка", ChatID: "ops-chat", Kind: "ops", Active: true,
+		})
+	})
 	user := login(t, core, "user@vdp.local", "user")
 	manager := login(t, core, "manager@vdp.local", "manager")
 

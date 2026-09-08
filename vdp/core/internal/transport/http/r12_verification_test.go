@@ -129,7 +129,6 @@ func TestR12ProjectRulesSmoke(t *testing.T) {
 func TestR12UserToProviderE2EPath(t *testing.T) {
 	core, secret, _ := newStack(t)
 	user := login(t, core, "user@vdp.local", "user")
-	ico := login(t, core, "ico@vdp.local", "ico")
 	eco := login(t, core, "eco@vdp.local", "eco")
 	manager := login(t, core, "manager@vdp.local", "manager")
 	provider := login(t, core, "provider@vdp.local", "provider")
@@ -149,9 +148,6 @@ func TestR12UserToProviderE2EPath(t *testing.T) {
 
 	mustOK(t, core, user, http.MethodPost, "/api/v1/forms/"+id+"/actions/recognize_complete", nil)
 	mustOK(t, core, user, http.MethodPut, "/api/v1/site/form-payment/"+id+"/form/accept", nil)
-	mustOK(t, core, ico, http.MethodPut, "/api/v1/admin/internal-compliance-officer/organization/"+seed.OrgID+"/approve", nil)
-	mustOK(t, core, ico, http.MethodPut, "/api/v1/ico/form-payment/"+id+"/form/start", nil)
-	mustOK(t, core, ico, http.MethodPut, "/api/v1/ico/form-payment/"+id+"/form/accept", nil)
 	mustOK(t, core, eco, http.MethodPut, "/api/v1/eco/form-payment/"+id+"/form/start", nil)
 	mustOK(t, core, eco, http.MethodPut, "/api/v1/eco/form-payment/"+id+"/form/accept", nil)
 

@@ -29,7 +29,6 @@ func TestHealthAndCreateDraftICOSmoke(t *testing.T) {
 		t.Fatalf("health=%d", res.Code)
 	}
 	token := login(t, core, "user@vdp.local", "user")
-	icoToken := login(t, core, "ico@vdp.local", "ico")
 	created := postJSON(t, core, token, "/api/v1/forms", map[string]string{"currency": "USD", "invoice_amount": "100"})
 	id, _ := created["id"].(string)
 	if id == "" {
@@ -39,12 +38,13 @@ func TestHealthAndCreateDraftICOSmoke(t *testing.T) {
 	if form["status"] != "draft" {
 		t.Fatalf("status=%v", form["status"])
 	}
+	ecoToken := login(t, core, "eco@vdp.local", "eco")
 	form = postJSON(t, core, token, "/api/v1/forms/"+id+"/actions/submit", nil)
-	if form["status"] != "organization_waiting_verification" {
+	if form["status"] != "form_waiting_verification" {
 		t.Fatalf("status=%v", form["status"])
 	}
-	form = postJSON(t, core, icoToken, "/api/v1/forms/"+id+"/actions/ico_start", nil)
-	if form["status"] != "organization_verification" {
+	form = postJSON(t, core, ecoToken, "/api/v1/forms/"+id+"/actions/eco_start", nil)
+	if form["status"] != "form_verification" {
 		t.Fatalf("status=%v", form["status"])
 	}
 	flush := httptest.NewRecorder()
@@ -93,6 +93,10 @@ func enableHTTPCompliance(t *testing.T, forms *service.FormPaymentService) {
 }
 
 func newStack(t *testing.T) (http.Handler, string, *inboxProbe) {
+	return newStackWith(t, nil)
+}
+
+func newStackWith(t *testing.T, afterSeed func(repository.Store)) (http.Handler, string, *inboxProbe) {
 	t.Helper()
 	secret := "test-s2s"
 	probe := &inboxProbe{}
@@ -115,6 +119,9 @@ func newStack(t *testing.T) (http.Handler, string, *inboxProbe) {
 	t.Cleanup(hub.Close)
 	store := repository.NewStore()
 	seed.MustDev(t, store)
+	if afterSeed != nil {
+		afterSeed(store)
+	}
 	box := outbox.NewMemoryStore()
 	n := 0
 	forms := service.NewFormPaymentService(store, box, func() string {
