@@ -1,0 +1,34 @@
+{
+  "pack_id": "customer",
+  "deal_kind": "advance",
+  "status": "awaiting_import",
+  "organization": {
+    "name": "",
+    "inn": "",
+    "country": "RU"
+  },
+  "counterparty": {
+    "name": "",
+    "country": "",
+    "inn": ""
+  },
+  "provider": {
+    "seed_id": "55555555-5555-5555-5555-555555555555",
+    "label": "replace with customer provider mapping"
+  },
+  "deal_fields": {
+    "currency": "USD",
+    "invoice_amount": "0",
+    "contract_number": "",
+    "contract_date": "",
+    "hs_codes": [],
+    "direction": "import"
+  },
+  "docs": {
+    "invoice_pdf": "docs/invoice.pdf",
+    "contract_pdf": "docs/contract.pdf",
+    "order_pdf": "docs/order-signed.pdf",
+    "report_pdf": "docs/report-signed.pdf",
+    "shipment_pdf": "docs/shipment-docs.pdf"
+  }
+}

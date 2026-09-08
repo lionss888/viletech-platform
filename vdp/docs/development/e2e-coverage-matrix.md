@@ -68,7 +68,43 @@ S-Root-02 cancel card. Actor root. Spec pilot-form-flow. Layer UI.
 
 S-Pilot-E2E handoff U→M→U→M→P→M. Spec pilot-form-flow. Layer UI partial ladder + API seed.
 
-Honest: not full browser happy_path_to_completed click-through; payment ladder mid-steps stay API-seeded.
+Honest (pilot-flow): payment mid-steps may stay API-seeded. Full click-through is Pilot Robot Matrix below (`@pilot-matrix`).
+
+## Pilot Robot Matrix (QG 100%)
+
+Closed matrix for process spine User + Manager + Provider (ICO/ECO off, manager continuity) + Root admin spots. Source files: `testdata/robot-fixtures/matrix-rows.json`, `manifest.json`, packs `template` and `customer`. Env: `VDP_ROBOT_FIXTURE_PACK=template|customer`.
+
+QG 100% means every matrix row green on API + UI-ladder layers and fixture pack is `customer` (template pack is interim; do not claim customer QG until W4 import).
+
+Current gate status (post-implementation): API compose-e2e green; UI `@pilot-matrix` full ladder green on `fixture=template`. Customer pack status=awaiting_import — customer layer of QG 100% not claimed until `./scripts/robot-fixtures-import.sh` + re-run.
+
+Row happy_path_to_completed. API compose-e2e main. UI full ladder: `pilot-matrix-full-ladder.spec.ts` `@pilot-matrix` (green on template). Fixture template until customer.
+
+Row happy_path_shipment_branch. API compose-e2e P5 shipment. UI included in full ladder shipment steps. Fixture template until customer.
+
+Row continuity_manager_form_approve. API compose continuity. UI happy-path + pilot-matrix review. Fixture template until customer.
+
+Row manager_reject_to_corrections. API compose reject. UI `@pilot-matrix` reject test. Fixture template until customer.
+
+Row user_resubmit_after_reject. API compose reject. UI `@pilot-matrix` reject test. Fixture template until customer.
+
+Row manager_payment_assign_provider. API compose main. UI full ladder assign+start. Fixture template until customer.
+
+Row provider_payment_no_pii. API RD7. UI full ladder provider step (no passport copy). Fixture template until customer.
+
+Row root_cancel. API RD8. UI pilot-form-flow S-Root-02. Fixture n/a admin.
+
+Row doc_preview_visible. API dash. UI api-core-ux + pilot. Fixture template PDF.
+
+Row extraction_confirm_updates_amount. API scenarioverify. UI form-ux-deadends spot. Fixture template PDF.
+
+Row manager_hides_drafts. API dash. UI manager-hides-drafts. Fixture template until customer.
+
+Row refund_smoke. API compose. UI not in ladder (API-only spot). Fixture n/a.
+
+Row bank_channel_badge. API RD9. UI bank-badge. Fixture n/a.
+
+Commands: `make robot-matrix-check`, `make playwright-pilot-matrix`, `make compose-e2e`, `make release-gate`. Customer import: `./scripts/robot-fixtures-import.sh /path/to/pack`. Discrepancy report: `./scripts/robot-matrix-discrepancy-report.sh pass|fail`.
 
 ## Критичные journeys
 
@@ -95,10 +131,13 @@ Journey Bank channel badge. Unit bank-channel.test. API RD9 + Root. UI E2E bank-
 ## Команды проверки
 
 ```sh
+cd vdp && make robot-matrix-check
 cd vdp && make integration-gate
 cd vdp && make playwright-e2e
 cd vdp && make playwright-pilot
+cd vdp && make playwright-pilot-matrix
 cd vdp/fe && npm test
 # Root: login root@vdp.local → /testing → Запустить
 # Local seed wipe: make core-seed-reset
+# Customer fixtures: VDP_ROBOT_FIXTURE_PACK=customer after ./scripts/robot-fixtures-import.sh
 ```

@@ -12,3 +12,11 @@ release-images.env
 extraction/.export/
 extraction/.gold/
 extraction/artifacts/
+
+# Customer robot fixtures (sensitive). Keep pack.json / README / .gitkeep tracked.
+testdata/robot-fixtures/packs/customer/docs/*
+!testdata/robot-fixtures/packs/customer/docs/.gitkeep
+testdata/robot-fixtures/packs/customer/*.pdf
+testdata/robot-fixtures/packs/customer/**/*.xlsx
+testdata/robot-fixtures/packs/customer/**/*.csv
+testdata/robot-fixtures/last-discrepancy-report.txt

@@ -1,4 +1,4 @@
-.PHONY: deps test test-integration test-adapters build db-setup db-migrate compose-db-migrate run-hub run-core run smoke stop compose-up compose-up-prod compose-down compose-ps compose-e2e compose-fe-smoke compose-fe-refresh compose-fe-prod-smoke compose-playwright lovable-seed-check integration-gate playwright-e2e playwright-pilot docs-format-check release-gate image-build image-push image-build-push compose-release-config-check compose-release-up deploy-alpha deploy-beta deploy-gamma rollback-alpha rollback-beta rollback-gamma test-cd-scripts notify-mgmt core-seed-reset
+.PHONY: deps test test-integration test-adapters build db-setup db-migrate compose-db-migrate run-hub run-core run smoke stop compose-up compose-up-prod compose-down compose-ps compose-e2e compose-fe-smoke compose-fe-refresh compose-fe-prod-smoke compose-playwright lovable-seed-check integration-gate playwright-e2e playwright-pilot playwright-pilot-matrix robot-matrix-check docs-format-check release-gate image-build image-push image-build-push compose-release-config-check compose-release-up deploy-alpha deploy-beta deploy-gamma rollback-alpha rollback-beta rollback-gamma test-cd-scripts notify-mgmt core-seed-reset
 
 CORE_DIR := core
 HUB_DIR := hub
@@ -25,6 +25,7 @@ deps:
 	cd extraction && go mod download
 	cd mail-gateway && go mod download
 	cd sms-gateway && go mod download
+	cd manager-ops && go mod download
 	cd release-gate && go mod download
 
 test:
@@ -34,6 +35,7 @@ test:
 	cd extraction && go test ./...
 	cd mail-gateway && go test ./...
 	cd sms-gateway && go test ./...
+	cd manager-ops && go test ./...
 	cd release-gate && go test ./...
 
 .PHONY: extraction-export-gold extraction-train-eval extraction-yandex-smoke extraction-ollama-ensure extraction-eval-own
@@ -202,18 +204,28 @@ playwright-e2e: compose-playwright
 playwright-pilot:
 	PLAYWRIGHT_ARGS='--grep @pilot-flow' $(MAKE) compose-playwright
 
+# Pilot Robot Matrix — full UI ladder + reject/resubmit (@pilot-matrix). Fixture pack via VDP_ROBOT_FIXTURE_PACK.
+playwright-pilot-matrix:
+	PLAYWRIGHT_ARGS='--grep @pilot-matrix' $(MAKE) compose-playwright
+
+robot-matrix-check:
+	@chmod +x scripts/robot-matrix-check.sh
+	@./scripts/robot-matrix-check.sh
+
 docs-format-check:
 	@chmod +x scripts/docs-format-check.sh
 	@./scripts/docs-format-check.sh
 
 # RH4: pre-handover — all reliability gates (requires compose for e2e/playwright).
 release-gate:
+	$(MAKE) robot-matrix-check
 	$(MAKE) test-integration
 	$(MAKE) test-adapters
 	$(MAKE) integration-gate
 	@echo "release-gate: pause 65s for gateway rate-limit window before browser E2E"
 	@sleep 65
 	$(MAKE) playwright-e2e
+	$(MAKE) playwright-pilot-matrix
 	$(MAKE) docs-format-check
 	@echo "release-gate green"
 

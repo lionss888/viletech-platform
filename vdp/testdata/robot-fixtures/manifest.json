@@ -1,0 +1,21 @@
+{
+  "version": 1,
+  "active_pack_env": "VDP_ROBOT_FIXTURE_PACK",
+  "default_pack": "template",
+  "packs": {
+    "template": {
+      "label": "Realistic domain template (interim until customer pack)",
+      "path": "packs/template"
+    },
+    "customer": {
+      "label": "Customer-supplied fixtures",
+      "path": "packs/customer"
+    }
+  },
+  "forbidden_mock_names": [
+    "Shenzhen Kaiyuan",
+    "Anadolu Makina",
+    "Emirates General Trading",
+    "Hanoi Agro"
+  ]
+}

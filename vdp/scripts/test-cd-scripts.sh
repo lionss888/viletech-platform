@@ -233,5 +233,15 @@ grep -q 'wait for VDP CI\|wait-vdp-ci\|wait-for-ci' "$CI_DOC" \
 grep -q 'PLAYWRIGHT_ARGS' "$CI_DOC" \
   || fail "ci.md must document PLAYWRIGHT_ARGS PR vs main"
 
+echo "== Pilot Robot Matrix contract =="
+[ -f scripts/robot-matrix-check.sh ] || fail "missing scripts/robot-matrix-check.sh"
+[ -f scripts/robot-fixtures-import.sh ] || fail "missing scripts/robot-fixtures-import.sh"
+[ -f testdata/robot-fixtures/manifest.json ] || fail "missing robot-fixtures manifest"
+grep -q 'playwright-pilot-matrix' Makefile || fail "Makefile missing playwright-pilot-matrix"
+grep -q 'robot-matrix-check' Makefile || fail "Makefile missing robot-matrix-check"
+grep -q 'VDP_ROBOT_FIXTURES_ROOT' scripts/compose-playwright.sh \
+  || fail "compose-playwright must mount robot fixtures root"
+./scripts/robot-matrix-check.sh
+
 make compose-release-config-check
 echo "test-cd-scripts passed"

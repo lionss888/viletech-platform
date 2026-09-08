@@ -66,10 +66,18 @@ Browser E2E через Docker. Команды make playwright-e2e, make compose-
 
 Быстрый UI-прогон default актёров (User/Manager/Provider/Root) по тегу `@pilot-flow` в `fe/e2e/pilot-form-flow.spec.ts`. Команда make playwright-pilot (`PLAYWRIGHT_ARGS='--grep @pilot-flow'` → compose-playwright).
 
+## playwright-pilot-matrix
+
+Полный UI-ladder Pilot Robot Matrix (`@pilot-matrix` в `fe/e2e/pilot-matrix-full-ladder.spec.ts`) без mid-payment API-seed. Фикстуры: `testdata/robot-fixtures`, env `VDP_ROBOT_FIXTURE_PACK` (default template). Команда make playwright-pilot-matrix.
+
+## robot-matrix-check
+
+Контракт матрицы и packs (manifest, matrix-rows, секция в e2e-coverage-matrix). Команда make robot-matrix-check. Входит в release-gate.
+
 ## docs-format-check
 
 Проверка markdown в vdp/docs и vdp/README.md на запрещённую разметку. Команда make docs-format-check.
 
 ## release-gate
 
-Pre-handover агрегат RH4. Последовательность make test-integration, make test-adapters, make integration-gate, make playwright-e2e, make docs-format-check. Требует docker postgres для compose и playwright. Команда make release-gate. CI эквивалент workflow vdp-release.yml. Не путать с каталогом vdp/release-gate — это Go API политики промоута, не эта Makefile-цель.
+Pre-handover агрегат RH4. Последовательность make robot-matrix-check, make test-integration, make test-adapters, make integration-gate, pause, make playwright-e2e, make playwright-pilot-matrix, make docs-format-check. Требует docker postgres для compose и playwright. Команда make release-gate. CI эквивалент workflow vdp-release.yml. Не путать с каталогом vdp/release-gate — это Go API политики промоута, не эта Makefile-цель.
