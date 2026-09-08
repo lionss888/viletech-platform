@@ -12,8 +12,19 @@ describe("catalog-source", () => {
     expect(seed.complianceTools.length).toBeGreaterThanOrEqual(30);
   });
 
-  it("api mode falls back to static when empty", () => {
+  it("api mode keeps providers empty without mock bleed; currencies/HS use platform seed", () => {
     const bundle = resolveCatalogBundle("api", {});
-    expect(bundle.providers.length).toBeGreaterThanOrEqual(30);
+    expect(bundle.providers).toEqual([]);
+    expect(bundle.currencies.length).toBeGreaterThanOrEqual(30);
+    expect(bundle.hsCodes.length).toBeGreaterThanOrEqual(30);
+    expect(bundle.countries.length).toBeGreaterThanOrEqual(30);
+  });
+
+  it("api mode uses API providers when present", () => {
+    const bundle = resolveCatalogBundle("api", {
+      providers: [{ id: "p1", name: "Real", country: "HK", corridors: "USD", contact: "a@b.c", slaHours: 1, status: "active" }],
+    });
+    expect(bundle.providers).toHaveLength(1);
+    expect(bundle.providers[0]?.id).toBe("p1");
   });
 });

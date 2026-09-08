@@ -32,7 +32,10 @@ export function ComplianceToolsPage() {
   const def = REGISTRIES.complianceTools;
 
   return (
-    <VedAppShell title={def.title} subtitle={`${def.subtitle} · отметок: ${complianceTools.length}`}>
+    <VedAppShell
+      title={def.title}
+      subtitle={`${def.subtitle} · отметок: ${complianceTools.length} · локальный справочник платформы (без core API)`}
+    >
       <RegistryManager
         def={def}
         extraColumns={[

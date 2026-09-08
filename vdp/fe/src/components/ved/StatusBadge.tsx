@@ -15,14 +15,17 @@ export function StatusBadge({
   status,
   full = false,
   processRoles,
+  viewerRole,
   className,
 }: {
   status: FormStatus;
   full?: boolean;
   processRoles?: ProcessRoleRow[];
+  /** When set (e.g. manager), queue badges use role-relative shorts. */
+  viewerRole?: string;
   className?: string;
 }) {
-  const meta = statusMetaForProcess(status, processRoles);
+  const meta = statusMetaForProcess(status, processRoles, viewerRole);
   return (
     <span
       title={meta.label}

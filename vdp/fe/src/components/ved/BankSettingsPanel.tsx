@@ -63,13 +63,13 @@ export function BankSettingsPanel({ org }: { org: Organization }) {
         onClick={openModal}
         className="rounded-md bg-card px-2.5 py-1.5 text-xs font-semibold shadow-[0_0_0_1px_var(--input)] hover:bg-muted"
       >
-        Bank API{org.clientType === "bank" ? " · bank" : ""}
+        Комиссия / webhook{org.clientType === "bank" ? " · bank" : ""}
       </button>
       <Modal
         open={open}
         onOpenChange={setOpen}
-        title={`Bank settings · ${org.name}`}
-        description="Тип клиента «Bank API»: фиксированная комиссия, webhook и агент по умолчанию."
+        title={`Канал Bank API · ${org.name}`}
+        description="Интеграционный канал: комиссия, webhook и агент по умолчанию для типа клиента Bank API."
         footer={
           <>
             <ModalButton variant="quiet" onClick={() => setOpen(false)} disabled={busy}>

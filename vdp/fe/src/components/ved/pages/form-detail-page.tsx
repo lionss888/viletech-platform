@@ -13,6 +13,7 @@ import {
 import { ExtractionReviewPanel } from "@/components/ved/ExtractionReviewPanel";
 import { CorrectionGuidancePanel } from "@/components/ved/CorrectionGuidancePanel";
 import { CounterpartyPickDialog } from "@/components/ved/CounterpartyPickDialog";
+import { FormParamsEditDialog } from "@/components/ved/FormParamsEditDialog";
 import { ActionPanel } from "@/components/ved/ActionPanel";
 import { DocumentList } from "@/components/ved/DocumentViewer";
 import { RefundPanel } from "@/components/ved/RefundPanel";
@@ -52,6 +53,7 @@ export function FormDetail() {
   const { forms, session, organizations, counterparties, users } = usePlatformStore();
   const processRoles = useProcessRolesRows();
   const [cpDialogOpen, setCpDialogOpen] = useState(false);
+  const [editOpen, setEditOpen] = useState(false);
   const formQuery = useQuery({
     queryKey: ["form", formId],
     queryFn: () => getForm(formId),
@@ -70,13 +72,19 @@ export function FormDetail() {
 
   const form = useMemo(() => {
     const fromStore = forms.find((f) => f.id === formId);
-    const timeline = historyQuery.data ? mapComplianceHistory(historyQuery.data, users) : [];
+    const timeline = historyQuery.data
+      ? mapComplianceHistory(historyQuery.data, users, processRoles)
+      : [];
     const reject = historyQuery.data ? rejectFromHistory(historyQuery.data) : {};
     if (mode === "app" && formQuery.data) {
       const mapped = mapCoreFormToPaymentForm(formQuery.data, auth.displayName, timeline);
+      const storeDocs = fromStore?.documents ?? [];
+      const apiDocs = mapped.documents ?? [];
+      const preferApi =
+        apiDocs.some((d) => d.fileId) || storeDocs.every((d) => !d.fileId);
       return {
         ...mapped,
-        ...(fromStore?.documents?.length ? { documents: fromStore.documents } : {}),
+        documents: preferApi && apiDocs.length > 0 ? apiDocs : storeDocs.length > 0 ? storeDocs : apiDocs,
         ...reject,
       };
     }
@@ -87,9 +95,14 @@ export function FormDetail() {
       return { ...mapCoreFormToPaymentForm(formQuery.data, auth.displayName, timeline), ...reject };
     }
     return undefined;
-  }, [forms, formId, formQuery.data, historyQuery.data, auth.displayName, users, mode]);
+  }, [forms, formId, formQuery.data, historyQuery.data, auth.displayName, users, mode, processRoles]);
 
   const role = session?.role ?? auth.role ?? "user";
+  const canEditParams =
+    (role === "user" || role === "manager" || role === "root") &&
+    (form?.status === "draft" ||
+      form?.status === "creating" ||
+      String(form?.status ?? "").includes("corrections"));
 
   if (!formId || (mode === "app" && formQuery.isLoading && !form)) {
     return (
@@ -114,7 +127,7 @@ export function FormDetail() {
 
   const org = orgByIdFrom(organizations, form.organizationId);
   const cp = cpByIdFrom(counterparties, form.counterpartyId);
-  const meta = statusMetaForProcess(form.status, processRoles);
+  const meta = statusMetaForProcess(form.status, processRoles, role);
   const compliance = isComplianceRole(role);
   const subjects = subjectsOf(form, organizations, counterparties);
   const cleared = subjectsCleared(subjects);
@@ -162,7 +175,7 @@ export function FormDetail() {
     <VedAppShell title={form.number} subtitle={`${meta.label} · роль: ${roleTitle(role)}`}>
       <div className="panel flex flex-wrap items-center gap-3 p-4">
         <DirectionTag direction={form.direction} />
-        <StatusBadge status={form.status} full processRoles={processRoles} />
+        <StatusBadge status={form.status} full processRoles={processRoles} viewerRole={role} />
         {form.channel === "bank" && <ChannelBadge channel="bank" labeled />}
         {form.channel === "ui" && <ChannelBadge channel="ui" labeled />}
         {form.correlationId && (
@@ -228,7 +241,19 @@ export function FormDetail() {
       <div className="mt-4 grid gap-4 xl:grid-cols-[1.6fr_1fr]">
         <div className="space-y-4">
           <div className="panel p-4" id="form-params" data-testid="form-params">
-            <p className="label-caps">Параметры заявки</p>
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <p className="label-caps">Параметры заявки</p>
+              {canEditParams && (
+                <button
+                  type="button"
+                  data-testid="edit-form-params"
+                  className="text-sm font-semibold text-accent hover:underline"
+                  onClick={() => setEditOpen(true)}
+                >
+                  Редактировать
+                </button>
+              )}
+            </div>
             <dl className="mt-3 grid gap-x-6 gap-y-3 sm:grid-cols-2">
               {facts.map(([k, v]) => (
                 <div key={k}>
@@ -362,6 +387,9 @@ export function FormDetail() {
 
           <div className="panel p-4">
             <p className="label-caps">Хронология</p>
+            <p className="mt-1 text-xs text-muted-foreground">
+              История шагов по заявке: кто что сделал и к какому статусу пришли. Смотрите сюда, если неясно, на каком этапе сделка.
+            </p>
             <ol className="mt-3 space-y-3">
               {form.timeline.length === 0 && (
                 <li className="text-sm text-muted-foreground">События появятся после действий по заявке.</li>
@@ -384,6 +412,18 @@ export function FormDetail() {
           </div>
         </div>
       </div>
+
+      {canEditParams && (
+        <FormParamsEditDialog
+          open={editOpen}
+          onOpenChange={setEditOpen}
+          formId={form.id}
+          role={role}
+          amountMinor={form.amountMinor}
+          currency={form.currency}
+          hsCode={form.hsCode}
+        />
+      )}
     </VedAppShell>
   );
 }

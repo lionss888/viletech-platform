@@ -15,6 +15,7 @@ import {
   deleteOrganization,
   patchAdminAccount,
   setCounterpartyApproval,
+  updateAgent,
   updateCounterparty,
   updateOrganization,
 } from "@/lib/api/catalog-mutations";
@@ -54,9 +55,12 @@ import {
 } from "@/lib/api/refund";
 import {
   assignProvider,
+  attachFormHsCodes,
   createForm,
   getForm,
   listForms,
+  nestFormPrefixForRole,
+  patchForm,
   transitionForm,
 } from "@/lib/api/forms";
 import { mapCoreFormToPaymentForm } from "@/lib/api/mappers";
@@ -141,7 +145,9 @@ function useApiPlatformStore(): VedStore {
   const organizations = useMemo(() => (orgsQuery.data ?? []).map(mapCoreOrganization), [orgsQuery.data]);
   const counterparties = useMemo(() => (cpQuery.data ?? []).map(mapCoreCounterparty), [cpQuery.data]);
   const providers = useMemo(() => {
-    const fromAccounts = (usersQuery.data ?? [])
+    const fromApi = (agentsQuery.data ?? []).map(mapCoreAgent);
+    if (fromApi.length > 0) return fromApi;
+    return (usersQuery.data ?? [])
       .filter((a) => a.role === "provider" && !a.blocked)
       .map((a) => ({
         id: a.id,
@@ -149,15 +155,11 @@ function useApiPlatformStore(): VedStore {
         country: "—",
         status: "active" as const,
       }));
-    if (fromAccounts.length > 0) return fromAccounts;
-    const fromApi = (agentsQuery.data ?? []).map(mapCoreAgent);
-    return fromApi.length > 0 ? fromApi : staticRef.fallbackProviders;
-  }, [agentsQuery.data, staticRef.fallbackProviders, usersQuery.data]);
+  }, [agentsQuery.data, usersQuery.data]);
 
   const paymentAgents = useMemo(() => {
-    const fromApi = (agentsQuery.data ?? []).map(mapCoreAgent);
-    return fromApi.length > 0 ? fromApi : staticRef.fallbackProviders;
-  }, [agentsQuery.data, staticRef.fallbackProviders]);
+    return (agentsQuery.data ?? []).map(mapCoreAgent);
+  }, [agentsQuery.data]);
 
   const currencies = useMemo(() => {
     const fromApi = (currenciesQuery.data ?? []).map(mapCoreCurrency);
@@ -356,6 +358,8 @@ function useApiPlatformStore(): VedStore {
 
   const createFormLocal = useCallback(
     async (draft: Partial<PaymentForm> & { invoiceFile?: File; contractFile?: File }): Promise<PaymentForm> => {
+      const counterpartyId =
+        draft.counterpartyId && draft.counterpartyId !== "—" ? draft.counterpartyId : undefined;
       const created = await createForm({
         direction: draft.direction ?? "import",
         kind: draft.kind ?? "good",
@@ -365,8 +369,17 @@ function useApiPlatformStore(): VedStore {
         contract_number: draft.invoiceNumber,
         contract_date: draft.shipmentDate,
         organization_id: draft.organizationId !== "—" ? draft.organizationId : undefined,
-        counterparty_id: draft.counterpartyId !== "—" ? draft.counterpartyId : undefined,
+        counterparty_id: counterpartyId,
       });
+      // Ensure counterparty sticks even if create image lags behind CreateInput (PATCH is authoritative).
+      if (counterpartyId && created.counterparty_id !== counterpartyId) {
+        await patchForm(created.id, nestFormPrefixForRole(auth.role ?? "user"), {
+          counterparty_id: counterpartyId,
+        });
+      }
+      if (draft.hsCode && draft.hsCode !== "—") {
+        await attachFormHsCodes(created.id, [draft.hsCode]);
+      }
       if (draft.invoiceFile) {
         const uploaded = await uploadFile(created.id, draft.invoiceFile);
         await attachDocToForm(created.id, uploaded.id, "invoice", draft.invoiceFile.name);
@@ -380,10 +393,10 @@ function useApiPlatformStore(): VedStore {
         await transitionForm(created.id, postCreate);
       }
       await invalidateForms();
-      const refreshed = postCreate ? await getForm(created.id) : created;
+      const refreshed = await getForm(created.id);
       return mapCoreFormToPaymentForm(refreshed, auth.displayName);
     },
-    [auth.displayName, invalidateForms],
+    [auth.role, auth.displayName, invalidateForms],
   );
 
   const addDocuments = useCallback(
@@ -445,9 +458,9 @@ function useApiPlatformStore(): VedStore {
       }
       if (key === "counterparties") {
         const status = String(record.status ?? "");
-        if (status === "approved" || status === "not_approved") {
+        if (originalId && (status === "approved" || status === "not_approved")) {
           await setCounterpartyApproval(
-            id,
+            originalId,
             status === "approved" ? "approved" : "rejected",
             String(record.complianceNote ?? ""),
           );
@@ -458,17 +471,34 @@ function useApiPlatformStore(): VedStore {
             inn: String(record.inn ?? ""),
           });
         } else {
-          await createCounterparty({
+          const created = await createCounterparty({
             name: String(record.name ?? ""),
             country: String(record.country ?? record.countryCode ?? ""),
             inn: String(record.inn ?? ""),
           });
+          if (status === "approved" || status === "not_approved") {
+            await setCounterpartyApproval(
+              created.id,
+              status === "approved" ? "approved" : "rejected",
+              String(record.complianceNote ?? ""),
+            );
+          }
         }
         await invalidateRegistry(key);
         return;
       }
       if (key === "providers") {
-        await createAgent({ name: String(record.name ?? ""), status: String(record.status ?? "active") });
+        const status = String(record.status ?? "active");
+        const active = status === "active";
+        if (originalId) {
+          await updateAgent(originalId, {
+            name: String(record.name ?? ""),
+            inn: String(record.inn ?? ""),
+            active,
+          });
+        } else {
+          await createAgent({ name: String(record.name ?? ""), status });
+        }
         await invalidateRegistry(key);
         return;
       }

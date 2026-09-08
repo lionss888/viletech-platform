@@ -11,8 +11,9 @@ import {
   type RefRecord,
   type RegistryDef,
 } from "@/lib/ved/registry";
-import { useVed } from "@/lib/ved/store";
+import { usePlatformStore } from "@/lib/ved/platform-store";
 import type { VedRole } from "@/lib/ved/types";
+import { roleTitle } from "@/lib/ved/roles";
 import { cn } from "@/lib/utils";
 
 type Extra = { label: string; value: (record: RefRecord) => string };
@@ -30,10 +31,14 @@ export function RegistryManager({
   /** Роли, которым разрешено добавлять и редактировать записи (удаление и импорт — только суперадмину). */
   writeRoles?: VedRole[];
 }) {
-  const { session, refRecords, saveRefRecord, deleteRefRecord, importRefRecords } = useVed();
+  const { session, refRecords, saveRefRecord, deleteRefRecord, importRefRecords } = usePlatformStore();
   const records = refRecords(def.key);
   const canManage = session?.role === "root";
   const canWrite = canManage || (session != null && writeRoles.includes(session.role));
+  const writeRoleLabels = useMemo(() => {
+    const roles: VedRole[] = ["root", ...writeRoles.filter((r) => r !== "root")];
+    return [...new Set(roles)].map((r) => roleTitle(r)).join(", ");
+  }, [writeRoles]);
 
   const [query, setQuery] = useState("");
   const [draft, setDraft] = useState<RefRecord | null>(null);
@@ -74,10 +79,17 @@ export function RegistryManager({
       setFormError(invalid);
       return;
     }
-    saveRefRecord(def.key, draft, editingId ?? undefined);
-    setNotice(editingId ? "Запись обновлена" : "Запись добавлена");
-    setDraft(null);
-    setEditingId(null);
+    void (async () => {
+      try {
+        await saveRefRecord(def.key, draft, editingId ?? undefined);
+        setNotice(editingId ? "Запись обновлена" : "Запись добавлена");
+        setDraft(null);
+        setEditingId(null);
+        setFormError(null);
+      } catch (err) {
+        setFormError(err instanceof Error ? err.message : "Не удалось сохранить");
+      }
+    })();
   }
 
   function download(text: string, name: string) {
@@ -150,7 +162,7 @@ export function RegistryManager({
         {notice && <p className="mt-2 text-xs text-done">{notice}</p>}
         {!canWrite && (
           <p className="mt-2 text-xs text-muted-foreground">
-            Просмотр справочника. Изменения доступны роли «Суперадмин».
+            Просмотр справочника. Изменения доступны ролям: {writeRoleLabels}.
           </p>
         )}
 
@@ -172,6 +184,17 @@ export function RegistryManager({
               </tr>
             </thead>
             <tbody>
+              {rows.length === 0 && (
+                <tr>
+                  <td
+                    colSpan={def.fields.length + extraColumns.length + (canWrite ? 1 : 0)}
+                    className="py-6 text-sm text-muted-foreground"
+                  >
+                    Записей пока нет.
+                    {canWrite ? " Нажмите «Добавить», чтобы создать первую." : ""}
+                  </td>
+                </tr>
+              )}
               {rows.map((record) => {
                 const mark = badge?.(record) ?? null;
                 return (

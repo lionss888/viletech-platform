@@ -26,7 +26,11 @@ const STATIC_SEED: CatalogBundle = {
   complianceTools: buildComplianceToolSeed(),
 };
 
-/** Resolves catalog rows: API data when non-empty, else static seed (≥30 per registry). */
+/**
+ * Resolves catalog rows for the UI.
+ * Demo: full static seed. App/API: providers = API only (no mock bleed);
+ * currencies/HS fall back to platform reference seed; countries/tools stay reference.
+ */
 export function resolveCatalogBundle(
   mode: CatalogSourceMode,
   api: Partial<CatalogBundle>,
@@ -35,7 +39,7 @@ export function resolveCatalogBundle(
     return STATIC_SEED;
   }
   return {
-    providers: (api.providers?.length ?? 0) > 0 ? api.providers! : STATIC_SEED.providers,
+    providers: api.providers ?? [],
     currencies: (api.currencies?.length ?? 0) > 0 ? api.currencies! : STATIC_SEED.currencies,
     hsCodes: (api.hsCodes?.length ?? 0) > 0 ? api.hsCodes! : STATIC_SEED.hsCodes,
     countries: STATIC_SEED.countries,

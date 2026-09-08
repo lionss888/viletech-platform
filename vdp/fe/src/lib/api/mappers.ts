@@ -1,7 +1,7 @@
 import type { ComplianceHistoryEntry, CoreForm } from "./forms";
 import { actionsFor } from "@/lib/ved/actions";
 import { roleTitle } from "@/lib/ved/roles";
-import { statusMeta } from "@/lib/ved/statuses";
+import { statusMetaForProcess } from "@/lib/ved/process-stage-filters";
 import type {
   AttachedDocument,
   FormDirection,
@@ -20,6 +20,22 @@ function parseAmountMinor(raw: string | undefined): number {
   const value = Number.parseFloat(normalized);
   if (Number.isNaN(value)) return 0;
   return Math.round(value * 100);
+}
+
+/** First HS code from invoice_json.hs_codes, or "—". */
+export function hsCodeFromInvoiceJson(invoiceJson: string | undefined): string {
+  if (!invoiceJson?.trim()) return "—";
+  try {
+    const parsed = JSON.parse(invoiceJson) as { hs_codes?: unknown };
+    const codes = parsed.hs_codes;
+    if (Array.isArray(codes) && codes.length > 0) {
+      const first = codes.find((c) => typeof c === "string" && c.trim());
+      if (typeof first === "string") return first.trim();
+    }
+  } catch {
+    return "—";
+  }
+  return "—";
 }
 
 function mapDirection(value: string): FormDirection {
@@ -82,11 +98,12 @@ export function parseDocsJson(raw: string | undefined, formId: string): Attached
 export function mapComplianceHistory(
   entries: ComplianceHistoryEntry[],
   users: PlatformUser[] = [],
+  processRoles?: ProcessRoleRow[],
 ): TimelineEntry[] {
   return entries.map((entry) => {
-    const fromLabel = statusMeta(entry.from_status as FormStatus).label;
-    const toLabel = statusMeta(entry.to_status as FormStatus).label;
-    const transition = `${fromLabel} → ${toLabel}`;
+    const fromLabel = statusMetaForProcess(entry.from_status as FormStatus, processRoles).label;
+    const toLabel = statusMetaForProcess(entry.to_status as FormStatus, processRoles).label;
+    const transition = humanTimelineTitle(entry.from_status, entry.to_status, fromLabel, toLabel);
     const actor = users.find((u) => u.id === entry.actor_id);
     return {
       id: entry.id,
@@ -97,6 +114,30 @@ export function mapComplianceHistory(
       done: true,
     };
   });
+}
+
+function humanTimelineTitle(
+  fromStatus: string,
+  toStatus: string,
+  fromLabel: string,
+  toLabel: string,
+): string {
+  if (fromStatus === "creating" && toStatus === "draft") {
+    return "Заявка создана (черновик готов к отправке)";
+  }
+  if (fromStatus === "draft" && toStatus === "form_waiting_verification") {
+    return "Заявка отправлена на проверку";
+  }
+  if (fromStatus === "form_waiting_verification" && toStatus === "form_verification") {
+    return "Заявка взята в проверку";
+  }
+  if (toStatus === "form_waiting_corrections" || toStatus.includes("corrections")) {
+    return "Заявка возвращена на доработку";
+  }
+  if (toStatus === "form_accepted") {
+    return "Заявка подтверждена";
+  }
+  return `${fromLabel} → ${toLabel}`;
 }
 
 /** Best-effort actor for a transition: role that had actions on the previous status. */
@@ -181,7 +222,7 @@ export function mapCoreFormToPaymentForm(
     currency: form.currency || "USD",
     organizationId: form.organization_id || "—",
     counterpartyId: form.counterparty_id || "—",
-    hsCode: "—",
+    hsCode: hsCodeFromInvoiceJson(form.invoice_json),
     invoiceNumber: form.contract_number || "—",
     ownerName,
     managerId: form.manager_id || undefined,

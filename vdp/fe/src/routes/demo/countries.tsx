@@ -22,7 +22,10 @@ export function CountriesPage() {
   const def = REGISTRIES.countries;
 
   return (
-    <VedAppShell title={def.title} subtitle={`${def.subtitle} · записей: ${countries.length}`}>
+    <VedAppShell
+      title={def.title}
+      subtitle={`${def.subtitle} · записей: ${countries.length} · локальный справочник платформы (без core API)`}
+    >
       <RegistryManager
         def={def}
         extraColumns={[

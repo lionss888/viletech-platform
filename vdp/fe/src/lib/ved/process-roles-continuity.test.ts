@@ -110,4 +110,10 @@ describe("process-roles continuity v3", () => {
     const ids = actionsFor("manager", "form_waiting_verification", v3).map((a) => a.id);
     expect(ids).toContain("eco_form_start");
   });
+
+  it("injects accept and reject for manager on form_verification", () => {
+    const ids = actionsFor("manager", "form_verification", v3).map((a) => a.id);
+    expect(ids).toContain("eco_form_accept");
+    expect(ids).toContain("eco_form_reject");
+  });
 });

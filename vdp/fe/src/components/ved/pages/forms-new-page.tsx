@@ -101,6 +101,10 @@ export function NewForm() {
 
   function validateStep(): string | null {
     if (step === 2) {
+      const amount = Number(String(draft.amount).replace(/\s/g, "").replace(",", "."));
+      if (!Number.isFinite(amount) || amount <= 0) {
+        return "Укажите сумму платежа больше нуля";
+      }
       if (draft.kind === "good" && !draft.hsCode.trim()) {
         return hsCodes.length === 0
           ? "Справочник кодов ТН ВЭД пуст — добавьте код в «Коды ТН ВЭД»"

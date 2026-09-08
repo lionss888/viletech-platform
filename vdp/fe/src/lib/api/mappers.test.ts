@@ -41,6 +41,27 @@ describe("mapCoreFormToPaymentForm", () => {
     const mapped = mapCoreFormToPaymentForm(form, "User");
     expect(mapped.id).toBe("ca3dcfcd-dd3d-e79d-1910-9c885e5f397b");
   });
+
+  it("maps amount, counterparty and hs_codes from invoice_json", () => {
+    const form = {
+      id: "ca3dcfcd-dd3d-e79d-1910-9c885e5f397b",
+      account_id: "a1",
+      organization_id: "o1",
+      counterparty_id: "cp-1",
+      status: "draft",
+      direction: "import",
+      kind: "good",
+      invoice_amount: "1250.50",
+      currency: "USD",
+      invoice_json: JSON.stringify({ hs_codes: ["8542 31 90"] }),
+      created_at: "2026-01-01T00:00:00Z",
+      updated_at: "2026-01-01T00:00:00Z",
+    } as CoreForm;
+    const mapped = mapCoreFormToPaymentForm(form, "User");
+    expect(mapped.amountMinor).toBe(125050);
+    expect(mapped.counterpartyId).toBe("cp-1");
+    expect(mapped.hsCode).toBe("8542 31 90");
+  });
 });
 
 describe("parseDocsJson", () => {
@@ -50,6 +71,14 @@ describe("parseDocsJson", () => {
     expect(docs).toHaveLength(1);
     expect(docs[0]?.title).toBe("INV.pdf");
     expect(docs[0]?.kind).toBe("invoice");
+    expect(docs[0]?.fileId).toBe("f1");
+    expect(docs[0]?.ext.toLowerCase()).toBe("pdf");
+  });
+
+  it("prefers file_id over id for preview", () => {
+    const raw = JSON.stringify([{ id: "row-1", file_id: "file-abc", kind: "invoice", label: "a.pdf", mime: "application/pdf" }]);
+    const docs = parseDocsJson(raw, "form-1");
+    expect(docs[0]?.fileId).toBe("file-abc");
   });
 
   it("returns empty for invalid json", () => {
@@ -58,6 +87,30 @@ describe("parseDocsJson", () => {
 });
 
 describe("mapComplianceHistory", () => {
+  it("uses human titles for submit and take-in-review without compliance jargon", () => {
+    const timeline = mapComplianceHistory([
+      {
+        id: "h-sub",
+        form_payment_id: "f1",
+        actor_id: "a1",
+        from_status: "draft",
+        to_status: "form_waiting_verification",
+        created_at: "2026-01-01T00:00:00Z",
+      },
+      {
+        id: "h-take",
+        form_payment_id: "f1",
+        actor_id: "a2",
+        from_status: "form_waiting_verification",
+        to_status: "form_verification",
+        created_at: "2026-01-01T01:00:00Z",
+      },
+    ]);
+    expect(timeline[0]?.title).toBe("Заявка отправлена на проверку");
+    expect(timeline[1]?.title).toBe("Заявка взята в проверку");
+    expect(timeline.map((e) => e.title).join(" ")).not.toMatch(/комплаенс/i);
+  });
+
   it("maps history entries to timeline with human-readable labels", () => {
     const timeline = mapComplianceHistory([
       {
@@ -87,8 +140,7 @@ describe("mapComplianceHistory", () => {
         created_at: "2026-01-01T00:00:00Z",
       },
     ]);
-    expect(timeline[0]?.title).toContain("Создаётся");
-    expect(timeline[0]?.title).toContain("Черновик");
+    expect(timeline[0]?.title).toContain("Заявка создана");
     expect(timeline[0]?.title).not.toContain("creating");
   });
 
