@@ -1,15 +1,16 @@
 import { Link } from "@tanstack/react-router";
+import { useQuery } from "@tanstack/react-query";
 import { useMemo } from "react";
 
 import { VedAppShell } from "@/components/ved/VedAppShell";
 import { VedFormLink, VedLink } from "@/components/ved/VedLink";
 import { StatusBadge } from "@/components/ved/StatusBadge";
+import { fetchPlatformHealth } from "@/lib/api/platform-health";
 import { actionsFor } from "@/lib/ved/actions";
 import { isComplianceRole, subjectState } from "@/lib/ved/compliance";
 import { workTotalsByCurrency } from "@/lib/ved/dashboard-totals";
 import { money, relative } from "@/lib/ved/format";
 import { daysIdle, systemStats } from "@/lib/ved/health";
-import { SYSTEM_INCIDENTS, SYSTEM_SERVICES } from "@/lib/ved/reference";
 import { useVedPaths } from "@/lib/ved/ved-paths";
 import { roleTitle } from "@/lib/ved/roles";
 import { displayStageId, stagesForProcess } from "@/lib/ved/process-stage-filters";
@@ -27,14 +28,18 @@ const ROLE_FOCUS: Record<VedRole, string> = {
   root: "Состояние системы, критичные ошибки, нагрузка и эффективность команды.",
 };
 
-/** App mode has no live observability feed yet — do not show hardcoded mock incidents. */
-const MONITORING_CONNECTED = false;
-
 const STATE = {
   up: { text: "Работает", cls: "bg-done-soft text-done" },
   degraded: { text: "Деградация", cls: "bg-wait-soft text-wait" },
   down: { text: "Недоступен", cls: "bg-return-soft text-return" },
 };
+
+const SIGNAL_TONE = {
+  ok: "bg-done-soft text-done",
+  warn: "bg-wait-soft text-wait",
+  critical: "bg-return-soft text-return",
+  neutral: "bg-muted text-muted-foreground",
+} as const;
 
 export function DashboardPage() {
   const { session } = usePlatformStore();
@@ -50,23 +55,34 @@ function RootDashboard() {
     () => systemStats(forms, (id) => users.find((u) => u.id === id)?.name),
     [forms, users],
   );
-
-  const critical = MONITORING_CONNECTED
-    ? SYSTEM_INCIDENTS.filter((i) => i.severity === "critical")
-    : [];
-  const healthy = MONITORING_CONNECTED ? SYSTEM_SERVICES.filter((s) => s.state === "up").length : 0;
-  const serviceTotal = MONITORING_CONNECTED ? SYSTEM_SERVICES.length : 0;
+  const healthQuery = useQuery({
+    queryKey: ["platform-health"],
+    queryFn: fetchPlatformHealth,
+    refetchInterval: 30_000,
+    retry: 1,
+  });
+  const health = healthQuery.data;
   const blocked = users.filter((u) => u.blocked).length;
+  const healthyLabel = health
+    ? `${health.summary.up}/${health.summary.total} сервисов`
+    : healthQuery.isError
+      ? "Ошибка опроса"
+      : "…";
+  const criticalLabel = health
+    ? String(health.summary.down + health.summary.degraded)
+    : healthQuery.isError
+      ? "—"
+      : "…";
 
   const cards = [
     {
       label: "Работоспособность системы",
-      value: MONITORING_CONNECTED ? `${healthy}/${serviceTotal} сервисов` : "Нет данных",
+      value: healthyLabel,
       to: null,
     },
     {
-      label: "Критичные ошибки",
-      value: MONITORING_CONNECTED ? String(critical.length) : "—",
+      label: "Сбои и деградации",
+      value: criticalLabel,
       to: null,
     },
     { label: "Заявок в работе", value: String(stats.active), to: paths.forms, search: {} },
@@ -102,66 +118,96 @@ function RootDashboard() {
         )}
       </div>
 
-      <div className="mt-4 flex flex-wrap gap-2">
-        <VedLink segment="/admin" className="rounded-md bg-primary px-3 py-1.5 text-xs font-semibold text-primary-foreground">
-          Пользователи и роли
-        </VedLink>
-        <VedLink segment="/testing" className="rounded-md border border-border px-3 py-1.5 text-xs font-semibold">
-          Проверка сценариев
-        </VedLink>
-      </div>
-
       <div className="mt-4 grid gap-4 lg:grid-cols-[1fr_1fr]">
         <section className="panel p-4">
-          <h2 className="text-sm font-semibold">Состояние сервисов</h2>
-          {MONITORING_CONNECTED ? (
+          <div className="flex items-center justify-between gap-2">
+            <h2 className="text-sm font-semibold">Состояние сервисов</h2>
+            <button
+              type="button"
+              className="text-xs font-semibold text-muted-foreground hover:text-foreground disabled:opacity-50"
+              disabled={healthQuery.isFetching}
+              onClick={() => void healthQuery.refetch()}
+            >
+              {healthQuery.isFetching ? "Обновление…" : "Обновить"}
+            </button>
+          </div>
+          {healthQuery.isLoading && !health ? (
+            <p className="mt-3 text-sm text-muted-foreground">Опрос health зависимостей…</p>
+          ) : healthQuery.isError && !health ? (
+            <p className="mt-3 text-sm text-return">
+              Не удалось получить состояние сервисов. Проверьте доступ root и доступность ядра.
+            </p>
+          ) : (
             <ul className="mt-3 divide-y divide-border">
-              {SYSTEM_SERVICES.map((s) => (
+              {(health?.services ?? []).map((s) => (
                 <li key={s.id} className="flex flex-wrap items-center gap-x-3 gap-y-1 py-2.5">
-                  <span className="min-w-0 flex-1 basis-32 truncate text-sm">{s.name}</span>
-                  <span className="font-mono text-[11px] whitespace-nowrap text-muted-foreground">{s.latencyMs} мс</span>
-                  <span className="font-mono text-[11px] whitespace-nowrap text-muted-foreground">{s.uptime}</span>
+                  <span className="min-w-0 flex-1 basis-32 truncate text-sm">
+                    {s.name}
+                    {s.optional ? (
+                      <span className="ml-1 text-[11px] text-muted-foreground">(опц.)</span>
+                    ) : null}
+                  </span>
+                  <span className="font-mono text-[11px] whitespace-nowrap text-muted-foreground">
+                    {s.latency_ms} мс
+                  </span>
                   <span className={cn("rounded px-1.5 py-0.5 text-[11px] font-semibold whitespace-nowrap", STATE[s.state].cls)}>
                     {STATE[s.state].text}
                   </span>
+                  {s.detail ? (
+                    <span className="basis-full truncate font-mono text-[11px] text-muted-foreground">{s.detail}</span>
+                  ) : null}
                 </li>
               ))}
             </ul>
-          ) : (
-            <p className="mt-3 text-sm text-muted-foreground">
-              Нет данных мониторинга. Подключите observability (health/metrics), чтобы видеть сервисы здесь.
-            </p>
           )}
+          {health?.checked_at ? (
+            <p className="mt-2 font-mono text-[11px] text-muted-foreground">
+              проверено {new Date(health.checked_at).toLocaleString("ru-RU")}
+            </p>
+          ) : null}
         </section>
 
         <section className="panel p-4">
-          <h2 className="text-sm font-semibold">Ошибки и учётные записи</h2>
-          {MONITORING_CONNECTED ? (
-            <ul className="mt-3 divide-y divide-border">
-              {SYSTEM_INCIDENTS.map((i) => (
-                <li key={i.id} className="py-2.5">
-                  <div className="flex items-center gap-2">
-                    <span
-                      className={cn(
-                        "rounded px-1.5 py-0.5 text-[11px] font-semibold",
-                        i.severity === "critical" ? "bg-return-soft text-return" : "bg-wait-soft text-wait",
-                      )}
-                    >
-                      {i.severity === "critical" ? "Критично" : "Предупреждение"}
-                    </span>
-                    <span className="min-w-0 flex-1 truncate text-sm">{i.title}</span>
-                  </div>
-                  <p className="mt-1 font-mono text-[11px] text-muted-foreground">
-                    {i.account} · {i.at}
-                  </p>
-                </li>
-              ))}
-            </ul>
-          ) : (
+          <h2 className="text-sm font-semibold">Индикации Root</h2>
+          <ul className="mt-3 divide-y divide-border">
+            {(health?.signals ?? []).map((signal) => (
+              <li key={signal.id} className="flex flex-wrap items-center gap-2 py-2.5">
+                <span
+                  className={cn(
+                    "rounded px-1.5 py-0.5 text-[11px] font-semibold",
+                    SIGNAL_TONE[signal.tone as keyof typeof SIGNAL_TONE] ?? SIGNAL_TONE.neutral,
+                  )}
+                >
+                  {signal.label}
+                </span>
+                <span className="min-w-0 flex-1 text-sm">{signal.value}</span>
+              </li>
+            ))}
+            <li className="flex flex-wrap items-center gap-2 py-2.5">
+              <span className={cn("rounded px-1.5 py-0.5 text-[11px] font-semibold", SIGNAL_TONE.neutral)}>
+                Учётные записи
+              </span>
+              <span className="min-w-0 flex-1 text-sm">
+                всего {users.length} · заблокировано {blocked}
+              </span>
+            </li>
+            <li className="flex flex-wrap items-center gap-2 py-2.5">
+              <span
+                className={cn(
+                  "rounded px-1.5 py-0.5 text-[11px] font-semibold",
+                  stats.stuck.length > 0 ? SIGNAL_TONE.warn : SIGNAL_TONE.ok,
+                )}
+              >
+                Зависшие заявки
+              </span>
+              <span className="min-w-0 flex-1 text-sm">{stats.stuck.length}</span>
+            </li>
+          </ul>
+          {!health && !healthQuery.isLoading ? (
             <p className="mt-3 text-sm text-muted-foreground">
-              Инциденты не подключены. Ниже — только живые метрики заявок и учётных записей из API.
+              Сигналы среды появятся после успешного опроса platform-health.
             </p>
-          )}
+          ) : null}
         </section>
       </div>
 
@@ -206,6 +252,10 @@ function RootDashboard() {
         </VedLink>
         {" · "}
         заблокировано: {blocked} · сделок всего: {stats.total}
+        {" · "}
+        <VedLink segment="/testing" className="font-semibold hover:underline">
+          Проверка сценариев
+        </VedLink>
       </p>
     </VedAppShell>
   );
