@@ -6,11 +6,11 @@ GitHub Actions — канон: merge в main, теги vdp-v, GHCR, deploy. GitL
 
 Конвейер начинается с разработчика: GitHub PR или MR, плюс опционально GitLab MR.
 
-Далее vdp-ci.yml с джобами fast, docs, integration (условно) и playwright (обязательный User-journey на каждом PR и на main).
+Далее vdp-ci.yml с джобами fast, docs, integration (обязателен на каждом PR) и playwright (обязательный browser E2E на каждом PR и на main).
 
-Далее vdp-release.yml: тег vdp-v запускает make release-gate.
+Далее vdp-release.yml: тег vdp-v запускает make release-gate (также release-gate job внутри vdp-images на теге).
 
-Далее vdp-images.yml: immutable images в GHCR плюс copy в GitLab registry. workflow_dispatch принимает поле ref (ветка, тег или SHA). После push pin публикуется GitHub Release как каталог обновлений.
+Далее vdp-images.yml: immutable images в GHCR плюс copy в GitLab registry. На push в main job build-push ждёт успешный VDP CI для того же SHA (job wait VDP CI). На tag — release-gate без ожидания CI. workflow_dispatch принимает поле ref (ветка, тег или SHA) и не блокируется ожиданием CI. После push pin публикуется GitHub Release как каталог обновлений.
 
 Далее vdp-deploy.yml: среда alpha автоматически только после Images с ветки main. Среды beta, gamma, demo, test — вручную. Gamma: Environment required reviewers.
 
@@ -22,9 +22,15 @@ GitHub Actions — канон: merge в main, теги vdp-v, GHCR, deploy. GitL
 
 Далее vdp-mirror-gitlab.yml: из GitHub в GitLab. CD на GitLab — волна 3.
 
-Job fast: npm test в vdp/fe, make test, make test-adapters. Job integration: postgres service, ci-bootstrap-postgres.sh, make db-migrate, make test-integration, make compose-up, compose-e2e.sh. Job playwright: compose плюс make playwright-e2e с двумя спеками login-form и user-submit (ролевые локаторы). Полная матрица браузера не гоняется в этом job.
+Job fast: npm test в vdp/fe, make test, make test-adapters.
 
-Images .github/workflows/vdp-images.yml — после green gate на теге или push в main, либо dispatch с ref: build и push образов vdp-core, vdp-hub, vdp-docs, vdp-mail, vdp-sms, vdp-fe (production target) в GHCR по digest; copy digest в GitLab Container Registry.
+Job docs: docs-format-check, make test-cd-scripts.
+
+Job integration: postgres service, ci-bootstrap-postgres.sh, make db-migrate (scripts/db-migrate-host.sh, тот же glob SQL что compose-db-migrate), make test-integration, make compose-up, compose-e2e.sh. GATEWAY_RATE_LIMIT=2000 в job env. Label integration больше не нужен для gate.
+
+Job playwright: compose плюс make playwright-e2e. На PR узкий набор: login-form, user-submit, provider-acl, reject-path (PLAYWRIGHT_ARGS). На main / schedule / workflow_dispatch — полный suite (пустой PLAYWRIGHT_ARGS). GATEWAY_RATE_LIMIT=2000. Полная матрица браузеров не гоняется в этом job.
+
+Images .github/workflows/vdp-images.yml — после green VDP CI на main (или release-gate на теге), либо dispatch с ref: build и push образов vdp-core, vdp-hub, vdp-docs, vdp-mail, vdp-sms, vdp-fe (production target) в GHCR по digest; copy digest в GitLab Container Registry.
 
 Deploy .github/workflows/vdp-deploy.yml — GitHub Environments alpha, beta, gamma, demo, test; docker compose overlay pull, затем postgres → compose-db-migrate → up -d → restart core/hub, без флага --build. Initdb mounts alone are not enough on existing VM volumes.
 
@@ -34,21 +40,21 @@ Deploy .github/workflows/vdp-deploy.yml — GitHub Environments alpha, beta, gam
 
 ## Когда блокируется merge
 
-PR на GitHub: обязательны fast, docs и playwright (branch protection на main). Integration — на main, по label integration или nightly. Перед handover: зелёный release-gate локально либо vdp-release на теге.
+PR на GitHub: обязательны fast (unit), docs format, integration (postgres + compose-e2e), playwright (browser E2E) (branch protection на main). Перед handover / gamma: зелёный release-gate локально либо на теге vdp-v*.
 
-Оператор: в Settings, Branches, правило для main включить required checks с именами fast (unit), docs format, playwright (browser E2E).
+Оператор: Settings → Branches → правило для main → required checks с именами fast (unit), docs format, integration (postgres + compose-e2e), playwright (browser E2E).
 
 Merge в main только на GitHub. GitLab main — mirror-only.
 
-Hybrid alpha с ручной сборкой FE на VM не канон. Канон — pin из GHCR.
+Hybrid alpha с ручной сборкой FE на VM не канон. Канон — pin из GHCR после green Images (которое на main ждёт green VDP CI).
 
 ## Локальные эквиваленты
 
 Быстрый слой: cd vdp/fe и npm test; затем cd vdp и make test, make test-adapters.
 
-Integration: make db-setup (локальный Postgres), make test-integration, make compose-up, ./scripts/compose-e2e.sh.
+Integration: make db-setup (локальный Postgres), make test-integration, make compose-up, ./scripts/compose-e2e.sh. Host migrate: make db-migrate (= scripts/db-migrate-host.sh).
 
-Browser: make playwright-e2e. В CI те же два journey через переменную PLAYWRIGHT_ARGS.
+Browser: make playwright-e2e. В CI на PR — четыре journey через PLAYWRIGHT_ARGS; на main — полный suite.
 
 Pre-handover: make release-gate.
 
@@ -76,4 +82,4 @@ Deploy на VM с SSH: make deploy-alpha, make deploy-beta, make deploy-gamma (�
 
 ## Честность готовности
 
-Green CI/CD подтверждает регрессию и доставку артефакта. Не заменяет prod vendor integrations, security sign-off, FE API product readiness. Своего клиента управления нет до волны 2. См. [known-gaps.md](../pilot/known-gaps.md).
+Green CI/CD подтверждает регрессию и доставку артефакта: merge при зелёном PR + Images на main только после green CI ≈ alpha не уезжает с красной регрессией. Не заменяет prod vendor integrations, security sign-off, FE API product readiness. Full release-gate — на теге vdp-v* перед gamma. См. [known-gaps.md](../pilot/known-gaps.md).

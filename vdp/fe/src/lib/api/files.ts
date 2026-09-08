@@ -78,3 +78,19 @@ export function attachDocToForm(
     return (await response.json()) as Record<string, unknown>;
   });
 }
+
+/** Nest DELETE …/files/{fileId} — removes file ref from form docs_json. */
+export function detachDocFromForm(formId: string, fileId: string, nestPrefix: string): Promise<unknown> {
+  const headers = new Headers();
+  headers.set("X-Request-ID", newRequestId());
+  const tokens = loadAuthTokens();
+  if (tokens?.token) headers.set("Authorization", `Bearer ${tokens.token}`);
+  return fetch(`${apiBase()}/api/v1/${nestPrefix}/form-payment/${formId}/files/${encodeURIComponent(fileId)}`, {
+    method: "DELETE",
+    headers,
+  }).then(async (response) => {
+    if (!response.ok) throw new Error(response.statusText || "Delete failed");
+    if (response.status === 204) return {};
+    return (await response.json()) as unknown;
+  });
+}

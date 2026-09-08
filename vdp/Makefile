@@ -73,26 +73,10 @@ db-setup:
 	psql -h localhost -d postgres -c "GRANT ALL PRIVILEGES ON DATABASE vdp_core TO vdp_core; GRANT ALL PRIVILEGES ON DATABASE vdp_hub TO vdp_hub;"
 	$(MAKE) db-migrate
 
+# Host Postgres (CI service / local): same *.sql glob order as compose-db-migrate.
 db-migrate:
-	PGPASSWORD=vdp_core psql -h localhost -U vdp_core -d vdp_core -v ON_ERROR_STOP=1 -f $(CORE_DIR)/migrations/001_core.sql
-	PGPASSWORD=vdp_core psql -h localhost -U vdp_core -d vdp_core -v ON_ERROR_STOP=1 -f $(CORE_DIR)/migrations/002_extended.sql
-	PGPASSWORD=vdp_core psql -h localhost -U vdp_core -d vdp_core -v ON_ERROR_STOP=1 -f $(CORE_DIR)/migrations/003_seed.sql
-	PGPASSWORD=vdp_core psql -h localhost -U vdp_core -d vdp_core -v ON_ERROR_STOP=1 -f $(CORE_DIR)/migrations/004_auth_org_r2.sql
-	PGPASSWORD=vdp_core psql -h localhost -U vdp_core -d vdp_core -v ON_ERROR_STOP=1 -f $(CORE_DIR)/migrations/005_r4_docs_domain.sql
-	PGPASSWORD=vdp_core psql -h localhost -U vdp_core -d vdp_core -v ON_ERROR_STOP=1 -f $(CORE_DIR)/migrations/006_r6_rate_docs.sql
-	PGPASSWORD=vdp_core psql -h localhost -U vdp_core -d vdp_core -v ON_ERROR_STOP=1 -f $(CORE_DIR)/migrations/007_r3_contracts.sql
-	PGPASSWORD=vdp_core psql -h localhost -U vdp_core -d vdp_core -v ON_ERROR_STOP=1 -f $(CORE_DIR)/migrations/008_r4_docs_parity.sql
-	PGPASSWORD=vdp_core psql -h localhost -U vdp_core -d vdp_core -v ON_ERROR_STOP=1 -f $(CORE_DIR)/migrations/009_r5_multi_order.sql
-	PGPASSWORD=vdp_core psql -h localhost -U vdp_core -d vdp_core -v ON_ERROR_STOP=1 -f $(CORE_DIR)/migrations/010_r9_extended.sql
-	PGPASSWORD=vdp_core psql -h localhost -U vdp_core -d vdp_core -v ON_ERROR_STOP=1 -f $(CORE_DIR)/migrations/011_r10_bank.sql
-	PGPASSWORD=vdp_core psql -h localhost -U vdp_core -d vdp_core -v ON_ERROR_STOP=1 -f $(CORE_DIR)/migrations/012_b2_org_signer.sql
-	PGPASSWORD=vdp_core psql -h localhost -U vdp_core -d vdp_core -v ON_ERROR_STOP=1 -f $(CORE_DIR)/migrations/013_bank_org_client_type.sql
-	PGPASSWORD=vdp_core psql -h localhost -U vdp_core -d vdp_core -v ON_ERROR_STOP=1 -f $(CORE_DIR)/migrations/014_notifications.sql
-	PGPASSWORD=vdp_core psql -h localhost -U vdp_core -d vdp_core -v ON_ERROR_STOP=1 -f $(CORE_DIR)/migrations/015_role_process_config.sql
-	PGPASSWORD=vdp_core psql -h localhost -U vdp_core -d vdp_core -v ON_ERROR_STOP=1 -f $(CORE_DIR)/migrations/016_account_kind_caps.sql
-	PGPASSWORD=vdp_core psql -h localhost -U vdp_core -d vdp_core -v ON_ERROR_STOP=1 -f $(CORE_DIR)/migrations/017_role_mandatory_and_pilot_compliance.sql
-	PGPASSWORD=vdp_hub psql -h localhost -U vdp_hub -d vdp_hub -v ON_ERROR_STOP=1 -f $(HUB_DIR)/migrations/001_hub.sql
-	PGPASSWORD=vdp_hub psql -h localhost -U vdp_hub -d vdp_hub -v ON_ERROR_STOP=1 -f $(HUB_DIR)/migrations/002_hub.sql
+	@chmod +x scripts/db-migrate-host.sh
+	@CORE_DIR="$(CORE_DIR)" HUB_DIR="$(HUB_DIR)" ./scripts/db-migrate-host.sh
 
 # Default compose path: Postgres for core+hub+fe (not memory).
 compose-db-migrate:
@@ -289,8 +273,9 @@ test-cd-scripts:
 	@chmod +x scripts/test-cd-scripts.sh
 	./scripts/test-cd-scripts.sh
 
-# Management Telegram: KIND=done|progress|gate|promote|uptime|blocker|schedule|raw
+# Management Telegram: KIND=done|progress|gate|promote|push|review|pipeline|uptime|blocker|schedule|raw
 # Example: make notify-mgmt KIND=done TITLE='UX кабинетов' BODY='…' STATUS='пройдена'
+# CI helper: scripts/ci-mgmt-notify.sh auto|push|review|pipeline-fail
 notify-mgmt:
 	@chmod +x scripts/notify-mgmt.sh
 	./scripts/notify-mgmt.sh \
@@ -301,4 +286,5 @@ notify-mgmt:
 		$(if $(ENV),--env "$(ENV)") \
 		$(if $(REVISION),--revision "$(REVISION)") \
 		$(if $(NEXT),--next "$(NEXT)") \
+		$(if $(BRANCH),--branch "$(BRANCH)") \
 		$(if $(DRY_RUN),--dry-run)

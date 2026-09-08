@@ -97,12 +97,29 @@ export function confirmExtraction(formId: string, human: unknown): Promise<CoreF
   });
 }
 
+export function startExtraction(formId: string): Promise<CoreForm> {
+  return apiFetch<CoreForm>(`/api/v1/forms/${formId}/extraction/start`, {
+    method: "POST",
+    body: JSON.stringify({}),
+  });
+}
+
+export function cancelExtraction(formId: string): Promise<CoreForm> {
+  return apiFetch<CoreForm>(`/api/v1/forms/${formId}/extraction/cancel`, {
+    method: "POST",
+    body: JSON.stringify({}),
+  });
+}
+
 export type PatchFormInput = {
   counterparty_id?: string;
+  organization_id?: string;
   invoice_amount?: string;
   currency?: string;
   contract_number?: string;
   contract_date?: string;
+  direction?: string;
+  kind?: string;
 };
 
 /** Nest-compatible PATCH; nestPrefix is site|manager|admin|… matching the caller role. */

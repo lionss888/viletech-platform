@@ -28,6 +28,8 @@ export function StatusBadge({
   const meta = statusMetaForProcess(status, processRoles, viewerRole);
   return (
     <span
+      data-testid="status-badge"
+      data-status={status}
       title={meta.label}
       className={cn(
         "inline-flex items-center gap-1.5 rounded-md px-2 py-1 text-xs font-semibold whitespace-nowrap",

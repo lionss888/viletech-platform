@@ -4,7 +4,7 @@ overview: "Не новый фундамент с нуля, а волна ант�
 todos:
   - id: wave-a-migrate-continuity
     content: Единый db-migrate (= glob как compose); e2e-continuity.sh; lint против голого ECO в compose-e2e
-    status: pending
+    status: in_progress
   - id: wave-b-ci-images
     content: integration на каждый PR; GATEWAY_RATE_LIMIT в CI; Images на main ждёт green VDP CI; обновить required checks в ci.md
     status: pending

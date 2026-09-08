@@ -2,9 +2,6 @@ import { type Page } from "@playwright/test";
 import { test, expect } from "./fixtures/auth.fixture";
 import { assertCoreHealthy, createRejectedForm, createSubmittedForm, loginAllRoles } from "./helpers/api";
 
-/** Pilot continuity (ICO/ECO off): badge copy differs from full compliance matrix. */
-const RETURNED_STATUS = /Возвращена на (коррекцию|доработку)/;
-const AWAITING_COMPLIANCE = /Ожидает проверки (комплаенса|менеджером)/;
 const TAKE_IN_REVIEW = /Взять (заявку|организацию) в проверку|Взять .* в проверку/i;
 const REJECT_FOR_CORRECTIONS = /Вернуть на доработку|Вернуть на коррекцию/i;
 
@@ -12,6 +9,16 @@ async function waitForFormDetail(page: Page, formId: string): Promise<void> {
   await page.goto(`/forms/${formId}`);
   await page.waitForLoadState("networkidle");
   await expect(page.getByTestId("form-params")).toBeVisible({ timeout: 20_000 });
+}
+
+function statusBadge(page: Page, status: string) {
+  return page.getByTestId("status-badge").and(page.locator(`[data-status="${status}"]`));
+}
+
+async function expectStatusOneOf(page: Page, statuses: string[]): Promise<void> {
+  const badge = page.getByTestId("status-badge").first();
+  await expect(badge).toBeVisible({ timeout: 20_000 });
+  await expect(badge).toHaveAttribute("data-status", new RegExp(`^(${statuses.join("|")})$`));
 }
 
 test.describe("Reject path (ECO → corrections → user resubmit)", () => {
@@ -25,11 +32,11 @@ test.describe("Reject path (ECO → corrections → user resubmit)", () => {
 
     await loginAs("user");
     await waitForFormDetail(page, formId);
-    await expect(page.getByTitle(RETURNED_STATUS)).toBeVisible({ timeout: 20_000 });
+    await expect(statusBadge(page, "form_waiting_corrections")).toBeVisible({ timeout: 20_000 });
     await expect(page.getByTestId("correction-guidance")).toBeVisible();
     await expect(page.getByRole("button", { name: "Отправить исправления" })).toBeVisible();
     await page.getByRole("button", { name: "Отправить исправления" }).click();
-    await expect(page.getByTitle(AWAITING_COMPLIANCE)).toBeVisible({ timeout: 20_000 });
+    await expectStatusOneOf(page, ["form_waiting_verification", "organization_waiting_verification"]);
   });
 
   test("manager returns for corrections via UI with reason", async ({ page, loginAs }) => {
@@ -51,6 +58,6 @@ test.describe("Reject path (ECO → corrections → user resubmit)", () => {
       await markSelect.selectOption({ index: 1 });
     }
     await page.getByRole("button", { name: "Подтвердить" }).click();
-    await expect(page.getByTitle(RETURNED_STATUS)).toBeVisible({ timeout: 20_000 });
+    await expect(statusBadge(page, "form_waiting_corrections")).toBeVisible({ timeout: 20_000 });
   });
 });

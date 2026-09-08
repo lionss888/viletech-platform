@@ -13,7 +13,8 @@ test.describe("completed-journey (catalog happy_path_to_completed)", () => {
     await loginAs("manager");
     await page.goto(`/forms/${formId}`);
     await page.waitForLoadState("networkidle");
-    // Prefer status badge title; stepper also shows «Завершено» — avoid strict-mode .or() clash.
-    await expect(page.getByTitle("Заявка закрыта")).toBeVisible({ timeout: 15_000 });
+    await expect(
+      page.getByTestId("status-badge").and(page.locator('[data-status="completed"]')),
+    ).toBeVisible({ timeout: 15_000 });
   });
 });

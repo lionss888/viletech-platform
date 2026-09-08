@@ -1,9 +1,6 @@
 import { test, expect } from "./fixtures/auth.fixture";
 import { assertCoreHealthy, createFormAccepted, loginAllRoles } from "./helpers/api";
 
-/** Pilot continuity: title may include «менеджером» when ECO slot is off. */
-const FORM_ACCEPTED = /Заявка подтверждена/;
-
 test.describe("Manager payment gate (app UI)", () => {
   test.beforeAll(async () => {
     await assertCoreHealthy();
@@ -17,6 +14,8 @@ test.describe("Manager payment gate (app UI)", () => {
     await expect(page.getByRole("button", { name: "Назначить платёжного агента" })).toBeVisible({
       timeout: 15_000,
     });
-    await expect(page.getByTitle(FORM_ACCEPTED)).toBeVisible();
+    await expect(
+      page.getByTestId("status-badge").and(page.locator('[data-status="form_accepted"]')),
+    ).toBeVisible();
   });
 });

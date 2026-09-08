@@ -36,7 +36,7 @@ import {
   mapCoreOrganization,
   staticReferenceData,
 } from "@/lib/api/catalog-mappers";
-import { attachDocToForm, uploadFile } from "@/lib/api/files";
+import { attachDocToForm, detachDocFromForm, uploadFile } from "@/lib/api/files";
 import { assignAgent, assignDeadline, setConfirmation } from "@/lib/api/form-assignments";
 import {
   acceptContract,
@@ -414,9 +414,20 @@ function useApiPlatformStore(): VedStore {
     [invalidateForms, queryClient],
   );
 
-  const deleteDocument = useCallback(() => {
-    throw new Error("Удаление документов пока не поддерживается core API");
-  }, []);
+  const deleteDocument = useCallback(
+    async (formId: string, docId: string) => {
+      const form = forms.find((f) => f.id === formId);
+      const doc = form?.documents.find((d) => d.id === docId);
+      const fileId = doc?.fileId || docId;
+      if (!fileId) {
+        throw new Error("У документа нет file id для удаления");
+      }
+      await detachDocFromForm(formId, fileId, nestFormPrefixForRole(auth.role ?? "user"));
+      await invalidateForms();
+      await queryClient.invalidateQueries({ queryKey: ["form", formId] });
+    },
+    [forms, auth.role, invalidateForms, queryClient],
+  );
 
   const saveRefRecord = useCallback(
     async (key: RegistryKey, record: RefRecord, originalId?: string) => {

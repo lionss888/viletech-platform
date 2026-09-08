@@ -13,9 +13,12 @@ import {
 import { ExtractionReviewPanel } from "@/components/ved/ExtractionReviewPanel";
 import { CorrectionGuidancePanel } from "@/components/ved/CorrectionGuidancePanel";
 import { CounterpartyPickDialog } from "@/components/ved/CounterpartyPickDialog";
+import { OrganizationPickDialog } from "@/components/ved/OrganizationPickDialog";
 import { FormParamsEditDialog } from "@/components/ved/FormParamsEditDialog";
 import { ActionPanel } from "@/components/ved/ActionPanel";
 import { DocumentList } from "@/components/ved/DocumentViewer";
+import { assertFileSize, UploadError } from "@/lib/api/files";
+import type { AttachedDocument } from "@/lib/ved/types";
 import { RefundPanel } from "@/components/ved/RefundPanel";
 import { DirectionTag, StatusBadge } from "@/components/ved/StatusBadge";
 import { ChannelBadge } from "@/components/ved/ChannelBadge";
@@ -50,10 +53,14 @@ export function FormDetail() {
   const formId = id ?? "";
   const mode = usePlatformMode();
   const auth = useAuth();
-  const { forms, session, organizations, counterparties, users } = usePlatformStore();
+  const { forms, session, organizations, counterparties, users, addDocuments } = usePlatformStore();
   const processRoles = useProcessRolesRows();
   const [cpDialogOpen, setCpDialogOpen] = useState(false);
+  const [orgDialogOpen, setOrgDialogOpen] = useState(false);
   const [editOpen, setEditOpen] = useState(false);
+  const [uploadBusy, setUploadBusy] = useState(false);
+  const [uploadError, setUploadError] = useState<string | null>(null);
+  const [uploadKind, setUploadKind] = useState<AttachedDocument["kind"]>("invoice");
   const formQuery = useQuery({
     queryKey: ["form", formId],
     queryFn: () => getForm(formId),
@@ -104,6 +111,27 @@ export function FormDetail() {
       form?.status === "creating" ||
       String(form?.status ?? "").includes("corrections"));
 
+  async function onUploadDocs(fileList: FileList | null) {
+    if (!fileList?.length || !form) return;
+    setUploadBusy(true);
+    setUploadError(null);
+    try {
+      const files = Array.from(fileList);
+      for (const file of files) assertFileSize(file);
+      await addDocuments(form.id, files, uploadKind);
+    } catch (err) {
+      setUploadError(
+        err instanceof UploadError
+          ? err.message
+          : err instanceof Error
+            ? err.message
+            : "Не удалось загрузить",
+      );
+    } finally {
+      setUploadBusy(false);
+    }
+  }
+
   if (!formId || (mode === "app" && formQuery.isLoading && !form)) {
     return (
       <VedAppShell title="Заявка">
@@ -134,6 +162,8 @@ export function FormDetail() {
   const orgPending = orgPendingIco(subjects);
   const subjectsPending = subjectsPendingReview(subjects);
   const isProvider = role === "provider";
+  const canUploadDocs = Boolean(canEditParams && !isProvider && mode === "app");
+  const canReviewSubjects = compliance || role === "manager" || role === "root";
   const providerLabel =
     users.find((u) => u.id === form.providerId)?.name ?? form.providerName ?? "не назначен";
   const managerLabel =
@@ -216,6 +246,7 @@ export function FormDetail() {
             role={role}
             status={form.status}
             noDocuments={Boolean(form.noDocuments)}
+            hasDocuments={visibleDocuments.length > 0}
             canConfirm={role === "user" || role === "manager" || role === "root"}
           />
         </div>
@@ -265,11 +296,21 @@ export function FormDetail() {
 
           {!isProvider && (
             <div className="grid gap-4 sm:grid-cols-2">
-              <div className="panel p-4">
+              <div className="panel p-4" data-testid="organization-block">
                 <p className="label-caps">Организация клиента</p>
                 <p className="mt-2 text-sm font-semibold">{org?.name ?? form.organizationId}</p>
                 <p className="font-mono text-xs text-muted-foreground">ИНН {org?.inn ?? "—"}</p>
                 <p className="mt-1 text-xs text-muted-foreground">{org?.legalAddress ?? "—"}</p>
+                {canEditParams && mode === "app" && (
+                  <button
+                    type="button"
+                    data-testid="change-organization"
+                    className="mt-2 text-sm font-semibold text-accent hover:underline"
+                    onClick={() => setOrgDialogOpen(true)}
+                  >
+                    Сменить организацию
+                  </button>
+                )}
               </div>
               <div className="panel p-4" data-testid="counterparty-block">
                 <p className="label-caps">Контрагент</p>
@@ -314,26 +355,74 @@ export function FormDetail() {
           )}
 
           {!isProvider && mode === "app" && (
-            <CounterpartyPickDialog
-              open={cpDialogOpen}
-              onOpenChange={setCpDialogOpen}
-              formId={formId}
-              role={role}
-              counterparties={counterparties}
-              selectedId={form.counterpartyId}
-            />
+            <>
+              <CounterpartyPickDialog
+                open={cpDialogOpen}
+                onOpenChange={setCpDialogOpen}
+                formId={formId}
+                role={role}
+                counterparties={counterparties}
+                selectedId={form.counterpartyId}
+              />
+              <OrganizationPickDialog
+                open={orgDialogOpen}
+                onOpenChange={setOrgDialogOpen}
+                formId={formId}
+                role={role}
+                organizations={organizations}
+                selectedId={form.organizationId}
+              />
+            </>
           )}
-          <div className="panel p-4">
-            <p className="label-caps">
-              {isProvider ? "Документы платежа" : "Документы"} ({visibleDocuments.length})
-            </p>
+          <div className="panel p-4" data-testid="form-documents">
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <p className="label-caps">
+                {isProvider ? "Документы платежа" : "Документы"} ({visibleDocuments.length})
+              </p>
+              {canUploadDocs && (
+                <div className="flex flex-wrap items-center gap-2">
+                  <select
+                    value={uploadKind}
+                    onChange={(e) => setUploadKind(e.target.value as AttachedDocument["kind"])}
+                    className="field py-1 text-xs"
+                    aria-label="Тип документа"
+                  >
+                    <option value="invoice">Инвойс</option>
+                    <option value="contract">Контракт</option>
+                    <option value="other">Прочее</option>
+                  </select>
+                  <label className="cursor-pointer rounded-md bg-primary px-3 py-1.5 text-xs font-semibold text-primary-foreground hover:opacity-90">
+                    {uploadBusy ? "Загрузка…" : "Загрузить документы"}
+                    <input
+                      type="file"
+                      accept=".pdf,application/pdf"
+                      multiple
+                      className="sr-only"
+                      disabled={uploadBusy}
+                      data-testid="form-doc-upload"
+                      onChange={(e) => {
+                        void onUploadDocs(e.target.files);
+                        e.target.value = "";
+                      }}
+                    />
+                  </label>
+                </div>
+              )}
+            </div>
             {visibleDocuments.length === 0 ? (
               <p className="mt-2 text-sm text-muted-foreground">
-                {isProvider ? "Подтверждение платежа можно прикрепить через действие на карточке." : "Документы пока не загружены."}
+                {isProvider
+                  ? "Подтверждение платежа можно прикрепить через действие на карточке."
+                  : canUploadDocs
+                    ? String(form.status).includes("correction")
+                      ? "Документы не загружены. Загрузите файлы здесь, затем нажмите «Отправить исправления» справа."
+                      : "Документы пока не загружены — добавьте PDF кнопкой выше."
+                    : "Документы пока не загружены."}
               </p>
             ) : (
               <DocumentList documents={visibleDocuments} formId={formId} />
             )}
+            {uploadError && <p className="mt-2 text-xs text-destructive">{uploadError}</p>}
           </div>
         </div>
 
@@ -345,17 +434,28 @@ export function FormDetail() {
 
           {compliance ? (
             <>
-              <ActionPanel form={form} title="Рассмотрение заявки" {...actionLock} />
+              <ActionPanel
+                form={form}
+                title="Рассмотрение заявки"
+                onEditForm={canEditParams ? () => setEditOpen(true) : undefined}
+                {...actionLock}
+              />
               <SubjectReview subjects={subjects} />
             </>
           ) : (
             <>
-              <ActionPanel form={form} />
+              <ActionPanel
+                form={form}
+                onEditForm={canEditParams ? () => setEditOpen(true) : undefined}
+              />
               {!isProvider && <RefundPanel form={form} />}
             </>
           )}
 
-          {!compliance && !isProvider && subjects.some((s) => !subjectState(s.status).ok) && (
+          {!compliance && !isProvider && canReviewSubjects && (
+            <SubjectReview subjects={subjects} />
+          )}
+          {!compliance && !isProvider && !canReviewSubjects && subjects.some((s) => !subjectState(s.status).ok) && (
             <SubjectReview subjects={subjects} readOnly />
           )}
 
@@ -421,6 +521,18 @@ export function FormDetail() {
           amountMinor={form.amountMinor}
           currency={form.currency}
           hsCode={form.hsCode}
+          direction={form.direction}
+          kind={form.kind}
+          contractNumber={form.contractNumber}
+          contractDate={form.contractDate}
+          onChangeOrg={() => {
+            setEditOpen(false);
+            setOrgDialogOpen(true);
+          }}
+          onChangeCounterparty={() => {
+            setEditOpen(false);
+            setCpDialogOpen(true);
+          }}
         />
       )}
     </VedAppShell>

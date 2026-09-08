@@ -189,9 +189,34 @@ export function RegistryManager({
                   <td
                     colSpan={def.fields.length + extraColumns.length + (canWrite ? 1 : 0)}
                     className="py-6 text-sm text-muted-foreground"
+                    data-testid={`registry-empty-${def.key}`}
                   >
-                    Записей пока нет.
-                    {canWrite ? " Нажмите «Добавить», чтобы создать первую." : ""}
+                    {def.key === "counterparties" ? (
+                      <>
+                        Справочник контрагентов пуст.
+                        {canWrite ? (
+                          <>
+                            {" "}
+                            <button
+                              type="button"
+                              onClick={openCreate}
+                              className="font-semibold text-accent hover:underline"
+                            >
+                              Добавьте контрагента
+                            </button>
+                            {" "}
+                            или создайте заявку и догрузите документы на карточке.
+                          </>
+                        ) : (
+                          " Обратитесь к менеджеру или добавьте запись, когда появится право записи."
+                        )}
+                      </>
+                    ) : (
+                      <>
+                        Записей пока нет.
+                        {canWrite ? " Нажмите «Добавить», чтобы создать первую." : ""}
+                      </>
+                    )}
                   </td>
                 </tr>
               )}

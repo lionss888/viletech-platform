@@ -78,6 +78,9 @@ type NestPatchInput struct {
 	ProviderID          string `json:"provider_id"`
 	AgentID             string `json:"agent_id"`
 	CounterpartyID      string `json:"counterparty_id"`
+	OrganizationID      string `json:"organization_id"`
+	Direction           string `json:"direction"`
+	Kind                string `json:"kind"`
 	Important           *bool  `json:"important"`
 }
 
@@ -135,6 +138,18 @@ func (s *FormPaymentService) PatchForm(ctx context.Context, principal authz.Prin
 	}
 	if input.CounterpartyID != "" {
 		form.CounterpartyID = input.CounterpartyID
+	}
+	if input.OrganizationID != "" {
+		if err := s.authorizeOrganizationPatch(ctx, principal, form, input.OrganizationID); err != nil {
+			return formpayment.Form{}, err
+		}
+		form.OrganizationID = input.OrganizationID
+	}
+	if input.Direction != "" {
+		form.Direction = formpayment.Direction(input.Direction)
+	}
+	if input.Kind != "" {
+		form.Kind = formpayment.Kind(input.Kind)
 	}
 	if input.Important != nil && (principal.Role == domain.RoleManager || principal.Role == domain.RoleProvider || principal.Role == domain.RoleRoot) {
 		form.Important = *input.Important
@@ -242,12 +257,45 @@ func (s *FormPaymentService) DeleteFileRef(ctx context.Context, principal authz.
 	if err != nil {
 		return formpayment.Form{}, err
 	}
-	if form.DocsJSON == "" {
+	if form.DocsJSON == "" || fileID == "" {
 		return form, nil
 	}
-	form.DocsJSON = strings.ReplaceAll(form.DocsJSON, fileID, "")
+	form.UnpackDocsJSON()
+	refs := formpayment.ParseDocRefs(form.DocsJSON)
+	kept := make([]formpayment.DocFileRef, 0, len(refs))
+	for _, ref := range refs {
+		if ref.FileID == fileID {
+			continue
+		}
+		kept = append(kept, ref)
+	}
+	form.DocsJSON = formpayment.EncodeDocRefs(kept, nil)
+	form.PackDocsJSON()
 	form.UpdatedAt = time.Now().UTC()
 	return form, s.store.SaveForm(ctx, form)
+}
+
+func (s *FormPaymentService) authorizeOrganizationPatch(ctx context.Context, principal authz.Principal, form formpayment.Form, orgID string) error {
+	st := string(form.Status)
+	editable := st == "draft" || st == "creating" || strings.Contains(st, "correction")
+	if !editable {
+		return apperrors.New(apperrors.ErrCodeValidation, "organization can only change on draft or corrections")
+	}
+	org, err := s.store.OrganizationByID(ctx, orgID)
+	if err != nil {
+		return apperrors.New(apperrors.ErrCodeValidation, "organization not found")
+	}
+	switch principal.Role {
+	case domain.RoleRoot, domain.RoleManager:
+		return nil
+	case domain.RoleUser:
+		if principal.OrganizationID != "" && orgID != principal.OrganizationID && org.AccountID != principal.AccountID {
+			return apperrors.New(apperrors.ErrCodeForbidden, "organization not available to this account")
+		}
+		return nil
+	default:
+		return apperrors.New(apperrors.ErrCodeForbidden, "role cannot change organization")
+	}
 }
 
 func decodeInvoices(raw string) []map[string]any {
