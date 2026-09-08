@@ -27,7 +27,8 @@ for script in \
   scripts/staging-smoke.sh \
   scripts/notify-mgmt.sh \
   scripts/ci-mgmt-notify.sh \
-  scripts/precommit-mgmt-notify.sh; do
+  scripts/precommit-mgmt-notify.sh \
+  scripts/configure-gitlab-mirror.sh; do
   [ -f "$script" ] || fail "missing $script"
   bash -n "$script"
   echo "syntax ok: $script"
@@ -295,6 +296,32 @@ grep -q 'wait for VDP CI\|wait-vdp-ci\|wait-for-ci' "$CI_DOC" \
   || fail "ci.md must document Images waiting for VDP CI on main"
 grep -q 'PLAYWRIGHT_ARGS' "$CI_DOC" \
   || fail "ci.md must document PLAYWRIGHT_ARGS PR vs main"
+
+echo "== VDP Mirror to GitLab (vdp888) =="
+WF_MIRROR="$REPO_ROOT/.github/workflows/vdp-mirror-gitlab.yml"
+[ -f "$WF_MIRROR" ] || fail "missing $WF_MIRROR"
+grep -q 'GITLAB_MIRROR_URL' "$WF_MIRROR" \
+  || fail "vdp-mirror-gitlab must require GITLAB_MIRROR_URL"
+grep -q 'GITLAB_MIRROR_TOKEN' "$WF_MIRROR" \
+  || fail "vdp-mirror-gitlab must require GITLAB_MIRROR_TOKEN"
+grep -q 'vdp888/viletech-platform' "$WF_MIRROR" \
+  || fail "vdp-mirror-gitlab must target vdp888/viletech-platform"
+grep -q 'vdp888/vdp' "$WF_MIRROR" \
+  || fail "vdp-mirror-gitlab must guard against mirroring into Lovable vdp888/vdp"
+# Silent skip on missing secrets must not be the default push path
+if grep -q 'not set — skip mirror' "$WF_MIRROR"; then
+  fail "vdp-mirror-gitlab must not silently skip when secrets missing"
+fi
+grep -q '::error::' "$WF_MIRROR" \
+  || fail "vdp-mirror-gitlab must error when secrets missing"
+[ -f scripts/configure-gitlab-mirror.sh ] \
+  || fail "missing scripts/configure-gitlab-mirror.sh"
+GL_DOC="$ROOT/docs/operations/gitlab-setup.md"
+[ -f "$GL_DOC" ] || fail "missing $GL_DOC"
+grep -q 'vdp888' "$GL_DOC" \
+  || fail "gitlab-setup.md must target group vdp888"
+grep -q 'configure-gitlab-mirror.sh' "$GL_DOC" \
+  || fail "gitlab-setup.md must document configure-gitlab-mirror.sh"
 
 echo "== Pilot Robot Matrix contract =="
 [ -f scripts/robot-matrix-check.sh ] || fail "missing scripts/robot-matrix-check.sh"

@@ -16,7 +16,7 @@
 
 Вопрос четвёртый. JWT_SECRET и HUB_SHARED_SECRET на каждом хосте (.env.deploy) сгенерированы заново заказчиком; после ротации выполнен redeploy pinned digest без пересборки образов. Статус не выполнено.
 
-Вопрос пятый. Доступы Selectel, reg.ru (DNS vedy.io), GitHub organization и GitLab group sandbox6902635 переданы заказчику; учётные записи подрядчика отозваны или понижены до read-only по согласованию. Статус не выполнено.
+Вопрос пятый. Доступы Selectel, reg.ru (DNS vedy.io), GitHub organization и GitLab group vdp888 переданы заказчику; учётные записи подрядчика отозваны или понижены до read-only по согласованию. Статус не выполнено.
 
 Вопрос шестой. Заказчик подтвердил, что знает где хранятся секреты (GitHub Environments, .env.deploy на VM), кто владелец on-call и как выполнить rollback по deploy-rollback.md. Статус не выполнено.
 
@@ -70,7 +70,7 @@ Selectel: проект и VM под учётной записью заказчи
 
 ## GitLab mirror (вторичный форж)
 
-Проект sandbox6902635/viletech-platform: токены и maintainer-доступ только у заказчика. Статус не выполнено.
+Проект vdp888/viletech-platform: токены и maintainer-доступ только у заказчика. Статус не выполнено.
 
 Зеркалирование GitHub → GitLab работает; на GitLab нет deploy-секретов alpha, beta, gamma (см. gitlab-setup.md). Статус не выполнено.
 

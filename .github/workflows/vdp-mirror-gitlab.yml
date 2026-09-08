@@ -1,5 +1,10 @@
 name: VDP Mirror to GitLab
 
+# One-way sync: GitHub monorepo (canonical) → GitLab vdp888/viletech-platform.
+# Do NOT set GITLAB_MIRROR_URL to vdp888/vdp (that project is Lovable UI only).
+# Requires repo secrets GITLAB_MIRROR_URL + GITLAB_MIRROR_TOKEN.
+# Optional: GITLAB_REGISTRY_PROJECT (for vdp-images crane copy; same namespace).
+
 on:
   push:
     branches: [main, master]
@@ -14,6 +19,12 @@ on:
         description: Branch to mirror (default main)
         required: false
         default: main
+      allow_skip:
+        description: If true, missing secrets exit 0 (default fail)
+        required: false
+        default: "false"
+        type: choice
+        options: ["false", "true"]
 
 concurrency:
   group: vdp-mirror-gitlab
@@ -21,11 +32,11 @@ concurrency:
 
 jobs:
   mirror:
-    name: push to GitLab sandbox
+    name: push to GitLab (vdp888)
     runs-on: ubuntu-latest
     if: >-
       github.actor != 'vdp-mirror-bot' &&
-      !contains(github.event.head_commit.message, '[skip mirror-loop]')
+      (github.event_name != 'push' || !contains(github.event.head_commit.message, '[skip mirror-loop]'))
     timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
@@ -33,36 +44,71 @@ jobs:
           fetch-depth: 0
           ref: ${{ github.event_name == 'workflow_dispatch' && inputs.branch || github.ref }}
 
-      - name: Configure GitLab remote
+      - name: Require and normalize GitLab mirror secrets
+        id: meta
         env:
           GITLAB_MIRROR_URL: ${{ secrets.GITLAB_MIRROR_URL }}
           GITLAB_MIRROR_TOKEN: ${{ secrets.GITLAB_MIRROR_TOKEN }}
+          ALLOW_SKIP: ${{ github.event_name == 'workflow_dispatch' && inputs.allow_skip || 'false' }}
         run: |
-          if [ -z "$GITLAB_MIRROR_URL" ] || [ -z "$GITLAB_MIRROR_TOKEN" ]; then
-            echo "GITLAB_MIRROR_URL or GITLAB_MIRROR_TOKEN not set — skip mirror (configure secrets to enable)."
-            exit 0
+          set -euo pipefail
+          if [ -z "${GITLAB_MIRROR_URL:-}" ] || [ -z "${GITLAB_MIRROR_TOKEN:-}" ]; then
+            echo "::error::GITLAB_MIRROR_URL and GITLAB_MIRROR_TOKEN must be set (GitHub → Settings → Secrets)."
+            echo "Expected URL: https://gitlab.com/vdp888/viletech-platform (not vdp888/vdp)"
+            if [ "${ALLOW_SKIP}" = "true" ]; then
+              echo "allow_skip=true — exiting without push"
+              echo "skip=true" >> "$GITHUB_OUTPUT"
+              exit 0
+            fi
+            exit 1
           fi
-          host=$(echo "$GITLAB_MIRROR_URL" | sed -E 's#https?://##; s#/.*##')
-          path=$(echo "$GITLAB_MIRROR_URL" | sed -E 's#https?://[^/]+/##')
+          raw="$GITLAB_MIRROR_URL"
+          raw="${raw%/}"
+          raw="${raw%.git}"
+          host=$(printf '%s' "$raw" | sed -E 's#https?://##; s#/.*##')
+          path=$(printf '%s' "$raw" | sed -E 's#https?://[^/]+/##')
+          if [ -z "$host" ] || [ -z "$path" ] || [[ "$path" == *" "* ]]; then
+            echo "::error::Invalid GITLAB_MIRROR_URL=$GITLAB_MIRROR_URL"
+            exit 1
+          fi
+          if [[ "$path" == "vdp888/vdp" ]]; then
+            echo "::error::GITLAB_MIRROR_URL points at Lovable repo vdp888/vdp. Use vdp888/viletech-platform for monorepo mirror."
+            exit 1
+          fi
+          echo "mirror_host=$host" >> "$GITHUB_OUTPUT"
+          echo "mirror_path=$path" >> "$GITHUB_OUTPUT"
+          echo "skip=false" >> "$GITHUB_OUTPUT"
+          echo "Mirror target: https://${host}/${path}"
+
+      - name: Configure GitLab remote
+        if: steps.meta.outputs.skip != 'true'
+        env:
+          GITLAB_MIRROR_TOKEN: ${{ secrets.GITLAB_MIRROR_TOKEN }}
+          MIRROR_HOST: ${{ steps.meta.outputs.mirror_host }}
+          MIRROR_PATH: ${{ steps.meta.outputs.mirror_path }}
+        run: |
+          set -euo pipefail
           git remote remove gitlab 2>/dev/null || true
-          git remote add gitlab "https://oauth2:${GITLAB_MIRROR_TOKEN}@${host}/${path}.git"
+          git remote add gitlab "https://oauth2:${GITLAB_MIRROR_TOKEN}@${MIRROR_HOST}/${MIRROR_PATH}.git"
+          # Never print remote URL (contains token).
+          git remote get-url gitlab >/dev/null
 
       - name: Push branches and tags to GitLab
-        env:
-          GITLAB_MIRROR_URL: ${{ secrets.GITLAB_MIRROR_URL }}
-          GITLAB_MIRROR_TOKEN: ${{ secrets.GITLAB_MIRROR_TOKEN }}
+        if: steps.meta.outputs.skip != 'true'
         run: |
-          if [ -z "$GITLAB_MIRROR_URL" ] || [ -z "$GITLAB_MIRROR_TOKEN" ]; then
-            exit 0
-          fi
+          set -euo pipefail
           git config user.name "vdp-mirror-bot"
           git config user.email "vdp-mirror-bot@users.noreply.github.com"
           if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
             BR="${{ inputs.branch }}"
+            echo "Pushing HEAD → refs/heads/${BR} (force-with-lease)"
             git push gitlab "HEAD:refs/heads/${BR}" --force-with-lease
           elif [[ "${{ github.ref }}" == refs/tags/* ]]; then
+            echo "Pushing tag ${{ github.ref }} and updating main"
             git push gitlab "${{ github.ref }}:${{ github.ref }}" --force
             git push gitlab "HEAD:refs/heads/main" --force-with-lease
           else
+            echo "Pushing HEAD → refs/heads/${{ github.ref_name }} (force-with-lease)"
             git push gitlab "HEAD:refs/heads/${{ github.ref_name }}" --force-with-lease
           fi
+          echo "Mirror push completed."
