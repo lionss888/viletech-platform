@@ -1,61 +1,75 @@
 # GitLab secondary forge setup
 
-GitHub (remote origin) is canonical: merge to main, tags `vdp-v*`, GHCR images, deploy workflows.
+GitHub is canonical for merge, tags `vdp-v*`, GHCR, and deploy. GitLab group **[vdp888](https://gitlab.com/vdp888)** is the secondary forge.
 
-GitLab group **[vdp888](https://gitlab.com/vdp888)** hosts the mirror project (default name: `viletech-platform`) for parallel branches/MR and CI. Docs previously mentioned `sandbox6902635` — that was a planning placeholder; **canonical group is `vdp888`**.
+## Projects in group `vdp888`
 
-## One-time setup
+| GitLab project | Role | Sync |
+|---|---|---|
+| [`vdp888/viletech-platform`](https://gitlab.com/vdp888/viletech-platform) | Mirror of this monorepo (`lionss888/viletech-platform`) | **VDP Mirror to GitLab** → secrets `GITLAB_MIRROR_*` |
+| [`vdp888/vdp`](https://gitlab.com/vdp888/vdp) | Lovable UI repo (GitHub source: `lionss888/vdp`) | **Not** pushed by `vdp-mirror-gitlab.yml`. Keep in sync via GitLab import/pull-mirror from GitHub, or Lovable’s own GitHub remote. Platform pulls UI via `vdp-lovable-sync.yml` from **GitHub** `lionss888/vdp` |
 
-### 1. GitLab project
+Do not point `GITLAB_MIRROR_URL` at `vdp888/vdp` — that would overwrite the Lovable tree with the monorepo.
 
-Create or reuse project `vdp888/viletech-platform` (import from GitHub is fine as a starting snapshot). Protect `main`: Maintainers cannot push; disable MR merge to default branch if you want mirror-only (merge only on GitHub).
+Docs previously mentioned `sandbox6902635` — planning placeholder; **canonical group is `vdp888`**.
 
-Create a **Project Access Token** or **Group Access Token** / PAT with:
+## One-time setup (monorepo mirror)
+
+### 1. GitLab project `viletech-platform`
+
+Reuse the imported project [vdp888/viletech-platform](https://gitlab.com/vdp888/viletech-platform). Protect `main`: Maintainers cannot push; disable MR merge to default branch if you want mirror-only (merge only on GitHub).
+
+Create a **Project Access Token** (on `viletech-platform`) or **Group Access Token** / PAT with:
 
 - `write_repository` (required for mirror push)
-- `write_registry` / `read_registry` (recommended so `vdp-images` can crane-copy digests)
+- `write_registry` / `read_registry` (recommended so `vdp-images` can crane-copy digests into this project’s registry)
 
-### 2. GitHub repository secrets
+### 2. GitHub repository secrets (monorepo)
 
-| Secret | Example |
+| Secret | Value |
 |---|---|
 | `GITLAB_MIRROR_URL` | `https://gitlab.com/vdp888/viletech-platform` |
 | `GITLAB_MIRROR_TOKEN` | GitLab token (`glpat-…`) |
-| `GITLAB_REGISTRY_PROJECT` | `vdp888/viletech-platform` (image copy target) |
+| `GITLAB_REGISTRY_PROJECT` | `vdp888/viletech-platform` |
 
 Helper (does not echo the token):
 
 ```sh
-export GITLAB_MIRROR_TOKEN='glpat-…'   # your token
+export GITLAB_MIRROR_TOKEN='glpat-…'
 ./vdp/scripts/configure-gitlab-mirror.sh
-# optional:
-# ./vdp/scripts/configure-gitlab-mirror.sh --url https://gitlab.com/vdp888/<other-project>
+# defaults already use https://gitlab.com/vdp888/viletech-platform
 ```
 
 Requires [GitHub CLI](https://cli.github.com/) logged in with permission to set repo secrets.
 
-### 3. Verify sync
+### 3. Verify monorepo sync
 
 1. Actions → **VDP Mirror to GitLab** → Run workflow (`main`).
 2. Job must **fail** if secrets are missing (no silent skip on push).
-3. On GitLab, `main` tip SHA matches GitHub `main`.
+3. On GitLab `viletech-platform`, `main` tip SHA matches GitHub `main`.
 
-Primary push path: workflow [`.github/workflows/vdp-mirror-gitlab.yml`](../../../.github/workflows/vdp-mirror-gitlab.yml). Optional: GitLab → Settings → Repository → Mirroring repositories (pull from GitHub) as backup only.
+Workflow: [`.github/workflows/vdp-mirror-gitlab.yml`](../../../.github/workflows/vdp-mirror-gitlab.yml).
 
-## Parallel workflow
+### 4. Optional: Lovable repo on GitLab (`vdp888/vdp`)
 
-| Action | GitHub | GitLab |
+If you want GitLab to track Lovable independently:
+
+1. In [vdp888/vdp](https://gitlab.com/vdp888/vdp) → Settings → Repository → Mirroring repositories.
+2. Pull mirror from `https://github.com/lionss888/vdp.git` (or the URL Lovable pushes to).
+3. Platform sync into `vdp/fe` still uses GitHub: workflow `vdp-lovable-sync.yml` / var `LOVABLE_REPO` (default `lionss888/vdp`).
+
+## Parallel workflow (monorepo)
+
+| Action | GitHub | GitLab (`viletech-platform`) |
 |---|---|---|
 | Feature branch | PR | optional MR |
 | Merge to main | yes (canonical) | no — mirror only |
 | CI fast/docs | Actions | `.gitlab-ci.yml` |
 | Integration/playwright | Actions (PR/main) | schedule / manual MR |
 | Images + deploy | Actions | promote without rebuild when Environment secrets exist (wave 3) |
-| Lovable UI | `vdp-lovable-sync.yml` PR into `vdp/fe` | — |
+| Lovable UI into platform | `vdp-lovable-sync.yml` PR into `vdp/fe` | source of truth for UI remains GitHub `lionss888/vdp` (± GitLab `vdp888/vdp` mirror) |
 
-Feature work on GitLab: push branch → MR for review → land via GitHub PR (same branch on GitHub).
-
-Commits mirrored as-is (authors preserved). GitLab `.gitlab-ci.yml` skips some default-branch pipelines for `vdp-mirror-bot` / `[skip mirror-loop]` when those apply; protect GitLab `main` so it is not a second merge target.
+Feature work on GitLab monorepo: push branch → MR for review → land via GitHub PR.
 
 ## GitLab CI variables (optional)
 
