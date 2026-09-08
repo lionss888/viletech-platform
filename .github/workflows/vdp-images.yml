@@ -88,8 +88,12 @@ jobs:
           ref: ${{ needs.prepare.outputs.build_ref }}
           sparse-checkout: |
             vdp/scripts/wait-vdp-ci.sh
+            vdp/scripts/ci-mgmt-notify.sh
+            vdp/scripts/notify-mgmt.sh
+            vdp/scripts/mgmt-notify-sanitize.py
           sparse-checkout-cone-mode: false
       - name: Await successful VDP CI for this SHA
+        id: await-ci
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GITHUB_REPOSITORY: ${{ github.repository }}
@@ -99,6 +103,7 @@ jobs:
           ./vdp/scripts/wait-vdp-ci.sh
       - name: Notify gate before images (passed)
         if: success()
+        continue-on-error: true
         env:
           MGMT_NOTIFY_TOKEN: ${{ secrets.MGMT_NOTIFY_TOKEN || secrets.TELEGRAM_INTAKE_TOKEN }}
           MGMT_NOTIFY_CHAT_ID: ${{ secrets.MGMT_NOTIFY_CHAT_ID || secrets.TELEGRAM_INTAKE_CHAT_IDS }}
@@ -109,7 +114,8 @@ jobs:
           chmod +x vdp/scripts/ci-mgmt-notify.sh vdp/scripts/notify-mgmt.sh
           ./vdp/scripts/ci-mgmt-notify.sh pre-images-gate
       - name: Notify gate before images (failed)
-        if: failure()
+        if: failure() && steps.await-ci.outcome == 'failure'
+        continue-on-error: true
         env:
           MGMT_NOTIFY_TOKEN: ${{ secrets.MGMT_NOTIFY_TOKEN || secrets.TELEGRAM_INTAKE_TOKEN }}
           MGMT_NOTIFY_CHAT_ID: ${{ secrets.MGMT_NOTIFY_CHAT_ID || secrets.TELEGRAM_INTAKE_CHAT_IDS }}
