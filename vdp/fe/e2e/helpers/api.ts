@@ -157,6 +157,7 @@ export async function createFormAccepted(tokens: ApiTokens, suffix: string): Pro
 /** ECO/manager reject → form_waiting_corrections (continuity when ECO slot off). */
 export async function createRejectedForm(tokens: ApiTokens, suffix: string): Promise<string> {
   const id = await createSubmittedForm(tokens, suffix);
+  const body = { reason: "Playwright: уточните контракт", mark: "docs", comment: "Playwright: уточните контракт" };
   let st = await formStatus(tokens.user, `/api/v1/site/form-payment/${id}`);
   if (st === "organization_waiting_verification" || st === "organization_verification") {
     await tryPut(tokens.ico, `/api/v1/admin/internal-compliance-officer/organization/${ORG_ID}/approve`);
@@ -168,18 +169,28 @@ export async function createRejectedForm(tokens: ApiTokens, suffix: string): Pro
     }
     st = await formStatus(tokens.user, `/api/v1/site/form-payment/${id}`);
   }
-  const body = { reason: "Playwright: уточните контракт", mark: "docs", comment: "Playwright: уточните контракт" };
   if (st === "form_waiting_verification" || st === "form_verification") {
-    if (!(await tryPut(tokens.eco, `/api/v1/eco/form-payment/${id}/form/start`))) {
-      await tryPost(tokens.manager, `/api/v1/forms/${id}/actions/eco_start`, {});
+    if (st === "form_waiting_verification") {
+      if (!(await tryPost(tokens.manager, `/api/v1/forms/${id}/actions/eco_start`, {}))) {
+        await tryPut(tokens.eco, `/api/v1/eco/form-payment/${id}/form/start`);
+      }
+      st = await formStatus(tokens.user, `/api/v1/site/form-payment/${id}`);
     }
-    if (!(await tryPut(tokens.eco, `/api/v1/eco/form-payment/${id}/form/reject`, body))) {
-      await authPost(tokens.manager, `/api/v1/forms/${id}/actions/eco_reject`, body);
+    if (st === "form_verification") {
+      if (!(await tryPost(tokens.manager, `/api/v1/forms/${id}/actions/eco_reject`, body))) {
+        if (!(await tryPut(tokens.eco, `/api/v1/eco/form-payment/${id}/form/reject`, body))) {
+          throw new Error(`eco reject failed from ${st}`);
+        }
+      }
     }
-    return id;
-  }
-  if (st === "form_accepted") {
+  } else if (st === "form_accepted") {
     await authPost(tokens.manager, `/api/v1/forms/${id}/actions/manager_form_reject`, body);
+  } else {
+    throw new Error(`createRejectedForm: unexpected status ${st}`);
+  }
+  const final = await formStatus(tokens.user, `/api/v1/site/form-payment/${id}`);
+  if (final !== "form_waiting_corrections") {
+    throw new Error(`createRejectedForm: want form_waiting_corrections got ${final}`);
   }
   return id;
 }

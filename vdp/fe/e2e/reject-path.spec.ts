@@ -1,5 +1,18 @@
+import { type Page } from "@playwright/test";
 import { test, expect } from "./fixtures/auth.fixture";
 import { assertCoreHealthy, createRejectedForm, createSubmittedForm, loginAllRoles } from "./helpers/api";
+
+/** Pilot continuity (ICO/ECO off): badge copy differs from full compliance matrix. */
+const RETURNED_STATUS = /Возвращена на (коррекцию|доработку)/;
+const AWAITING_COMPLIANCE = /Ожидает проверки (комплаенса|менеджером)/;
+const TAKE_IN_REVIEW = /Взять (заявку|организацию) в проверку|Взять .* в проверку/i;
+const REJECT_FOR_CORRECTIONS = /Вернуть на доработку|Вернуть на коррекцию/i;
+
+async function waitForFormDetail(page: Page, formId: string): Promise<void> {
+  await page.goto(`/forms/${formId}`);
+  await page.waitForLoadState("networkidle");
+  await expect(page.getByTestId("form-params")).toBeVisible({ timeout: 20_000 });
+}
 
 test.describe("Reject path (ECO → corrections → user resubmit)", () => {
   test.beforeAll(async () => {
@@ -11,12 +24,12 @@ test.describe("Reject path (ECO → corrections → user resubmit)", () => {
     const formId = await createRejectedForm(tokens, `reject-${Date.now()}`);
 
     await loginAs("user");
-    await page.goto(`/forms/${formId}`);
-    await expect(page.getByTitle("Возвращена на коррекцию")).toBeVisible({ timeout: 15_000 });
+    await waitForFormDetail(page, formId);
+    await expect(page.getByTitle(RETURNED_STATUS)).toBeVisible({ timeout: 20_000 });
     await expect(page.getByTestId("correction-guidance")).toBeVisible();
     await expect(page.getByRole("button", { name: "Отправить исправления" })).toBeVisible();
     await page.getByRole("button", { name: "Отправить исправления" }).click();
-    await expect(page.getByTitle("Ожидает проверки комплаенса")).toBeVisible({ timeout: 15_000 });
+    await expect(page.getByTitle(AWAITING_COMPLIANCE)).toBeVisible({ timeout: 20_000 });
   });
 
   test("manager returns for corrections via UI with reason", async ({ page, loginAs }) => {
@@ -24,13 +37,13 @@ test.describe("Reject path (ECO → corrections → user resubmit)", () => {
     const formId = await createSubmittedForm(tokens, `ui-reject-${Date.now()}`);
 
     await loginAs("manager");
-    await page.goto(`/forms/${formId}`);
-    const take = page.getByRole("button", { name: /Взять .* в проверку|Взять заявку в проверку/i });
+    await waitForFormDetail(page, formId);
+    const take = page.getByRole("button", { name: TAKE_IN_REVIEW });
     if (await take.isVisible().catch(() => false)) {
       await take.click();
     }
-    const rejectBtn = page.getByRole("button", { name: /Вернуть на доработку|Вернуть на коррекцию/i });
-    await expect(rejectBtn).toBeVisible({ timeout: 15_000 });
+    const rejectBtn = page.getByRole("button", { name: REJECT_FOR_CORRECTIONS });
+    await expect(rejectBtn).toBeVisible({ timeout: 20_000 });
     await rejectBtn.click();
     await page.getByPlaceholder("Что именно нужно исправить или предоставить").fill("E2E: исправьте документы");
     const markSelect = page.locator("label").filter({ hasText: /Отметка/ }).locator("select");
@@ -38,6 +51,6 @@ test.describe("Reject path (ECO → corrections → user resubmit)", () => {
       await markSelect.selectOption({ index: 1 });
     }
     await page.getByRole("button", { name: "Подтвердить" }).click();
-    await expect(page.getByTitle("Возвращена на коррекцию")).toBeVisible({ timeout: 15_000 });
+    await expect(page.getByTitle(RETURNED_STATUS)).toBeVisible({ timeout: 20_000 });
   });
 });
