@@ -16,6 +16,12 @@ export const KIND_LABEL: Record<AttachedDocument["kind"], string> = {
   other: "Документ",
 };
 
+function isPdfDocument(doc: AttachedDocument): boolean {
+  const ext = doc.ext?.toLowerCase() ?? "";
+  const title = doc.title?.toLowerCase() ?? "";
+  return ext === "pdf" || title.endsWith(".pdf");
+}
+
 type DocumentListProps = {
   documents: AttachedDocument[];
   formId?: string;
@@ -130,7 +136,7 @@ export function DocumentList({ documents, formId: _formId }: DocumentListProps) 
         wide
         footer={<ModalButton variant="quiet" onClick={closePreview}>Закрыть</ModalButton>}
       >
-        {previewUrl && open?.ext.toLowerCase() === "pdf" ? (
+        {previewUrl && open && isPdfDocument(open) ? (
           <iframe title={open.title} src={previewUrl} className="h-[70vh] w-full rounded-md bg-muted" />
         ) : (
           <div className="grid h-72 place-items-center rounded-md bg-muted text-center">

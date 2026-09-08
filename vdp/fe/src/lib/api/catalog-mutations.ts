@@ -155,6 +155,20 @@ export function createAgent(input: CreateAgentInput): Promise<CoreAgent> {
   });
 }
 
+export type PatchAgentInput = {
+  name?: string;
+  inn?: string;
+  active?: boolean;
+};
+
+/** PATCH /api/v1/agents/{id} — root/manager catalog edit. */
+export function updateAgent(id: string, input: PatchAgentInput): Promise<CoreAgent> {
+  return apiFetch<CoreAgent>(`/api/v1/agents/${id}`, {
+    method: "PATCH",
+    body: JSON.stringify(input),
+  });
+}
+
 export function createCurrency(input: CreateCurrencyInput): Promise<CoreCurrency> {
   return apiFetch<CoreCurrency>("/api/v1/currencies", {
     method: "POST",

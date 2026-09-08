@@ -12,8 +12,8 @@ test.describe("completed-journey (catalog happy_path_to_completed)", () => {
 
     await loginAs("manager");
     await page.goto(`/forms/${formId}`);
-    await expect(page.getByTitle("Заявка закрыта").or(page.getByText("Завершено"))).toBeVisible({
-      timeout: 15_000,
-    });
+    await page.waitForLoadState("networkidle");
+    // Prefer status badge title; stepper also shows «Завершено» — avoid strict-mode .or() clash.
+    await expect(page.getByTitle("Заявка закрыта")).toBeVisible({ timeout: 15_000 });
   });
 });

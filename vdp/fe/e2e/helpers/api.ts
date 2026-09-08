@@ -250,3 +250,100 @@ export async function assertCoreHealthy(): Promise<void> {
     throw new Error(`core health ${res.status} — run: cd vdp && make compose-up`);
   }
 }
+
+/** Create counterparty for the seed user org. */
+export async function createCounterpartyApi(
+  token: string,
+  input: { name: string; country?: string; inn?: string },
+): Promise<{ id: string; name: string }> {
+  const created = (await authPost(token, "/api/v1/counterparty/create", {
+    name: input.name,
+    country: input.country ?? "CN",
+    inn: input.inn ?? `E2E${Date.now()}`,
+    banks: [],
+  })) as { id: string; name: string };
+  return created;
+}
+
+/** Draft with amount + counterparty + HS codes for persist UI checks. */
+export async function createPersistedDraftForm(
+  tokens: ApiTokens,
+  suffix: string,
+  opts: { amount: string; currency: string; counterpartyId: string; hsCodes: string[] },
+): Promise<string> {
+  const created = (await authPost(tokens.user, "/api/v1/site/form-payment", {
+    currency: opts.currency,
+    invoice_amount: opts.amount,
+    counterparty_id: opts.counterpartyId,
+    no_documents: true,
+    contract_number: `PW-${suffix}`,
+    contract_date: "2026-08-01",
+  })) as { id: string; counterparty_id?: string };
+  // PATCH ensures counterparty when create image has not yet wired CreateInput.counterparty_id.
+  if (created.counterparty_id !== opts.counterpartyId) {
+    const patch = await fetch(`${CORE_URL}/api/v1/site/form-payment/${created.id}`, {
+      method: "PATCH",
+      headers: {
+        Authorization: `Bearer ${tokens.user}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ counterparty_id: opts.counterpartyId }),
+    });
+    if (!patch.ok) {
+      throw new Error(`patch counterparty ${patch.status}: ${await patch.text()}`);
+    }
+  }
+  await authPost(tokens.user, `/api/v1/forms/${created.id}/actions/recognize_complete`, {});
+  if (opts.hsCodes.length > 0) {
+    const res = await fetch(`${CORE_URL}/api/v1/forms/${created.id}/hs-codes`, {
+      method: "PATCH",
+      headers: {
+        Authorization: `Bearer ${tokens.user}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ codes: opts.hsCodes }),
+    });
+    if (!res.ok) {
+      throw new Error(`attach hs ${res.status}: ${await res.text()}`);
+    }
+  }
+  return created.id;
+}
+
+/** Upload minimal PDF and attach as invoice; returns file id. */
+export async function uploadAndAttachInvoice(token: string, formId: string): Promise<string> {
+  const pdfBytes = new Uint8Array([
+    0x25, 0x50, 0x44, 0x46, 0x2d, 0x31, 0x2e, 0x34, 0x0a, 0x25, 0x66, 0x61, 0x6b, 0x65, 0x0a,
+  ]);
+  const blob = new Blob([pdfBytes], { type: "application/pdf" });
+  const fd = new FormData();
+  fd.append("file", blob, "e2e-invoice.pdf");
+  fd.append("form_id", formId);
+  const up = await fetch(`${CORE_URL}/api/v1/file-store/upload`, {
+    method: "POST",
+    headers: { Authorization: `Bearer ${token}` },
+    body: fd,
+  });
+  if (!up.ok) {
+    throw new Error(`upload ${up.status}: ${await up.text()}`);
+  }
+  const meta = (await up.json()) as { id: string };
+  await authPost(token, `/api/v1/forms/${formId}/docs/attach`, {
+    file_id: meta.id,
+    kind: "invoice",
+    label: "e2e-invoice.pdf",
+  });
+  return meta.id;
+}
+
+/** List counterparties visible to the token (for empty / no-mock asserts). */
+export async function listCounterpartiesApi(token: string): Promise<Array<{ id: string; name: string }>> {
+  const res = await fetch(`${CORE_URL}/api/v1/counterparty/list`, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  if (!res.ok) {
+    throw new Error(`counterparty list ${res.status}`);
+  }
+  const json = (await res.json()) as { items?: Array<{ id: string; name: string }> } | Array<{ id: string; name: string }>;
+  return Array.isArray(json) ? json : (json.items ?? []);
+}

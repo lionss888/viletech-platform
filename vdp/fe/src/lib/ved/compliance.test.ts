@@ -1,6 +1,13 @@
 import { describe, expect, it } from "vitest";
 
-import { orgBlocksApproval, orgPendingIco, subjectsCleared, subjectState, type ReviewSubject } from "./compliance";
+import {
+  orgBlocksApproval,
+  orgPendingIco,
+  subjectsCleared,
+  subjectsPendingReview,
+  subjectState,
+  type ReviewSubject,
+} from "./compliance";
 
 const org = (status: string): ReviewSubject => ({
   key: "organizations",
@@ -40,5 +47,12 @@ describe("compliance gating", () => {
   it("subjectState maps blocked", () => {
     expect(subjectState("blocked").ok).toBe(false);
     expect(subjectState("approved").ok).toBe(true);
+  });
+
+  it("subjectsPendingReview does not lock on empty or cleared subjects", () => {
+    expect(subjectsPendingReview([])).toBe(false);
+    expect(subjectsPendingReview([org("approved"), cp("approved")])).toBe(false);
+    expect(subjectsPendingReview([org("waiting_verification")])).toBe(true);
+    expect(subjectsPendingReview([org("blocked")])).toBe(false);
   });
 });

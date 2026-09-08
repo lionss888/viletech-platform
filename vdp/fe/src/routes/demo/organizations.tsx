@@ -139,7 +139,11 @@ function OrganizationsRegistry() {
       )}
       {showBank && organizations.length > 0 && (
         <div className="panel mb-4 p-4">
-          <p className="label-caps">Bank API (организации)</p>
+          <p className="label-caps">Канал Bank API (интеграция)</p>
+          <p className="mt-1 text-xs text-muted-foreground">
+            Настройки комиссии, webhook и агента по умолчанию для организаций с типом Bank API — не отдельный
+            банковский кабинет.
+          </p>
           <ul className="mt-2 divide-y divide-border">
             {organizations.slice(0, 6).map((org) => (
               <li key={org.id} className="flex flex-wrap items-center gap-2 py-2 text-sm">

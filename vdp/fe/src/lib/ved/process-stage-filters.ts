@@ -58,13 +58,35 @@ const CONTINUITY_STATUS_LABELS: Partial<Record<string, Pick<StatusMeta, "label" 
   },
 };
 
+/** Manager-facing shorts for queue (viewer is the actor, not «у менеджера»). */
+const MANAGER_VIEWER_LABELS: Partial<Record<string, Pick<StatusMeta, "label" | "short">>> = {
+  form_waiting_verification: {
+    label: "Новая заявка",
+    short: "Новая заявка",
+  },
+  form_verification: {
+    label: "На рассмотрении",
+    short: "Рассмотрение",
+  },
+  organization_waiting_verification: {
+    label: "Новая заявка (организация)",
+    short: "Новая заявка",
+  },
+  organization_verification: {
+    label: "Рассмотрение организации",
+    short: "Рассмотрение",
+  },
+};
+
 /**
  * Status copy for the card/badge. When ICO/ECO slots are off (U→M→P), domain still uses
  * form_verification / organization_* codes — UI must not say «комплаенс».
+ * Optional viewerRole remaps manager queue shorts («Новая заявка» / «Рассмотрение»).
  */
 export function statusMetaForProcess(
   status: FormStatus,
   roles: ProcessRoleRow[] | undefined,
+  viewerRole?: string,
 ): StatusMeta {
   const base = statusMeta(status);
   if (!roles?.length) return base;
@@ -80,8 +102,12 @@ export function statusMetaForProcess(
   if (isFormReview && !ecoOff) return base;
   if (!isOrg && !isFormReview) return base;
   const overlay = CONTINUITY_STATUS_LABELS[status];
-  if (!overlay) return base;
-  return { ...base, ...overlay };
+  let meta: StatusMeta = overlay ? { ...base, ...overlay } : base;
+  if (viewerRole === "manager") {
+    const managerOverlay = MANAGER_VIEWER_LABELS[status];
+    if (managerOverlay) meta = { ...meta, ...managerOverlay };
+  }
+  return meta;
 }
 
 /** Lifecycle rail for the current process config (hide disabled ICO stage; rename ECO). */

@@ -61,6 +61,13 @@ describe("process-stage-filters", () => {
     expect(meta.label.toLowerCase()).not.toMatch(/комплаенс/);
   });
 
+  it("uses manager-relative shorts for viewerRole=manager", () => {
+    const waiting = statusMetaForProcess("form_waiting_verification", continuityRoles(), "manager");
+    expect(waiting.short).toBe("Новая заявка");
+    const review = statusMetaForProcess("form_verification", continuityRoles(), "manager");
+    expect(review.short).toBe("Рассмотрение");
+  });
+
   it("renames lifecycle stage and hides organization when ICO/ECO off", () => {
     const stages = stagesForProcess(continuityRoles());
     expect(stages.some((s) => s.id === "organization_verification")).toBe(false);

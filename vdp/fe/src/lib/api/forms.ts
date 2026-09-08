@@ -133,3 +133,11 @@ export function nestFormPrefixForRole(role: string | undefined): string {
       return "site";
   }
 }
+
+/** Attach TN VED codes onto form invoice_json.hs_codes. */
+export function attachFormHsCodes(formId: string, codes: string[]): Promise<CoreForm> {
+  return apiFetch<CoreForm>(`/api/v1/forms/${formId}/hs-codes`, {
+    method: "PATCH",
+    body: JSON.stringify({ codes }),
+  });
+}

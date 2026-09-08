@@ -75,6 +75,13 @@ describe("CTA touchpoints contract (continuity)", () => {
     expect(demoActionToCore(accept!.id)).toBe("eco_accept");
   });
 
+  it("manager form verification includes reject/return CTA", () => {
+    const actions = actionsFor("manager", "form_verification", roles);
+    const reject = actions.find((a) => a.id === "eco_form_reject");
+    expect(reject).toBeTruthy();
+    expect(demoActionToCore(reject!.id)).toBe("eco_reject");
+  });
+
   it("app-actions core ids stay aligned for continuity bridges", () => {
     expect(coreActionById("ico_approve")).toBe("ico_approve");
     expect(coreActionById("eco_accept")).toBe("eco_accept");

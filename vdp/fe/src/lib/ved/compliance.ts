@@ -86,6 +86,16 @@ export function orgBlocksApproval(subjects: ReviewSubject[]): boolean {
   return subjects.some((s) => s.key === "organizations" && s.status === "blocked");
 }
 
+/**
+ * Soft-lock accept CTAs while known subjects are still pending review.
+ * Empty list must not lock: catalogs may still be loading, or the form has no CP yet.
+ */
+export function subjectsPendingReview(subjects: ReviewSubject[]): boolean {
+  if (subjects.length === 0) return false;
+  if (orgBlocksApproval(subjects)) return false;
+  return !subjectsCleared(subjects);
+}
+
 /** ICO: org не одобрена — form-этап недоступен до проверки организации. */
 export function orgPendingIco(subjects: ReviewSubject[]): boolean {
   const org = subjects.find((s) => s.key === "organizations");

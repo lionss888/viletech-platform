@@ -1,32 +1,50 @@
+import { type Page } from "@playwright/test";
 import { test, expect } from "./fixtures/auth.fixture";
 import { assertCoreHealthy, createDraftForm, createFormAccepted, loginAllRoles } from "./helpers/api";
 
-/** Catalog: happy_path_to_completed (UI partial — submit → ECO → manager CTA). */
+/** Pilot continuity (ICO/ECO off): badge copy differs from full compliance matrix. */
+const AWAITING_REVIEW = /Ожидает проверки (комплаенса|менеджером)/;
+const FORM_ACCEPTED = /Заявка подтверждена/;
+const TAKE_IN_REVIEW = /Взять (заявку|организацию) в проверку|Взять .* в проверку/i;
+const CONFIRM_FORM = /Подтвердить заявку/;
+
+async function waitForFormDetail(page: Page, formId: string): Promise<void> {
+  await page.goto(`/forms/${formId}`);
+  await page.waitForLoadState("networkidle");
+  await expect(page.getByTestId("form-params")).toBeVisible({ timeout: 20_000 });
+}
+
+/** Catalog: happy_path_to_completed (UI partial — submit → review → manager CTA). */
 test.describe("Happy path (app UI)", () => {
   test.beforeAll(async () => {
     await assertCoreHealthy();
   });
 
-  test("user submits draft; eco accepts; manager sees assign agent CTA", async ({ page, loginAs, logout }) => {
+  test("user submits draft; manager accepts (continuity); manager sees assign agent CTA", async ({
+    page,
+    loginAs,
+    logout,
+  }) => {
     const tokens = await loginAllRoles();
     const formId = await createDraftForm(tokens, `happy-${Date.now()}`);
 
     await loginAs("user");
-    await page.goto(`/forms/${formId}`);
+    await waitForFormDetail(page, formId);
     await expect(page.getByRole("button", { name: "Отправить на проверку" })).toBeVisible();
     await page.getByRole("button", { name: "Отправить на проверку" }).click();
-    await expect(page.getByTitle("Ожидает проверки комплаенса")).toBeVisible({ timeout: 15_000 });
+    await expect(page.getByTitle(AWAITING_REVIEW)).toBeVisible({ timeout: 15_000 });
 
     await logout();
-    await loginAs("compliance_officer");
-    await page.goto(`/forms/${formId}`);
-    await page.getByRole("button", { name: "Взять в проверку" }).click();
-    await page.getByRole("button", { name: "Подтвердить заявку" }).click();
-    await expect(page.getByTitle("Заявка подтверждена")).toBeVisible({ timeout: 15_000 });
-
-    await logout();
+    // Pilot: ECO slot off → manager owns form review (continuity).
     await loginAs("manager");
-    await page.goto(`/forms/${formId}`);
+    await waitForFormDetail(page, formId);
+    const take = page.getByRole("button", { name: TAKE_IN_REVIEW });
+    await expect(take).toBeVisible({ timeout: 20_000 });
+    await take.click();
+    const confirm = page.getByRole("button", { name: CONFIRM_FORM });
+    await expect(confirm).toBeEnabled({ timeout: 20_000 });
+    await confirm.click();
+    await expect(page.getByTitle(FORM_ACCEPTED)).toBeVisible({ timeout: 15_000 });
     await expect(page.getByRole("button", { name: "Назначить платёжного агента" })).toBeVisible();
   });
 
@@ -35,8 +53,9 @@ test.describe("Happy path (app UI)", () => {
     const formId = await createFormAccepted(tokens, `mgr-${Date.now()}`);
 
     await loginAs("manager");
-    await page.goto(`/forms/${formId}`);
+    await waitForFormDetail(page, formId);
     await expect(page.getByRole("button", { name: "Назначить платёжного агента" })).toBeVisible();
     await expect(page.getByRole("button", { name: "Прикрепить договор вручную" })).toBeVisible();
+    await expect(page.getByTitle(FORM_ACCEPTED)).toBeVisible();
   });
 });

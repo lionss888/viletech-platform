@@ -27,6 +27,9 @@ const ROLE_FOCUS: Record<VedRole, string> = {
   root: "Состояние системы, критичные ошибки, нагрузка и эффективность команды.",
 };
 
+/** App mode has no live observability feed yet — do not show hardcoded mock incidents. */
+const MONITORING_CONNECTED = false;
+
 const STATE = {
   up: { text: "Работает", cls: "bg-done-soft text-done" },
   degraded: { text: "Деградация", cls: "bg-wait-soft text-wait" },
@@ -48,13 +51,24 @@ function RootDashboard() {
     [forms, users],
   );
 
-  const critical = SYSTEM_INCIDENTS.filter((i) => i.severity === "critical");
-  const healthy = SYSTEM_SERVICES.filter((s) => s.state === "up").length;
+  const critical = MONITORING_CONNECTED
+    ? SYSTEM_INCIDENTS.filter((i) => i.severity === "critical")
+    : [];
+  const healthy = MONITORING_CONNECTED ? SYSTEM_SERVICES.filter((s) => s.state === "up").length : 0;
+  const serviceTotal = MONITORING_CONNECTED ? SYSTEM_SERVICES.length : 0;
   const blocked = users.filter((u) => u.blocked).length;
 
   const cards = [
-    { label: "Работоспособность системы", value: `${healthy}/${SYSTEM_SERVICES.length} сервисов`, to: null },
-    { label: "Критичные ошибки", value: String(critical.length), to: null },
+    {
+      label: "Работоспособность системы",
+      value: MONITORING_CONNECTED ? `${healthy}/${serviceTotal} сервисов` : "Нет данных",
+      to: null,
+    },
+    {
+      label: "Критичные ошибки",
+      value: MONITORING_CONNECTED ? String(critical.length) : "—",
+      to: null,
+    },
     { label: "Заявок в работе", value: String(stats.active), to: paths.forms, search: {} },
     { label: "Зависшие заявки", value: String(stats.stuck.length), to: paths.forms, search: { stuck: true } },
   ] as const;
@@ -100,42 +114,54 @@ function RootDashboard() {
       <div className="mt-4 grid gap-4 lg:grid-cols-[1fr_1fr]">
         <section className="panel p-4">
           <h2 className="text-sm font-semibold">Состояние сервисов</h2>
-          <ul className="mt-3 divide-y divide-border">
-            {SYSTEM_SERVICES.map((s) => (
-              <li key={s.id} className="flex flex-wrap items-center gap-x-3 gap-y-1 py-2.5">
-                <span className="min-w-0 flex-1 basis-32 truncate text-sm">{s.name}</span>
-                <span className="font-mono text-[11px] whitespace-nowrap text-muted-foreground">{s.latencyMs} мс</span>
-                <span className="font-mono text-[11px] whitespace-nowrap text-muted-foreground">{s.uptime}</span>
-                <span className={cn("rounded px-1.5 py-0.5 text-[11px] font-semibold whitespace-nowrap", STATE[s.state].cls)}>
-                  {STATE[s.state].text}
-                </span>
-              </li>
-            ))}
-          </ul>
+          {MONITORING_CONNECTED ? (
+            <ul className="mt-3 divide-y divide-border">
+              {SYSTEM_SERVICES.map((s) => (
+                <li key={s.id} className="flex flex-wrap items-center gap-x-3 gap-y-1 py-2.5">
+                  <span className="min-w-0 flex-1 basis-32 truncate text-sm">{s.name}</span>
+                  <span className="font-mono text-[11px] whitespace-nowrap text-muted-foreground">{s.latencyMs} мс</span>
+                  <span className="font-mono text-[11px] whitespace-nowrap text-muted-foreground">{s.uptime}</span>
+                  <span className={cn("rounded px-1.5 py-0.5 text-[11px] font-semibold whitespace-nowrap", STATE[s.state].cls)}>
+                    {STATE[s.state].text}
+                  </span>
+                </li>
+              ))}
+            </ul>
+          ) : (
+            <p className="mt-3 text-sm text-muted-foreground">
+              Нет данных мониторинга. Подключите observability (health/metrics), чтобы видеть сервисы здесь.
+            </p>
+          )}
         </section>
 
         <section className="panel p-4">
           <h2 className="text-sm font-semibold">Ошибки и учётные записи</h2>
-          <ul className="mt-3 divide-y divide-border">
-            {SYSTEM_INCIDENTS.map((i) => (
-              <li key={i.id} className="py-2.5">
-                <div className="flex items-center gap-2">
-                  <span
-                    className={cn(
-                      "rounded px-1.5 py-0.5 text-[11px] font-semibold",
-                      i.severity === "critical" ? "bg-return-soft text-return" : "bg-wait-soft text-wait",
-                    )}
-                  >
-                    {i.severity === "critical" ? "Критично" : "Предупреждение"}
-                  </span>
-                  <span className="min-w-0 flex-1 truncate text-sm">{i.title}</span>
-                </div>
-                <p className="mt-1 font-mono text-[11px] text-muted-foreground">
-                  {i.account} · {i.at}
-                </p>
-              </li>
-            ))}
-          </ul>
+          {MONITORING_CONNECTED ? (
+            <ul className="mt-3 divide-y divide-border">
+              {SYSTEM_INCIDENTS.map((i) => (
+                <li key={i.id} className="py-2.5">
+                  <div className="flex items-center gap-2">
+                    <span
+                      className={cn(
+                        "rounded px-1.5 py-0.5 text-[11px] font-semibold",
+                        i.severity === "critical" ? "bg-return-soft text-return" : "bg-wait-soft text-wait",
+                      )}
+                    >
+                      {i.severity === "critical" ? "Критично" : "Предупреждение"}
+                    </span>
+                    <span className="min-w-0 flex-1 truncate text-sm">{i.title}</span>
+                  </div>
+                  <p className="mt-1 font-mono text-[11px] text-muted-foreground">
+                    {i.account} · {i.at}
+                  </p>
+                </li>
+              ))}
+            </ul>
+          ) : (
+            <p className="mt-3 text-sm text-muted-foreground">
+              Инциденты не подключены. Ниже — только живые метрики заявок и учётных записей из API.
+            </p>
+          )}
         </section>
       </div>
 
@@ -286,7 +312,7 @@ function RoleDashboard() {
                     {form.number}
                   </VedFormLink>
                   <span className="shrink-0">
-                    <StatusBadge status={form.status} processRoles={processRoles} />
+                    <StatusBadge status={form.status} processRoles={processRoles} viewerRole={role} />
                   </span>
                   <span className="min-w-0 flex-1 basis-28 truncate text-xs text-muted-foreground">
                     {cpByIdFrom(counterparties, form.counterpartyId)?.name ?? "—"}
@@ -333,7 +359,7 @@ function RoleDashboard() {
                 {form.number}
               </VedFormLink>
               <span className="justify-self-end sm:order-none">
-                <StatusBadge status={form.status} processRoles={processRoles} />
+                <StatusBadge status={form.status} processRoles={processRoles} viewerRole={role} />
               </span>
               <span className="col-span-2 min-w-0 truncate text-xs text-muted-foreground sm:order-none sm:col-span-1 sm:flex-1">
                 {cpByIdFrom(counterparties, form.counterpartyId)?.name ?? "—"}

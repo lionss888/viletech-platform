@@ -62,6 +62,7 @@ type CreateInput struct {
 	NoDocuments    bool
 	ContractNumber string
 	ContractDate   string
+	CounterpartyID string
 }
 
 func (s *FormPaymentService) Create(ctx context.Context, principal authz.Principal, input CreateInput) (formpayment.Form, error) {
@@ -85,6 +86,7 @@ func (s *FormPaymentService) Create(ctx context.Context, principal authz.Princip
 		ID:                   s.newID(),
 		AccountID:            principal.AccountID,
 		OrganizationID:       principal.OrganizationID,
+		CounterpartyID:       input.CounterpartyID,
 		Status:               formpayment.StatusCreating,
 		Channel:              formpayment.ChannelUI,
 		Direction:            input.Direction,
