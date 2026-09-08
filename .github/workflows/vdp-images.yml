@@ -97,6 +97,28 @@ jobs:
         run: |
           chmod +x vdp/scripts/wait-vdp-ci.sh
           ./vdp/scripts/wait-vdp-ci.sh
+      - name: Notify gate before images (passed)
+        if: success()
+        env:
+          MGMT_NOTIFY_TOKEN: ${{ secrets.MGMT_NOTIFY_TOKEN || secrets.TELEGRAM_INTAKE_TOKEN }}
+          MGMT_NOTIFY_CHAT_ID: ${{ secrets.MGMT_NOTIFY_CHAT_ID || secrets.TELEGRAM_INTAKE_CHAT_IDS }}
+          MGMT_CI_REVISION: ${{ needs.prepare.outputs.revision }}
+          MGMT_CI_BRANCH: ${{ github.ref_name }}
+          MGMT_CI_GATE_STATUS: passed
+        run: |
+          chmod +x vdp/scripts/ci-mgmt-notify.sh vdp/scripts/notify-mgmt.sh
+          ./vdp/scripts/ci-mgmt-notify.sh pre-images-gate
+      - name: Notify gate before images (failed)
+        if: failure()
+        env:
+          MGMT_NOTIFY_TOKEN: ${{ secrets.MGMT_NOTIFY_TOKEN || secrets.TELEGRAM_INTAKE_TOKEN }}
+          MGMT_NOTIFY_CHAT_ID: ${{ secrets.MGMT_NOTIFY_CHAT_ID || secrets.TELEGRAM_INTAKE_CHAT_IDS }}
+          MGMT_CI_REVISION: ${{ needs.prepare.outputs.revision }}
+          MGMT_CI_BRANCH: ${{ github.ref_name }}
+          MGMT_CI_GATE_STATUS: failed
+        run: |
+          chmod +x vdp/scripts/ci-mgmt-notify.sh vdp/scripts/notify-mgmt.sh
+          ./vdp/scripts/ci-mgmt-notify.sh pre-images-gate
 
   release-gate:
     name: release-gate (tags only)
@@ -149,6 +171,17 @@ jobs:
         if: always()
         working-directory: vdp
         run: make compose-down
+      - name: Notify management on release-gate failure
+        if: failure()
+        env:
+          MGMT_NOTIFY_TOKEN: ${{ secrets.MGMT_NOTIFY_TOKEN || secrets.TELEGRAM_INTAKE_TOKEN }}
+          MGMT_NOTIFY_CHAT_ID: ${{ secrets.MGMT_NOTIFY_CHAT_ID || secrets.TELEGRAM_INTAKE_CHAT_IDS }}
+          MGMT_CI_FAILED_STEPS: release-gate
+          MGMT_CI_REVISION: ${{ needs.prepare.outputs.revision }}
+          MGMT_CI_BRANCH: ${{ github.ref_name }}
+        run: |
+          chmod +x vdp/scripts/ci-mgmt-notify.sh vdp/scripts/notify-mgmt.sh
+          ./vdp/scripts/ci-mgmt-notify.sh pipeline-fail
 
   build-push:
     name: build and push images

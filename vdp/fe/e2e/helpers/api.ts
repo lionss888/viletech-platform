@@ -127,14 +127,25 @@ async function advanceCompliance(tokens: ApiTokens, formId: string): Promise<voi
 }
 
 
-/** Create draft form and run recognize_complete. */
-export async function createDraftForm(tokens: ApiTokens, suffix: string): Promise<string> {
+export type DraftFormOpts = {
+  currency?: string;
+  invoice_amount?: string;
+  contract_number?: string;
+  contract_date?: string;
+};
+
+/** Create draft form and run recognize_complete. Optional fields come from robot fixture pack. */
+export async function createDraftForm(
+  tokens: ApiTokens,
+  suffix: string,
+  opts: DraftFormOpts = {},
+): Promise<string> {
   const created = (await authPost(tokens.user, "/api/v1/site/form-payment", {
-    currency: "USD",
-    invoice_amount: "750",
+    currency: opts.currency ?? "USD",
+    invoice_amount: opts.invoice_amount ?? "750",
     no_documents: true,
-    contract_number: `PW-${suffix}`,
-    contract_date: "2026-08-01",
+    contract_number: opts.contract_number ?? `PW-${suffix}`,
+    contract_date: opts.contract_date ?? "2026-08-01",
   })) as { id: string };
   await authPost(tokens.user, `/api/v1/forms/${created.id}/actions/recognize_complete`, {});
   return created.id;
@@ -249,6 +260,23 @@ export async function assertCoreHealthy(): Promise<void> {
   if (!res.ok) {
     throw new Error(`core health ${res.status} — run: cd vdp && make compose-up`);
   }
+}
+
+/** Create a payment agent (catalog) for manager assign-agent UI. */
+export async function createPaymentAgentApi(
+  token: string,
+  input: { name: string; inn?: string; country?: string },
+): Promise<{ id: string; name: string }> {
+  const name = input.name;
+  const created = (await authPost(token, "/api/v1/agents", {
+    name,
+    inn: input.inn ?? `PA${Date.now()}`,
+    country: input.country ?? "RU",
+  })) as { id?: string; name?: string };
+  if (!created?.id) {
+    throw new Error("createPaymentAgentApi: response missing id");
+  }
+  return { id: created.id, name: created.name ?? name };
 }
 
 /** Create counterparty for the seed user org. */

@@ -1,4 +1,4 @@
-.PHONY: deps test test-integration test-adapters build db-setup db-migrate compose-db-migrate run-hub run-core run smoke stop compose-up compose-up-prod compose-down compose-ps compose-e2e compose-fe-smoke compose-fe-refresh compose-fe-prod-smoke compose-playwright lovable-seed-check integration-gate playwright-e2e playwright-pilot docs-format-check release-gate image-build image-push image-build-push compose-release-config-check compose-release-up deploy-alpha deploy-beta deploy-gamma rollback-alpha rollback-beta rollback-gamma test-cd-scripts notify-mgmt core-seed-reset
+.PHONY: deps test test-integration test-adapters build db-setup db-migrate compose-db-migrate run-hub run-core run smoke stop compose-up compose-up-prod compose-down compose-ps compose-e2e compose-fe-smoke compose-fe-refresh compose-fe-prod-smoke compose-playwright lovable-seed-check integration-gate playwright-e2e playwright-pilot playwright-pilot-matrix robot-matrix-check docs-format-check release-gate image-build image-push image-build-push compose-release-config-check compose-release-up deploy-alpha deploy-beta deploy-gamma rollback-alpha rollback-beta rollback-gamma test-cd-scripts notify-mgmt core-seed-reset install-git-hooks precommit-gate ci-pr-fast ci-pr
 
 CORE_DIR := core
 HUB_DIR := hub
@@ -25,6 +25,7 @@ deps:
 	cd extraction && go mod download
 	cd mail-gateway && go mod download
 	cd sms-gateway && go mod download
+	cd manager-ops && go mod download
 	cd release-gate && go mod download
 
 test:
@@ -34,6 +35,7 @@ test:
 	cd extraction && go test ./...
 	cd mail-gateway && go test ./...
 	cd sms-gateway && go test ./...
+	cd manager-ops && go test ./...
 	cd release-gate && go test ./...
 
 .PHONY: extraction-export-gold extraction-train-eval extraction-yandex-smoke extraction-ollama-ensure extraction-eval-own
@@ -186,6 +188,24 @@ integration-gate:
 	$(MAKE) test
 	$(MAKE) compose-e2e
 
+# Local PR parity for VDP CI (vdp-ci.yml) without full nightly Playwright / release-gate.
+# Fast: docs + CD contract + adapters + integration-gate (fe unit + go unit + compose-e2e).
+ci-pr-fast:
+	$(MAKE) docs-format-check
+	$(MAKE) test-cd-scripts
+	$(MAKE) test-adapters
+	$(MAKE) integration-gate
+	@echo "ci-pr-fast green (PR parity without browser E2E)"
+
+# Full PR-required surface: ci-pr-fast + narrow Playwright (same PLAYWRIGHT_ARGS as pull_request job).
+# Pause matches release-gate: compose-e2e / smoke can exhaust gateway rate-limit before browser login.
+ci-pr: ci-pr-fast
+	@echo "ci-pr: pause 65s for gateway rate-limit window before browser E2E"
+	@sleep 65
+	PLAYWRIGHT_ARGS='e2e/login-form.spec.ts e2e/user-submit.spec.ts e2e/provider-acl.spec.ts e2e/reject-path.spec.ts' \
+		$(MAKE) playwright-e2e
+	@echo "ci-pr green (local insurance for VDP CI on pull_request)"
+
 # Keep fe/src/lib/ved/mock.ts byte-identical to lovable-vdp/dev0; demo patches → demo-seed-overlay.ts.
 lovable-seed-check:
 	@chmod +x scripts/lovable-seed-check.sh
@@ -202,18 +222,28 @@ playwright-e2e: compose-playwright
 playwright-pilot:
 	PLAYWRIGHT_ARGS='--grep @pilot-flow' $(MAKE) compose-playwright
 
+# Pilot Robot Matrix — full UI ladder + reject/resubmit (@pilot-matrix). Fixture pack via VDP_ROBOT_FIXTURE_PACK.
+playwright-pilot-matrix:
+	PLAYWRIGHT_ARGS='--grep @pilot-matrix' $(MAKE) compose-playwright
+
+robot-matrix-check:
+	@chmod +x scripts/robot-matrix-check.sh
+	@./scripts/robot-matrix-check.sh
+
 docs-format-check:
 	@chmod +x scripts/docs-format-check.sh
 	@./scripts/docs-format-check.sh
 
 # RH4: pre-handover — all reliability gates (requires compose for e2e/playwright).
 release-gate:
+	$(MAKE) robot-matrix-check
 	$(MAKE) test-integration
 	$(MAKE) test-adapters
 	$(MAKE) integration-gate
 	@echo "release-gate: pause 65s for gateway rate-limit window before browser E2E"
 	@sleep 65
 	$(MAKE) playwright-e2e
+	$(MAKE) playwright-pilot-matrix
 	$(MAKE) docs-format-check
 	@echo "release-gate green"
 
@@ -290,3 +320,14 @@ notify-mgmt:
 		$(if $(REVISION),--revision "$(REVISION)") \
 		$(if $(NEXT),--next "$(NEXT)") \
 		$(if $(DRY_RUN),--dry-run)
+
+# Local unit gate + management Telegram (pass and fail). Used by .githooks/pre-commit.
+precommit-gate:
+	@chmod +x scripts/precommit-mgmt-notify.sh
+	./scripts/precommit-mgmt-notify.sh
+
+# From repo root: make -C vdp install-git-hooks
+install-git-hooks:
+	@git -C .. config core.hooksPath .githooks
+	@chmod +x ../.githooks/pre-commit scripts/precommit-mgmt-notify.sh
+	@echo "git hooksPath=.githooks (pre-commit → precommit-mgmt-notify)"

@@ -1,0 +1,56 @@
+---
+description: Локальная страховка VDP CI — make ci-pr перед push/PR; не заявлять зелёный CI без прогона
+alwaysApply: true
+---
+
+# VDP: локальная страховка CI (Cursor process)
+
+Источник: паритет с `.github/workflows/vdp-ci.yml`. Команды — из каталога `vdp`. Связано: `тесты-архитектуры`, `честность-готовности`, `vdp-fe-docker-пересборка`, `mgmt-tg-notify`.
+
+## Лестница gate (не путать)
+
+| Уровень | Команда | Когда |
+|---|---|---|
+| Pre-commit (быстро) | `make precommit-gate` / хук `.githooks` | каждый коммит: в основном `make test` + TG gate |
+| PR-паритет без browser | `make ci-pr-fast` | итерации backend/API, пока UI E2E не нужен |
+| PR-паритет (required checks) | `make ci-pr` | перед push / PR / «готово к CI» |
+| Main / handover | `make release-gate` | только по явной просьбе или перед тегом/`vdp-v*` (долго) |
+
+`ci-pr` ≈ jobs: docs + fast(adapters) + integration + пауза 65s (rate-limit) + **узкий** Playwright как на `pull_request`.  
+`release-gate` ≈ полный browser + pilot-matrix + postgres integration — **не** гонять молча на каждый фикс.
+
+## MUST для агента
+
+Триггеры (сработал любой):
+
+1. Пользователь просит **push**, **PR**, «готово к CI», «застраховать CI», «проверь как в CI», merge-ready по `vdp/**`.
+2. Агент собирается утверждать, что **CI будет зелёным** / PR можно мержить после правок в `vdp/`.
+3. После фикса **красного** VDP CI — перед новым «готово» снова прогон.
+
+Действия:
+
+1. Предложить и при согласии (или если пользователь уже сказал «прогони») выполнить из `vdp/`:
+   - по умолчанию **`make ci-pr`**;
+   - если пользователь просит быстрее / без browser — **`make ci-pr-fast`**, и честно сказать, что Playwright PR-smoke ещё не гонялся.
+2. Красный gate → **не** утверждать готовность CI; починить или явно перечислить пробел.
+3. `make release-gate` — только если пользователь просит полный контур / handover / тег.
+4. FE Docker deps: по-прежнему **спросить** перед `compose-fe-refresh` (`vdp-fe-docker-пересборка`).
+
+## MUST NOT
+
+- Заявлять «CI ок» / «паритет PR» без локального `ci-pr` или `ci-pr-fast` (с оговоркой) на затронутом изменении.
+- Подменять `ci-pr` одним `make test` или только unit FE.
+- Класть полный `release-gate` в pre-commit или гонять его без запроса (дорого, не PR-паритет).
+- Обходить Docker Playwright на macOS host `npx playwright install`, если команда — Makefile `playwright-e2e`.
+
+## Что делать человеку (коротко)
+
+Один раз: `make -C vdp install-git-hooks` (лёгкий pre-commit).  
+Перед push в PR: `cd vdp && make ci-pr`.  
+Перед handover: `make release-gate`.
+
+## Анти-паттерны
+
+- «Локально собралось» без compose-e2e / узкого Playwright при изменении journey/API.
+- Тихий skip Playwright при заявлении полного PR-паритета.
+- Путать `precommit-gate` (unit) с `ci-pr` (CI PR).

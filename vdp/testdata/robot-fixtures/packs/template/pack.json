@@ -1,0 +1,33 @@
+{
+  "pack_id": "template",
+  "deal_kind": "advance",
+  "organization": {
+    "name": "ООО Северный Контур",
+    "inn": "7701234567",
+    "country": "RU"
+  },
+  "counterparty": {
+    "name": "Guangzhou Trade Hub Co Ltd",
+    "country": "CN",
+    "inn": "91440100MA5C1XAMPLE"
+  },
+  "provider": {
+    "seed_id": "55555555-5555-5555-5555-555555555555",
+    "label": "seed provider@vdp.local"
+  },
+  "deal_fields": {
+    "currency": "USD",
+    "invoice_amount": "12850.00",
+    "contract_number": "VT-ROBOT-ADV-001",
+    "contract_date": "2026-07-15",
+    "hs_codes": ["8471.30", "8517.62"],
+    "direction": "import"
+  },
+  "docs": {
+    "invoice_pdf": "docs/invoice-advance.pdf",
+    "contract_pdf": "docs/contract.pdf",
+    "order_pdf": "docs/order-signed.pdf",
+    "report_pdf": "docs/report-signed.pdf",
+    "shipment_pdf": "docs/shipment-docs.pdf"
+  }
+}

@@ -79,6 +79,35 @@ func TestScenarioDryRunHealthAndProdForce(t *testing.T) {
 	}
 }
 
+func TestScenarioMutatingProviderReturnAndExtractionConfirm(t *testing.T) {
+	core, _, _ := newStack(t)
+	rootTok := login(t, core, "root@vdp.local", "root")
+	for _, id := range []string{
+		scenarioverify.IDProviderReturnToManager,
+		scenarioverify.IDExtractionConfirmAmount,
+	} {
+		body, _ := json.Marshal(map[string]any{"scenario_id": id, "mode": "mutating"})
+		res := httptest.NewRecorder()
+		req := httptest.NewRequest(http.MethodPost, "/api/v1/admin/scenario-runs", bytes.NewReader(body))
+		req.Header.Set("Authorization", "Bearer "+rootTok)
+		req.Header.Set("Content-Type", "application/json")
+		core.ServeHTTP(res, req)
+		if res.Code != http.StatusOK {
+			t.Fatalf("%s code=%d body=%s", id, res.Code, res.Body.String())
+		}
+		var payload map[string]any
+		_ = json.Unmarshal(res.Body.Bytes(), &payload)
+		runs, _ := payload["runs"].([]any)
+		if len(runs) != 1 {
+			t.Fatalf("%s runs=%v", id, payload)
+		}
+		run0, _ := runs[0].(map[string]any)
+		if run0["status"] != "passed" {
+			t.Fatalf("%s status=%v body=%s", id, run0["status"], res.Body.String())
+		}
+	}
+}
+
 func TestScenarioMutatingProviderNoPII(t *testing.T) {
 	core, _, _ := newStack(t)
 	rootTok := login(t, core, "root@vdp.local", "root")

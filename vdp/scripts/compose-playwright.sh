@@ -27,14 +27,18 @@ echo "== playwright (docker ${PLAYWRIGHT_IMAGE}) =="
 # compose bind mount ./fe — that races the fe service named volume and clears Vite deps
 # (browser then gets 404 on /node_modules/.vite/deps/* and login never hydrates).
 PLAYWRIGHT_ARGS="${PLAYWRIGHT_ARGS:-}"
+VDP_ROBOT_FIXTURE_PACK="${VDP_ROBOT_FIXTURE_PACK:-template}"
 docker run --rm \
   --network "${COMPOSE_NETWORK}" \
   -v "${ROOT}/fe:/fe:ro" \
+  -v "${ROOT}/testdata:/testdata:ro" \
   -w /work \
   -e PLAYWRIGHT_BASE_URL="${E2E_FE_URL}" \
   -e CORE_URL="${E2E_CORE_URL}" \
   -e CI="${CI:-}" \
   -e PLAYWRIGHT_ARGS="${PLAYWRIGHT_ARGS}" \
+  -e VDP_ROBOT_FIXTURE_PACK="${VDP_ROBOT_FIXTURE_PACK}" \
+  -e VDP_ROBOT_FIXTURES_ROOT="/testdata/robot-fixtures" \
   "${PLAYWRIGHT_IMAGE}" \
   bash -lc '
 set -euo pipefail

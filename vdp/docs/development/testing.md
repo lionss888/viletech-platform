@@ -221,8 +221,17 @@ cd vdp && make test && make test-adapters
 cd vdp && make integration-gate
 ```
 
+Локальный паритет PR (required checks) — страховка перед push.
+
+```sh
+cd vdp && make ci-pr-fast   # без browser
+cd vdp && make ci-pr        # + узкий Playwright как на pull_request
+```
+
 Локальный pre-handover.
 
 ```sh
 cd vdp && make release-gate
 ```
+
+Правило процесса Cursor: `.cursor/rules/vdp-ci-local-gate.mdc`. Pre-commit (только unit + TG): `make -C vdp install-git-hooks`, затем `make precommit-gate`.

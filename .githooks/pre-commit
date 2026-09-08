@@ -1,0 +1,5 @@
+#!/usr/bin/env bash
+# Repo pre-commit: local unit gate + management Telegram (pass and fail).
+set -euo pipefail
+ROOT="$(cd "$(dirname "$0")/.." && pwd)"
+exec "$ROOT/vdp/scripts/precommit-mgmt-notify.sh"

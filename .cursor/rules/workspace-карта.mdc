@@ -1,0 +1,38 @@
+---
+description: Карта репозитория viletech-platform — что продукт, что вендор, перенос-среды; alwaysApply вместо пропускаемого AGENTS.md
+alwaysApply: true
+---
+
+# Карта workspace (бывший AGENTS.md)
+
+Канон процесса — [`.cursor/rules`](.cursor/rules). Не опирайся на корневой `AGENTS.md` как на источник правил: там только указатель сюда.
+
+## Что это за репозиторий
+
+`viletech-platform` — **planning + reference workspace**, не один деплойный продукт. Верхний уровень:
+
+- `вводные/`, `заметки/` — требования и анализ (текст, ничего не запускать).
+- `кастомные модули для адаптации и переиспользования/` — **vendored snapshots** из других репозиториев. В каждой подпапке (`AMG-*`, `AMG Flow`, `backend-for-ved`, `vili-project`) есть `.source-commit.txt`. Это **не** продукт этого репо и **не** часть default setup. Неполные в изоляции (нет entrypoint / placeholder `go.sum`). Запуск только **внутри** модуля своим compose/Makefile — корневой оркестрации нет.
+- `vdp/` — основной first-party контур платформы ВЭД (разработка, CI, compose).
+- `перенос-среды/` — first-party утилита переноса Cursor-среды (ниже).
+
+## Процесс-gate (детально в отдельных rules)
+
+- Планирование ↔ сверка с rules: `планирование-сверка-с-rules`, `базовые-правила-инструмента`.
+- Docker FE deps — **спросить** перед `make compose-fe-refresh`: `vdp-fe-docker-пересборка`.
+- Перед push/PR — локальная страховка CI: `vdp-ci-local-gate` (`make ci-pr` / `ci-pr-fast` из `vdp/`).
+- Management TG: `mgmt-tg-notify`.
+
+## First-party: `перенос-среды`
+
+`перенос-среды/machine_transfer.py` — snapshot/restore состояния Cursor (чаты, layout, settings вне git). Чистый Python 3 stdlib, без `pip install`.
+
+- Lint: `python3 -m py_compile перенос-среды/machine_transfer.py перенос-среды/test_machine_transfer.py`
+- Tests: `cd перенос-среды && python3 -m unittest -v test_machine_transfer` (cwd обязателен — импорт по имени модуля).
+- Run: `./перенос-среды/собрать.sh` (export), `./перенос-среды/развернуть.sh` (import).
+
+### Caveats
+
+- **`export` стирает и пересоздаёт** committed `перенос-среды/snapshot/`. Не гоняй реальный export в workspace, если не намерен перезаписать snapshot. Для тестов — изолированная копия и/или `CURSOR_USER_DIR` / `CURSOR_PROJECTS_DIR`.
+- **`import`** отказывается, пока Cursor запущен (`pgrep`); нужен хотя бы раз открытый `viletech-platform.code-workspace`, чтобы был `workspaceStorage`.
+- Пути корня кириллицей — **всегда** кавычки в shell.

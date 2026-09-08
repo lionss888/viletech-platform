@@ -71,3 +71,18 @@ jobs:
         run: |
           chmod +x vdp/scripts/ci-mgmt-notify.sh vdp/scripts/notify-mgmt.sh
           ./vdp/scripts/ci-mgmt-notify.sh pipeline-fail
+      - name: Notify management on success
+        if: success()
+        env:
+          MGMT_NOTIFY_TOKEN: ${{ secrets.MGMT_NOTIFY_TOKEN || secrets.TELEGRAM_INTAKE_TOKEN }}
+          MGMT_NOTIFY_CHAT_ID: ${{ secrets.MGMT_NOTIFY_CHAT_ID || secrets.TELEGRAM_INTAKE_CHAT_IDS }}
+          MGMT_CI_BRANCH: ${{ github.ref_name }}
+          MGMT_CI_REVISION: ${{ github.sha }}
+        run: |
+          chmod +x vdp/scripts/notify-mgmt.sh
+          ./vdp/scripts/notify-mgmt.sh \
+            --kind gate \
+            --title "полный контур" \
+            --status passed \
+            --revision "${MGMT_CI_REVISION}" \
+            --branch "${MGMT_CI_BRANCH}"

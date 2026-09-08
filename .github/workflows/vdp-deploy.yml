@@ -136,6 +136,20 @@ jobs:
           REGISTRY_HOST: ghcr.io
           REGISTRY_USER: ${{ github.actor }}
           REGISTRY_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          MGMT_NOTIFY_TOKEN: ${{ secrets.MGMT_NOTIFY_TOKEN || secrets.TELEGRAM_INTAKE_TOKEN }}
+          MGMT_NOTIFY_CHAT_ID: ${{ secrets.MGMT_NOTIFY_CHAT_ID || secrets.TELEGRAM_INTAKE_CHAT_IDS }}
+          MGMT_NOTIFY_FROM_DEPLOY: "1"
         run: |
-          chmod +x vdp/scripts/deploy-compose-release.sh
+          chmod +x vdp/scripts/deploy-compose-release.sh vdp/scripts/notify-mgmt.sh
           ./vdp/scripts/deploy-compose-release.sh
+
+      - name: Notify management on deploy failure
+        if: failure()
+        env:
+          MGMT_NOTIFY_TOKEN: ${{ secrets.MGMT_NOTIFY_TOKEN || secrets.TELEGRAM_INTAKE_TOKEN }}
+          MGMT_NOTIFY_CHAT_ID: ${{ secrets.MGMT_NOTIFY_CHAT_ID || secrets.TELEGRAM_INTAKE_CHAT_IDS }}
+          MGMT_CI_ENV: ${{ needs.resolve-pin.outputs.target_env }}
+          MGMT_CI_REVISION: ${{ needs.resolve-pin.outputs.revision }}
+        run: |
+          chmod +x vdp/scripts/ci-mgmt-notify.sh vdp/scripts/notify-mgmt.sh
+          ./vdp/scripts/ci-mgmt-notify.sh deploy-fail
