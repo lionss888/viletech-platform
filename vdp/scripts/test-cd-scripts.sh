@@ -316,12 +316,16 @@ grep -q '::error::' "$WF_MIRROR" \
   || fail "vdp-mirror-gitlab must error when secrets missing"
 [ -f scripts/configure-gitlab-mirror.sh ] \
   || fail "missing scripts/configure-gitlab-mirror.sh"
-GL_DOC="$ROOT/docs/operations/gitlab-setup.md"
+GL_DOC="$ROOT/docs/development/gitlab-setup.md"
 [ -f "$GL_DOC" ] || fail "missing $GL_DOC"
 grep -q 'vdp888' "$GL_DOC" \
-  || fail "gitlab-setup.md must target group vdp888"
+  || fail "development/gitlab-setup.md must target group vdp888"
 grep -q 'configure-gitlab-mirror.sh' "$GL_DOC" \
-  || fail "gitlab-setup.md must document configure-gitlab-mirror.sh"
+  || fail "development/gitlab-setup.md must document configure-gitlab-mirror.sh"
+GL_OPS="$ROOT/docs/operations/gitlab-setup.md"
+[ -f "$GL_OPS" ] || fail "missing $GL_OPS"
+grep -q 'development/gitlab-setup.md' "$GL_OPS" \
+  || fail "operations/gitlab-setup.md must point to development howto"
 
 echo "== Pilot Robot Matrix contract =="
 [ -f scripts/robot-matrix-check.sh ] || fail "missing scripts/robot-matrix-check.sh"

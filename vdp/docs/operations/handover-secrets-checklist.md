@@ -2,7 +2,7 @@
 
 Подпись ответственного: _________________ Дата: _________
 
-Этот документ закрывает gate ротации секретов и доступов на этапе передачи заказчику. Использовать после фразы «пора передавать заказчику», до подписи security-signoff-checklist.md и staging go-live. Связанные документы: security-signoff-checklist.md, staging-checklist.md, ci.md, gitlab-setup.md, deploy-rollback.md.
+Этот документ закрывает gate ротации секретов и доступов на этапе передачи заказчику. Использовать после фразы «пора передавать заказчику», до подписи security-signoff-checklist.md и staging go-live. Связанные документы: security-signoff-checklist.md, staging-checklist.md, ci.md, gitlab-setup.md (operations pointer), development/gitlab-setup.md (howto), deploy-rollback.md.
 
 ## Контрольный вопрос (старт gate)
 
@@ -72,7 +72,7 @@ Selectel: проект и VM под учётной записью заказчи
 
 Проект vdp888/viletech-platform: токены и maintainer-доступ только у заказчика. Статус не выполнено.
 
-Зеркалирование GitHub → GitLab работает; на GitLab нет deploy-секретов alpha, beta, gamma (см. gitlab-setup.md). Статус не выполнено.
+Зеркалирование GitHub → GitLab работает; на GitLab нет deploy-секретов alpha, beta, gamma (см. development/gitlab-setup.md). Статус не выполнено.
 
 ## Финальная проверка после ротации
 
