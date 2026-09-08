@@ -106,9 +106,32 @@ describe("mapComplianceHistory", () => {
         created_at: "2026-01-01T01:00:00Z",
       },
     ]);
-    expect(timeline[0]?.title).toBe("Заявка отправлена на проверку");
-    expect(timeline[1]?.title).toBe("Заявка взята в проверку");
+    expect(timeline[0]?.title).toBe("Заявка взята в проверку");
+    expect(timeline[1]?.title).toBe("Заявка отправлена на проверку");
     expect(timeline.map((e) => e.title).join(" ")).not.toMatch(/комплаенс/i);
+  });
+
+  it("orders timeline newest-first", () => {
+    const timeline = mapComplianceHistory([
+      {
+        id: "h-old",
+        form_payment_id: "f1",
+        actor_id: "a1",
+        from_status: "draft",
+        to_status: "form_waiting_verification",
+        created_at: "2026-01-01T00:00:00Z",
+      },
+      {
+        id: "h-new",
+        form_payment_id: "f1",
+        actor_id: "a2",
+        from_status: "form_waiting_verification",
+        to_status: "form_verification",
+        created_at: "2026-01-01T01:00:00Z",
+      },
+    ]);
+    expect(timeline[0]?.id).toBe("h-new");
+    expect(timeline[1]?.id).toBe("h-old");
   });
 
   it("maps history entries to timeline with human-readable labels", () => {
@@ -123,10 +146,10 @@ describe("mapComplianceHistory", () => {
         created_at: "2026-01-01T00:00:00Z",
       },
     ]);
-    expect(timeline[0]?.title).toContain("Черновик");
-    expect(timeline[0]?.title).toContain("Ожидает проверки организации");
+    expect(timeline[0]?.title).toContain("Заявка отправлена на проверку");
     expect(timeline[0]?.title).toContain("submit");
     expect(timeline[0]?.title).not.toMatch(/organization_waiting_verification/);
+    expect(timeline[0]?.title).not.toMatch(/Черновик →/);
   });
 
   it("maps creating → draft without snake_case codes", () => {

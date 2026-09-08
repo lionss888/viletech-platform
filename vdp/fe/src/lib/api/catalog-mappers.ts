@@ -61,14 +61,16 @@ export function mapCoreCounterparty(cp: CoreCounterparty): Counterparty {
 }
 
 export function mapCoreAgent(agent: CoreAgent): ProviderRecord {
+  const paused = agent.status === "paused" || agent.active === false;
+  const sla = agent.sla_hours && agent.sla_hours > 0 ? agent.sla_hours : 24;
   return {
     id: agent.id,
     name: agent.name,
-    country: "—",
-    corridors: "—",
-    contact: "—",
-    slaHours: 24,
-    status: agent.status === "paused" ? "paused" : "active",
+    country: agent.country?.trim() || "",
+    corridors: agent.corridors?.trim() || "",
+    contact: agent.contact?.trim() || "",
+    slaHours: sla,
+    status: paused ? "paused" : "active",
   };
 }
 

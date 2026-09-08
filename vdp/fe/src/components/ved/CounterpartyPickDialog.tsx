@@ -207,7 +207,7 @@ export function CounterpartyPickDialog({
               value={newName}
               onChange={(e) => setNewName(e.target.value)}
               className="field mt-1 w-full"
-              placeholder="Shenzhen Kaiyuan Electronics"
+              placeholder="Например, Acme Trading Ltd"
               autoFocus
             />
           </label>

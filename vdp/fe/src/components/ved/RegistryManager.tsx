@@ -24,12 +24,15 @@ export function RegistryManager({
   extraColumns = [],
   badge,
   writeRoles = [],
+  hideFormKeys = [],
 }: {
   def: RegistryDef;
   extraColumns?: Extra[];
   badge?: (record: RefRecord) => { text: string; cls: string } | null;
   /** Роли, которым разрешено добавлять и редактировать записи (удаление и импорт — только суперадмину). */
   writeRoles?: VedRole[];
+  /** Field keys shown in the table but omitted from the create/edit modal. */
+  hideFormKeys?: string[];
 }) {
   const { session, refRecords, saveRefRecord, deleteRefRecord, importRefRecords } = usePlatformStore();
   const records = refRecords(def.key);
@@ -39,6 +42,10 @@ export function RegistryManager({
     const roles: VedRole[] = ["root", ...writeRoles.filter((r) => r !== "root")];
     return [...new Set(roles)].map((r) => roleTitle(r)).join(", ");
   }, [writeRoles]);
+  const formFields = useMemo(
+    () => def.fields.filter((field) => !hideFormKeys.includes(field.key)),
+    [def.fields, hideFormKeys],
+  );
 
   const [query, setQuery] = useState("");
   const [draft, setDraft] = useState<RefRecord | null>(null);
@@ -189,9 +196,34 @@ export function RegistryManager({
                   <td
                     colSpan={def.fields.length + extraColumns.length + (canWrite ? 1 : 0)}
                     className="py-6 text-sm text-muted-foreground"
+                    data-testid={`registry-empty-${def.key}`}
                   >
-                    Записей пока нет.
-                    {canWrite ? " Нажмите «Добавить», чтобы создать первую." : ""}
+                    {def.key === "counterparties" ? (
+                      <>
+                        Справочник контрагентов пуст.
+                        {canWrite ? (
+                          <>
+                            {" "}
+                            <button
+                              type="button"
+                              onClick={openCreate}
+                              className="font-semibold text-accent hover:underline"
+                            >
+                              Добавьте контрагента
+                            </button>
+                            {" "}
+                            или создайте заявку и догрузите документы на карточке.
+                          </>
+                        ) : (
+                          " Обратитесь к менеджеру или добавьте запись, когда появится право записи."
+                        )}
+                      </>
+                    ) : (
+                      <>
+                        Записей пока нет.
+                        {canWrite ? " Нажмите «Добавить», чтобы создать первую." : ""}
+                      </>
+                    )}
                   </td>
                 </tr>
               )}
@@ -269,7 +301,7 @@ export function RegistryManager({
       >
         {draft && (
           <div className="space-y-3">
-            {def.fields.map((field) => (
+            {formFields.map((field) => (
               <label key={field.key} className="block">
                 <span className="label-caps">{field.label}</span>
                 {field.type === "select" ? (

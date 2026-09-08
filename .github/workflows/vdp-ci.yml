@@ -68,7 +68,6 @@ jobs:
     name: integration (postgres + compose-e2e)
     runs-on: ubuntu-latest
     timeout-minutes: 35
-    if: github.event_name != 'pull_request' || contains(github.event.pull_request.labels.*.name, 'integration')
     needs: [fast]
     services:
       postgres:
@@ -112,6 +111,9 @@ jobs:
         run: make test-integration
       - name: Compose stack + API E2E
         working-directory: vdp
+        env:
+          # Long suite must not trip gateway 429 (compose defaults 2000; pin explicitly for CI).
+          GATEWAY_RATE_LIMIT: "2000"
         run: |
           make compose-up
           ./scripts/compose-e2e.sh
@@ -131,6 +133,7 @@ jobs:
         working-directory: vdp
         env:
           CI: "true"
+          GATEWAY_RATE_LIMIT: "2000"
           # PR: narrow required journeys. Otherwise (main push, schedule, dispatch): full suite.
           PLAYWRIGHT_ARGS: ${{ github.event_name == 'pull_request' && 'e2e/login-form.spec.ts e2e/user-submit.spec.ts e2e/provider-acl.spec.ts e2e/reject-path.spec.ts' || '' }}
         run: |
@@ -148,3 +151,27 @@ jobs:
         if: always()
         working-directory: vdp
         run: make compose-down
+
+  mgmt-notify:
+    name: management notify
+    if: >-
+      always() &&
+      github.actor != 'vdp-mirror-bot' &&
+      (github.event_name == 'push' || github.event_name == 'pull_request') &&
+      (github.event_name != 'push' || !contains(github.event.head_commit.message, '[skip mirror-loop]'))
+    needs: [fast, docs, integration, playwright]
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    steps:
+      - uses: actions/checkout@v4
+      - name: Notify management channel
+        env:
+          MGMT_NOTIFY_TOKEN: ${{ secrets.MGMT_NOTIFY_TOKEN || secrets.TELEGRAM_INTAKE_TOKEN }}
+          MGMT_NOTIFY_CHAT_ID: ${{ secrets.MGMT_NOTIFY_CHAT_ID || secrets.TELEGRAM_INTAKE_CHAT_IDS }}
+          NEED_fast_RESULT: ${{ needs.fast.result }}
+          NEED_docs_RESULT: ${{ needs.docs.result }}
+          NEED_integration_RESULT: ${{ needs.integration.result }}
+          NEED_playwright_RESULT: ${{ needs.playwright.result }}
+        run: |
+          chmod +x vdp/scripts/ci-mgmt-notify.sh vdp/scripts/notify-mgmt.sh
+          ./vdp/scripts/ci-mgmt-notify.sh auto

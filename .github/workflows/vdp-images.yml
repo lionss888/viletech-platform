@@ -72,6 +72,32 @@ jobs:
             echo "is_release=false" >> "$GITHUB_OUTPUT"
           fi
 
+  wait-for-ci:
+    name: wait for VDP CI (main push)
+    needs: [prepare]
+    # On main/master push: digests must not publish while VDP CI is red for the same SHA.
+    # Tags already run release-gate; workflow_dispatch is operator-driven.
+    if: >-
+      github.event_name == 'push' &&
+      (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master')
+    runs-on: ubuntu-latest
+    timeout-minutes: 95
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ needs.prepare.outputs.build_ref }}
+          sparse-checkout: |
+            vdp/scripts/wait-vdp-ci.sh
+          sparse-checkout-cone-mode: false
+      - name: Await successful VDP CI for this SHA
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_REPOSITORY: ${{ github.repository }}
+          SHA: ${{ needs.prepare.outputs.revision }}
+        run: |
+          chmod +x vdp/scripts/wait-vdp-ci.sh
+          ./vdp/scripts/wait-vdp-ci.sh
+
   release-gate:
     name: release-gate (tags only)
     needs: [prepare]
@@ -126,11 +152,12 @@ jobs:
 
   build-push:
     name: build and push images
-    needs: [prepare, release-gate]
+    needs: [prepare, release-gate, wait-for-ci]
     if: >-
       always() &&
       needs.prepare.result == 'success' &&
-      (needs.release-gate.result == 'success' || needs.release-gate.result == 'skipped')
+      (needs.release-gate.result == 'success' || needs.release-gate.result == 'skipped') &&
+      (needs.wait-for-ci.result == 'success' || needs.wait-for-ci.result == 'skipped')
     runs-on: ubuntu-latest
     timeout-minutes: 45
     outputs:

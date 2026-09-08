@@ -62,6 +62,10 @@ npm test в fe, make test, make compose-e2e. Команда make integration-gat
 
 Browser E2E через Docker. Команды make playwright-e2e, make compose-playwright.
 
+## playwright-pilot
+
+Быстрый UI-прогон default актёров (User/Manager/Provider/Root) по тегу `@pilot-flow` в `fe/e2e/pilot-form-flow.spec.ts`. Команда make playwright-pilot (`PLAYWRIGHT_ARGS='--grep @pilot-flow'` → compose-playwright).
+
 ## docs-format-check
 
 Проверка markdown в vdp/docs и vdp/README.md на запрещённую разметку. Команда make docs-format-check.

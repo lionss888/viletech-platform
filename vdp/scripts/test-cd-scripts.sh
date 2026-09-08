@@ -19,6 +19,10 @@ for script in \
   scripts/gitlab-promote.sh \
   scripts/compose-db-migrate.sh \
   scripts/compose-playwright.sh \
+  scripts/db-migrate-host.sh \
+  scripts/lib/e2e-continuity.sh \
+  scripts/compose-e2e.sh \
+  scripts/wait-vdp-ci.sh \
   scripts/vdp-compose-up.sh \
   scripts/staging-smoke.sh \
   scripts/notify-mgmt.sh; do
@@ -164,6 +168,70 @@ grep -q '/api/v1/auth/login' scripts/staging-smoke.sh \
   || fail "staging-smoke must POST /api/v1/auth/login"
 grep -q 'user@vdp.local' scripts/staging-smoke.sh \
   || fail "staging-smoke must use seed user@vdp.local"
+
+echo "== host db-migrate matches compose migration file set =="
+grep -q 'db-migrate-host.sh' Makefile \
+  || fail "Makefile db-migrate must delegate to db-migrate-host.sh"
+grep -qE 'CORE_MIG.*\*\.sql|"\$CORE_MIG"/\*\.sql|migrations/\*\.sql' scripts/db-migrate-host.sh \
+  || fail "db-migrate-host must glob migrations/*.sql"
+grep -qE 'migrations/\*\.sql|\*\.sql' scripts/compose-db-migrate.sh \
+  || fail "compose-db-migrate must glob migrations/*.sql"
+grep -q 'for f in' scripts/db-migrate-host.sh \
+  || fail "db-migrate-host must iterate migration files"
+grep -q 'for f in\|for file in\|/\*\.sql' scripts/compose-db-migrate.sh \
+  || fail "compose-db-migrate must iterate migration files"
+for mig in core/migrations/*.sql; do
+  base="$(basename "$mig")"
+  [[ "$base" =~ ^[0-9]{3}_ ]] || fail "unexpected migration name: $base"
+done
+# Contract: every NNN_*.sql is applied by the same glob both paths use (no hand list).
+host_count=$(find core/migrations -maxdepth 1 -name '*.sql' | wc -l | tr -d ' ')
+[ "$host_count" -ge 17 ] || fail "expected >=17 core migrations, got $host_count"
+
+echo "== compose-e2e sources continuity lib; no bare ECO auth_put =="
+grep -q 'lib/e2e-continuity.sh' scripts/compose-e2e.sh \
+  || fail "compose-e2e must source e2e-continuity.sh"
+grep -q 'advance_compliance' scripts/lib/e2e-continuity.sh \
+  || fail "e2e-continuity must define advance_compliance"
+if grep -nE 'auth_put[[:space:]]+"\$ECO_T"' scripts/compose-e2e.sh; then
+  fail "compose-e2e must not call auth_put \"\$ECO_T\" (use try_/continuity lib)"
+fi
+# Hard ECO role route without try_ in compose-e2e (allow comments / strings in continuity via lib only).
+if grep -nE '[^_](/api/v1/eco/form-payment/)' scripts/compose-e2e.sh | grep -vE 'try_(put|post)|#'; then
+  fail "compose-e2e must not hard-call /eco/form-payment without try_ (use e2e-continuity.sh)"
+fi
+
+echo "== VDP CI: integration on every PR; Images waits CI on main =="
+WF_CI="$REPO_ROOT/.github/workflows/vdp-ci.yml"
+[ -f "$WF_CI" ] || fail "missing $WF_CI"
+# integration must not be gated by PR label only
+if grep -nE "pull_request\.labels\.\*\.name,\s*'integration'|labels\.\*\.name, 'integration'" "$WF_CI"; then
+  fail "integration must run on every PR (no label-only gate)"
+fi
+grep -q 'GATEWAY_RATE_LIMIT' "$WF_CI" \
+  || fail "vdp-ci must set GATEWAY_RATE_LIMIT for long E2E suites"
+# PR Playwright stays narrow; full suite when PLAYWRIGHT_ARGS empty (non-PR)
+grep -q 'e2e/login-form.spec.ts' "$WF_CI" \
+  || fail "vdp-ci PR PLAYWRIGHT_ARGS must include login-form"
+grep -q 'e2e/reject-path.spec.ts' "$WF_CI" \
+  || fail "vdp-ci PR PLAYWRIGHT_ARGS must include reject-path"
+# Images on main must wait for VDP CI via wait-vdp-ci / wait-for-ci job
+grep -q 'wait-vdp-ci.sh' "$WF_IMAGES" \
+  || fail "vdp-images must invoke wait-vdp-ci.sh on main"
+grep -q 'wait-for-ci\|wait for VDP CI' "$WF_IMAGES" \
+  || fail "vdp-images must define wait-for-ci job for main push"
+grep -q 'needs.wait-for-ci.result' "$WF_IMAGES" \
+  || fail "build-push must depend on wait-for-ci success|skipped"
+
+# docs/operations/ci.md must describe required checks (contract for ops)
+CI_DOC="$ROOT/docs/operations/ci.md"
+[ -f "$CI_DOC" ] || fail "missing $CI_DOC"
+grep -q 'integration (postgres + compose-e2e)' "$CI_DOC" \
+  || fail "ci.md must list integration as required check"
+grep -q 'wait for VDP CI\|wait-vdp-ci\|wait-for-ci' "$CI_DOC" \
+  || fail "ci.md must document Images waiting for VDP CI on main"
+grep -q 'PLAYWRIGHT_ARGS' "$CI_DOC" \
+  || fail "ci.md must document PLAYWRIGHT_ARGS PR vs main"
 
 make compose-release-config-check
 echo "test-cd-scripts passed"

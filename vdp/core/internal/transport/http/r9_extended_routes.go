@@ -105,15 +105,20 @@ func (s *Server) handleGetAgent(w http.ResponseWriter, r *http.Request, principa
 
 func (s *Server) handlePatchAgent(w http.ResponseWriter, r *http.Request, principal authz.Principal) {
 	var body struct {
-		Name    string `json:"name"`
-		INN     string `json:"inn"`
-		Active  *bool  `json:"active"`
-		StampID string `json:"stamp_file_id"`
-		SignID  string `json:"signature_file_id"`
+		Name      string `json:"name"`
+		INN       string `json:"inn"`
+		Active    *bool  `json:"active"`
+		Country   string `json:"country"`
+		Corridors string `json:"corridors"`
+		Contact   string `json:"contact"`
+		SLAHours  int    `json:"sla_hours"`
+		StampID   string `json:"stamp_file_id"`
+		SignID    string `json:"signature_file_id"`
 	}
 	_ = json.NewDecoder(r.Body).Decode(&body)
 	a, err := s.catalog.UpdateAgent(r.Context(), principal, r.PathValue("id"), domain.Agent{
-		Name: body.Name, INN: body.INN, StampID: body.StampID, SignID: body.SignID,
+		Name: body.Name, INN: body.INN, Country: body.Country, Corridors: body.Corridors,
+		Contact: body.Contact, SLAHours: body.SLAHours, StampID: body.StampID, SignID: body.SignID,
 	}, body.Active)
 	if err != nil {
 		writeError(w, err)

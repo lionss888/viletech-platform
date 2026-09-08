@@ -5,6 +5,7 @@ import { Modal, ModalButton } from "@/components/ved/Modal";
 import { attachFormHsCodes, nestFormPrefixForRole, patchForm } from "@/lib/api/forms";
 import { ApiError } from "@/lib/api/client";
 import { usePlatformStore } from "@/lib/ved/platform-store";
+import type { FormDirection, FormKind } from "@/lib/ved/types";
 
 type Props = {
   open: boolean;
@@ -14,9 +15,15 @@ type Props = {
   amountMinor: number;
   currency: string;
   hsCode: string;
+  direction?: FormDirection;
+  kind?: FormKind;
+  contractNumber?: string;
+  contractDate?: string;
+  onChangeOrg?: () => void;
+  onChangeCounterparty?: () => void;
 };
 
-/** Edit draft/correction params without leaving the form card. */
+/** Edit draft/correction form fields without leaving the card. */
 export function FormParamsEditDialog({
   open,
   onOpenChange,
@@ -25,12 +32,22 @@ export function FormParamsEditDialog({
   amountMinor,
   currency,
   hsCode,
+  direction = "import",
+  kind = "good",
+  contractNumber = "",
+  contractDate = "",
+  onChangeOrg,
+  onChangeCounterparty,
 }: Props) {
   const queryClient = useQueryClient();
   const { currencies, hsCodes } = usePlatformStore();
   const [amount, setAmount] = useState("");
   const [cur, setCur] = useState(currency);
   const [hs, setHs] = useState(hsCode === "—" ? "" : hsCode);
+  const [dir, setDir] = useState<FormDirection>(direction);
+  const [formKind, setFormKind] = useState<FormKind>(kind);
+  const [contractNo, setContractNo] = useState(contractNumber);
+  const [contractDt, setContractDt] = useState(contractDate);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -39,8 +56,12 @@ export function FormParamsEditDialog({
     setAmount((amountMinor / 100).toString());
     setCur(currency || "USD");
     setHs(hsCode === "—" ? "" : hsCode);
+    setDir(direction);
+    setFormKind(kind);
+    setContractNo(contractNumber === "—" ? "" : contractNumber);
+    setContractDt(contractDate === "—" ? "" : contractDate);
     setError(null);
-  }, [open, amountMinor, currency, hsCode]);
+  }, [open, amountMinor, currency, hsCode, direction, kind, contractNumber, contractDate]);
 
   async function save() {
     const value = Number(String(amount).replace(/\s/g, "").replace(",", "."));
@@ -54,6 +75,10 @@ export function FormParamsEditDialog({
       await patchForm(formId, nestFormPrefixForRole(role), {
         invoice_amount: String(value),
         currency: cur,
+        direction: dir,
+        kind: formKind,
+        contract_number: contractNo.trim() || undefined,
+        contract_date: contractDt.trim() || undefined,
       });
       if (hs.trim()) {
         await attachFormHsCodes(formId, [hs.trim()]);
@@ -74,8 +99,9 @@ export function FormParamsEditDialog({
       onOpenChange={(next) => {
         if (!busy) onOpenChange(next);
       }}
-      title="Редактировать параметры"
-      description="Сумма, валюта и код ТН ВЭД — без ухода с карточки заявки."
+      title="Редактировать заявку"
+      description="Параметры сделки на карточке. Организацию и контрагента смените отдельными ссылками; документы — в блоке ниже."
+      wide
       footer={
         <>
           <ModalButton variant="quiet" disabled={busy} onClick={() => onOpenChange(false)}>
@@ -93,36 +119,76 @@ export function FormParamsEditDialog({
       }
     >
       <div className="space-y-3">
-        <label className="block text-sm">
-          <span className="label-caps">Сумма</span>
-          <input
-            value={amount}
-            onChange={(e) => setAmount(e.target.value)}
-            className="field mt-1 font-mono"
-            inputMode="decimal"
-          />
-        </label>
-        <label className="block text-sm">
-          <span className="label-caps">Валюта</span>
-          <select value={cur} onChange={(e) => setCur(e.target.value)} className="field mt-1">
-            {currencies.map((c) => (
-              <option key={c.code} value={c.code}>
-                {c.code} — {c.title}
-              </option>
-            ))}
-          </select>
-        </label>
-        <label className="block text-sm">
-          <span className="label-caps">Код ТН ВЭД</span>
-          <select value={hs} onChange={(e) => setHs(e.target.value)} className="field mt-1">
-            <option value="">Не выбран</option>
-            {hsCodes.map((h) => (
-              <option key={h.code} value={h.code}>
-                {h.code} — {h.title}
-              </option>
-            ))}
-          </select>
-        </label>
+        <div className="grid gap-3 sm:grid-cols-2">
+          <label className="block text-sm">
+            <span className="label-caps">Направление</span>
+            <select value={dir} onChange={(e) => setDir(e.target.value as FormDirection)} className="field mt-1">
+              <option value="import">Импорт</option>
+              <option value="export">Экспорт</option>
+            </select>
+          </label>
+          <label className="block text-sm">
+            <span className="label-caps">Предмет</span>
+            <select value={formKind} onChange={(e) => setFormKind(e.target.value as FormKind)} className="field mt-1">
+              <option value="good">Товар</option>
+              <option value="service">Услуга</option>
+            </select>
+          </label>
+          <label className="block text-sm">
+            <span className="label-caps">Сумма</span>
+            <input
+              value={amount}
+              onChange={(e) => setAmount(e.target.value)}
+              className="field mt-1 font-mono"
+              inputMode="decimal"
+            />
+          </label>
+          <label className="block text-sm">
+            <span className="label-caps">Валюта</span>
+            <select value={cur} onChange={(e) => setCur(e.target.value)} className="field mt-1">
+              {currencies.map((c) => (
+                <option key={c.code} value={c.code}>
+                  {c.code} — {c.title}
+                </option>
+              ))}
+            </select>
+          </label>
+          <label className="block text-sm">
+            <span className="label-caps">Код ТН ВЭД</span>
+            <select value={hs} onChange={(e) => setHs(e.target.value)} className="field mt-1">
+              <option value="">Не выбран</option>
+              {hsCodes.map((h) => (
+                <option key={h.code} value={h.code}>
+                  {h.code} — {h.title}
+                </option>
+              ))}
+            </select>
+          </label>
+          <label className="block text-sm">
+            <span className="label-caps">Номер контракта</span>
+            <input value={contractNo} onChange={(e) => setContractNo(e.target.value)} className="field mt-1" />
+          </label>
+          <label className="block text-sm">
+            <span className="label-caps">Дата контракта</span>
+            <input value={contractDt} onChange={(e) => setContractDt(e.target.value)} className="field mt-1" />
+          </label>
+        </div>
+        <div className="flex flex-wrap gap-3 text-sm">
+          {onChangeOrg ? (
+            <button type="button" className="font-semibold text-accent hover:underline" onClick={onChangeOrg}>
+              Сменить организацию
+            </button>
+          ) : null}
+          {onChangeCounterparty ? (
+            <button
+              type="button"
+              className="font-semibold text-accent hover:underline"
+              onClick={onChangeCounterparty}
+            >
+              Сменить контрагента
+            </button>
+          ) : null}
+        </div>
         {error && <p className="text-sm text-destructive">{error}</p>}
       </div>
     </Modal>

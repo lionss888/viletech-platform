@@ -252,9 +252,10 @@ export function NewForm() {
         )}
 
         {step === 1 && (
-          <div className="grid gap-4">
+          <div className="grid gap-4" data-testid="wizard-parties-step">
             <Field label="Организация клиента">
               <select value={draft.organizationId} onChange={(e) => set("organizationId", e.target.value)} className="field">
+                {organizations.length === 0 && <option value="">Нет организаций</option>}
                 {organizations.map((o) => (
                   <option key={o.id} value={o.id}>
                     {o.name} · ИНН {o.inn}
@@ -264,7 +265,7 @@ export function NewForm() {
             </Field>
             <Field label="Контрагент">
               <select value={draft.counterpartyId} onChange={(e) => set("counterpartyId", e.target.value)} className="field">
-                {counterparties.length === 0 && <option value="">Нет контрагентов</option>}
+                {counterparties.length === 0 && <option value="">Нет контрагентов — добавьте в справочник</option>}
                 {counterparties.map((c) => (
                   <option key={c.id} value={c.id}>
                     {c.name} · {c.country}
@@ -272,6 +273,16 @@ export function NewForm() {
                 ))}
               </select>
             </Field>
+            {counterparties.length === 0 && (
+              <p className="rounded-md bg-muted/60 px-3 py-2 text-xs text-muted-foreground" data-testid="wizard-empty-counterparties">
+                Справочник контрагентов пуст.{" "}
+                <a href={`${base}/counterparties`} className="font-semibold text-accent hover:underline">
+                  Добавьте контрагента
+                </a>
+                {" "}
+                или продолжите создание — документы можно догрузить на карточке заявки после сохранения.
+              </p>
+            )}
           </div>
         )}
 

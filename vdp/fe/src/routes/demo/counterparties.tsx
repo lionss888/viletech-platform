@@ -2,6 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 
 import { VedAppShell } from "@/components/ved/VedAppShell";
 import { RegistryManager } from "@/components/ved/RegistryManager";
+import { isComplianceRole } from "@/lib/ved/compliance";
 import { REGISTRIES } from "@/lib/ved/registry";
 import { usePlatformStore } from "@/lib/ved/platform-store";
 
@@ -18,14 +19,16 @@ export const Route = createFileRoute("/demo/counterparties")({
 });
 
 export function CounterpartiesPage() {
-  const { counterparties, forms } = usePlatformStore();
+  const { counterparties, forms, session } = usePlatformStore();
   const def = REGISTRIES.counterparties;
+  const canSetApproval = isComplianceRole(session?.role) || session?.role === "root";
 
   return (
     <VedAppShell title={def.title} subtitle={`${def.subtitle} · записей: ${counterparties.length}`}>
       <RegistryManager
         def={def}
         writeRoles={["user", "manager", "compliance_officer", "internal_compliance_officer"]}
+        hideFormKeys={canSetApproval ? [] : ["status"]}
         badge={(record) =>
           record["status"] === "approved"
             ? { text: "Проверен", cls: "bg-done-soft text-done" }

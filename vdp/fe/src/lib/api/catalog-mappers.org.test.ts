@@ -1,6 +1,12 @@
 import { describe, expect, it } from "vitest";
 
-import { mapCoreAdminAccount, mapCoreCounterparty, mapCoreOrganization, mapOrgStatus } from "./catalog-mappers";
+import {
+  mapCoreAdminAccount,
+  mapCoreAgent,
+  mapCoreCounterparty,
+  mapCoreOrganization,
+  mapOrgStatus,
+} from "./catalog-mappers";
 import type { CoreAdminAccount, CoreOrganization } from "./catalog";
 
 describe("mapOrgStatus", () => {
@@ -65,5 +71,28 @@ describe("mapCoreCounterparty", () => {
     expect(actual.name).toContain("Shenzhen");
     expect(actual.country).toBe("CN");
     expect(actual.status).toBe("approved");
+  });
+});
+
+describe("mapCoreAgent", () => {
+  it("maps catalog fields instead of hardcoding dashes", () => {
+    const got = mapCoreAgent({
+      id: "ag1",
+      name: "For test",
+      country: "HK",
+      corridors: "CNY, USD",
+      contact: "ops@provider.com",
+      sla_hours: 12,
+      active: true,
+    });
+    expect(got.country).toBe("HK");
+    expect(got.corridors).toBe("CNY, USD");
+    expect(got.contact).toBe("ops@provider.com");
+    expect(got.slaHours).toBe(12);
+    expect(got.status).toBe("active");
+  });
+
+  it("marks paused when active is false", () => {
+    expect(mapCoreAgent({ id: "ag2", name: "X", active: false }).status).toBe("paused");
   });
 });

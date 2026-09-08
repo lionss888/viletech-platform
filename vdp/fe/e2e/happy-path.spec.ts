@@ -1,12 +1,12 @@
 import { type Page } from "@playwright/test";
 import { test, expect } from "./fixtures/auth.fixture";
 import { assertCoreHealthy, createDraftForm, createFormAccepted, loginAllRoles } from "./helpers/api";
+import { expectFormStatus } from "./helpers/status";
 
-/** Pilot continuity (ICO/ECO off): badge copy differs from full compliance matrix. */
-const AWAITING_REVIEW = /Ожидает проверки (комплаенса|менеджером)/;
-const FORM_ACCEPTED = /Заявка подтверждена/;
 const TAKE_IN_REVIEW = /Взять (заявку|организацию) в проверку|Взять .* в проверку/i;
 const CONFIRM_FORM = /Подтвердить заявку/;
+/** After submit: org may still be pending or form already in review. */
+const AFTER_SUBMIT = /^(organization_waiting_verification|form_waiting_verification)$/;
 
 async function waitForFormDetail(page: Page, formId: string): Promise<void> {
   await page.goto(`/forms/${formId}`);
@@ -32,7 +32,7 @@ test.describe("Happy path (app UI)", () => {
     await waitForFormDetail(page, formId);
     await expect(page.getByRole("button", { name: "Отправить на проверку" })).toBeVisible();
     await page.getByRole("button", { name: "Отправить на проверку" }).click();
-    await expect(page.getByTitle(AWAITING_REVIEW)).toBeVisible({ timeout: 15_000 });
+    await expectFormStatus(page, AFTER_SUBMIT, { timeout: 15_000 });
 
     await logout();
     // Pilot: ECO slot off → manager owns form review (continuity).
@@ -44,7 +44,7 @@ test.describe("Happy path (app UI)", () => {
     const confirm = page.getByRole("button", { name: CONFIRM_FORM });
     await expect(confirm).toBeEnabled({ timeout: 20_000 });
     await confirm.click();
-    await expect(page.getByTitle(FORM_ACCEPTED)).toBeVisible({ timeout: 15_000 });
+    await expectFormStatus(page, "form_accepted", { timeout: 15_000 });
     await expect(page.getByRole("button", { name: "Назначить платёжного агента" })).toBeVisible();
   });
 
@@ -56,6 +56,6 @@ test.describe("Happy path (app UI)", () => {
     await waitForFormDetail(page, formId);
     await expect(page.getByRole("button", { name: "Назначить платёжного агента" })).toBeVisible();
     await expect(page.getByRole("button", { name: "Прикрепить договор вручную" })).toBeVisible();
-    await expect(page.getByTitle(FORM_ACCEPTED)).toBeVisible();
+    await expectFormStatus(page, "form_accepted");
   });
 });

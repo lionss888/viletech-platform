@@ -94,13 +94,14 @@ export function parseDocsJson(raw: string | undefined, formId: string): Attached
   }
 }
 
-/** Maps compliance history API rows to timeline entries with human-readable status labels. */
+/** Maps compliance history API rows to timeline entries with human-readable status labels.
+ * Newest events first (future / latest on top) for all roles. */
 export function mapComplianceHistory(
   entries: ComplianceHistoryEntry[],
   users: PlatformUser[] = [],
   processRoles?: ProcessRoleRow[],
 ): TimelineEntry[] {
-  return entries.map((entry) => {
+  return [...entries].reverse().map((entry) => {
     const fromLabel = statusMetaForProcess(entry.from_status as FormStatus, processRoles).label;
     const toLabel = statusMetaForProcess(entry.to_status as FormStatus, processRoles).label;
     const transition = humanTimelineTitle(entry.from_status, entry.to_status, fromLabel, toLabel);
@@ -126,6 +127,9 @@ function humanTimelineTitle(
     return "Заявка создана (черновик готов к отправке)";
   }
   if (fromStatus === "draft" && toStatus === "form_waiting_verification") {
+    return "Заявка отправлена на проверку";
+  }
+  if (fromStatus === "draft" && toStatus === "organization_waiting_verification") {
     return "Заявка отправлена на проверку";
   }
   if (fromStatus === "form_waiting_verification" && toStatus === "form_verification") {

@@ -36,6 +36,12 @@ export type CoreCounterparty = {
 export type CoreAgent = {
   id: string;
   name: string;
+  inn?: string;
+  active?: boolean;
+  country?: string;
+  corridors?: string;
+  contact?: string;
+  sla_hours?: number;
   status?: string;
 };
 
@@ -72,8 +78,13 @@ export function listOrganizations(): Promise<CoreOrganization[]> {
   return apiFetch<CoreOrganization[]>("/api/v1/organizations");
 }
 
-export function listCounterparties(): Promise<CoreCounterparty[]> {
-  return apiFetch<CoreCounterparty[]>("/api/v1/counterparties");
+/** Scoped list (CreatedBy for user; all for compliance/root). No demo mock fallback. */
+export async function listCounterparties(): Promise<CoreCounterparty[]> {
+  const body = await apiFetch<{ items?: CoreCounterparty[]; total?: number } | CoreCounterparty[]>(
+    "/api/v1/counterparty/list",
+  );
+  if (Array.isArray(body)) return body;
+  return body.items ?? [];
 }
 
 export function listAgents(): Promise<CoreAgent[]> {

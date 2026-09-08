@@ -28,15 +28,47 @@ ID provider_payment_no_pii. API compose: RD7. Root runner: yes. UI Playwright: p
 
 ID bank_channel_badge. API compose: RD9. Root runner: yes. UI Playwright: bank-badge.
 
-ID root_cancel. API compose: RD8. Root runner: yes. UI Playwright: not covered.
+ID root_cancel. API compose: RD8. Root runner: yes. UI Playwright: pilot-form-flow (S-Root-02) covered.
 
 ID refund_smoke. API compose: refund smoke. Root runner: yes (OK when cancel returns 409). UI Playwright: not covered.
 
 ID manager_hides_drafts. API compose: dash. Root runner: UI-only skip (honest). UI Playwright: manager-hides-drafts.
 
-ID doc_preview_visible. API compose: dash. Root runner: UI-only skip (honest). UI Playwright: not covered (unit/helper).
+ID doc_preview_visible. API compose: dash. Root runner: UI-only skip (honest). UI Playwright: api-core-ux PDF + pilot-form-flow S-Mgr-04 (iframe).
 
 ID health_core. API compose: health. Root runner: health mode. UI Playwright: dash.
+
+## Pilot UI journeys (default actors)
+
+Default process spine: User + Manager + Provider (ICO/ECO off, manager continuity). Root = platform admin, not process config. Tag `@pilot-flow` in `vdp/fe/e2e/pilot-form-flow.spec.ts`. Command: `make playwright-pilot`.
+
+S-User-01 wizard no mock CP. Actor user. Spec pilot-form-flow. Layer UI.
+
+S-User-02 draft org/edit/upload/OCR. Actor user. Spec pilot-form-flow + form-ux-deadends. Layer UI.
+
+S-User-03 submit + timeline newest-first. Actor user. Spec form-ux-deadends. Layer UI + vitest mapper.
+
+S-User-04 corrections upload + resubmit. Actor user. Spec form-ux-deadends + reject-path + pilot handoff. Layer UI.
+
+S-Mgr-01 take reject/accept + SubjectReview. Actor manager. Spec api-core-ux + form-ux-deadends + happy-path + pilot. Layer UI.
+
+S-Mgr-02 hides drafts. Actor manager. Spec manager-hides-drafts. Layer UI.
+
+S-Mgr-03 assign provider gate. Actor manager. Spec manager-payment. Layer UI.
+
+S-Mgr-04 PDF iframe. Actor manager. Spec pilot-form-flow + api-core-ux. Layer UI.
+
+S-Prov-01 no client PII. Actor provider. Spec provider-acl (PR smoke) + pilot. Layer UI.
+
+S-Prov-02 payment sent CTA. Actor provider. Spec pilot-form-flow. Layer UI.
+
+S-Root-01 catalogs + Bank API copy. Actor root. Spec pilot-form-flow + api-core-ux. Layer UI.
+
+S-Root-02 cancel card. Actor root. Spec pilot-form-flow. Layer UI.
+
+S-Pilot-E2E handoff U→M→U→M→P→M. Spec pilot-form-flow. Layer UI partial ladder + API seed.
+
+Honest: not full browser happy_path_to_completed click-through; payment ladder mid-steps stay API-seeded.
 
 ## Критичные journeys
 
@@ -52,7 +84,7 @@ Journey Provider payment without PII. Unit provider-flow.test. API RD7 + Root. U
 
 Journey Refund full / cancel 409. Unit + compose + Root refund_smoke. UI E2E not covered.
 
-Journey Root cancel admin. Unit root-flow.test. API RD8 + Root. UI E2E not covered.
+Journey Root cancel admin. Unit root-flow.test. API RD8 + Root. UI E2E pilot-form-flow S-Root-02.
 
 Journey Bank channel badge. Unit bank-channel.test. API RD9 + Root. UI E2E bank-badge.spec.ts.
 
@@ -65,6 +97,7 @@ Journey Bank channel badge. Unit bank-channel.test. API RD9 + Root. UI E2E bank-
 ```sh
 cd vdp && make integration-gate
 cd vdp && make playwright-e2e
+cd vdp && make playwright-pilot
 cd vdp/fe && npm test
 # Root: login root@vdp.local → /testing → Запустить
 # Local seed wipe: make core-seed-reset

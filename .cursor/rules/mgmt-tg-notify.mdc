@@ -15,9 +15,11 @@ alwaysApply: true
 
 ## Kinds
 
-`done` | `progress` | `gate` | `promote` | `uptime` | `blocker` | `schedule` | `raw`
+`done` | `progress` | `gate` | `promote` | `push` | `review` | `pipeline` | `uptime` | `blocker` | `schedule` | `raw`
 
-Продукт — для менеджмента; `gate` / `promote` / `blocker` — техслой тем же языком процесса (проверки, выкат, ревизия), не брендами стека.
+Продукт — для менеджмента; `gate` / `promote` / `push` / `review` / `pipeline` / `blocker` — техслой тем же языком процесса (проверки, выкат, ревизия, слияние), не брендами стека.
+
+CI: `vdp/scripts/ci-mgmt-notify.sh` (push на default, запрос на слияние, сбой шага автопайпа).
 
 ## Анти-паттерны
 

@@ -198,6 +198,18 @@ func (s *CatalogService) UpdateAgent(ctx context.Context, principal authz.Princi
 	if patch.INN != "" {
 		cur.INN = patch.INN
 	}
+	if patch.Country != "" {
+		cur.Country = patch.Country
+	}
+	if patch.Corridors != "" {
+		cur.Corridors = patch.Corridors
+	}
+	if patch.Contact != "" {
+		cur.Contact = patch.Contact
+	}
+	if patch.SLAHours > 0 {
+		cur.SLAHours = patch.SLAHours
+	}
 	if patch.StampID != "" {
 		cur.StampID = patch.StampID
 	}
@@ -218,6 +230,9 @@ func (s *CatalogService) CreateAgent(ctx context.Context, principal authz.Princi
 		return domain.Agent{}, apperrors.New(apperrors.ErrCodeValidation, "name required")
 	}
 	a.Active = true
+	if a.SLAHours <= 0 {
+		a.SLAHours = 24
+	}
 	return s.SaveAgent(ctx, a)
 }
 

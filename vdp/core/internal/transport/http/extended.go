@@ -48,6 +48,8 @@ func (s *Server) registerExtendedRoutes() {
 	s.mux.HandleFunc("POST /api/v1/forms/{id}/confirmation", s.withAuth(s.handleConfirmation))
 	s.mux.HandleFunc("PUT /api/v1/forms/{id}/important", s.withAuth(s.handleImportant))
 	s.mux.HandleFunc("POST /api/v1/forms/{id}/extraction/confirm", s.withAuth(s.handleExtractionConfirm))
+	s.mux.HandleFunc("POST /api/v1/forms/{id}/extraction/start", s.withAuth(s.handleExtractionStart))
+	s.mux.HandleFunc("POST /api/v1/forms/{id}/extraction/cancel", s.withAuth(s.handleExtractionCancel))
 	s.mux.HandleFunc("POST /api/v1/internal/hub/callback", s.withS2S(s.handleHubCallback))
 	s.mux.HandleFunc("POST /api/v1/forms/import", s.withAuth(s.handleExcelImport))
 	s.mux.HandleFunc("GET /api/v1/sse/forms/{id}", s.withAuth(s.handleSSE))
@@ -368,6 +370,24 @@ func (s *Server) handleExtractionConfirm(w http.ResponseWriter, r *http.Request,
 		return
 	}
 	form, err := s.forms.ConfirmExtraction(r.Context(), principal, r.PathValue("id"), body.Human)
+	if err != nil {
+		writeError(w, err)
+		return
+	}
+	writeJSON(w, http.StatusOK, form)
+}
+
+func (s *Server) handleExtractionStart(w http.ResponseWriter, r *http.Request, principal authz.Principal) {
+	form, err := s.forms.StartExtraction(r.Context(), principal, r.PathValue("id"))
+	if err != nil {
+		writeError(w, err)
+		return
+	}
+	writeJSON(w, http.StatusOK, form)
+}
+
+func (s *Server) handleExtractionCancel(w http.ResponseWriter, r *http.Request, principal authz.Principal) {
+	form, err := s.forms.CancelExtraction(r.Context(), principal, r.PathValue("id"))
 	if err != nil {
 		writeError(w, err)
 		return

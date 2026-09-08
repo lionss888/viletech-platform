@@ -947,23 +947,37 @@ func (s *Store) ListAllHistory(ctx context.Context) []formpayment.ComplianceHist
 }
 
 func (s *Store) SaveAgent(ctx context.Context, a domain.Agent) error {
+	sla := a.SLAHours
+	if sla <= 0 {
+		sla = 24
+	}
 	_, err := s.db.ExecContext(ctx, `
-		INSERT INTO agents (id, name, inn, active, stamp_file_id, signature_file_id)
-		VALUES ($1,$2,$3,$4,$5,$6)
+		INSERT INTO agents (id, name, inn, active, country, corridors, contact, sla_hours, stamp_file_id, signature_file_id)
+		VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10)
 		ON CONFLICT (id) DO UPDATE SET name=EXCLUDED.name, inn=EXCLUDED.inn, active=EXCLUDED.active,
+			country=EXCLUDED.country, corridors=EXCLUDED.corridors, contact=EXCLUDED.contact, sla_hours=EXCLUDED.sla_hours,
 			stamp_file_id=EXCLUDED.stamp_file_id, signature_file_id=EXCLUDED.signature_file_id`,
-		a.ID, a.Name, a.INN, a.Active, nullStr(a.StampID), nullStr(a.SignID))
+		a.ID, a.Name, a.INN, a.Active, nullStr(a.Country), nullStr(a.Corridors), nullStr(a.Contact), sla, nullStr(a.StampID), nullStr(a.SignID))
 	return err
 }
 
 func (s *Store) AgentByID(ctx context.Context, id string) (domain.Agent, error) {
 	var a domain.Agent
-	var stamp, sign sql.NullString
+	var stamp, sign, country, corridors, contact sql.NullString
+	var sla sql.NullInt64
 	err := s.db.QueryRowContext(ctx, `
-		SELECT id, name, COALESCE(inn,''), COALESCE(active,true), stamp_file_id, signature_file_id
-		FROM agents WHERE id=$1`, id).Scan(&a.ID, &a.Name, &a.INN, &a.Active, &stamp, &sign)
+		SELECT id, name, COALESCE(inn,''), COALESCE(active,true), country, corridors, contact, sla_hours, stamp_file_id, signature_file_id
+		FROM agents WHERE id=$1`, id).Scan(&a.ID, &a.Name, &a.INN, &a.Active, &country, &corridors, &contact, &sla, &stamp, &sign)
 	if err == sql.ErrNoRows {
 		return domain.Agent{}, apperrors.ErrResourceNotFound
+	}
+	a.Country = country.String
+	a.Corridors = corridors.String
+	a.Contact = contact.String
+	if sla.Valid && sla.Int64 > 0 {
+		a.SLAHours = int(sla.Int64)
+	} else {
+		a.SLAHours = 24
 	}
 	a.StampID = stamp.String
 	a.SignID = sign.String
@@ -972,7 +986,7 @@ func (s *Store) AgentByID(ctx context.Context, id string) (domain.Agent, error) 
 
 func (s *Store) ListAgents(ctx context.Context) ([]domain.Agent, error) {
 	rows, err := s.db.QueryContext(ctx, `
-		SELECT id, name, COALESCE(inn,''), COALESCE(active,true), stamp_file_id, signature_file_id FROM agents`)
+		SELECT id, name, COALESCE(inn,''), COALESCE(active,true), country, corridors, contact, sla_hours, stamp_file_id, signature_file_id FROM agents`)
 	if err != nil {
 		return nil, err
 	}
@@ -980,8 +994,17 @@ func (s *Store) ListAgents(ctx context.Context) ([]domain.Agent, error) {
 	out := make([]domain.Agent, 0)
 	for rows.Next() {
 		var a domain.Agent
-		var stamp, sign sql.NullString
-		_ = rows.Scan(&a.ID, &a.Name, &a.INN, &a.Active, &stamp, &sign)
+		var stamp, sign, country, corridors, contact sql.NullString
+		var sla sql.NullInt64
+		_ = rows.Scan(&a.ID, &a.Name, &a.INN, &a.Active, &country, &corridors, &contact, &sla, &stamp, &sign)
+		a.Country = country.String
+		a.Corridors = corridors.String
+		a.Contact = contact.String
+		if sla.Valid && sla.Int64 > 0 {
+			a.SLAHours = int(sla.Int64)
+		} else {
+			a.SLAHours = 24
+		}
 		a.StampID = stamp.String
 		a.SignID = sign.String
 		out = append(out, a)

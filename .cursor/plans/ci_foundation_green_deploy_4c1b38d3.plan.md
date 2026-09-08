@@ -4,16 +4,16 @@ overview: "Не новый фундамент с нуля, а волна ант�
 todos:
   - id: wave-a-migrate-continuity
     content: Единый db-migrate (= glob как compose); e2e-continuity.sh; lint против голого ECO в compose-e2e
-    status: pending
+    status: completed
   - id: wave-b-ci-images
     content: integration на каждый PR; GATEWAY_RATE_LIMIT в CI; Images на main ждёт green VDP CI; обновить required checks в ci.md
-    status: pending
+    status: completed
   - id: wave-c-status-contract
     content: data-status/data-testid на StatusBadge; Playwright ассёрты на data-status
-    status: pending
+    status: completed
   - id: wave-d-e-catalog-docs
     content: Сверка scenario catalog IDs; sync ci.md + asserts в test-cd-scripts
-    status: pending
+    status: completed
 isProject: false
 ---
 

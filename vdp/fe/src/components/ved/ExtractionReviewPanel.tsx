@@ -1,10 +1,11 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
 
-import { confirmExtraction } from "@/lib/api/forms";
+import { cancelExtraction, confirmExtraction, startExtraction } from "@/lib/api/forms";
 import {
   type ExtractionLineItem,
   type ExtractionResult,
+  canControlExtraction,
   extractionPanelMode,
   isLowConfidence,
   parseExtractionResult,
@@ -15,11 +16,9 @@ type Props = {
   formId: string;
   invoiceJson?: string;
   role: string;
-  /** Form status — empty OCR panel only while creating. */
   status?: string;
-  /** no_documents create path never runs OCR. */
   noDocuments?: boolean;
-  /** When false, fields stay read-only (e.g. waiting on another actor). */
+  hasDocuments?: boolean;
   canConfirm?: boolean;
 };
 
@@ -29,12 +28,14 @@ export function ExtractionReviewPanel({
   role,
   status,
   noDocuments = false,
+  hasDocuments = false,
   canConfirm = true,
 }: Props) {
   const qc = useQueryClient();
   const parsed = parseExtractionResult(invoiceJson);
   const [draft, setDraft] = useState<ExtractionResult | null>(parsed);
   const [savedNote, setSavedNote] = useState<string | null>(null);
+  const [controlError, setControlError] = useState<string | null>(null);
   useEffect(() => {
     setDraft(parseExtractionResult(invoiceJson));
   }, [invoiceJson]);
@@ -62,21 +63,72 @@ export function ExtractionReviewPanel({
     },
   });
 
+  const startMut = useMutation({
+    mutationFn: () => startExtraction(formId),
+    onSuccess: () => {
+      setControlError(null);
+      void qc.invalidateQueries({ queryKey: ["form", formId] });
+      void qc.invalidateQueries({ queryKey: ["form-history", formId] });
+    },
+    onError: (err) => setControlError(err instanceof Error ? err.message : "Не удалось запустить"),
+  });
+
+  const cancelMut = useMutation({
+    mutationFn: () => cancelExtraction(formId),
+    onSuccess: () => {
+      setDraft(null);
+      setControlError(null);
+      void qc.invalidateQueries({ queryKey: ["form", formId] });
+      void qc.invalidateQueries({ queryKey: ["form-history", formId] });
+    },
+    onError: (err) => setControlError(err instanceof Error ? err.message : "Не удалось отменить"),
+  });
+
   const mode = extractionPanelMode({
     role,
     hasDraft: Boolean(draft),
     status,
     noDocuments,
+    hasDocuments,
   });
+  const showControls = canControlExtraction(role, status);
   if (mode === "hide") return null;
-  if (mode === "pending") {
+
+  const controlBar =
+    showControls ? (
+      <div className="flex flex-wrap gap-2" data-testid="extraction-controls">
+        <button
+          type="button"
+          className="rounded-md bg-primary px-3 py-1.5 text-xs font-semibold text-primary-foreground disabled:opacity-50"
+          disabled={startMut.isPending}
+          onClick={() => startMut.mutate()}
+        >
+          {draft ? "Перезапустить распознавание" : "Запустить распознавание"}
+        </button>
+        {draft && !draft.meta.confirmed ? (
+          <button
+            type="button"
+            className="rounded-md bg-destructive-soft px-3 py-1.5 text-xs font-semibold text-destructive disabled:opacity-50"
+            disabled={cancelMut.isPending}
+            onClick={() => cancelMut.mutate()}
+          >
+            Отменить распознавание
+          </button>
+        ) : null}
+      </div>
+    ) : null;
+
+  if (mode === "idle" || mode === "pending") {
     return (
-      <section className="panel space-y-2 p-4" data-testid="extraction-pending">
+      <section className="panel space-y-2 p-4" data-testid={mode === "pending" ? "extraction-pending" : "extraction-idle"}>
         <h2 className="text-sm font-semibold text-foreground">Распознавание</h2>
         <p className="text-sm text-muted-foreground">
-          Документы распознаются в фоне. Когда появятся данные — проверьте их здесь. Параметры заявки
-          ниже можно заполнить вручную.
+          {mode === "pending"
+            ? "Документы распознаются в фоне. Когда появятся данные — проверьте их здесь."
+            : "Загрузите документы ниже, затем запустите распознавание — или заполните параметры вручную."}
         </p>
+        {controlBar}
+        {controlError ? <p className="text-xs text-destructive">{controlError}</p> : null}
       </section>
     );
   }
@@ -100,9 +152,10 @@ export function ExtractionReviewPanel({
           {draft.meta.engine_id ?? "engine"} · проверьте позиции перед подтверждением
         </p>
       </div>
+      {controlBar}
       <p className="text-xs text-muted-foreground">
-        Подтверждение переносит сумму, валюту и номера договора/инвойса в параметры заявки и сохраняет эталон
-        для обучения. Это не отправка заявки на проверку — статус заявки не меняется.
+        Подтверждение переносит сумму, валюту и номера договора/инвойса в параметры заявки. Это не отправка
+        заявки на проверку — статус заявки не меняется.
       </p>
       {!canConfirm && !confirmed ? (
         <p className="text-xs text-muted-foreground">
@@ -220,6 +273,7 @@ export function ExtractionReviewPanel({
           {savedNote}
         </p>
       ) : null}
+      {controlError ? <p className="text-xs text-destructive">{controlError}</p> : null}
       {mutation.isError ? (
         <p className="text-xs text-destructive">Не удалось сохранить. Повторите или заполните вручную.</p>
       ) : null}

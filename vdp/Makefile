@@ -1,4 +1,4 @@
-.PHONY: deps test test-integration test-adapters build db-setup db-migrate compose-db-migrate run-hub run-core run smoke stop compose-up compose-up-prod compose-down compose-ps compose-e2e compose-fe-smoke compose-fe-refresh compose-fe-prod-smoke compose-playwright lovable-seed-check integration-gate playwright-e2e docs-format-check release-gate image-build image-push image-build-push compose-release-config-check compose-release-up deploy-alpha deploy-beta deploy-gamma rollback-alpha rollback-beta rollback-gamma test-cd-scripts notify-mgmt core-seed-reset
+.PHONY: deps test test-integration test-adapters build db-setup db-migrate compose-db-migrate run-hub run-core run smoke stop compose-up compose-up-prod compose-down compose-ps compose-e2e compose-fe-smoke compose-fe-refresh compose-fe-prod-smoke compose-playwright lovable-seed-check integration-gate playwright-e2e playwright-pilot docs-format-check release-gate image-build image-push image-build-push compose-release-config-check compose-release-up deploy-alpha deploy-beta deploy-gamma rollback-alpha rollback-beta rollback-gamma test-cd-scripts notify-mgmt core-seed-reset
 
 CORE_DIR := core
 HUB_DIR := hub
@@ -73,26 +73,10 @@ db-setup:
 	psql -h localhost -d postgres -c "GRANT ALL PRIVILEGES ON DATABASE vdp_core TO vdp_core; GRANT ALL PRIVILEGES ON DATABASE vdp_hub TO vdp_hub;"
 	$(MAKE) db-migrate
 
+# Same lexical *.sql set as compose-db-migrate (single source of migration files).
 db-migrate:
-	PGPASSWORD=vdp_core psql -h localhost -U vdp_core -d vdp_core -v ON_ERROR_STOP=1 -f $(CORE_DIR)/migrations/001_core.sql
-	PGPASSWORD=vdp_core psql -h localhost -U vdp_core -d vdp_core -v ON_ERROR_STOP=1 -f $(CORE_DIR)/migrations/002_extended.sql
-	PGPASSWORD=vdp_core psql -h localhost -U vdp_core -d vdp_core -v ON_ERROR_STOP=1 -f $(CORE_DIR)/migrations/003_seed.sql
-	PGPASSWORD=vdp_core psql -h localhost -U vdp_core -d vdp_core -v ON_ERROR_STOP=1 -f $(CORE_DIR)/migrations/004_auth_org_r2.sql
-	PGPASSWORD=vdp_core psql -h localhost -U vdp_core -d vdp_core -v ON_ERROR_STOP=1 -f $(CORE_DIR)/migrations/005_r4_docs_domain.sql
-	PGPASSWORD=vdp_core psql -h localhost -U vdp_core -d vdp_core -v ON_ERROR_STOP=1 -f $(CORE_DIR)/migrations/006_r6_rate_docs.sql
-	PGPASSWORD=vdp_core psql -h localhost -U vdp_core -d vdp_core -v ON_ERROR_STOP=1 -f $(CORE_DIR)/migrations/007_r3_contracts.sql
-	PGPASSWORD=vdp_core psql -h localhost -U vdp_core -d vdp_core -v ON_ERROR_STOP=1 -f $(CORE_DIR)/migrations/008_r4_docs_parity.sql
-	PGPASSWORD=vdp_core psql -h localhost -U vdp_core -d vdp_core -v ON_ERROR_STOP=1 -f $(CORE_DIR)/migrations/009_r5_multi_order.sql
-	PGPASSWORD=vdp_core psql -h localhost -U vdp_core -d vdp_core -v ON_ERROR_STOP=1 -f $(CORE_DIR)/migrations/010_r9_extended.sql
-	PGPASSWORD=vdp_core psql -h localhost -U vdp_core -d vdp_core -v ON_ERROR_STOP=1 -f $(CORE_DIR)/migrations/011_r10_bank.sql
-	PGPASSWORD=vdp_core psql -h localhost -U vdp_core -d vdp_core -v ON_ERROR_STOP=1 -f $(CORE_DIR)/migrations/012_b2_org_signer.sql
-	PGPASSWORD=vdp_core psql -h localhost -U vdp_core -d vdp_core -v ON_ERROR_STOP=1 -f $(CORE_DIR)/migrations/013_bank_org_client_type.sql
-	PGPASSWORD=vdp_core psql -h localhost -U vdp_core -d vdp_core -v ON_ERROR_STOP=1 -f $(CORE_DIR)/migrations/014_notifications.sql
-	PGPASSWORD=vdp_core psql -h localhost -U vdp_core -d vdp_core -v ON_ERROR_STOP=1 -f $(CORE_DIR)/migrations/015_role_process_config.sql
-	PGPASSWORD=vdp_core psql -h localhost -U vdp_core -d vdp_core -v ON_ERROR_STOP=1 -f $(CORE_DIR)/migrations/016_account_kind_caps.sql
-	PGPASSWORD=vdp_core psql -h localhost -U vdp_core -d vdp_core -v ON_ERROR_STOP=1 -f $(CORE_DIR)/migrations/017_role_mandatory_and_pilot_compliance.sql
-	PGPASSWORD=vdp_hub psql -h localhost -U vdp_hub -d vdp_hub -v ON_ERROR_STOP=1 -f $(HUB_DIR)/migrations/001_hub.sql
-	PGPASSWORD=vdp_hub psql -h localhost -U vdp_hub -d vdp_hub -v ON_ERROR_STOP=1 -f $(HUB_DIR)/migrations/002_hub.sql
+	@chmod +x scripts/db-migrate-host.sh
+	@PGHOST=$${PGHOST:-localhost} ./scripts/db-migrate-host.sh
 
 # Default compose path: Postgres for core+hub+fe (not memory).
 compose-db-migrate:
@@ -213,6 +197,10 @@ compose-playwright:
 
 # RD11: local npm run when Chromium is installed on host; else use compose-playwright.
 playwright-e2e: compose-playwright
+
+# Pilot UX handoff suite (User/Manager/Provider/Root) — grep @pilot-flow in e2e titles.
+playwright-pilot:
+	PLAYWRIGHT_ARGS='--grep @pilot-flow' $(MAKE) compose-playwright
 
 docs-format-check:
 	@chmod +x scripts/docs-format-check.sh

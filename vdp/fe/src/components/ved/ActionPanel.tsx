@@ -39,6 +39,7 @@ export function ActionPanel({
   lockNote,
   lockAcceptNote,
   note,
+  onEditForm,
 }: {
   form: PaymentForm;
   title?: string;
@@ -46,6 +47,8 @@ export function ActionPanel({
   lockNote?: string | undefined;
   /** Soft lock: disables accept CTAs; start/take-in-work stays available. */
   lockAcceptNote?: string | undefined;
+  /** Opens whole-form edit when draft/corrections. */
+  onEditForm?: (() => void) | undefined;
 }) {
   const { session, applyAction, complianceTools, providers, paymentAgents, users } = usePlatformStore();
   const processRoles = useProcessRolesRows();
@@ -242,6 +245,19 @@ export function ActionPanel({
         <p className="mt-2 rounded-md bg-wait-soft px-2 py-1.5 text-xs text-wait">{PAYMENT_START_PROVIDER_LOCK}</p>
       )}
       <div className="mt-3 flex flex-col gap-2">
+        {onEditForm && (
+          <button
+            type="button"
+            data-testid="edit-form-action"
+            onClick={onEditForm}
+            className={cn(
+              "w-full rounded-md px-3 py-2 text-sm font-semibold transition",
+              TONE.quiet,
+            )}
+          >
+            Редактировать заявку
+          </button>
+        )}
         {operationalActions.map(renderActionButton)}
       </div>
       {rootCancelAction && (

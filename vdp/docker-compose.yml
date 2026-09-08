@@ -196,7 +196,7 @@ services:
       HUB_URL: http://hub:8081
       HUB_SHARED_SECRET: vdp-s2s-dev-secret
       JWT_SECRET: vdp-core-dev-secret
-      GATEWAY_RATE_LIMIT: "2000"
+      GATEWAY_RATE_LIMIT: ${GATEWAY_RATE_LIMIT:-2000}
       TELEGRAM_BOT_USERNAME: ${TELEGRAM_BOT_USERNAME:-vdp_notify_bot}
       EXTRACTION_URL: http://extraction:8093
       DATABASE_URL: postgres://vdp_core:vdp_core@postgres-core:5432/vdp_core?sslmode=disable

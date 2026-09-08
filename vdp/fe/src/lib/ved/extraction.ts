@@ -75,9 +75,20 @@ export function extractionPanelMode(input: {
   hasDraft: boolean;
   status?: string;
   noDocuments?: boolean;
-}): "hide" | "pending" | "review" {
+  hasDocuments?: boolean;
+}): "hide" | "pending" | "review" | "idle" {
   if (input.role === "provider") return "hide";
   if (input.hasDraft) return "review";
-  if (input.noDocuments || input.status !== "creating") return "hide";
-  return "pending";
+  const st = input.status ?? "";
+  const editable = st === "creating" || st === "draft" || st.includes("correction");
+  if (!editable) return "hide";
+  // Upload + OCR controls stay on the card for these statuses (noDocuments is not a dead-end).
+  if (st === "creating") return "pending";
+  return "idle";
+}
+
+export function canControlExtraction(role: string, status?: string): boolean {
+  if (role !== "user" && role !== "manager" && role !== "root") return false;
+  const st = status ?? "";
+  return st === "creating" || st === "draft" || st.includes("correction");
 }

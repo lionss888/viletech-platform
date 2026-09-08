@@ -9,6 +9,9 @@
 # Usage:
 #   ./scripts/notify-mgmt.sh --kind done --title "UX кабинетов" --body $'строка1\nстрока2'
 #   ./scripts/notify-mgmt.sh --kind promote --env alpha --status success --revision sha-abc
+#   ./scripts/notify-mgmt.sh --kind push --title main --revision abc1234 --body "кратко"
+#   ./scripts/notify-mgmt.sh --kind review --status opened --title "feature → main" --revision abc1234
+#   ./scripts/notify-mgmt.sh --kind pipeline --title "приёмка" --status failed --revision abc1234 --branch main
 #   ./scripts/notify-mgmt.sh --kind uptime --env alpha --status down
 #   echo "text" | ./scripts/notify-mgmt.sh --kind raw
 #   ./scripts/notify-mgmt.sh --dry-run --kind gate --title "Стабильность" --status passed
@@ -24,9 +27,10 @@ STATUS=""
 ENV_NAME=""
 REVISION=""
 NEXT=""
+BRANCH=""
 
 usage() {
-  sed -n '2,18p' "$0" | sed 's/^# \{0,1\}//'
+  sed -n '2,22p' "$0" | sed 's/^# \{0,1\}//'
   exit 2
 }
 
@@ -40,6 +44,7 @@ while [ $# -gt 0 ]; do
     --env) ENV_NAME="${2:-}"; shift 2 ;;
     --revision) REVISION="${2:-}"; shift 2 ;;
     --next) NEXT="${2:-}"; shift 2 ;;
+    --branch) BRANCH="${2:-}"; shift 2 ;;
     -h|--help) usage ;;
     *) echo "unknown arg: $1" >&2; usage ;;
   esac
@@ -88,6 +93,44 @@ build_text() {
       [ -n "$REVISION" ] && printf 'Ревизия: %s\n' "$REVISION"
       [ -n "$BODY" ] && printf '%s\n' "$BODY"
       ;;
+    push)
+      printf '%s\n' "📦 Изменения · ${TITLE:-${BRANCH:-ветка}}"
+      [ -n "$REVISION" ] && printf '\nРевизия: %s\n' "$REVISION"
+      [ -n "$BODY" ] && printf '%s\n' "$BODY"
+      ;;
+    review)
+      case "${STATUS:-}" in
+        opened|open|created) st_l="открыт" ;;
+        synchronized|updated|synchronize) st_l="обновлён" ;;
+        merged|accepted) st_l="принят" ;;
+        closed|rejected) st_l="закрыт" ;;
+        *) st_l="${STATUS:-обновлён}" ;;
+      esac
+      printf '%s\n' "🔎 Запрос на слияние · ${st_l}"
+      [ -n "$TITLE" ] && printf '\n%s\n' "$TITLE"
+      [ -n "$BRANCH" ] && printf 'Ветка: %s\n' "$BRANCH"
+      [ -n "$REVISION" ] && printf 'Ревизия: %s\n' "$REVISION"
+      [ -n "$BODY" ] && printf '%s\n' "$BODY"
+      ;;
+    pipeline)
+      case "${STATUS:-}" in
+        success|ok|passed)
+          printf '%s\n' "✅ Конвейер · успех"
+          ;;
+        *)
+          printf '%s\n' "⚠️ Конвейер · сбой"
+          ;;
+      esac
+      [ -n "$TITLE" ] && printf '\nШаг: %s\n' "$TITLE"
+      br="${BRANCH:-${ENV_NAME:-}}"
+      [ -n "$br" ] && printf 'Ветка: %s\n' "$br"
+      [ -n "$REVISION" ] && printf 'Ревизия: %s\n' "$REVISION"
+      case "${STATUS:-}" in
+        success|ok|passed) printf 'Статус: пройден\n' ;;
+        *) printf 'Статус: не пройден\n' ;;
+      esac
+      [ -n "$BODY" ] && printf '%s\n' "$BODY"
+      ;;
     uptime)
       env_l="${ENV_NAME:-среда}"
       case "${STATUS:-}" in
@@ -120,6 +163,7 @@ build_text() {
       exit 2
       ;;
   esac
+  return 0
 }
 
 TEXT="$(build_text)"
