@@ -1,4 +1,4 @@
-.PHONY: deps test test-integration test-adapters build db-setup db-migrate compose-db-migrate run-hub run-core run smoke stop compose-up compose-up-prod compose-down compose-ps compose-e2e compose-fe-smoke compose-fe-refresh compose-fe-prod-smoke compose-playwright lovable-seed-check integration-gate playwright-e2e docs-format-check release-gate image-build image-push image-build-push compose-release-config-check compose-release-up deploy-alpha deploy-beta deploy-gamma rollback-alpha rollback-beta rollback-gamma test-cd-scripts core-seed-reset
+.PHONY: deps test test-integration test-adapters build db-setup db-migrate compose-db-migrate run-hub run-core run smoke stop compose-up compose-up-prod compose-down compose-ps compose-e2e compose-fe-smoke compose-fe-refresh compose-fe-prod-smoke compose-playwright lovable-seed-check integration-gate playwright-e2e docs-format-check release-gate image-build image-push image-build-push compose-release-config-check compose-release-up deploy-alpha deploy-beta deploy-gamma rollback-alpha rollback-beta rollback-gamma test-cd-scripts notify-mgmt core-seed-reset
 
 CORE_DIR := core
 HUB_DIR := hub
@@ -288,3 +288,17 @@ rollback-gamma:
 test-cd-scripts:
 	@chmod +x scripts/test-cd-scripts.sh
 	./scripts/test-cd-scripts.sh
+
+# Management Telegram: KIND=done|progress|gate|promote|uptime|blocker|schedule|raw
+# Example: make notify-mgmt KIND=done TITLE='UX кабинетов' BODY='…' STATUS='пройдена'
+notify-mgmt:
+	@chmod +x scripts/notify-mgmt.sh
+	./scripts/notify-mgmt.sh \
+		--kind "$(KIND)" \
+		$(if $(TITLE),--title "$(TITLE)") \
+		$(if $(BODY),--body "$(BODY)") \
+		$(if $(STATUS),--status "$(STATUS)") \
+		$(if $(ENV),--env "$(ENV)") \
+		$(if $(REVISION),--revision "$(REVISION)") \
+		$(if $(NEXT),--next "$(NEXT)") \
+		$(if $(DRY_RUN),--dry-run)

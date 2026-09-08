@@ -60,7 +60,7 @@ stages:
 .promote_script: &promote_script
   image: alpine:3.20
   before_script:
-    - apk add --no-cache bash openssh-client rsync curl docker-cli
+    - apk add --no-cache bash openssh-client rsync curl docker-cli python3
     - mkdir -p ~/.ssh && chmod 700 ~/.ssh
   script:
     - |
@@ -76,6 +76,28 @@ stages:
     - PIN_FILE=vdp/.release-images.env ./vdp/scripts/gitlab-promote.sh
   after_script:
     - rm -f ~/.ssh/deploy_key || true
+    - |
+      # Management TG notify (optional CI vars: MGMT_NOTIFY_TOKEN + MGMT_NOTIFY_CHAT_ID)
+      if [ -z "${MGMT_NOTIFY_TOKEN:-${TELEGRAM_INTAKE_TOKEN:-}}" ]; then
+        echo "mgmt notify: skip (no token)"
+        exit 0
+      fi
+      if [ -z "${DEPLOY_SSH_KEY:-}" ] || [ -z "${DEPLOY_HOST:-}" ]; then
+        echo "mgmt notify: skip (no deploy attempt)"
+        exit 0
+      fi
+      apk add --no-cache python3 >/dev/null 2>&1 || true
+      chmod +x vdp/scripts/notify-mgmt.sh
+      STATUS=failed
+      [ "${CI_JOB_STATUS:-}" = "success" ] && STATUS=success
+      REV="${CI_COMMIT_SHORT_SHA:-${CI_COMMIT_SHA:-}}"
+      MGMT_NOTIFY_TOKEN="${MGMT_NOTIFY_TOKEN:-${TELEGRAM_INTAKE_TOKEN:-}}" \
+      MGMT_NOTIFY_CHAT_ID="${MGMT_NOTIFY_CHAT_ID:-${TELEGRAM_INTAKE_CHAT_IDS:-}}" \
+        ./vdp/scripts/notify-mgmt.sh \
+          --kind promote \
+          --env "${DEPLOY_ENVIRONMENT:-среда}" \
+          --status "$STATUS" \
+          --revision "$REV" || true
 
 fast:
   stage: fast

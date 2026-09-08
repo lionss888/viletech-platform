@@ -67,10 +67,14 @@ fi
 ts="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
 detail="login=$login_ok api=$api_ok host=${BASE_URL} at=${ts}"
 
+# Management-facing copy (no stack / tool brands). Detail stays in local logs only.
+host_label="$(printf '%s' "$BASE_URL" | sed -E 's#https?://##; s#/$##')"
 if [ "$now" = down ] && [ "$prev" != down ]; then
-  send_telegram "🔴 VDP down: ${detail}"
+  send_telegram "🔴 Среда недоступна · ${host_label}
+Вход или API не отвечают. Разбор начат."
 elif [ "$now" = up ] && [ "$prev" = down ]; then
-  send_telegram "🟢 VDP recovered: ${detail}"
+  send_telegram "🟢 Среда восстановлена · ${host_label}
+Вход и API снова доступны."
 fi
 
 printf '%s\n' "$now" >"$STATE_FILE"
