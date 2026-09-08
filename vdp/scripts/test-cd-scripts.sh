@@ -271,6 +271,14 @@ grep -q 'needs.wait-for-ci.result' "$WF_IMAGES" \
   || fail "build-push must depend on wait-for-ci success|skipped"
 grep -q 'pre-images-gate' "$WF_IMAGES" \
   || fail "vdp-images must notify pre-images-gate after wait-for-ci"
+grep -q 'ci-mgmt-notify.sh' "$WF_IMAGES" \
+  || fail "vdp-images wait-for-ci sparse-checkout must include ci-mgmt-notify.sh"
+grep -q 'mgmt-notify-sanitize.py' "$WF_IMAGES" \
+  || fail "vdp-images wait-for-ci sparse-checkout must include mgmt-notify-sanitize.py"
+grep -q 'continue-on-error: true' "$WF_IMAGES" \
+  || fail "vdp-images pre-images notify must continue-on-error (must not block digests)"
+grep -q 'steps.await-ci.outcome' "$WF_IMAGES" \
+  || fail "vdp-images failed notify must key off await-ci outcome"
 WF_DEPLOY="$REPO_ROOT/.github/workflows/vdp-deploy.yml"
 [ -f "$WF_DEPLOY" ] || fail "missing $WF_DEPLOY"
 grep -q 'deploy-fail' "$WF_DEPLOY" \
