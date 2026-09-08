@@ -146,10 +146,10 @@ describe("mapComplianceHistory", () => {
         created_at: "2026-01-01T00:00:00Z",
       },
     ]);
-    expect(timeline[0]?.title).toContain("Черновик");
-    expect(timeline[0]?.title).toContain("Ожидает проверки организации");
+    expect(timeline[0]?.title).toContain("Заявка отправлена на проверку");
     expect(timeline[0]?.title).toContain("submit");
     expect(timeline[0]?.title).not.toMatch(/organization_waiting_verification/);
+    expect(timeline[0]?.title).not.toMatch(/Черновик →/);
   });
 
   it("maps creating → draft without snake_case codes", () => {

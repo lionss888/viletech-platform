@@ -37,9 +37,10 @@ export type RegistryDef = {
 
 export type RefRecord = Record<string, string | number | boolean | undefined>;
 
+/** Default first option is pending — Client must not self-approve on create. */
 const STATUS_APPROVAL = [
+  { value: "not_approved", label: "Не проверен" },
   { value: "approved", label: "Одобрен" },
-  { value: "not_approved", label: "Не одобрен" },
 ];
 
 export const REGISTRIES: Record<RegistryKey, RegistryDef> = {
@@ -74,7 +75,7 @@ export const REGISTRIES: Record<RegistryKey, RegistryDef> = {
     idField: "id",
     autoId: true,
     fields: [
-      { key: "name", label: "Наименование", type: "text", required: true, placeholder: "Shenzhen Kaiyuan Electronics" },
+      { key: "name", label: "Наименование", type: "text", required: true, placeholder: "Например, Acme Trading Ltd" },
       { key: "country", label: "Страна", type: "text", required: true, placeholder: "Китай" },
       { key: "countryCode", label: "Код страны", type: "text", mono: true, placeholder: "CN" },
       { key: "bank", label: "Банк", type: "text", placeholder: "Bank of China" },

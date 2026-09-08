@@ -1,5 +1,6 @@
 import { test, expect } from "./fixtures/auth.fixture";
 import { assertCoreHealthy, createFormAccepted, loginAllRoles } from "./helpers/api";
+import { expectFormStatus } from "./helpers/status";
 
 test.describe("Manager payment gate (app UI)", () => {
   test.beforeAll(async () => {
@@ -14,8 +15,6 @@ test.describe("Manager payment gate (app UI)", () => {
     await expect(page.getByRole("button", { name: "Назначить платёжного агента" })).toBeVisible({
       timeout: 15_000,
     });
-    await expect(
-      page.getByTestId("status-badge").and(page.locator('[data-status="form_accepted"]')),
-    ).toBeVisible();
+    await expectFormStatus(page, "form_accepted");
   });
 });

@@ -19,6 +19,7 @@ import {
   updateCounterparty,
   updateOrganization,
 } from "@/lib/api/catalog-mutations";
+import { isComplianceRole } from "@/lib/ved/compliance";
 import {
   listAdminAccounts,
   listAgents,
@@ -334,6 +335,7 @@ function useApiPlatformStore(): VedStore {
       }
       await invalidateForms();
       await queryClient.invalidateQueries({ queryKey: ["form", formId] });
+      await queryClient.invalidateQueries({ queryKey: ["form-history", formId] });
       if (
         resolved.kind === "refund_init" ||
         resolved.kind === "refund_start" ||
@@ -469,7 +471,8 @@ function useApiPlatformStore(): VedStore {
       }
       if (key === "counterparties") {
         const status = String(record.status ?? "");
-        if (originalId && (status === "approved" || status === "not_approved")) {
+        const canSetApproval = isComplianceRole(session?.role) || session?.role === "root";
+        if (originalId && canSetApproval && (status === "approved" || status === "not_approved")) {
           await setCounterpartyApproval(
             originalId,
             status === "approved" ? "approved" : "rejected",
@@ -487,7 +490,7 @@ function useApiPlatformStore(): VedStore {
             country: String(record.country ?? record.countryCode ?? ""),
             inn: String(record.inn ?? ""),
           });
-          if (status === "approved" || status === "not_approved") {
+          if (canSetApproval && (status === "approved" || status === "not_approved")) {
             await setCounterpartyApproval(
               created.id,
               status === "approved" ? "approved" : "rejected",
@@ -501,14 +504,21 @@ function useApiPlatformStore(): VedStore {
       if (key === "providers") {
         const status = String(record.status ?? "active");
         const active = status === "active";
+        const slaRaw = Number(record.slaHours);
+        const slaHours = Number.isFinite(slaRaw) && slaRaw > 0 ? slaRaw : 24;
+        const catalog = {
+          name: String(record.name ?? ""),
+          inn: String(record.inn ?? ""),
+          country: String(record.country ?? ""),
+          corridors: String(record.corridors ?? ""),
+          contact: String(record.contact ?? ""),
+          sla_hours: slaHours,
+          active,
+        };
         if (originalId) {
-          await updateAgent(originalId, {
-            name: String(record.name ?? ""),
-            inn: String(record.inn ?? ""),
-            active,
-          });
+          await updateAgent(originalId, catalog);
         } else {
-          await createAgent({ name: String(record.name ?? ""), status });
+          await createAgent({ ...catalog, status });
         }
         await invalidateRegistry(key);
         return;
@@ -524,7 +534,7 @@ function useApiPlatformStore(): VedStore {
         return;
       }
     },
-    [invalidateRegistry],
+    [invalidateRegistry, session?.role],
   );
 
   const deleteRefRecord = useCallback(

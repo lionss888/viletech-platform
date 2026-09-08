@@ -72,52 +72,31 @@ jobs:
             echo "is_release=false" >> "$GITHUB_OUTPUT"
           fi
 
-  wait-vdp-ci:
-    name: wait VDP CI (main push)
+  wait-for-ci:
+    name: wait for VDP CI (main push)
     needs: [prepare]
-    # Block digest push on main until VDP CI is green for the same SHA.
-    # Tags use release-gate; workflow_dispatch skips this wait.
+    # On main/master push: digests must not publish while VDP CI is red for the same SHA.
+    # Tags already run release-gate; workflow_dispatch is operator-driven.
     if: >-
       github.event_name == 'push' &&
       (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master')
     runs-on: ubuntu-latest
-    timeout-minutes: 75
+    timeout-minutes: 95
     steps:
-      - name: Wait for VDP CI success on build SHA
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ needs.prepare.outputs.build_ref }}
+          sparse-checkout: |
+            vdp/scripts/wait-vdp-ci.sh
+          sparse-checkout-cone-mode: false
+      - name: Await successful VDP CI for this SHA
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          WANT_SHA: ${{ needs.prepare.outputs.revision }}
+          GITHUB_REPOSITORY: ${{ github.repository }}
+          SHA: ${{ needs.prepare.outputs.revision }}
         run: |
-          set -euo pipefail
-          echo "Waiting for workflow 'VDP CI' success on $WANT_SHA"
-          for i in $(seq 1 90); do
-            # Prefer completed success for this commit.
-            run_json=$(gh run list --workflow "VDP CI" --commit "$WANT_SHA" --limit 5 --json databaseId,status,conclusion,event 2>/dev/null || echo '[]')
-            ok=$(echo "$run_json" | python3 -c 'import sys,json
-runs=json.load(sys.stdin)
-for r in runs:
-  if r.get("conclusion")=="success" and r.get("status")=="completed":
-    print(r["databaseId"]); break
-')
-            if [ -n "$ok" ]; then
-              echo "VDP CI green: run $ok"
-              exit 0
-            fi
-            failed=$(echo "$run_json" | python3 -c 'import sys,json
-runs=json.load(sys.stdin)
-for r in runs:
-  if r.get("status")=="completed" and r.get("conclusion") not in (None,"success",""):
-    print(r.get("conclusion"), r.get("databaseId")); break
-')
-            if [ -n "$failed" ]; then
-              echo "VDP CI finished without success: $failed" >&2
-              exit 1
-            fi
-            echo "attempt $i: VDP CI not green yet for $WANT_SHA"
-            sleep 20
-          done
-          echo "timed out waiting for VDP CI on $WANT_SHA" >&2
-          exit 1
+          chmod +x vdp/scripts/wait-vdp-ci.sh
+          ./vdp/scripts/wait-vdp-ci.sh
 
   release-gate:
     name: release-gate (tags only)
@@ -173,12 +152,12 @@ for r in runs:
 
   build-push:
     name: build and push images
-    needs: [prepare, release-gate, wait-vdp-ci]
+    needs: [prepare, release-gate, wait-for-ci]
     if: >-
       always() &&
       needs.prepare.result == 'success' &&
       (needs.release-gate.result == 'success' || needs.release-gate.result == 'skipped') &&
-      (needs.wait-vdp-ci.result == 'success' || needs.wait-vdp-ci.result == 'skipped')
+      (needs.wait-for-ci.result == 'success' || needs.wait-for-ci.result == 'skipped')
     runs-on: ubuntu-latest
     timeout-minutes: 45
     outputs:

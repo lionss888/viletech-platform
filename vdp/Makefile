@@ -1,4 +1,4 @@
-.PHONY: deps test test-integration test-adapters build db-setup db-migrate compose-db-migrate run-hub run-core run smoke stop compose-up compose-up-prod compose-down compose-ps compose-e2e compose-fe-smoke compose-fe-refresh compose-fe-prod-smoke compose-playwright lovable-seed-check integration-gate playwright-e2e docs-format-check release-gate image-build image-push image-build-push compose-release-config-check compose-release-up deploy-alpha deploy-beta deploy-gamma rollback-alpha rollback-beta rollback-gamma test-cd-scripts notify-mgmt core-seed-reset
+.PHONY: deps test test-integration test-adapters build db-setup db-migrate compose-db-migrate run-hub run-core run smoke stop compose-up compose-up-prod compose-down compose-ps compose-e2e compose-fe-smoke compose-fe-refresh compose-fe-prod-smoke compose-playwright lovable-seed-check integration-gate playwright-e2e playwright-pilot docs-format-check release-gate image-build image-push image-build-push compose-release-config-check compose-release-up deploy-alpha deploy-beta deploy-gamma rollback-alpha rollback-beta rollback-gamma test-cd-scripts notify-mgmt core-seed-reset
 
 CORE_DIR := core
 HUB_DIR := hub
@@ -73,10 +73,10 @@ db-setup:
 	psql -h localhost -d postgres -c "GRANT ALL PRIVILEGES ON DATABASE vdp_core TO vdp_core; GRANT ALL PRIVILEGES ON DATABASE vdp_hub TO vdp_hub;"
 	$(MAKE) db-migrate
 
-# Host Postgres (CI service / local): same *.sql glob order as compose-db-migrate.
+# Same lexical *.sql set as compose-db-migrate (single source of migration files).
 db-migrate:
 	@chmod +x scripts/db-migrate-host.sh
-	@CORE_DIR="$(CORE_DIR)" HUB_DIR="$(HUB_DIR)" ./scripts/db-migrate-host.sh
+	@PGHOST=$${PGHOST:-localhost} ./scripts/db-migrate-host.sh
 
 # Default compose path: Postgres for core+hub+fe (not memory).
 compose-db-migrate:
@@ -198,6 +198,10 @@ compose-playwright:
 # RD11: local npm run when Chromium is installed on host; else use compose-playwright.
 playwright-e2e: compose-playwright
 
+# Pilot UX handoff suite (User/Manager/Provider/Root) — grep @pilot-flow in e2e titles.
+playwright-pilot:
+	PLAYWRIGHT_ARGS='--grep @pilot-flow' $(MAKE) compose-playwright
+
 docs-format-check:
 	@chmod +x scripts/docs-format-check.sh
 	@./scripts/docs-format-check.sh
@@ -273,9 +277,8 @@ test-cd-scripts:
 	@chmod +x scripts/test-cd-scripts.sh
 	./scripts/test-cd-scripts.sh
 
-# Management Telegram: KIND=done|progress|gate|promote|push|review|pipeline|uptime|blocker|schedule|raw
+# Management Telegram: KIND=done|progress|gate|promote|uptime|blocker|schedule|raw
 # Example: make notify-mgmt KIND=done TITLE='UX кабинетов' BODY='…' STATUS='пройдена'
-# CI helper: scripts/ci-mgmt-notify.sh auto|push|review|pipeline-fail
 notify-mgmt:
 	@chmod +x scripts/notify-mgmt.sh
 	./scripts/notify-mgmt.sh \
@@ -286,5 +289,4 @@ notify-mgmt:
 		$(if $(ENV),--env "$(ENV)") \
 		$(if $(REVISION),--revision "$(REVISION)") \
 		$(if $(NEXT),--next "$(NEXT)") \
-		$(if $(BRANCH),--branch "$(BRANCH)") \
 		$(if $(DRY_RUN),--dry-run)

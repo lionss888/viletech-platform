@@ -1,11 +1,9 @@
 #!/usr/bin/env bash
-# Continuity helpers for compose-e2e: ICO/ECO routes with manager fallback when slots are off.
-# Requires caller to set: BASE, ORG_ID, USER_T, ICO_T, ECO_T, MGR_T
-# and provide: try_put, try_post, form_status (or source after defining them).
-#
+# Shared continuity helpers for compose-e2e (pilot: ICO/ECO slots may be off).
+# Caller must set: BASE, ORG_ID, USER_T, ICO_T, ECO_T, MGR_T
 # shellcheck shell=bash
 
-# Soft PUT: true on 2xx. Does not exit on failure.
+# Soft PUT: true on 2xx (for pilot continuity fallbacks). Does not exit on failure.
 try_put() {
   local token="$1" path="$2" body="${3:-{}}"
   local code

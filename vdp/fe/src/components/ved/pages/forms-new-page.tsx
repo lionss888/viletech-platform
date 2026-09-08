@@ -252,7 +252,7 @@ export function NewForm() {
         )}
 
         {step === 1 && (
-          <div className="grid gap-4">
+          <div className="grid gap-4" data-testid="wizard-parties-step">
             <Field label="Организация клиента">
               <select value={draft.organizationId} onChange={(e) => set("organizationId", e.target.value)} className="field">
                 {organizations.length === 0 && <option value="">Нет организаций</option>}

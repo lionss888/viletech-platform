@@ -129,6 +129,9 @@ function humanTimelineTitle(
   if (fromStatus === "draft" && toStatus === "form_waiting_verification") {
     return "Заявка отправлена на проверку";
   }
+  if (fromStatus === "draft" && toStatus === "organization_waiting_verification") {
+    return "Заявка отправлена на проверку";
+  }
   if (fromStatus === "form_waiting_verification" && toStatus === "form_verification") {
     return "Заявка взята в проверку";
   }

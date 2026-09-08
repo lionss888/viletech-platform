@@ -80,10 +80,9 @@ export function extractionPanelMode(input: {
   if (input.role === "provider") return "hide";
   if (input.hasDraft) return "review";
   const st = input.status ?? "";
-  const editable =
-    st === "creating" || st === "draft" || st.includes("correction");
+  const editable = st === "creating" || st === "draft" || st.includes("correction");
   if (!editable) return "hide";
-  if (input.noDocuments && !input.hasDocuments) return "hide";
+  // Upload + OCR controls stay on the card for these statuses (noDocuments is not a dead-end).
   if (st === "creating") return "pending";
   return "idle";
 }

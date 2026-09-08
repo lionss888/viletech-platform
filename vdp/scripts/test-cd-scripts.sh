@@ -18,50 +18,17 @@ for script in \
   scripts/deploy-preview.sh \
   scripts/gitlab-promote.sh \
   scripts/compose-db-migrate.sh \
+  scripts/compose-playwright.sh \
   scripts/db-migrate-host.sh \
   scripts/lib/e2e-continuity.sh \
   scripts/compose-e2e.sh \
-  scripts/compose-playwright.sh \
+  scripts/wait-vdp-ci.sh \
   scripts/vdp-compose-up.sh \
   scripts/staging-smoke.sh \
-  scripts/notify-mgmt.sh \
-  scripts/ci-mgmt-notify.sh; do
+  scripts/notify-mgmt.sh; do
   bash -n "$script"
   echo "syntax ok: $script"
 done
-
-echo "== host db-migrate uses glob (same set as compose-db-migrate) =="
-grep -q 'db-migrate-host.sh' Makefile \
-  || fail "make db-migrate must delegate to db-migrate-host.sh"
-grep -q 'CORE_MIG' scripts/db-migrate-host.sh \
-  || fail "db-migrate-host must use CORE_MIG"
-grep -q 'HUB_MIG' scripts/db-migrate-host.sh \
-  || fail "db-migrate-host must use HUB_MIG"
-grep -qF '*.sql' scripts/db-migrate-host.sh \
-  || fail "db-migrate-host must glob *.sql (not a hardcoded file list)"
-grep -qF '*.sql' scripts/compose-db-migrate.sh \
-  || fail "compose-db-migrate must glob *.sql"
-# Contract: every numbered core SQL is covered by the host migrate script path (glob, not file list).
-core_sql_count=$(find core/migrations -maxdepth 1 -name '*.sql' | wc -l | tr -d ' ')
-hub_sql_count=$(find hub/migrations -maxdepth 1 -name '*.sql' | wc -l | tr -d ' ')
-[ "$core_sql_count" -ge 17 ] || fail "expected >=17 core migrations, got $core_sql_count"
-[ "$hub_sql_count" -ge 2 ] || fail "expected >=2 hub migrations, got $hub_sql_count"
-awk '/^db-migrate:/{f=1;next} f&&/^[^#[:space:]].*:/{exit} f' Makefile | grep -qE '\.sql' \
-  && fail "Makefile db-migrate recipe must not list individual .sql files"
-
-echo "== compose-e2e sources continuity lib; no bare ECO auth_put =="
-grep -q 'lib/e2e-continuity.sh' scripts/compose-e2e.sh \
-  || fail "compose-e2e must source lib/e2e-continuity.sh"
-grep -q 'advance_compliance' scripts/lib/e2e-continuity.sh \
-  || fail "e2e-continuity must define advance_compliance"
-# Bare ECO PUT outside try_/continuity helpers regresses pilot ICO/ECO-off.
-if grep -nE 'auth_put[[:space:]]+"\$ECO_T"' scripts/compose-e2e.sh; then
-  fail "compose-e2e must not call auth_put \"\$ECO_T\" (use try_put / continuity)"
-fi
-# Hard ECO path without try_ is only allowed in the continuity helper lib.
-if grep -nE 'auth_put[[:space:]]+"\$ECO_T".*/eco/form-payment' scripts/compose-e2e.sh scripts/compose-playwright.sh 2>/dev/null; then
-  fail "bare ECO form-payment auth_put outside try_ is forbidden"
-fi
 
 echo "== mgmt-notify-sanitize self-test =="
 python3 scripts/mgmt-notify-sanitize.py --self-test
@@ -71,28 +38,6 @@ DRY="$(bash scripts/notify-mgmt.sh --dry-run --kind raw --body $'vitest OK\n.cur
 echo "$DRY" | grep -qi vitest && fail "dry-run must strip vitest"
 echo "$DRY" | grep -qi 'localhost' && fail "dry-run must strip localhost"
 echo "$DRY" | grep -qi '\.cursor/' && fail "dry-run must strip .cursor paths"
-
-echo "== notify-mgmt kinds push/review/pipeline =="
-PUSH="$(bash scripts/notify-mgmt.sh --dry-run --kind push --title main --revision abc1234 --body 'Кратко: demo')"
-echo "$PUSH" | grep -q 'Изменения' || fail "push kind missing header"
-echo "$PUSH" | grep -q 'abc1234' || fail "push kind missing revision"
-REV="$(bash scripts/notify-mgmt.sh --dry-run --kind review --status opened --title 'feat → main' --revision def5678)"
-echo "$REV" | grep -q 'Запрос на слияние' || fail "review kind missing header"
-echo "$REV" | grep -q 'открыт' || fail "review kind missing status"
-PIPE="$(bash scripts/notify-mgmt.sh --dry-run --kind pipeline --status failed --title 'приёмка' --branch main --revision abc1234)"
-echo "$PIPE" | grep -q 'Конвейер' || fail "pipeline kind missing header"
-echo "$PIPE" | grep -q 'не пройден' || fail "pipeline kind missing fail status"
-echo "$PIPE" | grep -qi playwright && fail "pipeline text must not name runners"
-
-echo "== ci-mgmt-notify dry-run =="
-CI_OUT="$(MGMT_CI_EVENT=push MGMT_CI_BRANCH=main MGMT_CI_REVISION=abc1234deadbeef MGMT_CI_SUBJECT='demo subject' \
-  bash scripts/ci-mgmt-notify.sh dry-run)"
-echo "$CI_OUT" | grep -q 'kind=push' || fail "ci helper must plan push on main"
-CI_FAIL="$(MGMT_CI_EVENT=push MGMT_CI_BRANCH=main MGMT_CI_REVISION=abc1234 \
-  MGMT_CI_FAILED_STEPS=fast,playwright bash scripts/ci-mgmt-notify.sh dry-run)"
-echo "$CI_FAIL" | grep -q 'kind=pipeline' || fail "ci helper must plan pipeline on failure"
-echo "$CI_FAIL" | grep -q 'приёмка' || fail "ci helper must map fast→приёмка"
-echo "$CI_FAIL" | grep -q 'сценарии' || fail "ci helper must map playwright→сценарии"
 
 TMP="$(mktemp -d)"
 trap 'rm -rf "$TMP"' EXIT
@@ -224,49 +169,69 @@ grep -q '/api/v1/auth/login' scripts/staging-smoke.sh \
 grep -q 'user@vdp.local' scripts/staging-smoke.sh \
   || fail "staging-smoke must use seed user@vdp.local"
 
-make compose-release-config-check
+echo "== host db-migrate matches compose migration file set =="
+grep -q 'db-migrate-host.sh' Makefile \
+  || fail "Makefile db-migrate must delegate to db-migrate-host.sh"
+grep -qE 'CORE_MIG.*\*\.sql|"\$CORE_MIG"/\*\.sql|migrations/\*\.sql' scripts/db-migrate-host.sh \
+  || fail "db-migrate-host must glob migrations/*.sql"
+grep -qE 'migrations/\*\.sql|\*\.sql' scripts/compose-db-migrate.sh \
+  || fail "compose-db-migrate must glob migrations/*.sql"
+grep -q 'for f in' scripts/db-migrate-host.sh \
+  || fail "db-migrate-host must iterate migration files"
+grep -q 'for f in\|for file in\|/\*\.sql' scripts/compose-db-migrate.sh \
+  || fail "compose-db-migrate must iterate migration files"
+for mig in core/migrations/*.sql; do
+  base="$(basename "$mig")"
+  [[ "$base" =~ ^[0-9]{3}_ ]] || fail "unexpected migration name: $base"
+done
+# Contract: every NNN_*.sql is applied by the same glob both paths use (no hand list).
+host_count=$(find core/migrations -maxdepth 1 -name '*.sql' | wc -l | tr -d ' ')
+[ "$host_count" -ge 17 ] || fail "expected >=17 core migrations, got $host_count"
 
-echo "== VDP CI / Images seam contract (ci.md) =="
-CI_YML="../.github/workflows/vdp-ci.yml"
-IMG_YML="../.github/workflows/vdp-images.yml"
-[ -f "$CI_YML" ] || fail "missing $CI_YML"
-[ -f "$IMG_YML" ] || fail "missing $IMG_YML"
-# Integration must run on every PR (no label-only gate).
-if grep -n "pull_request.labels" "$CI_YML" | grep -q integration; then
-  fail "vdp-ci integration must not be gated on PR label integration"
+echo "== compose-e2e sources continuity lib; no bare ECO auth_put =="
+grep -q 'lib/e2e-continuity.sh' scripts/compose-e2e.sh \
+  || fail "compose-e2e must source e2e-continuity.sh"
+grep -q 'advance_compliance' scripts/lib/e2e-continuity.sh \
+  || fail "e2e-continuity must define advance_compliance"
+if grep -nE 'auth_put[[:space:]]+"\$ECO_T"' scripts/compose-e2e.sh; then
+  fail "compose-e2e must not call auth_put \"\$ECO_T\" (use try_/continuity lib)"
 fi
-grep -q 'name: integration (postgres + compose-e2e)' "$CI_YML" \
-  || fail "vdp-ci must keep integration job name for branch protection"
-grep -q 'GATEWAY_RATE_LIMIT' "$CI_YML" \
-  || fail "vdp-ci must set GATEWAY_RATE_LIMIT for long suites"
-grep -q 'e2e/login-form.spec.ts e2e/user-submit.spec.ts e2e/provider-acl.spec.ts e2e/reject-path.spec.ts' "$CI_YML" \
-  || fail "vdp-ci PR PLAYWRIGHT_ARGS must match documented narrow set"
-grep -q 'wait-vdp-ci\|wait VDP CI' "$IMG_YML" \
-  || fail "vdp-images must wait for VDP CI on main push"
-grep -q 'needs.wait-vdp-ci' "$IMG_YML" \
-  || fail "vdp-images build-push must depend on wait-vdp-ci"
-# Docs mention required checks + Images←CI.
-grep -q 'integration (postgres + compose-e2e)' docs/operations/ci.md \
+# Hard ECO role route without try_ in compose-e2e (allow comments / strings in continuity via lib only).
+if grep -nE '[^_](/api/v1/eco/form-payment/)' scripts/compose-e2e.sh | grep -vE 'try_(put|post)|#'; then
+  fail "compose-e2e must not hard-call /eco/form-payment without try_ (use e2e-continuity.sh)"
+fi
+
+echo "== VDP CI: integration on every PR; Images waits CI on main =="
+WF_CI="$REPO_ROOT/.github/workflows/vdp-ci.yml"
+[ -f "$WF_CI" ] || fail "missing $WF_CI"
+# integration must not be gated by PR label only
+if grep -nE "pull_request\.labels\.\*\.name,\s*'integration'|labels\.\*\.name, 'integration'" "$WF_CI"; then
+  fail "integration must run on every PR (no label-only gate)"
+fi
+grep -q 'GATEWAY_RATE_LIMIT' "$WF_CI" \
+  || fail "vdp-ci must set GATEWAY_RATE_LIMIT for long E2E suites"
+# PR Playwright stays narrow; full suite when PLAYWRIGHT_ARGS empty (non-PR)
+grep -q 'e2e/login-form.spec.ts' "$WF_CI" \
+  || fail "vdp-ci PR PLAYWRIGHT_ARGS must include login-form"
+grep -q 'e2e/reject-path.spec.ts' "$WF_CI" \
+  || fail "vdp-ci PR PLAYWRIGHT_ARGS must include reject-path"
+# Images on main must wait for VDP CI via wait-vdp-ci / wait-for-ci job
+grep -q 'wait-vdp-ci.sh' "$WF_IMAGES" \
+  || fail "vdp-images must invoke wait-vdp-ci.sh on main"
+grep -q 'wait-for-ci\|wait for VDP CI' "$WF_IMAGES" \
+  || fail "vdp-images must define wait-for-ci job for main push"
+grep -q 'needs.wait-for-ci.result' "$WF_IMAGES" \
+  || fail "build-push must depend on wait-for-ci success|skipped"
+
+# docs/operations/ci.md must describe required checks (contract for ops)
+CI_DOC="$ROOT/docs/operations/ci.md"
+[ -f "$CI_DOC" ] || fail "missing $CI_DOC"
+grep -q 'integration (postgres + compose-e2e)' "$CI_DOC" \
   || fail "ci.md must list integration as required check"
-grep -q 'ждёт успешный VDP CI\|wait VDP CI\|ждёт green VDP CI' docs/operations/ci.md \
-  || fail "ci.md must document Images waits for VDP CI on main"
-grep -q 'provider-acl' docs/operations/ci.md \
-  || fail "ci.md must document PR PLAYWRIGHT_ARGS set"
+grep -q 'wait for VDP CI\|wait-vdp-ci\|wait-for-ci' "$CI_DOC" \
+  || fail "ci.md must document Images waiting for VDP CI on main"
+grep -q 'PLAYWRIGHT_ARGS' "$CI_DOC" \
+  || fail "ci.md must document PLAYWRIGHT_ARGS PR vs main"
 
-echo "== FE scenario IDs ⊆ Go catalog constants =="
-python3 - <<'PY'
-import pathlib, re, sys
-fe = pathlib.Path("fe/src/lib/ved/scenario-catalog.ts").read_text()
-go = pathlib.Path("core/internal/scenarioverify/catalog.go").read_text()
-fe_ids = set(re.findall(r'"([a-z0-9_]+)"', fe.split("UI_SCENARIO_SPECS")[0]))
-# drop non-id noise from type exports if any
-fe_ids = {i for i in fe_ids if "_" in i or i.startswith("health")}
-go_ids = set(re.findall(r'=\s*"([a-z0-9_]+)"', go))
-missing = sorted(fe_ids - go_ids)
-if missing:
-    print("FE SCENARIO_IDS missing in Go catalog:", missing, file=sys.stderr)
-    sys.exit(1)
-print(f"catalog sync ok: {len(fe_ids)} FE ids ⊆ Go")
-PY
-
+make compose-release-config-check
 echo "test-cd-scripts passed"

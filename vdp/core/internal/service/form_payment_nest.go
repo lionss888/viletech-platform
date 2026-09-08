@@ -3,7 +3,6 @@ package service
 import (
 	"context"
 	"encoding/json"
-	"strings"
 	"time"
 
 	"github.com/viletech/vdp/core/internal/authz"
@@ -275,12 +274,7 @@ func (s *FormPaymentService) DeleteFileRef(ctx context.Context, principal authz.
 	return form, s.store.SaveForm(ctx, form)
 }
 
-func (s *FormPaymentService) authorizeOrganizationPatch(ctx context.Context, principal authz.Principal, form formpayment.Form, orgID string) error {
-	st := string(form.Status)
-	editable := st == "draft" || st == "creating" || strings.Contains(st, "correction")
-	if !editable {
-		return apperrors.New(apperrors.ErrCodeValidation, "organization can only change on draft or corrections")
-	}
+func (s *FormPaymentService) authorizeOrganizationPatch(ctx context.Context, principal authz.Principal, _ formpayment.Form, orgID string) error {
 	org, err := s.store.OrganizationByID(ctx, orgID)
 	if err != nil {
 		return apperrors.New(apperrors.ErrCodeValidation, "organization not found")

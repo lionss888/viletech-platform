@@ -36,6 +36,12 @@ export type CoreCounterparty = {
 export type CoreAgent = {
   id: string;
   name: string;
+  inn?: string;
+  active?: boolean;
+  country?: string;
+  corridors?: string;
+  contact?: string;
+  sla_hours?: number;
   status?: string;
 };
 

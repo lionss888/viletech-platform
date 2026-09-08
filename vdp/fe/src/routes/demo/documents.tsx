@@ -1,11 +1,13 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { VedFormLink } from "@/components/ved/VedLink";
 import { useEffect, useMemo, useState } from "react";
 
 import { VedAppShell } from "@/components/ved/VedAppShell";
 import { KIND_LABEL } from "@/components/ved/DocumentViewer";
 import { Modal, ModalButton } from "@/components/ved/Modal";
+import { startExtraction } from "@/lib/api/forms";
 import { downloadPrivateFile, fetchPrivateFileBlob } from "@/lib/api/docs";
+import { canControlExtraction } from "@/lib/ved/extraction";
 import { dateTime } from "@/lib/ved/format";
 import { usePlatformMode } from "@/lib/ved/platform-mode";
 import { usePlatformStore, visibleForms } from "@/lib/ved/platform-store";
@@ -17,6 +19,9 @@ const KIND_FILTERS: { value: string; label: string }[] = [
   { value: "", label: "Все типы" },
   ...Object.entries(KIND_LABEL).map(([value, label]) => ({ value, label })),
 ];
+
+/** Sentinel: create a draft form, upload, start OCR, open the form card. */
+const UPLOAD_WITHOUT_FORM = "__new_draft__";
 
 function isPdfDocument(doc: AttachedDocument): boolean {
   const ext = doc.ext?.toLowerCase() ?? "";
@@ -44,11 +49,13 @@ export const Route = createFileRoute("/demo/documents")({
 });
 
 export function DocumentsPage() {
-  const { forms, session, addDocuments, deleteDocument } = usePlatformStore();
+  const { forms, session, addDocuments, deleteDocument, createForm, organizations } = usePlatformStore();
   const mode = usePlatformMode();
+  const navigate = useNavigate();
   const mine = visibleForms(forms, session?.role, session?.name);
   const canWrite = session?.role === "user" || session?.role === "manager" || session?.role === "root";
   const canDelete = canWrite;
+  const role = session?.role ?? "user";
 
   const [query, setQuery] = useState("");
   const [kind, setKind] = useState("");
@@ -56,7 +63,8 @@ export function DocumentsPage() {
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [previewBusy, setPreviewBusy] = useState(false);
   const [uploadOpen, setUploadOpen] = useState(false);
-  const [targetForm, setTargetForm] = useState("");
+  const [uploadBusy, setUploadBusy] = useState(false);
+  const [targetForm, setTargetForm] = useState(UPLOAD_WITHOUT_FORM);
   const [uploadKind, setUploadKind] = useState<AttachedDocument["kind"]>("invoice");
   const [files, setFiles] = useState<File[]>([]);
   const [error, setError] = useState("");
@@ -84,21 +92,53 @@ export function DocumentsPage() {
   }, [mine, query, kind]);
 
   const startUpload = () => {
-    setTargetForm(mine[0]?.id ?? "");
+    setTargetForm(UPLOAD_WITHOUT_FORM);
     setUploadKind("invoice");
     setFiles([]);
     setError("");
     setUploadOpen(true);
   };
 
-  const submitUpload = async () => {
-    if (!targetForm) return setError("Выберите заявку");
-    if (files.length === 0) return setError("Выберите файлы");
+  async function runRecognition(formId: string, status?: string) {
+    if (!canControlExtraction(role, status ?? "draft")) return;
     try {
-      await addDocuments(targetForm, files, uploadKind);
+      await startExtraction(formId);
+    } catch {
+      /* form card still exposes start/restart */
+    }
+  }
+
+  const submitUpload = async () => {
+    if (files.length === 0) return setError("Выберите файлы");
+    setUploadBusy(true);
+    setError("");
+    try {
+      let formId = targetForm;
+      let status = "draft";
+      if (targetForm === UPLOAD_WITHOUT_FORM || !targetForm) {
+        const orgId = organizations[0]?.id;
+        const created = await createForm({
+          direction: "import",
+          kind: "good",
+          amountMinor: 0,
+          currency: "USD",
+          organizationId: orgId,
+          noDocuments: false,
+        });
+        formId = created.id;
+        status = created.status;
+      } else {
+        status = mine.find((f) => f.id === formId)?.status ?? "draft";
+      }
+      await addDocuments(formId, files, uploadKind);
+      await runRecognition(formId, status);
       setUploadOpen(false);
+      const base = mode === "app" ? "" : "/demo";
+      await navigate({ to: `${base}/forms/$id` as "/forms/$id", params: { id: formId } });
     } catch (err) {
       setError(err instanceof Error ? err.message : "Не удалось загрузить документы");
+    } finally {
+      setUploadBusy(false);
     }
   };
 
@@ -302,23 +342,30 @@ export function DocumentsPage() {
 
       <Modal
         open={uploadOpen}
-        onOpenChange={setUploadOpen}
+        onOpenChange={(v) => !uploadBusy && setUploadOpen(v)}
         title="Загрузить документы"
-        description="Выберите заявку, тип документа и один или несколько файлов."
+        description="Можно загрузить без заявки: создадим черновик и запустим распознавание."
         footer={
           <>
-            <ModalButton variant="quiet" onClick={() => setUploadOpen(false)}>
+            <ModalButton variant="quiet" disabled={uploadBusy} onClick={() => setUploadOpen(false)}>
               Отмена
             </ModalButton>
-            <ModalButton onClick={() => void submitUpload()}>Загрузить</ModalButton>
+            <ModalButton disabled={uploadBusy} onClick={() => void submitUpload()}>
+              {uploadBusy ? "Загрузка…" : "Загрузить и распознать"}
+            </ModalButton>
           </>
         }
       >
         <div className="space-y-3 text-sm">
           <div>
             <p className="label-caps">Заявка</p>
-            <select value={targetForm} onChange={(e) => setTargetForm(e.target.value)} className="field mt-1">
-              <option value="">Выберите заявку</option>
+            <select
+              value={targetForm}
+              onChange={(e) => setTargetForm(e.target.value)}
+              className="field mt-1"
+              data-testid="docs-upload-form"
+            >
+              <option value={UPLOAD_WITHOUT_FORM}>Без заявки — черновик и распознавание</option>
               {mine.map((f) => (
                 <option key={f.id} value={f.id}>
                   {f.number} · {f.invoiceNumber}

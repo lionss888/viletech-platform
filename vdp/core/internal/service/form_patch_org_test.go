@@ -20,7 +20,7 @@ func TestPatchFormOrganizationID(t *testing.T) {
 	seed.MustDev(t, store)
 	forms := service.NewFormPaymentService(store, outbox.NewMemoryStore(), seqID())
 	user := authz.Principal{AccountID: seed.UserID, Role: domain.RoleUser, OrganizationID: seed.OrgID}
-	manager := authz.Principal{AccountID: seed.ManagerID, Role: domain.RoleManager}
+	root := authz.Principal{AccountID: seed.RootID, Role: domain.RoleRoot}
 
 	form, err := forms.Create(ctx, user, service.CreateInput{InvoiceAmount: "10", Currency: "USD", NoDocuments: true})
 	if err != nil {
@@ -34,7 +34,7 @@ func TestPatchFormOrganizationID(t *testing.T) {
 		t.Fatalf("want draft got %s", form.Status)
 	}
 
-	patched, err := forms.PatchForm(ctx, manager, form.ID, service.NestPatchInput{
+	patched, err := forms.PatchForm(ctx, root, form.ID, service.NestPatchInput{
 		OrganizationID: seed.BankOrgID,
 	})
 	if err != nil {
@@ -42,6 +42,21 @@ func TestPatchFormOrganizationID(t *testing.T) {
 	}
 	if patched.OrganizationID != seed.BankOrgID {
 		t.Fatalf("organization_id=%q want %q", patched.OrganizationID, seed.BankOrgID)
+	}
+
+	// Same parity as counterparty: org change remains allowed after submit.
+	submitted, err := forms.Transition(ctx, user, form.ID, formpayment.ActionSubmit)
+	if err != nil {
+		t.Fatal(err)
+	}
+	repatched, err := forms.PatchForm(ctx, user, submitted.ID, service.NestPatchInput{
+		OrganizationID: seed.OrgID,
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if repatched.OrganizationID != seed.OrgID {
+		t.Fatalf("after submit organization_id=%q want %q", repatched.OrganizationID, seed.OrgID)
 	}
 }
 

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { extractionPanelMode, isLowConfidence, parseExtractionResult } from "./extraction";
+import { canControlExtraction, extractionPanelMode, isLowConfidence, parseExtractionResult } from "./extraction";
 
 describe("parseExtractionResult", () => {
   it("parses schema v1 invoice_json", () => {
@@ -21,24 +21,52 @@ describe("parseExtractionResult", () => {
 });
 
 describe("extractionPanelMode", () => {
-  it("hides empty OCR block after creating / without documents", () => {
+  it("hides OCR outside draft/creating/corrections", () => {
     expect(
       extractionPanelMode({ role: "user", hasDraft: false, status: "form_verification" }),
     ).toBe("hide");
-    expect(
-      extractionPanelMode({ role: "user", hasDraft: false, status: "creating", noDocuments: true }),
-    ).toBe("hide");
   });
 
-  it("shows pending only while creating with expected documents", () => {
+  it("shows pending while creating even when no_documents", () => {
+    expect(
+      extractionPanelMode({ role: "user", hasDraft: false, status: "creating", noDocuments: true }),
+    ).toBe("pending");
     expect(extractionPanelMode({ role: "user", hasDraft: false, status: "creating" })).toBe(
       "pending",
     );
+  });
+
+  it("shows idle on draft and corrections so start/restart controls are available", () => {
+    expect(extractionPanelMode({ role: "user", hasDraft: false, status: "draft" })).toBe("idle");
+    expect(
+      extractionPanelMode({
+        role: "user",
+        hasDraft: false,
+        status: "draft",
+        noDocuments: true,
+      }),
+    ).toBe("idle");
+    expect(
+      extractionPanelMode({
+        role: "user",
+        hasDraft: false,
+        status: "form_waiting_corrections",
+      }),
+    ).toBe("idle");
   });
 
   it("shows review when extraction payload exists", () => {
     expect(
       extractionPanelMode({ role: "manager", hasDraft: true, status: "form_verification" }),
     ).toBe("review");
+  });
+});
+
+describe("canControlExtraction", () => {
+  it("allows user/manager/root on draft and corrections", () => {
+    expect(canControlExtraction("user", "draft")).toBe(true);
+    expect(canControlExtraction("manager", "form_waiting_corrections")).toBe(true);
+    expect(canControlExtraction("provider", "draft")).toBe(false);
+    expect(canControlExtraction("user", "form_accepted")).toBe(false);
   });
 });

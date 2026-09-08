@@ -24,12 +24,15 @@ export function RegistryManager({
   extraColumns = [],
   badge,
   writeRoles = [],
+  hideFormKeys = [],
 }: {
   def: RegistryDef;
   extraColumns?: Extra[];
   badge?: (record: RefRecord) => { text: string; cls: string } | null;
   /** Роли, которым разрешено добавлять и редактировать записи (удаление и импорт — только суперадмину). */
   writeRoles?: VedRole[];
+  /** Field keys shown in the table but omitted from the create/edit modal. */
+  hideFormKeys?: string[];
 }) {
   const { session, refRecords, saveRefRecord, deleteRefRecord, importRefRecords } = usePlatformStore();
   const records = refRecords(def.key);
@@ -39,6 +42,10 @@ export function RegistryManager({
     const roles: VedRole[] = ["root", ...writeRoles.filter((r) => r !== "root")];
     return [...new Set(roles)].map((r) => roleTitle(r)).join(", ");
   }, [writeRoles]);
+  const formFields = useMemo(
+    () => def.fields.filter((field) => !hideFormKeys.includes(field.key)),
+    [def.fields, hideFormKeys],
+  );
 
   const [query, setQuery] = useState("");
   const [draft, setDraft] = useState<RefRecord | null>(null);
@@ -294,7 +301,7 @@ export function RegistryManager({
       >
         {draft && (
           <div className="space-y-3">
-            {def.fields.map((field) => (
+            {formFields.map((field) => (
               <label key={field.key} className="block">
                 <span className="label-caps">{field.label}</span>
                 {field.type === "select" ? (

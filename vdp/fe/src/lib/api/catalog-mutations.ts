@@ -34,7 +34,13 @@ export type CreateCounterpartyInput = {
 
 export type CreateAgentInput = {
   name: string;
+  inn?: string;
   status?: string;
+  country?: string;
+  corridors?: string;
+  contact?: string;
+  sla_hours?: number;
+  active?: boolean;
 };
 
 export type CreateCurrencyInput = {
@@ -159,6 +165,10 @@ export type PatchAgentInput = {
   name?: string;
   inn?: string;
   active?: boolean;
+  country?: string;
+  corridors?: string;
+  contact?: string;
+  sla_hours?: number;
 };
 
 /** PATCH /api/v1/agents/{id} — root/manager catalog edit. */

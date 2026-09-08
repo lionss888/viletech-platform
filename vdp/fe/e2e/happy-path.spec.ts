@@ -1,24 +1,17 @@
 import { type Page } from "@playwright/test";
 import { test, expect } from "./fixtures/auth.fixture";
 import { assertCoreHealthy, createDraftForm, createFormAccepted, loginAllRoles } from "./helpers/api";
+import { expectFormStatus } from "./helpers/status";
 
 const TAKE_IN_REVIEW = /Взять (заявку|организацию) в проверку|Взять .* в проверку/i;
 const CONFIRM_FORM = /Подтвердить заявку/;
+/** After submit: org may still be pending or form already in review. */
+const AFTER_SUBMIT = /^(organization_waiting_verification|form_waiting_verification)$/;
 
 async function waitForFormDetail(page: Page, formId: string): Promise<void> {
   await page.goto(`/forms/${formId}`);
   await page.waitForLoadState("networkidle");
   await expect(page.getByTestId("form-params")).toBeVisible({ timeout: 20_000 });
-}
-
-function statusBadge(page: Page, status: string) {
-  return page.getByTestId("status-badge").and(page.locator(`[data-status="${status}"]`));
-}
-
-async function expectStatusOneOf(page: Page, statuses: string[]): Promise<void> {
-  const badge = page.getByTestId("status-badge").first();
-  await expect(badge).toBeVisible({ timeout: 15_000 });
-  await expect(badge).toHaveAttribute("data-status", new RegExp(`^(${statuses.join("|")})$`));
 }
 
 /** Catalog: happy_path_to_completed (UI partial — submit → review → manager CTA). */
@@ -39,7 +32,7 @@ test.describe("Happy path (app UI)", () => {
     await waitForFormDetail(page, formId);
     await expect(page.getByRole("button", { name: "Отправить на проверку" })).toBeVisible();
     await page.getByRole("button", { name: "Отправить на проверку" }).click();
-    await expectStatusOneOf(page, ["form_waiting_verification", "organization_waiting_verification"]);
+    await expectFormStatus(page, AFTER_SUBMIT, { timeout: 15_000 });
 
     await logout();
     // Pilot: ECO slot off → manager owns form review (continuity).
@@ -51,7 +44,7 @@ test.describe("Happy path (app UI)", () => {
     const confirm = page.getByRole("button", { name: CONFIRM_FORM });
     await expect(confirm).toBeEnabled({ timeout: 20_000 });
     await confirm.click();
-    await expect(statusBadge(page, "form_accepted")).toBeVisible({ timeout: 15_000 });
+    await expectFormStatus(page, "form_accepted", { timeout: 15_000 });
     await expect(page.getByRole("button", { name: "Назначить платёжного агента" })).toBeVisible();
   });
 
@@ -63,6 +56,6 @@ test.describe("Happy path (app UI)", () => {
     await waitForFormDetail(page, formId);
     await expect(page.getByRole("button", { name: "Назначить платёжного агента" })).toBeVisible();
     await expect(page.getByRole("button", { name: "Прикрепить договор вручную" })).toBeVisible();
-    await expect(statusBadge(page, "form_accepted")).toBeVisible();
+    await expectFormStatus(page, "form_accepted");
   });
 });

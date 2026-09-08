@@ -18,7 +18,7 @@
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
-# Continuity: try_put / try_post / form_status / advance_compliance / reject_to_corrections
+# Continuity helpers (try_put/try_post/form_status/advance_compliance/reject_to_corrections).
 # shellcheck source=lib/e2e-continuity.sh
 source "$SCRIPT_DIR/lib/e2e-continuity.sh"
 

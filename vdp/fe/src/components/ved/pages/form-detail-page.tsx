@@ -2,7 +2,7 @@ import { useParams } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { useMemo, useState } from "react";
 
-import { getComplianceHistory, getForm } from "@/lib/api/forms";
+import { getComplianceHistory, getForm, startExtraction } from "@/lib/api/forms";
 import { getFormDiadocStatus } from "@/lib/api/notifications";
 import {
   mapComplianceHistory,
@@ -17,8 +17,6 @@ import { OrganizationPickDialog } from "@/components/ved/OrganizationPickDialog"
 import { FormParamsEditDialog } from "@/components/ved/FormParamsEditDialog";
 import { ActionPanel } from "@/components/ved/ActionPanel";
 import { DocumentList } from "@/components/ved/DocumentViewer";
-import { assertFileSize, UploadError } from "@/lib/api/files";
-import type { AttachedDocument } from "@/lib/ved/types";
 import { RefundPanel } from "@/components/ved/RefundPanel";
 import { DirectionTag, StatusBadge } from "@/components/ved/StatusBadge";
 import { ChannelBadge } from "@/components/ved/ChannelBadge";
@@ -26,6 +24,7 @@ import { StageStepper } from "@/components/ved/StageStepper";
 import { SubjectReview } from "@/components/ved/SubjectReview";
 import { VedAppShell } from "@/components/ved/VedAppShell";
 import { VedLink } from "@/components/ved/VedLink";
+import { assertFileSize, UploadError } from "@/lib/api/files";
 import { useAuth } from "@/lib/auth/session";
 import {
   isComplianceRole,
@@ -35,6 +34,7 @@ import {
   subjectsOf,
   subjectsPendingReview,
 } from "@/lib/ved/compliance";
+import { canControlExtraction } from "@/lib/ved/extraction";
 import { dateTime, money } from "@/lib/ved/format";
 import { usePlatformMode } from "@/lib/ved/platform-mode";
 import { cpByIdFrom, orgByIdFrom, usePlatformStore } from "@/lib/ved/platform-store";
@@ -46,6 +46,7 @@ import {
 import { roleTitle } from "@/lib/ved/roles";
 import { statusMetaForProcess } from "@/lib/ved/process-stage-filters";
 import { useProcessRolesRows } from "@/lib/ved/use-process-roles-snapshot";
+import type { AttachedDocument } from "@/lib/ved/types";
 import { cn } from "@/lib/utils";
 
 export function FormDetail() {
@@ -110,6 +111,9 @@ export function FormDetail() {
     (form?.status === "draft" ||
       form?.status === "creating" ||
       String(form?.status ?? "").includes("corrections"));
+  /** Org/CP pick: same roles as CP link — Client can switch parties without leaving the card. */
+  const canChangeParties =
+    mode === "app" && (role === "user" || role === "manager" || role === "root");
 
   async function onUploadDocs(fileList: FileList | null) {
     if (!fileList?.length || !form) return;
@@ -119,6 +123,14 @@ export function FormDetail() {
       const files = Array.from(fileList);
       for (const file of files) assertFileSize(file);
       await addDocuments(form.id, files, uploadKind);
+      if (canControlExtraction(role, form.status)) {
+        try {
+          await startExtraction(form.id);
+          await formQuery.refetch();
+        } catch {
+          /* panel still offers manual start/restart */
+        }
+      }
     } catch (err) {
       setUploadError(
         err instanceof UploadError
@@ -192,7 +204,9 @@ export function FormDetail() {
         ["Инвойс", form.invoiceNumber],
         ["Сумма", money(form.amountMinor, form.currency)],
         ...(form.clientCurrency ? [["Валюта клиента", form.clientCurrency] as [string, string]] : []),
-        ...(form.counterpartyCurrency ? [["Валюта контрагента", form.counterpartyCurrency] as [string, string]] : []),
+        ...(form.counterpartyCurrency
+          ? [["Валюта контрагента", form.counterpartyCurrency] as [string, string]]
+          : []),
         ...(form.shipmentDate ? [["Дата отгрузки", form.shipmentDate] as [string, string]] : []),
         ["Создана", dateTime(form.createdAt)],
         ["Обновлена", dateTime(form.updatedAt)],
@@ -212,7 +226,9 @@ export function FormDetail() {
             corr: {form.correlationId}
           </span>
         )}
-        <span className="ml-auto font-mono text-lg font-semibold">{money(form.amountMinor, form.currency)}</span>
+        <span className="ml-auto font-mono text-lg font-semibold">
+          {money(form.amountMinor, form.currency)}
+        </span>
       </div>
 
       {mode === "app" && diadocQuery.data && diadocQuery.data.status !== "idle" && (
@@ -225,7 +241,8 @@ export function FormDetail() {
           </p>
           {diadocQuery.data.manual_path && (
             <p className="mt-2 text-sm text-muted-foreground">
-              Запасной путь: скачайте документ в блоке «Документы» и загрузите подписанный файл вручную. Пилот D1 (ручная подпись) сохранён.
+              Запасной путь: скачайте документ в блоке «Документы» и загрузите подписанный файл вручную.
+              Пилот D1 (ручная подпись) сохранён.
             </p>
           )}
         </div>
@@ -255,7 +272,9 @@ export function FormDetail() {
       {(form.rejectText || form.rejectMark) && (
         <div className="mt-4 rounded-lg bg-return-soft p-4" data-testid="return-banner">
           <p className="label-caps text-return">Возврат на доработку</p>
-          {form.rejectMark && <p className="mt-1 text-sm font-semibold text-return">Отметка: {form.rejectMark}</p>}
+          {form.rejectMark && (
+            <p className="mt-1 text-sm font-semibold text-return">Отметка: {form.rejectMark}</p>
+          )}
           {form.rejectText && <p className="mt-1 text-sm text-return">{form.rejectText}</p>}
           {String(form.status).includes("correction") && (
             <CorrectionGuidancePanel
@@ -301,7 +320,7 @@ export function FormDetail() {
                 <p className="mt-2 text-sm font-semibold">{org?.name ?? form.organizationId}</p>
                 <p className="font-mono text-xs text-muted-foreground">ИНН {org?.inn ?? "—"}</p>
                 <p className="mt-1 text-xs text-muted-foreground">{org?.legalAddress ?? "—"}</p>
-                {canEditParams && mode === "app" && (
+                {canChangeParties && (
                   <button
                     type="button"
                     data-testid="change-organization"
@@ -321,7 +340,7 @@ export function FormDetail() {
                       {cp.country ?? "—"} · {cp.bank ?? "—"}
                     </p>
                     <p className="font-mono text-xs text-muted-foreground">SWIFT {cp.swift ?? "—"}</p>
-                    {!isProvider && mode === "app" && (
+                    {canChangeParties && (
                       <button
                         type="button"
                         className="mt-2 text-sm font-semibold text-accent hover:underline"
@@ -335,10 +354,10 @@ export function FormDetail() {
                   <>
                     <p className="mt-2 text-sm text-muted-foreground">Контрагент не выбран</p>
                     <p className="mt-1 text-xs text-muted-foreground">
-                      Укажите контрагента здесь — иначе реквизиты получателя пустые. Справочник
-                      откроется в окне, без ухода с заявки.
+                      Укажите контрагента здесь — иначе реквизиты получателя пустые. Справочник откроется
+                      в окне, без ухода с заявки.
                     </p>
-                    {!isProvider && (
+                    {canChangeParties && (
                       <button
                         type="button"
                         data-testid="open-counterparty-picker"
@@ -374,6 +393,7 @@ export function FormDetail() {
               />
             </>
           )}
+
           <div className="panel p-4" data-testid="form-documents">
             <div className="flex flex-wrap items-center justify-between gap-2">
               <p className="label-caps">
@@ -452,12 +472,13 @@ export function FormDetail() {
             </>
           )}
 
-          {!compliance && !isProvider && canReviewSubjects && (
-            <SubjectReview subjects={subjects} />
-          )}
-          {!compliance && !isProvider && !canReviewSubjects && subjects.some((s) => !subjectState(s.status).ok) && (
-            <SubjectReview subjects={subjects} readOnly />
-          )}
+          {!compliance && !isProvider && canReviewSubjects && <SubjectReview subjects={subjects} />}
+          {!compliance &&
+            !isProvider &&
+            !canReviewSubjects &&
+            subjects.some((s) => !subjectState(s.status).ok) && (
+              <SubjectReview subjects={subjects} readOnly />
+            )}
 
           {role !== "provider" && (
             <div className="panel p-4">
@@ -487,7 +508,7 @@ export function FormDetail() {
           <div className="panel p-4">
             <p className="label-caps">Хронология</p>
             <p className="mt-1 text-xs text-muted-foreground">
-              История шагов по заявке: кто что сделал и к какому статусу пришли. Смотрите сюда, если неясно, на каком этапе сделка.
+              История шагов по заявке: кто что сделал и к какому статусу пришли. Новые события сверху.
             </p>
             <ol className="mt-3 space-y-3">
               {form.timeline.length === 0 && (
@@ -495,9 +516,21 @@ export function FormDetail() {
               )}
               {form.timeline.map((entry) => (
                 <li key={entry.id} className="flex gap-3">
-                  <span className={cn("mt-1.5 size-2 shrink-0 rounded-full", entry.done ? "bg-done" : "bg-border")} />
+                  <span
+                    className={cn(
+                      "mt-1.5 size-2 shrink-0 rounded-full",
+                      entry.done ? "bg-done" : "bg-border",
+                    )}
+                  />
                   <span className="min-w-0">
-                    <span className={cn("block text-sm", entry.done ? "font-medium" : "text-muted-foreground")}>{entry.title}</span>
+                    <span
+                      className={cn(
+                        "block text-sm",
+                        entry.done ? "font-medium" : "text-muted-foreground",
+                      )}
+                    >
+                      {entry.title}
+                    </span>
                     <span className="font-mono text-[11px] text-muted-foreground">
                       {dateTime(entry.at)} ·{" "}
                       {entry.actorName
@@ -523,8 +556,8 @@ export function FormDetail() {
           hsCode={form.hsCode}
           direction={form.direction}
           kind={form.kind}
-          contractNumber={form.contractNumber}
-          contractDate={form.contractDate}
+          contractNumber={form.invoiceNumber}
+          contractDate={form.shipmentDate}
           onChangeOrg={() => {
             setEditOpen(false);
             setOrgDialogOpen(true);

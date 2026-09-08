@@ -7,25 +7,25 @@ todos:
     status: completed
   - id: p2-org-change
     content: Core patch organization_id + OrganizationPickDialog на detail/wizard parity
-    status: in_progress
+    status: completed
   - id: p3-p7-docs-ocr
     content: Form-detail upload draft/corrections + extraction start/restart/cancel API+UI
-    status: pending
+    status: completed
   - id: p4-whole-edit
     content: ActionPanel «Редактировать заявку» + расширенный FormParamsEditDialog
-    status: pending
+    status: completed
   - id: p5-timeline-desc
     content: mapComplianceHistory newest-first + tests
-    status: in_progress
+    status: completed
   - id: p6-manager-subjects
     content: Interactive SubjectReview for manager/root on form card
-    status: pending
+    status: completed
   - id: p8-docs-registry
     content: Registry preview via fileId + wire DeleteFileRef; enable app delete
-    status: pending
+    status: completed
   - id: gate-tests-notify
     content: Go+vitest+Playwright DoD; notify-mgmt done
-    status: pending
+    status: completed
 isProject: false
 ---
 

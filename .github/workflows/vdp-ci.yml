@@ -69,9 +69,6 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 35
     needs: [fast]
-    env:
-      # Long compose-e2e / stack must not hit default gateway 429.
-      GATEWAY_RATE_LIMIT: "2000"
     services:
       postgres:
         image: postgres:16
@@ -114,6 +111,9 @@ jobs:
         run: make test-integration
       - name: Compose stack + API E2E
         working-directory: vdp
+        env:
+          # Long suite must not trip gateway 429 (compose defaults 2000; pin explicitly for CI).
+          GATEWAY_RATE_LIMIT: "2000"
         run: |
           make compose-up
           ./scripts/compose-e2e.sh
@@ -127,8 +127,6 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 45
     needs: [fast]
-    env:
-      GATEWAY_RATE_LIMIT: "2000"
     steps:
       - uses: actions/checkout@v4
       - name: Compose up + Playwright journeys

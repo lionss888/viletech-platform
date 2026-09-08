@@ -265,22 +265,56 @@ export async function createCounterpartyApi(
   return created;
 }
 
-/** Draft with amount + counterparty + HS codes for persist UI checks. */
+/** Remove counterparties whose names match demo mock bleed (if they were persisted into API). */
+export async function purgeDemoMockCounterparties(token: string): Promise<void> {
+  const res = await fetch(`${CORE_URL}/api/v1/counterparty/list`, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  if (!res.ok) {
+    throw new Error(`list counterparties ${res.status}: ${await res.text()}`);
+  }
+  const body = (await res.json()) as { items?: { id: string; name: string }[] } | { id: string; name: string }[];
+  const items = Array.isArray(body) ? body : (body.items ?? []);
+  const demoBleed = /Shenzhen Kaiyuan|Anadolu Makina|Emirates General Trading|Hanoi Agro/i;
+  for (const item of items) {
+    if (!demoBleed.test(item.name)) continue;
+    const del = await fetch(`${CORE_URL}/api/v1/counterparty/${item.id}`, {
+      method: "DELETE",
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    if (!del.ok && del.status !== 404) {
+      throw new Error(`purge counterparty ${item.id} ${del.status}: ${await del.text()}`);
+    }
+  }
+}
+
+/** Draft with amount + optional counterparty + HS codes for persist UI checks. */
 export async function createPersistedDraftForm(
   tokens: ApiTokens,
   suffix: string,
-  opts: { amount: string; currency: string; counterpartyId: string; hsCodes: string[] },
+  opts: {
+    amount: string;
+    currency: string;
+    counterpartyId?: string;
+    hsCodes?: string[];
+  },
 ): Promise<string> {
-  const created = (await authPost(tokens.user, "/api/v1/site/form-payment", {
+  const body: Record<string, unknown> = {
     currency: opts.currency,
     invoice_amount: opts.amount,
-    counterparty_id: opts.counterpartyId,
     no_documents: true,
     contract_number: `PW-${suffix}`,
     contract_date: "2026-08-01",
-  })) as { id: string; counterparty_id?: string };
+  };
+  if (opts.counterpartyId) {
+    body.counterparty_id = opts.counterpartyId;
+  }
+  const created = (await authPost(tokens.user, "/api/v1/site/form-payment", body)) as {
+    id: string;
+    counterparty_id?: string;
+  };
   // PATCH ensures counterparty when create image has not yet wired CreateInput.counterparty_id.
-  if (created.counterparty_id !== opts.counterpartyId) {
+  if (opts.counterpartyId && created.counterparty_id !== opts.counterpartyId) {
     const patch = await fetch(`${CORE_URL}/api/v1/site/form-payment/${created.id}`, {
       method: "PATCH",
       headers: {
@@ -294,14 +328,15 @@ export async function createPersistedDraftForm(
     }
   }
   await authPost(tokens.user, `/api/v1/forms/${created.id}/actions/recognize_complete`, {});
-  if (opts.hsCodes.length > 0) {
+  const hsCodes = opts.hsCodes ?? [];
+  if (hsCodes.length > 0) {
     const res = await fetch(`${CORE_URL}/api/v1/forms/${created.id}/hs-codes`, {
       method: "PATCH",
       headers: {
         Authorization: `Bearer ${tokens.user}`,
         "Content-Type": "application/json",
       },
-      body: JSON.stringify({ codes: opts.hsCodes }),
+      body: JSON.stringify({ codes: hsCodes }),
     });
     if (!res.ok) {
       throw new Error(`attach hs ${res.status}: ${await res.text()}`);
@@ -311,13 +346,17 @@ export async function createPersistedDraftForm(
 }
 
 /** Upload minimal PDF and attach as invoice; returns file id. */
-export async function uploadAndAttachInvoice(token: string, formId: string): Promise<string> {
+export async function uploadAndAttachInvoice(
+  token: string,
+  formId: string,
+  fileName = "e2e-invoice.pdf",
+): Promise<string> {
   const pdfBytes = new Uint8Array([
     0x25, 0x50, 0x44, 0x46, 0x2d, 0x31, 0x2e, 0x34, 0x0a, 0x25, 0x66, 0x61, 0x6b, 0x65, 0x0a,
   ]);
   const blob = new Blob([pdfBytes], { type: "application/pdf" });
   const fd = new FormData();
-  fd.append("file", blob, "e2e-invoice.pdf");
+  fd.append("file", blob, fileName);
   fd.append("form_id", formId);
   const up = await fetch(`${CORE_URL}/api/v1/file-store/upload`, {
     method: "POST",
@@ -331,7 +370,7 @@ export async function uploadAndAttachInvoice(token: string, formId: string): Pro
   await authPost(token, `/api/v1/forms/${formId}/docs/attach`, {
     file_id: meta.id,
     kind: "invoice",
-    label: "e2e-invoice.pdf",
+    label: fileName,
   });
   return meta.id;
 }

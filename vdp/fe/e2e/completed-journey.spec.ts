@@ -1,5 +1,6 @@
-import { test, expect } from "./fixtures/auth.fixture";
+import { test } from "./fixtures/auth.fixture";
 import { assertCoreHealthy, loginAllRoles, seedForScenario } from "./helpers/api";
+import { expectFormStatus } from "./helpers/status";
 
 test.describe("completed-journey (catalog happy_path_to_completed)", () => {
   test.beforeAll(async () => {
@@ -13,8 +14,6 @@ test.describe("completed-journey (catalog happy_path_to_completed)", () => {
     await loginAs("manager");
     await page.goto(`/forms/${formId}`);
     await page.waitForLoadState("networkidle");
-    await expect(
-      page.getByTestId("status-badge").and(page.locator('[data-status="completed"]')),
-    ).toBeVisible({ timeout: 15_000 });
+    await expectFormStatus(page, "completed", { timeout: 15_000 });
   });
 });

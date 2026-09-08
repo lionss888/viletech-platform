@@ -89,12 +89,26 @@ func TestR9TreasurerTaskAgentHsAndMailSSE(t *testing.T) {
 	treasurer := authz.Principal{AccountID: seed.ManagerID, Role: domain.RoleTreasurer}
 	user := authz.Principal{AccountID: seed.UserID, Role: domain.RoleUser, OrganizationID: seed.OrgID}
 
-	agent, err := catalog.CreateAgent(ctx, manager, domain.Agent{Name: "Agent R9", INN: "7707083893"})
+	agent, err := catalog.CreateAgent(ctx, manager, domain.Agent{
+		Name: "Agent R9", INN: "7707083893", Country: "HK", Corridors: "CNY, USD", Contact: "ops@r9.test", SLAHours: 12,
+	})
 	if err != nil {
 		t.Fatal(err)
 	}
 	if !agent.Active {
 		t.Fatal("agent inactive")
+	}
+	if agent.Country != "HK" || agent.Corridors != "CNY, USD" || agent.Contact != "ops@r9.test" || agent.SLAHours != 12 {
+		t.Fatalf("agent catalog fields=%+v", agent)
+	}
+	patchedAgent, err := catalog.UpdateAgent(ctx, manager, agent.ID, domain.Agent{
+		Country: "SG", Corridors: "USD", Contact: "desk@r9.test", SLAHours: 8,
+	}, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if patchedAgent.Country != "SG" || patchedAgent.SLAHours != 8 {
+		t.Fatalf("patched agent=%+v", patchedAgent)
 	}
 	_, err = catalog.CreateHsCode(ctx, manager, domain.HsCode{Code: "8471", Description: "computers"})
 	if err != nil {

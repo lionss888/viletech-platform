@@ -114,12 +114,16 @@ type Template struct {
 }
 
 type Agent struct {
-	ID      string `json:"id"`
-	Name    string `json:"name"`
-	INN     string `json:"inn,omitempty"`
-	Active  bool   `json:"active"`
-	StampID string `json:"stamp_file_id,omitempty"`
-	SignID  string `json:"signature_file_id,omitempty"`
+	ID        string `json:"id"`
+	Name      string `json:"name"`
+	INN       string `json:"inn,omitempty"`
+	Active    bool   `json:"active"`
+	Country   string `json:"country,omitempty"`
+	Corridors string `json:"corridors,omitempty"`
+	Contact   string `json:"contact,omitempty"`
+	SLAHours  int    `json:"sla_hours,omitempty"`
+	StampID   string `json:"stamp_file_id,omitempty"`
+	SignID    string `json:"signature_file_id,omitempty"`
 }
 
 type HsCode struct {
