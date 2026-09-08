@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"encoding/json"
+	"strings"
 	"time"
 
 	"github.com/viletech/vdp/core/internal/domain"
@@ -479,8 +480,38 @@ func (s *Store) DeleteForm(ctx context.Context, id string) error {
 	if _, err := s.db.ExecContext(ctx, `DELETE FROM form_orders WHERE form_payment_id = $1`, id); err != nil {
 		return err
 	}
+	_, _ = s.db.ExecContext(ctx, `DELETE FROM treasurer_tasks WHERE form_payment_id = $1`, id)
+	_, _ = s.db.ExecContext(ctx, `DELETE FROM bank_idempotency WHERE form_payment_id = $1`, id)
+	_, _ = s.db.ExecContext(ctx, `UPDATE liquidity_offers SET form_payment_id = NULL WHERE form_payment_id = $1`, id)
 	_, err := s.db.ExecContext(ctx, `DELETE FROM form_payments WHERE id = $1`, id)
 	return err
+}
+
+// WipeAllProbeForms clears all form_payments and related probe rows in one pass (local reset).
+func (s *Store) WipeAllProbeForms(ctx context.Context) (int, error) {
+	var n int
+	if err := s.db.QueryRowContext(ctx, `SELECT COUNT(*) FROM form_payments`).Scan(&n); err != nil {
+		return 0, err
+	}
+	stmts := []string{
+		`DELETE FROM compliance_history`,
+		`DELETE FROM documents`,
+		`DELETE FROM form_orders`,
+		`DELETE FROM treasurer_tasks`,
+		`DELETE FROM bank_idempotency`,
+		`UPDATE liquidity_offers SET form_payment_id = NULL WHERE form_payment_id IS NOT NULL`,
+		`DELETE FROM form_payments`,
+	}
+	for _, q := range stmts {
+		if _, err := s.db.ExecContext(ctx, q); err != nil {
+			// Older DBs may lack optional tables — ignore missing relation.
+			if strings.Contains(err.Error(), "does not exist") {
+				continue
+			}
+			return 0, err
+		}
+	}
+	return n, nil
 }
 
 func (s *Store) AppendHistory(ctx context.Context, e formpayment.ComplianceHistoryEntry) error {

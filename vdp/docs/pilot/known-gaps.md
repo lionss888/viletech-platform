@@ -28,11 +28,11 @@ GitHub Actions: vdp-ci.yml (fast/docs/integration/playwright required User journ
 
 ## Playwright UI coverage
 
-Playwright: login-form, user-submit, happy-path, completed-journey, reject-path, ico-org, provider-acl, bank-badge, manager-payment, manager-hides-drafts. Full browser matrix all roles × all statuses not covered. Shared catalog scenarioverify; Root `/testing` runs API scenarios on demand (catalog size ≠ footer form count). Backend compose-e2e covers API journeys including RH2 ICO reject refund full P5 advance shipment. PR smoke includes reject-path + provider-acl.
+Playwright: login-form, user-submit, happy-path, completed-journey, reject-path, ico-org, provider-acl, bank-badge, manager-payment, manager-hides-drafts. Full browser matrix all roles × all statuses not covered. Shared catalog scenarioverify; Root /testing runs API scenarios on demand (catalog size ≠ footer form count). Backend compose-e2e covers API journeys including RH2 ICO reject refund full P5 advance shipment. PR smoke includes reject-path + provider-acl.
 
 ## CTA / process-roles touchpoints
 
-Status or CTA copy changes must land in FE `actions.ts` (+ continuity labels), `action-bridge`, core AuthZ, and `scenarioverify` when journeys depend on them. Continuity contract test: `cta-continuity-contract.test.ts`. Seed wipe on local compose: `SEED_WIPE_FORMS` / `make core-seed-reset` — accounts kept, forms cleared.
+Status or CTA copy changes must land in FE actions.ts (+ continuity labels), action-bridge, core AuthZ, and scenarioverify when journeys depend on them. Continuity contract test: cta-continuity-contract.test.ts. Seed wipe on local compose: SEED_WIPE_FORMS=1 (явный флаг перекрывает demo) / make core-seed-reset / кнопка «Очистить все заявки» на /testing (POST admin/probe-data/wipe) — accounts kept, forms cleared.
 
 ## Postgres test coverage
 

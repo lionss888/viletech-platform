@@ -11,6 +11,7 @@ import {
   fetchScenarioPolicy,
   listScenarioRuns,
   startScenarioRuns,
+  wipeProbeData,
   type ScenarioCatalogItem,
   type ScenarioPolicy,
   type ScenarioRun,
@@ -58,6 +59,9 @@ export function TestingPage() {
   const [runBusy, setRunBusy] = useState(false);
   const [runError, setRunError] = useState<string | null>(null);
   const [catalogError, setCatalogError] = useState<string | null>(null);
+  const [wipeBusy, setWipeBusy] = useState(false);
+  const [wipeMessage, setWipeMessage] = useState<string | null>(null);
+  const [wipeError, setWipeError] = useState<string | null>(null);
 
   const accountRows = useMemo(() => {
     if (isApp) {
@@ -170,6 +174,39 @@ export function TestingPage() {
   }
 
   const selectedCount = Object.values(selected).filter(Boolean).length;
+  const allSelected = catalog.length > 0 && catalog.every((item) => selected[item.id]);
+
+  function selectAllScenarios(on: boolean) {
+    setSelected((prev) => {
+      const next = { ...prev };
+      for (const item of catalog) {
+        next[item.id] = on;
+      }
+      return next;
+    });
+  }
+
+  async function clearProbeForms() {
+    if (
+      !window.confirm(
+        "Удалить все заявки и связанные документы из локальной БД? Учётки ролей останутся. Это нельзя отменить.",
+      )
+    ) {
+      return;
+    }
+    setWipeBusy(true);
+    setWipeError(null);
+    setWipeMessage(null);
+    try {
+      const res = await wipeProbeData();
+      await queryClient.invalidateQueries({ queryKey: ["forms"] });
+      setWipeMessage(`Очищено заявок: ${res.wiped_forms}. Реестр и документы по заявкам пустые.`);
+    } catch (e) {
+      setWipeError(e instanceof Error ? e.message : "Не удалось очистить");
+    } finally {
+      setWipeBusy(false);
+    }
+  }
 
   const modeLabel =
     policy?.default_mode === "mutating"
@@ -186,6 +223,26 @@ export function TestingPage() {
       subtitle="Контроль основных процессов платформы — для суперадмина"
     >
       {isApp && (
+        <div className="panel mb-4 p-4">
+          <p className="label-caps">Очистка тестовых данных</p>
+          <p className="mt-1 text-xs text-muted-foreground">
+            Сейчас в системе {forms.length} заявок (футер «сделок»). Для ручных тестов с нуля очистите
+            заявки — учётки user/manager/… останутся. После очистки mutating-сценарии снова создадут
+            свои probe-заявки.
+          </p>
+          <button
+            type="button"
+            disabled={wipeBusy}
+            onClick={() => void clearProbeForms()}
+            className="mt-3 rounded-md border border-destructive px-3 py-2 text-sm font-semibold text-destructive disabled:opacity-50"
+          >
+            {wipeBusy ? "Очищаем…" : "Очистить все заявки"}
+          </button>
+          {wipeMessage && <p className="mt-2 text-xs text-accent">{wipeMessage}</p>}
+          {wipeError && <p className="mt-2 text-xs text-destructive">{wipeError}</p>}
+        </div>
+      )}
+      {isApp && (
         <div className="panel p-4">
           <p className="label-caps">Что проверить</p>
           <p className="mt-1 text-xs text-muted-foreground">
@@ -198,6 +255,25 @@ export function TestingPage() {
               : ""}
           </p>
           {catalogError && <p className="mt-2 text-xs text-destructive">{catalogError}</p>}
+          {catalog.length > 0 && (
+            <div className="mt-3 flex flex-wrap items-center gap-3 text-xs">
+              <label className="flex cursor-pointer items-center gap-2 font-medium">
+                <input
+                  type="checkbox"
+                  checked={allSelected}
+                  onChange={(ev) => selectAllScenarios(ev.target.checked)}
+                />
+                Выбрать всё ({catalog.length})
+              </label>
+              <button
+                type="button"
+                className="text-muted-foreground underline"
+                onClick={() => selectAllScenarios(false)}
+              >
+                Снять всё
+              </button>
+            </div>
+          )}
           {catalog.length > 0 && (
             <ul className="mt-3 space-y-2">
               {catalog.map((item) => (

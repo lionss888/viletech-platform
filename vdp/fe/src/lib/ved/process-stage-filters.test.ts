@@ -1,7 +1,13 @@
 import { describe, expect, it } from "vitest";
 
 import type { ProcessRoleRow } from "@/lib/api/process-roles";
-import { isComplianceProcessActive, verificationQueueLabel } from "./process-stage-filters";
+import {
+  displayStageId,
+  isComplianceProcessActive,
+  stagesForProcess,
+  statusMetaForProcess,
+  verificationQueueLabel,
+} from "./process-stage-filters";
 
 function row(partial: Partial<ProcessRoleRow> & Pick<ProcessRoleRow, "role">): ProcessRoleRow {
   return {
@@ -15,6 +21,14 @@ function row(partial: Partial<ProcessRoleRow> & Pick<ProcessRoleRow, "role">): P
   };
 }
 
+function continuityRoles(): ProcessRoleRow[] {
+  return [
+    row({ role: "manager", enabled: true }),
+    row({ role: "internal_compliance_officer", enabled: false }),
+    row({ role: "compliance_officer", enabled: false }),
+  ];
+}
+
 describe("process-stage-filters", () => {
   it("treats missing config as compliance-active (safe default)", () => {
     expect(isComplianceProcessActive(undefined)).toBe(true);
@@ -22,11 +36,7 @@ describe("process-stage-filters", () => {
   });
 
   it("detects ICO/ECO disabled pilot spine", () => {
-    const roles = [
-      row({ role: "manager", enabled: true }),
-      row({ role: "internal_compliance_officer", enabled: false }),
-      row({ role: "compliance_officer", enabled: false }),
-    ];
+    const roles = continuityRoles();
     expect(isComplianceProcessActive(roles)).toBe(false);
     expect(verificationQueueLabel(roles)).toBe("На проверке");
   });
@@ -34,5 +44,30 @@ describe("process-stage-filters", () => {
   it("stays active when ICO is an enabled actor", () => {
     const roles = [row({ role: "internal_compliance_officer", enabled: true, influence: "actor" })];
     expect(isComplianceProcessActive(roles)).toBe(true);
+  });
+
+  it("remaps form_verification badge copy without compliance wording", () => {
+    const meta = statusMetaForProcess("form_verification", continuityRoles());
+    expect(meta.label).toBe("Менеджер проверяет заявку");
+    expect(meta.label.toLowerCase()).not.toMatch(/комплаенс/);
+  });
+
+  it("renames lifecycle stage and hides organization when ICO/ECO off", () => {
+    const stages = stagesForProcess(continuityRoles());
+    expect(stages.some((s) => s.id === "organization_verification")).toBe(false);
+    const review = stages.find((s) => s.id === "form_verification");
+    expect(review?.label).toBe("Проверка");
+    expect(displayStageId("form_verification", continuityRoles())).toBe("form_verification");
+    expect(displayStageId("organization_waiting_verification", continuityRoles())).toBe(
+      "form_verification",
+    );
+  });
+
+  it("keeps compliance labels when ECO is an actor", () => {
+    const roles = [
+      row({ role: "compliance_officer", enabled: true, influence: "actor" }),
+      row({ role: "internal_compliance_officer", enabled: false }),
+    ];
+    expect(statusMetaForProcess("form_verification", roles).label).toMatch(/Комплаенс/);
   });
 });

@@ -48,6 +48,12 @@ const (
 	IDManagerHidesDrafts           = "manager_hides_drafts"
 	IDDocPreviewVisible            = "doc_preview_visible"
 	IDHealthCore                   = "health_core"
+	IDContinuityManagerForm        = "continuity_manager_form_approve"
+	IDManagerRejectCorrections     = "manager_reject_to_corrections"
+	IDUserResubmitAfterReject      = "user_resubmit_after_reject"
+	IDProviderReturnToManager      = "provider_return_to_manager"
+	IDExtractionConfirmAmount      = "extraction_confirm_updates_amount"
+	IDRateSetByManager             = "manager_sets_deal_rate"
 )
 
 // Catalog returns the fixed scenario list.
@@ -157,6 +163,61 @@ func Catalog() []Scenario {
 			Tags:        []Tag{TagAPI, TagSmoke},
 			Steps: []Step{
 				{ID: "health", Title: "Сервис доступен"},
+			},
+		},
+		{
+			ID:          IDContinuityManagerForm,
+			Title:       "Менеджер подтверждает заявку (без ECO)",
+			Description: "Пилот U→M→P: клиент подаёт заявку, менеджер сам берёт в работу и подтверждает — без внешнего комплаенса",
+			Tags:        []Tag{TagAPI, TagSmoke},
+			Steps: []Step{
+				{ID: "submit", Title: "Клиент отправил заявку", Role: "user", ExpectedStatus: "form_waiting_verification"},
+				{ID: "manager_accept", Title: "Менеджер подтвердил заявку", Role: "manager", ExpectedStatus: "form_accepted"},
+			},
+		},
+		{
+			ID:          IDManagerRejectCorrections,
+			Title:       "Менеджер возвращает на коррекцию",
+			Description: "Менеджер отклоняет заявку с отметкой — клиент видит статус «возвращена на коррекцию»",
+			Tags:        []Tag{TagAPI, TagUI},
+			Steps: []Step{
+				{ID: "reject", Title: "Заявка на коррекции", Role: "manager", ExpectedStatus: "form_waiting_corrections"},
+			},
+		},
+		{
+			ID:          IDUserResubmitAfterReject,
+			Title:       "Клиент повторно отправляет после коррекции",
+			Description: "После возврата менеджером клиент снова отправляет заявку в очередь",
+			Tags:        []Tag{TagAPI},
+			Steps: []Step{
+				{ID: "resubmit", Title: "Повторная отправка", Role: "user", ExpectedStatus: "form_waiting_verification"},
+			},
+		},
+		{
+			ID:          IDProviderReturnToManager,
+			Title:       "Провайдер возвращает платёж менеджеру",
+			Description: "Провайдер взял платёж и вернул менеджеру на проверку",
+			Tags:        []Tag{TagAPI},
+			Steps: []Step{
+				{ID: "provider_return", Title: "Статус manager_checking", Role: "provider", ExpectedStatus: "manager_checking"},
+			},
+		},
+		{
+			ID:          IDExtractionConfirmAmount,
+			Title:       "Подтверждение OCR обновляет сумму",
+			Description: "После confirm распознавания в заявке появляется сумма и валюта из HITL-панели",
+			Tags:        []Tag{TagAPI},
+			Steps: []Step{
+				{ID: "confirm", Title: "Сумма записана в заявку", Role: "user"},
+			},
+		},
+		{
+			ID:          IDRateSetByManager,
+			Title:       "Менеджер задаёт курс сделки",
+			Description: "На заявке в очереди менеджер сохраняет курс — значение видно в карточке",
+			Tags:        []Tag{TagAPI},
+			Steps: []Step{
+				{ID: "set_rate", Title: "Курс сохранён", Role: "manager"},
 			},
 		},
 	}

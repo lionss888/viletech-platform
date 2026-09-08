@@ -11,7 +11,6 @@ import (
 func TestNestRoleFormActionAndParityEndpoints(t *testing.T) {
 	core, _, _ := newStack(t)
 	token := login(t, core, "user@vdp.local", "user")
-	ico := login(t, core, "ico@vdp.local", "ico")
 	manager := login(t, core, "manager@vdp.local", "manager")
 	created := postJSON(t, core, token, "/api/v1/forms", map[string]string{"currency": "USD", "invoice_amount": "200", "no_documents": "true"})
 	// no_documents as string in map won't work for bool - create via raw
@@ -31,13 +30,11 @@ func TestNestRoleFormActionAndParityEndpoints(t *testing.T) {
 	if form["no_documents"] != true {
 		t.Fatalf("no_documents=%v", form["no_documents"])
 	}
-	putNest(t, core, token, "/api/v1/site/form-payment/"+id+"/form/accept") // may fail if still creating
 	postJSON(t, core, token, "/api/v1/forms/"+id+"/actions/recognize_complete", nil)
 	postJSON(t, core, token, "/api/v1/forms/"+id+"/actions/submit", nil)
-	putNest(t, core, ico, "/api/v1/ico/form-payment/"+id+"/form/start")
-	putNest(t, core, ico, "/api/v1/ico/form-payment/"+id+"/form/accept")
-	// org may still be not approved in seed - ico approve org first
-	putNest(t, core, ico, "/api/v1/admin/internal-compliance-officer/organization/66666666-6666-6666-6666-666666666666/approve")
+	eco := login(t, core, "eco@vdp.local", "eco")
+	putNest(t, core, eco, "/api/v1/eco/form-payment/"+id+"/form/start")
+	putNest(t, core, eco, "/api/v1/eco/form-payment/"+id+"/form/accept")
 	agents := postJSON(t, core, manager, "/api/v1/agents", map[string]string{"name": "Agent", "inn": "1"})
 	_ = agents
 	res = httptest.NewRecorder()

@@ -1,6 +1,6 @@
 import { useParams } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 
 import { getComplianceHistory, getForm } from "@/lib/api/forms";
 import { getFormDiadocStatus } from "@/lib/api/notifications";
@@ -12,6 +12,7 @@ import {
 } from "@/lib/api/mappers";
 import { ExtractionReviewPanel } from "@/components/ved/ExtractionReviewPanel";
 import { CorrectionGuidancePanel } from "@/components/ved/CorrectionGuidancePanel";
+import { CounterpartyPickDialog } from "@/components/ved/CounterpartyPickDialog";
 import { ActionPanel } from "@/components/ved/ActionPanel";
 import { DocumentList } from "@/components/ved/DocumentViewer";
 import { RefundPanel } from "@/components/ved/RefundPanel";
@@ -39,7 +40,7 @@ import {
   providerVisibleDocuments,
 } from "@/lib/ved/provider-acl";
 import { roleTitle } from "@/lib/ved/roles";
-import { statusMeta } from "@/lib/ved/statuses";
+import { statusMetaForProcess } from "@/lib/ved/process-stage-filters";
 import { useProcessRolesRows } from "@/lib/ved/use-process-roles-snapshot";
 import { cn } from "@/lib/utils";
 
@@ -50,6 +51,7 @@ export function FormDetail() {
   const auth = useAuth();
   const { forms, session, organizations, counterparties, users } = usePlatformStore();
   const processRoles = useProcessRolesRows();
+  const [cpDialogOpen, setCpDialogOpen] = useState(false);
   const formQuery = useQuery({
     queryKey: ["form", formId],
     queryFn: () => getForm(formId),
@@ -112,7 +114,7 @@ export function FormDetail() {
 
   const org = orgByIdFrom(organizations, form.organizationId);
   const cp = cpByIdFrom(counterparties, form.counterpartyId);
-  const meta = statusMeta(form.status);
+  const meta = statusMetaForProcess(form.status, processRoles);
   const compliance = isComplianceRole(role);
   const subjects = subjectsOf(form, organizations, counterparties);
   const cleared = subjectsCleared(subjects);
@@ -160,7 +162,7 @@ export function FormDetail() {
     <VedAppShell title={form.number} subtitle={`${meta.label} · роль: ${roleTitle(role)}`}>
       <div className="panel flex flex-wrap items-center gap-3 p-4">
         <DirectionTag direction={form.direction} />
-        <StatusBadge status={form.status} full />
+        <StatusBadge status={form.status} full processRoles={processRoles} />
         {form.channel === "bank" && <ChannelBadge channel="bank" labeled />}
         {form.channel === "ui" && <ChannelBadge channel="ui" labeled />}
         {form.correlationId && (
@@ -190,7 +192,7 @@ export function FormDetail() {
       <div className="panel mt-4 p-4">
         <p className="label-caps">Жизненный цикл</p>
         <div className="mt-3">
-          <StageStepper status={form.status} />
+          <StageStepper status={form.status} processRoles={processRoles} />
         </div>
       </div>
 
@@ -200,6 +202,8 @@ export function FormDetail() {
             formId={form.id}
             invoiceJson={form.invoiceJson ?? formQuery.data?.invoice_json}
             role={role}
+            status={form.status}
+            noDocuments={Boolean(form.noDocuments)}
             canConfirm={role === "user" || role === "manager" || role === "root"}
           />
         </div>
@@ -252,20 +256,32 @@ export function FormDetail() {
                       {cp.country ?? "—"} · {cp.bank ?? "—"}
                     </p>
                     <p className="font-mono text-xs text-muted-foreground">SWIFT {cp.swift ?? "—"}</p>
+                    {!isProvider && mode === "app" && (
+                      <button
+                        type="button"
+                        className="mt-2 text-sm font-semibold text-accent hover:underline"
+                        onClick={() => setCpDialogOpen(true)}
+                      >
+                        Сменить контрагента
+                      </button>
+                    )}
                   </>
                 ) : (
                   <>
                     <p className="mt-2 text-sm text-muted-foreground">Контрагент не выбран</p>
                     <p className="mt-1 text-xs text-muted-foreground">
-                      Укажите контрагента в справочнике и при создании или правке заявки — иначе реквизиты получателя пустые.
+                      Укажите контрагента здесь — иначе реквизиты получателя пустые. Справочник
+                      откроется в окне, без ухода с заявки.
                     </p>
                     {!isProvider && (
-                      <VedLink
-                        segment="/counterparties"
-                        className="mt-2 inline-block text-sm font-semibold text-accent hover:underline"
+                      <button
+                        type="button"
+                        data-testid="open-counterparty-picker"
+                        className="mt-2 text-sm font-semibold text-accent hover:underline"
+                        onClick={() => setCpDialogOpen(true)}
                       >
-                        Открыть справочник контрагентов
-                      </VedLink>
+                        Выбрать контрагента
+                      </button>
                     )}
                   </>
                 )}
@@ -273,6 +289,16 @@ export function FormDetail() {
             </div>
           )}
 
+          {!isProvider && mode === "app" && (
+            <CounterpartyPickDialog
+              open={cpDialogOpen}
+              onOpenChange={setCpDialogOpen}
+              formId={formId}
+              role={role}
+              counterparties={counterparties}
+              selectedId={form.counterpartyId}
+            />
+          )}
           <div className="panel p-4">
             <p className="label-caps">
               {isProvider ? "Документы платежа" : "Документы"} ({visibleDocuments.length})

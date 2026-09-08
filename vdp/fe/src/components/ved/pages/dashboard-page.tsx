@@ -42,6 +42,7 @@ export function DashboardPage() {
 function RootDashboard() {
   const { forms, users } = usePlatformStore();
   const paths = useVedPaths();
+  const processRoles = useProcessRolesRows();
   const stats = useMemo(
     () => systemStats(forms, (id) => users.find((u) => u.id === id)?.name),
     [forms, users],
@@ -161,7 +162,7 @@ function RootDashboard() {
               <VedFormLink id={form.id} className="font-mono text-xs font-semibold hover:underline">
                 {form.number}
               </VedFormLink>
-              <StatusBadge status={form.status} />
+              <StatusBadge status={form.status} processRoles={processRoles} />
               <span className="min-w-0 flex-1 truncate text-xs text-muted-foreground">
                 {users.find((u) => u.id === form.managerId)?.name ?? form.managerName ?? "менеджер не назначен"}
               </span>
@@ -283,7 +284,7 @@ function RoleDashboard() {
                     {form.number}
                   </VedFormLink>
                   <span className="shrink-0">
-                    <StatusBadge status={form.status} />
+                    <StatusBadge status={form.status} processRoles={processRoles} />
                   </span>
                   <span className="min-w-0 flex-1 basis-28 truncate text-xs text-muted-foreground">
                     {cpByIdFrom(counterparties, form.counterpartyId)?.name ?? "—"}
@@ -328,7 +329,7 @@ function RoleDashboard() {
                 {form.number}
               </VedFormLink>
               <span className="justify-self-end sm:order-none">
-                <StatusBadge status={form.status} />
+                <StatusBadge status={form.status} processRoles={processRoles} />
               </span>
               <span className="col-span-2 min-w-0 truncate text-xs text-muted-foreground sm:order-none sm:col-span-1 sm:flex-1">
                 {cpByIdFrom(counterparties, form.counterpartyId)?.name ?? "—"}

@@ -96,3 +96,40 @@ export function confirmExtraction(formId: string, human: unknown): Promise<CoreF
     body: JSON.stringify({ human }),
   });
 }
+
+export type PatchFormInput = {
+  counterparty_id?: string;
+  invoice_amount?: string;
+  currency?: string;
+  contract_number?: string;
+  contract_date?: string;
+};
+
+/** Nest-compatible PATCH; nestPrefix is site|manager|admin|… matching the caller role. */
+export function patchForm(formId: string, nestPrefix: string, input: PatchFormInput): Promise<CoreForm> {
+  return apiFetch<CoreForm>(`/api/v1/${nestPrefix}/form-payment/${formId}`, {
+    method: "PATCH",
+    body: JSON.stringify(input),
+  });
+}
+
+export function nestFormPrefixForRole(role: string | undefined): string {
+  switch (role) {
+    case "user":
+      return "site";
+    case "manager":
+    case "treasurer":
+      return "manager";
+    case "provider":
+    case "senior_provider":
+      return "provider";
+    case "compliance_officer":
+      return "eco";
+    case "internal_compliance_officer":
+      return "ico";
+    case "root":
+      return "admin";
+    default:
+      return "site";
+  }
+}

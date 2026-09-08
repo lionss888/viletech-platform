@@ -68,3 +68,16 @@ export function isLowConfidence(item: ExtractionLineItem | ExtractionResult): bo
   const c = "confidence" in item ? item.confidence : undefined;
   return typeof c === "number" && c < 0.55;
 }
+
+/** When to show the OCR panel shell on the form card. */
+export function extractionPanelMode(input: {
+  role: string;
+  hasDraft: boolean;
+  status?: string;
+  noDocuments?: boolean;
+}): "hide" | "pending" | "review" {
+  if (input.role === "provider") return "hide";
+  if (input.hasDraft) return "review";
+  if (input.noDocuments || input.status !== "creating") return "hide";
+  return "pending";
+}

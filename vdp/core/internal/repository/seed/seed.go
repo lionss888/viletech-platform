@@ -71,14 +71,10 @@ func Dev(store repository.Store) error {
 	return nil
 }
 
-// ShouldWipeForms reports whether local/compose should clear probe forms on boot.
-// Default wipe on local environments unless SEED_WIPE_FORMS=0. Never wipe on staging/prod.
+// ShouldWipeForms reports whether local/compose should clear probe forms on boot or via admin wipe.
+// Explicit SEED_WIPE_FORMS=1 wins (even on demo). SEED_WIPE_FORMS=0 always disables.
+// Without the flag: wipe on development/local/test/ci; never on production/staging/named deploy envs.
 func ShouldWipeForms(environment string) bool {
-	env := strings.ToLower(strings.TrimSpace(environment))
-	switch env {
-	case "production", "prod", "staging", "alpha", "beta", "gamma", "demo":
-		return false
-	}
 	flag := strings.TrimSpace(os.Getenv("SEED_WIPE_FORMS"))
 	if flag == "0" || strings.EqualFold(flag, "false") || strings.EqualFold(flag, "off") {
 		return false
@@ -86,13 +82,23 @@ func ShouldWipeForms(environment string) bool {
 	if flag == "1" || strings.EqualFold(flag, "true") || strings.EqualFold(flag, "on") {
 		return true
 	}
-	// Default: wipe on empty / development / local / test / ci.
-	return true
+	env := strings.ToLower(strings.TrimSpace(environment))
+	switch env {
+	case "production", "prod", "staging", "alpha", "beta", "gamma", "demo":
+		return false
+	default:
+		return true
+	}
 }
 
 // WipeForms deletes all form payments and related rows (local probe cleanup).
+// Prefer bulk wipe when the store implements repository.ProbeFormWiper.
 func WipeForms(store repository.Store) error {
 	ctx := context.Background()
+	if wiper, ok := store.(repository.ProbeFormWiper); ok {
+		_, err := wiper.WipeAllProbeForms(ctx)
+		return err
+	}
 	for _, form := range store.ListForms(ctx) {
 		if err := store.DeleteForm(ctx, form.ID); err != nil {
 			return fmt.Errorf("wipe form %s: %w", form.ID, err)
@@ -100,6 +106,24 @@ func WipeForms(store repository.Store) error {
 	}
 	return nil
 }
+
+// WipeFormsCount clears forms and returns how many existed before wipe.
+func WipeFormsCount(store repository.Store) (int, error) {
+	ctx := context.Background()
+	if wiper, ok := store.(repository.ProbeFormWiper); ok {
+		return wiper.WipeAllProbeForms(ctx)
+	}
+	n := len(store.ListForms(ctx))
+	if err := WipeForms(store); err != nil {
+		return 0, err
+	}
+	return n, nil
+}
+
+// ProbeFormWiper is implemented by postgres for fast local cleanup.
+// Deprecated: use repository.ProbeFormWiper.
+type ProbeFormWiper = repository.ProbeFormWiper
+
 
 // ForceOrgNotApproved sets the pilot client org to not approved (for ICO-path tests).
 func ForceOrgNotApproved(store repository.Store) error {

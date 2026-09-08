@@ -5,6 +5,7 @@ import { confirmExtraction } from "@/lib/api/forms";
 import {
   type ExtractionLineItem,
   type ExtractionResult,
+  extractionPanelMode,
   isLowConfidence,
   parseExtractionResult,
 } from "@/lib/ved/extraction";
@@ -14,11 +15,22 @@ type Props = {
   formId: string;
   invoiceJson?: string;
   role: string;
+  /** Form status — empty OCR panel only while creating. */
+  status?: string;
+  /** no_documents create path never runs OCR. */
+  noDocuments?: boolean;
   /** When false, fields stay read-only (e.g. waiting on another actor). */
   canConfirm?: boolean;
 };
 
-export function ExtractionReviewPanel({ formId, invoiceJson, role, canConfirm = true }: Props) {
+export function ExtractionReviewPanel({
+  formId,
+  invoiceJson,
+  role,
+  status,
+  noDocuments = false,
+  canConfirm = true,
+}: Props) {
   const qc = useQueryClient();
   const parsed = parseExtractionResult(invoiceJson);
   const [draft, setDraft] = useState<ExtractionResult | null>(parsed);
@@ -50,17 +62,25 @@ export function ExtractionReviewPanel({ formId, invoiceJson, role, canConfirm = 
     },
   });
 
-  if (role === "provider") return null;
-  if (!draft) {
+  const mode = extractionPanelMode({
+    role,
+    hasDraft: Boolean(draft),
+    status,
+    noDocuments,
+  });
+  if (mode === "hide") return null;
+  if (mode === "pending") {
     return (
-      <section className="panel space-y-2 p-4" data-testid="extraction-empty">
+      <section className="panel space-y-2 p-4" data-testid="extraction-pending">
         <h2 className="text-sm font-semibold text-foreground">Распознавание</h2>
         <p className="text-sm text-muted-foreground">
-          Данные ещё не распознаны или распознавание недоступно. Заполните поля вручную.
+          Документы распознаются в фоне. Когда появятся данные — проверьте их здесь. Параметры заявки
+          ниже можно заполнить вручную.
         </p>
       </section>
     );
   }
+  if (!draft) return null;
 
   const confirmed = Boolean(draft.meta.confirmed);
   const editable = canConfirm && !confirmed;

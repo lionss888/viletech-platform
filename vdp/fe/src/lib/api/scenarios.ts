@@ -73,3 +73,16 @@ export async function listScenarioRuns(limit = 20): Promise<ScenarioRun[]> {
 export function getScenarioRun(id: string): Promise<ScenarioRun> {
   return apiFetch<ScenarioRun>(`/api/v1/admin/scenario-runs/${id}`);
 }
+
+export type WipeProbeDataResult = {
+  wiped_forms: number;
+  allowed: boolean;
+};
+
+/** Root-only local cleanup: deletes all form payments (accounts kept). */
+export function wipeProbeData(): Promise<WipeProbeDataResult> {
+  return apiFetch<WipeProbeDataResult>("/api/v1/admin/probe-data/wipe", {
+    method: "POST",
+    body: "{}",
+  });
+}

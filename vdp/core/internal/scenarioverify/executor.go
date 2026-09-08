@@ -210,6 +210,18 @@ func (e *Executor) runMutating(run *Run, sc Scenario) error {
 		return e.mutatingICO(run, sc)
 	case IDManagerHidesDrafts, IDDocPreviewVisible:
 		return e.runUIOnlySkip(run, sc)
+	case IDContinuityManagerForm:
+		return e.mutatingContinuityManager(run, sc)
+	case IDManagerRejectCorrections:
+		return e.mutatingManagerReject(run, sc)
+	case IDUserResubmitAfterReject:
+		return e.mutatingUserResubmit(run, sc)
+	case IDProviderReturnToManager:
+		return e.mutatingProviderReturn(run, sc)
+	case IDExtractionConfirmAmount:
+		return e.mutatingExtractionConfirm(run, sc)
+	case IDRateSetByManager:
+		return e.mutatingSetRate(run, sc)
 	default:
 		return fmt.Errorf("сценарий пока нельзя выполнить автоматически")
 	}
@@ -804,5 +816,188 @@ func (e *Executor) mutatingICO(run *Run, sc Scenario) error {
 		ExpectedStatus: "form_waiting_verification", ActualStatus: st,
 		OK: true, Detail: "организация уже одобрена — отдельное одобрение не требуется",
 	})
+	return nil
+}
+
+func (e *Executor) mutatingContinuityManager(run *Run, sc Scenario) error {
+	tok, err := e.loginAll()
+	if err != nil {
+		return fmt.Errorf("не удалось войти под тестовыми ролями")
+	}
+	start := time.Now()
+	titleSubmit := stepTitle(sc, "submit", "Клиент отправил заявку")
+	id, err := e.createProbeForm(tok, "cont-mgr")
+	run.FormID = id
+	if err != nil {
+		e.appendStep(run, "submit", titleSubmit, "form_waiting_verification", "", err, start)
+		return err
+	}
+	if err := e.put(tok.user, "/api/v1/site/form-payment/"+id+"/form/accept", map[string]any{}); err != nil {
+		e.appendStep(run, "submit", titleSubmit, "form_waiting_verification", "", err, start)
+		return err
+	}
+	st, _ := e.getStatus(tok.user, "/api/v1/site/form-payment/"+id)
+	e.appendStep(run, "submit", titleSubmit, "form_waiting_verification", st, nil, start)
+	start = time.Now()
+	titleAccept := stepTitle(sc, "manager_accept", "Менеджер подтвердил заявку")
+	if err := e.advanceCompliance(tok, id); err != nil {
+		e.appendStep(run, "manager_accept", titleAccept, "form_accepted", "", err, start)
+		return err
+	}
+	st, _ = e.getStatus(tok.manager, "/api/v1/manager/form-payment/"+id)
+	e.appendStep(run, "manager_accept", titleAccept, "form_accepted", st, nil, start)
+	return nil
+}
+
+func (e *Executor) mutatingManagerReject(run *Run, sc Scenario) error {
+	tok, err := e.loginAll()
+	if err != nil {
+		return fmt.Errorf("не удалось войти под тестовыми ролями")
+	}
+	start := time.Now()
+	title := stepTitle(sc, "reject", "Заявка на коррекции")
+	id, err := e.createProbeForm(tok, "mgr-rej")
+	run.FormID = id
+	if err != nil {
+		e.appendStep(run, "reject", title, "form_waiting_corrections", "", err, start)
+		return err
+	}
+	_ = e.put(tok.user, "/api/v1/site/form-payment/"+id+"/form/accept", map[string]any{})
+	if err := e.rejectToCorrections(tok, id); err != nil {
+		e.appendStep(run, "reject", title, "form_waiting_corrections", "", err, start)
+		return err
+	}
+	st, _ := e.getStatus(tok.user, "/api/v1/site/form-payment/"+id)
+	e.appendStep(run, "reject", title, "form_waiting_corrections", st, nil, start)
+	return nil
+}
+
+func (e *Executor) mutatingUserResubmit(run *Run, sc Scenario) error {
+	tok, err := e.loginAll()
+	if err != nil {
+		return fmt.Errorf("не удалось войти под тестовыми ролями")
+	}
+	start := time.Now()
+	title := stepTitle(sc, "resubmit", "Повторная отправка")
+	id, err := e.createProbeForm(tok, "resub")
+	run.FormID = id
+	if err != nil {
+		e.appendStep(run, "resubmit", title, "form_waiting_verification", "", err, start)
+		return err
+	}
+	_ = e.put(tok.user, "/api/v1/site/form-payment/"+id+"/form/accept", map[string]any{})
+	_ = e.rejectToCorrections(tok, id)
+	if err := e.put(tok.user, "/api/v1/site/form-payment/"+id+"/form/accept", map[string]any{}); err != nil {
+		e.appendStep(run, "resubmit", title, "form_waiting_verification", "", err, start)
+		return err
+	}
+	st, _ := e.getStatus(tok.user, "/api/v1/site/form-payment/"+id)
+	e.appendStep(run, "resubmit", title, "form_waiting_verification", st, nil, start)
+	return nil
+}
+
+func (e *Executor) mutatingProviderReturn(run *Run, sc Scenario) error {
+	tok, err := e.loginAll()
+	if err != nil {
+		return fmt.Errorf("не удалось войти под тестовыми ролями")
+	}
+	start := time.Now()
+	title := stepTitle(sc, "provider_return", "Статус manager_checking")
+	id, err := e.createProbeForm(tok, "prov-ret")
+	run.FormID = id
+	if err != nil {
+		e.appendStep(run, "provider_return", title, "manager_checking", "", err, start)
+		return err
+	}
+	_ = e.put(tok.user, "/api/v1/site/form-payment/"+id+"/form/accept", map[string]any{})
+	_ = e.advanceCompliance(tok, id)
+	_ = e.put(tok.manager, "/api/v1/manager/form-payment/"+id+"/order/signing", map[string]any{})
+	_ = e.put(tok.user, "/api/v1/site/form-payment/"+id+"/order", map[string]any{})
+	_ = e.put(tok.manager, "/api/v1/manager/form-payment/"+id+"/order/start", map[string]any{})
+	_ = e.put(tok.manager, "/api/v1/manager/form-payment/"+id+"/order/accept", map[string]any{})
+	_ = e.put(tok.manager, "/api/v1/manager/form-payment/"+id+"/payment/received", map[string]any{})
+	_, _ = e.post(tok.manager, "/api/v1/forms/"+id+"/provider", map[string]any{
+		"provider_id": e.providerID(), "client_agreed": true,
+	})
+	_ = e.put(tok.manager, "/api/v1/manager/form-payment/"+id+"/payment/start", map[string]any{})
+	_ = e.put(tok.provider, "/api/v1/provider/form-payment/"+id+"/payment/start", map[string]any{})
+	if err := e.put(tok.provider, "/api/v1/provider/form-payment/"+id+"/payment/return", map[string]any{}); err != nil {
+		e.appendStep(run, "provider_return", title, "manager_checking", "", err, start)
+		return err
+	}
+	st, _ := e.getStatus(tok.manager, "/api/v1/manager/form-payment/"+id)
+	e.appendStep(run, "provider_return", title, "manager_checking", st, nil, start)
+	return nil
+}
+
+func (e *Executor) mutatingExtractionConfirm(run *Run, sc Scenario) error {
+	tok, err := e.loginAll()
+	if err != nil {
+		return fmt.Errorf("не удалось войти под тестовыми ролями")
+	}
+	start := time.Now()
+	title := stepTitle(sc, "confirm", "Сумма записана в заявку")
+	id, err := e.createProbeForm(tok, "ocr")
+	run.FormID = id
+	if err != nil {
+		e.appendStep(run, "confirm", title, "", "", err, start)
+		return err
+	}
+	_, err = e.post(tok.user, "/api/v1/forms/"+id+"/extraction/confirm", map[string]any{
+		"invoice_amount": "2500",
+		"currency":       "EUR",
+		"contract_number": "OCR-PROBE-1",
+	})
+	if err != nil {
+		e.appendStep(run, "confirm", title, "", "", err, start)
+		return err
+	}
+	code, payload, _ := e.Loopback.do(http.MethodGet, "/api/v1/site/form-payment/"+id, tok.user, nil)
+	amount, _ := payload["invoice_amount"].(string)
+	currency, _ := payload["currency"].(string)
+	ok := code == http.StatusOK && (amount == "2500" || strings.Contains(amount, "2500")) && strings.EqualFold(currency, "EUR")
+	sr := StepResult{StepID: "confirm", Title: title, OK: ok, DurationMS: time.Since(start).Milliseconds()}
+	if ok {
+		sr.Detail = "сумма и валюта обновлены после confirm"
+	} else {
+		sr.Detail = fmt.Sprintf("ожидали 2500 EUR, получили amount=%q currency=%q", amount, currency)
+	}
+	run.Steps = append(run.Steps, sr)
+	return nil
+}
+
+func (e *Executor) mutatingSetRate(run *Run, sc Scenario) error {
+	tok, err := e.loginAll()
+	if err != nil {
+		return fmt.Errorf("не удалось войти под тестовыми ролями")
+	}
+	start := time.Now()
+	title := stepTitle(sc, "set_rate", "Курс сохранён")
+	id, err := e.createProbeForm(tok, "rate")
+	run.FormID = id
+	if err != nil {
+		e.appendStep(run, "set_rate", title, "", "", err, start)
+		return err
+	}
+	_ = e.put(tok.user, "/api/v1/site/form-payment/"+id+"/form/accept", map[string]any{})
+	_ = e.advanceCompliance(tok, id)
+	_, err = e.post(tok.manager, "/api/v1/forms/"+id+"/rate", map[string]any{
+		"value": "92.5", "currency": "RUB", "source": "manual",
+	})
+	if err != nil {
+		e.appendStep(run, "set_rate", title, "", "", err, start)
+		return err
+	}
+	code, payload, _ := e.Loopback.do(http.MethodGet, "/api/v1/manager/form-payment/"+id, tok.manager, nil)
+	rateObj, _ := payload["rate"].(map[string]any)
+	value, _ := rateObj["value"].(string)
+	ok := code == http.StatusOK && value != ""
+	sr := StepResult{StepID: "set_rate", Title: title, OK: ok, DurationMS: time.Since(start).Milliseconds()}
+	if ok {
+		sr.Detail = "курс сохранён: " + value
+	} else {
+		sr.Detail = "курс не записался в заявку"
+	}
+	run.Steps = append(run.Steps, sr)
 	return nil
 }

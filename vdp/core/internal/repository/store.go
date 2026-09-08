@@ -119,3 +119,8 @@ type Store interface {
 	GetRoleSystemCapabilities(ctx context.Context, role domain.Role) ([]string, error)
 	SaveRoleSystemCapabilities(ctx context.Context, role domain.Role, caps []string) error
 }
+
+// ProbeFormWiper is an optional Store capability for bulk local probe cleanup.
+type ProbeFormWiper interface {
+	WipeAllProbeForms(ctx context.Context) (int, error)
+}

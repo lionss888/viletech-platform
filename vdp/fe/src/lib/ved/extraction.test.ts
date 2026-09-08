@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { isLowConfidence, parseExtractionResult } from "./extraction";
+import { extractionPanelMode, isLowConfidence, parseExtractionResult } from "./extraction";
 
 describe("parseExtractionResult", () => {
   it("parses schema v1 invoice_json", () => {
@@ -17,5 +17,28 @@ describe("parseExtractionResult", () => {
 
   it("returns null for unrelated json", () => {
     expect(parseExtractionResult('{"foo":1}')).toBeNull();
+  });
+});
+
+describe("extractionPanelMode", () => {
+  it("hides empty OCR block after creating / without documents", () => {
+    expect(
+      extractionPanelMode({ role: "user", hasDraft: false, status: "form_verification" }),
+    ).toBe("hide");
+    expect(
+      extractionPanelMode({ role: "user", hasDraft: false, status: "creating", noDocuments: true }),
+    ).toBe("hide");
+  });
+
+  it("shows pending only while creating with expected documents", () => {
+    expect(extractionPanelMode({ role: "user", hasDraft: false, status: "creating" })).toBe(
+      "pending",
+    );
+  });
+
+  it("shows review when extraction payload exists", () => {
+    expect(
+      extractionPanelMode({ role: "manager", hasDraft: true, status: "form_verification" }),
+    ).toBe("review");
   });
 });
