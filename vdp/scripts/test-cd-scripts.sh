@@ -25,7 +25,10 @@ for script in \
   scripts/wait-vdp-ci.sh \
   scripts/vdp-compose-up.sh \
   scripts/staging-smoke.sh \
-  scripts/notify-mgmt.sh; do
+  scripts/notify-mgmt.sh \
+  scripts/ci-mgmt-notify.sh \
+  scripts/precommit-mgmt-notify.sh; do
+  [ -f "$script" ] || fail "missing $script"
   bash -n "$script"
   echo "syntax ok: $script"
 done
@@ -38,6 +41,50 @@ DRY="$(bash scripts/notify-mgmt.sh --dry-run --kind raw --body $'vitest OK\n.cur
 echo "$DRY" | grep -qi vitest && fail "dry-run must strip vitest"
 echo "$DRY" | grep -qi 'localhost' && fail "dry-run must strip localhost"
 echo "$DRY" | grep -qi '\.cursor/' && fail "dry-run must strip .cursor paths"
+
+echo "== ci-mgmt-notify gate-summary pass =="
+GATE_PASS="$(
+  NEED_fast_RESULT=success NEED_docs_RESULT=success \
+  NEED_integration_RESULT=success NEED_playwright_RESULT=success \
+  MGMT_CI_REVISION=abc1234deadbeef MGMT_CI_BRANCH=main \
+  bash scripts/ci-mgmt-notify.sh dry-run gate-summary 2>&1
+)"
+echo "$GATE_PASS" | grep -qi 'kind=gate' || fail "gate-summary pass should dry-run kind=gate"
+echo "$GATE_PASS" | grep -qi vitest && fail "gate-summary must not mention vitest"
+echo "$GATE_PASS" | grep -qi playwright && fail "gate-summary must not mention playwright"
+
+echo "== ci-mgmt-notify gate-summary fail labels =="
+GATE_FAIL="$(
+  NEED_fast_RESULT=failure NEED_docs_RESULT=success \
+  NEED_integration_RESULT=success NEED_playwright_RESULT=success \
+  MGMT_CI_REVISION=abc1234deadbeef MGMT_CI_BRANCH=main \
+  bash scripts/ci-mgmt-notify.sh dry-run gate-summary 2>&1
+)"
+echo "$GATE_FAIL" | grep -qi 'kind=pipeline' || fail "failed gate-summary dry-run should emit kind=pipeline"
+echo "$GATE_FAIL" | grep -qi playwright && fail "fail summary must not say playwright"
+
+echo "== ci-mgmt-notify deploy-ok / deploy-fail dry-run =="
+DEPLOY_OK="$(
+  MGMT_CI_ENV=alpha MGMT_CI_REVISION=abc1234deadbeef \
+  MGMT_CI_BODY='дымовые на среде: ок' \
+  bash scripts/ci-mgmt-notify.sh dry-run deploy-ok 2>&1
+)"
+echo "$DEPLOY_OK" | grep -qi 'kind=promote' || fail "deploy-ok should dry-run kind=promote"
+echo "$DEPLOY_OK" | grep -qiE 'localhost|vitest|playwright|github' && fail "deploy-ok banned token"
+
+DEPLOY_FAIL="$(
+  MGMT_CI_ENV=alpha MGMT_CI_REVISION=abc1234deadbeef \
+  bash scripts/ci-mgmt-notify.sh dry-run deploy-fail 2>&1
+)"
+echo "$DEPLOY_FAIL" | grep -qi 'kind=promote' || fail "deploy-fail should dry-run kind=promote"
+echo "$DEPLOY_FAIL" | grep -qi 'kind=pipeline' || fail "deploy-fail should also dry-run kind=pipeline"
+
+echo "== ci-mgmt-notify pre-images-gate dry-run =="
+PRE_IMG="$(
+  MGMT_CI_REVISION=abc1234deadbeef MGMT_CI_BRANCH=main MGMT_CI_GATE_STATUS=passed \
+  bash scripts/ci-mgmt-notify.sh dry-run pre-images-gate 2>&1
+)"
+echo "$PRE_IMG" | grep -qi 'kind=gate' || fail "pre-images-gate passed should dry-run kind=gate"
 
 TMP="$(mktemp -d)"
 trap 'rm -rf "$TMP"' EXIT
@@ -222,6 +269,14 @@ grep -q 'wait-for-ci\|wait for VDP CI' "$WF_IMAGES" \
   || fail "vdp-images must define wait-for-ci job for main push"
 grep -q 'needs.wait-for-ci.result' "$WF_IMAGES" \
   || fail "build-push must depend on wait-for-ci success|skipped"
+grep -q 'pre-images-gate' "$WF_IMAGES" \
+  || fail "vdp-images must notify pre-images-gate after wait-for-ci"
+WF_DEPLOY="$REPO_ROOT/.github/workflows/vdp-deploy.yml"
+[ -f "$WF_DEPLOY" ] || fail "missing $WF_DEPLOY"
+grep -q 'deploy-fail' "$WF_DEPLOY" \
+  || fail "vdp-deploy must notify deploy-fail on failure"
+grep -q 'notify_deploy\|дымовые на среде' scripts/deploy-compose-release.sh \
+  || fail "deploy-compose-release must notify promote after smoke"
 
 # docs/operations/ci.md must describe required checks (contract for ops)
 CI_DOC="$ROOT/docs/operations/ci.md"
@@ -239,6 +294,8 @@ echo "== Pilot Robot Matrix contract =="
 [ -f testdata/robot-fixtures/manifest.json ] || fail "missing robot-fixtures manifest"
 grep -q 'playwright-pilot-matrix' Makefile || fail "Makefile missing playwright-pilot-matrix"
 grep -q 'robot-matrix-check' Makefile || fail "Makefile missing robot-matrix-check"
+grep -q '^ci-pr:' Makefile || fail "Makefile missing ci-pr target"
+grep -q '^ci-pr-fast:' Makefile || fail "Makefile missing ci-pr-fast target"
 grep -q 'VDP_ROBOT_FIXTURES_ROOT' scripts/compose-playwright.sh \
   || fail "compose-playwright must mount robot fixtures root"
 ./scripts/robot-matrix-check.sh

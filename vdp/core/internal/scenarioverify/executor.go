@@ -921,7 +921,8 @@ func (e *Executor) mutatingProviderReturn(run *Run, sc Scenario) error {
 	})
 	_ = e.put(tok.manager, "/api/v1/manager/form-payment/"+id+"/payment/start", map[string]any{})
 	_ = e.put(tok.provider, "/api/v1/provider/form-payment/"+id+"/payment/start", map[string]any{})
-	if err := e.put(tok.provider, "/api/v1/provider/form-payment/"+id+"/payment/return", map[string]any{}); err != nil {
+	// Nest path for ActionProviderReturn is form/manager (not payment/return).
+	if err := e.put(tok.provider, "/api/v1/provider/form-payment/"+id+"/form/manager", map[string]any{}); err != nil {
 		e.appendStep(run, "provider_return", title, "manager_checking", "", err, start)
 		return err
 	}
@@ -943,10 +944,18 @@ func (e *Executor) mutatingExtractionConfirm(run *Run, sc Scenario) error {
 		e.appendStep(run, "confirm", title, "", "", err, start)
 		return err
 	}
+	// API expects { human: ExtractionResult }, not flat invoice fields.
 	_, err = e.post(tok.user, "/api/v1/forms/"+id+"/extraction/confirm", map[string]any{
-		"invoice_amount": "2500",
-		"currency":       "EUR",
-		"contract_number": "OCR-PROBE-1",
+		"human": map[string]any{
+			"schema_version": "v1",
+			"header": map[string]any{
+				"invoice_amount":  "2500",
+				"currency":        "EUR",
+				"contract_number": "OCR-PROBE-1",
+			},
+			"line_items": []any{},
+			"meta":       map[string]any{"engine_id": "human"},
+		},
 	})
 	if err != nil {
 		e.appendStep(run, "confirm", title, "", "", err, start)

@@ -2,12 +2,17 @@
 # Map CI context (Actions / secondary forge) → management Telegram via notify-mgmt.sh.
 # Outbound text has no forge/tool brand names. Skip quietly when token/chat missing.
 #
-# Modes (arg or MGMT_CI_MODE): auto | push | review | pipeline-fail | dry-run
+# Modes (arg or MGMT_CI_MODE):
+#   auto | push | review | pipeline-fail | gate-summary |
+#   deploy-ok | deploy-fail | pre-images-gate | dry-run
 #
 # Optional overrides:
 #   MGMT_CI_BRANCH, MGMT_CI_REVISION, MGMT_CI_SUBJECT, MGMT_CI_EVENT,
 #   MGMT_CI_REVIEW_STATUS, MGMT_CI_SOURCE_BRANCH, MGMT_CI_TARGET_BRANCH,
 #   MGMT_CI_FAILED_STEPS (comma-separated: fast,docs,integration,playwright)
+#   MGMT_CI_ENV (deploy target: alpha|beta|gamma|…)
+#   MGMT_CI_GATE_STATUS (passed|failed for pre-images-gate)
+#   MGMT_CI_BODY (optional body for promote/gate)
 #   NEED_fast_RESULT / NEED_docs_RESULT / … (Actions needs.*.result)
 set -euo pipefail
 
@@ -15,9 +20,12 @@ ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 NOTIFY="$ROOT/scripts/notify-mgmt.sh"
 MODE="${1:-${MGMT_CI_MODE:-auto}}"
 DRY=0
+if [ "${MGMT_CI_DRY:-0}" = "1" ]; then
+  DRY=1
+fi
 if [ "$MODE" = "dry-run" ]; then
   DRY=1
-  MODE=auto
+  MODE="${2:-${MGMT_CI_MODE:-auto}}"
 fi
 
 map_step() {
@@ -27,7 +35,8 @@ map_step() {
     integration) printf '%s' "интеграция" ;;
     playwright|e2e|scenarios) printf '%s' "сценарии" ;;
     release-gate|release_gate) printf '%s' "полный контур" ;;
-    promote*|write-release-pin) printf '%s' "выкат" ;;
+    promote*|write-release-pin|deploy) printf '%s' "выкат" ;;
+    wait-for-ci|images) printf '%s' "перед сборкой образов" ;;
     ""|unknown) printf '%s' "проверки" ;;
     *) printf '%s' "проверки" ;;
   esac
@@ -67,6 +76,9 @@ REVIEW_STATUS="${MGMT_CI_REVIEW_STATUS:-}"
 SOURCE_BRANCH="${MGMT_CI_SOURCE_BRANCH:-}"
 TARGET_BRANCH="${MGMT_CI_TARGET_BRANCH:-}"
 FAILED_STEPS="${MGMT_CI_FAILED_STEPS:-}"
+ENV_NAME="${MGMT_CI_ENV:-}"
+GATE_STATUS="${MGMT_CI_GATE_STATUS:-}"
+EXTRA_BODY="${MGMT_CI_BODY:-}"
 
 if [ -n "${GITHUB_ACTIONS:-}" ]; then
   BRANCH="${BRANCH:-${GITHUB_REF_NAME:-}}"
@@ -144,6 +156,22 @@ collect_failed() {
   printf '%s' "$failed"
 }
 
+collect_seen_steps() {
+  local out="" name result
+  for name in fast docs integration playwright release-gate; do
+    eval "result=\${NEED_${name//-/_}_RESULT:-}"
+    [ -n "$result" ] || continue
+    case "$result" in
+      skipped) continue ;;
+    esac
+    out="${out:+$out,}$name"
+  done
+  if [ -z "$out" ] && [ -n "$FAILED_STEPS" ]; then
+    out="$FAILED_STEPS"
+  fi
+  printf '%s' "${out:-fast,docs,integration,playwright}"
+}
+
 run_notify() {
   local kind="$1"
   shift
@@ -187,12 +215,57 @@ send_pipeline_fail() {
   run_notify pipeline --status failed --title "$step_label" --branch "$BRANCH" --revision "$REVISION"
 }
 
+send_gate_summary() {
+  local failed="$1"
+  local steps label
+  if [ -n "$failed" ]; then
+    send_pipeline_fail "$failed"
+    return 0
+  fi
+  steps="$(collect_seen_steps)"
+  label="$(join_steps "$steps")"
+  run_notify gate --status passed --title "$label" --branch "$BRANCH" --revision "$REVISION"
+}
+
+send_deploy_ok() {
+  local env_l="${ENV_NAME:-среда}"
+  local body="${EXTRA_BODY:-}"
+  if [ -n "$body" ]; then
+    run_notify promote --env "$env_l" --status success --revision "$REVISION" --body "$body"
+  else
+    run_notify promote --env "$env_l" --status success --revision "$REVISION"
+  fi
+}
+
+send_deploy_fail() {
+  local env_l="${ENV_NAME:-среда}"
+  local body="${EXTRA_BODY:-выкат или дымовые не прошли}"
+  run_notify promote --env "$env_l" --status failed --revision "$REVISION" --body "$body"
+  run_notify pipeline --status failed --title "выкат" --branch "${ENV_NAME:-$BRANCH}" --revision "$REVISION"
+}
+
+send_pre_images_gate() {
+  local st="${GATE_STATUS:-passed}"
+  case "$st" in
+    failed|fail|error|failure)
+      run_notify pipeline --status failed --title "перед сборкой образов" --branch "$BRANCH" --revision "$REVISION"
+      ;;
+    *)
+      run_notify gate --status passed --title "перед сборкой образов" --branch "$BRANCH" --revision "$REVISION"
+      ;;
+  esac
+}
+
 FAILED="$(collect_failed)"
 
 case "$MODE" in
   push) send_push ;;
   review) send_review ;;
   pipeline-fail) send_pipeline_fail "${FAILED:-unknown}" ;;
+  gate-summary) send_gate_summary "$FAILED" ;;
+  deploy-ok) send_deploy_ok ;;
+  deploy-fail) send_deploy_fail ;;
+  pre-images-gate) send_pre_images_gate ;;
   auto)
     case "$EVENT" in
       push)
@@ -204,9 +277,7 @@ case "$MODE" in
         send_review
         ;;
     esac
-    if [ -n "$FAILED" ]; then
-      send_pipeline_fail "$FAILED"
-    fi
+    send_gate_summary "$FAILED"
     ;;
   *)
     echo "ci-mgmt-notify: unknown mode '$MODE'" >&2

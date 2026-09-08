@@ -144,7 +144,10 @@ services:
       start_period: 5s
 
   # Roster (managers/chats) + behavioral analytics; no shared DB with core.
+  # Optional: COMPOSE_PROFILES=manager-ops docker compose up -d --build manager-ops
+  # Keep off default compose-up so CI/playwright gates are not blocked by this side service.
   manager-ops:
+    profiles: ["manager-ops"]
     build:
       context: .
       dockerfile: manager-ops/Dockerfile
