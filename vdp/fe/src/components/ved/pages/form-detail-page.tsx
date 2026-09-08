@@ -29,8 +29,8 @@ import {
   orgBlocksApproval,
   orgPendingIco,
   subjectState,
-  subjectsCleared,
   subjectsOf,
+  subjectsPendingReview,
 } from "@/lib/ved/compliance";
 import { dateTime, money } from "@/lib/ved/format";
 import { usePlatformMode } from "@/lib/ved/platform-mode";
@@ -130,10 +130,9 @@ export function FormDetail() {
   const meta = statusMetaForProcess(form.status, processRoles, role);
   const compliance = isComplianceRole(role);
   const subjects = subjectsOf(form, organizations, counterparties);
-  const cleared = subjectsCleared(subjects);
   const hasBlocked = orgBlocksApproval(subjects);
   const orgPending = orgPendingIco(subjects);
-  const subjectsPending = !cleared && !hasBlocked;
+  const subjectsPending = subjectsPendingReview(subjects);
   const isProvider = role === "provider";
   const providerLabel =
     users.find((u) => u.id === form.providerId)?.name ?? form.providerName ?? "не назначен";

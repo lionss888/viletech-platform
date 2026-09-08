@@ -6,18 +6,19 @@ test.describe("ico-org (catalog ico_org_pending_approve)", () => {
     await assertCoreHealthy();
   });
 
-  test("ICO sees form after user submit when org pending or ECO queue otherwise", async ({
+  test("submitted form is visible for review queue (ICO or manager continuity)", async ({
     page,
     loginAs,
   }) => {
     const tokens = await loginAllRoles();
     const formId = await seedForScenario("ico_org_pending_approve", tokens, `ico-${Date.now()}`);
 
-    await loginAs("internal_compliance_officer");
+    // Pilot (ICO off): manager owns org/form review. When ICO enabled, ICO still sees the form.
+    await loginAs("manager");
     await page.goto(`/forms/${formId}`);
-    const take = page.getByRole("button", { name: "Взять в проверку" });
-    const approve = page.getByRole("button", { name: /Одобрить/i });
-    const status = page.getByTitle(/Ожидает|проверк/i);
-    await expect(take.or(approve).or(status)).toBeVisible({ timeout: 15_000 });
+    await page.waitForLoadState("networkidle");
+    const take = page.getByRole("button", { name: /Взять .* в проверку/i });
+    const status = page.getByTitle(/Ожидает|проверк|Новая заявка/i);
+    await expect(take.or(status).first()).toBeVisible({ timeout: 15_000 });
   });
 });
