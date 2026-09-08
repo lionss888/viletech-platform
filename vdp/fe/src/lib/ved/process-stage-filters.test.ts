@@ -5,6 +5,7 @@ import {
   displayStageId,
   isComplianceProcessActive,
   stagesForProcess,
+  statusFiltersForProcess,
   statusMetaForProcess,
   verificationQueueLabel,
 } from "./process-stage-filters";
@@ -49,6 +50,14 @@ describe("process-stage-filters", () => {
   it("remaps form_verification badge copy without compliance wording", () => {
     const meta = statusMetaForProcess("form_verification", continuityRoles());
     expect(meta.label).toBe("Менеджер проверяет заявку");
+    expect(meta.short).toBe("Проверка");
+    expect(meta.label.toLowerCase()).not.toMatch(/комплаенс/);
+  });
+
+  it("remaps waiting badge short away from Ожидание КО", () => {
+    const meta = statusMetaForProcess("form_waiting_verification", continuityRoles());
+    expect(meta.short).toBe("У менеджера");
+    expect(meta.short).not.toMatch(/КО/);
     expect(meta.label.toLowerCase()).not.toMatch(/комплаенс/);
   });
 
@@ -57,10 +66,17 @@ describe("process-stage-filters", () => {
     expect(stages.some((s) => s.id === "organization_verification")).toBe(false);
     const review = stages.find((s) => s.id === "form_verification");
     expect(review?.label).toBe("Проверка");
+    expect(review?.label).not.toMatch(/Комплаенс/);
     expect(displayStageId("form_verification", continuityRoles())).toBe("form_verification");
     expect(displayStageId("organization_waiting_verification", continuityRoles())).toBe(
       "form_verification",
     );
+  });
+
+  it("renames status filter На комплаенсе when continuity", () => {
+    const filters = statusFiltersForProcess(continuityRoles());
+    const compliance = filters.find((f) => f.value === "compliance");
+    expect(compliance?.label).toBe("На проверке");
   });
 
   it("keeps compliance labels when ECO is an actor", () => {

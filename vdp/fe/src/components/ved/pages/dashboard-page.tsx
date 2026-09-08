@@ -12,7 +12,7 @@ import { daysIdle, systemStats } from "@/lib/ved/health";
 import { SYSTEM_INCIDENTS, SYSTEM_SERVICES } from "@/lib/ved/reference";
 import { useVedPaths } from "@/lib/ved/ved-paths";
 import { roleTitle } from "@/lib/ved/roles";
-import { STAGES, statusMeta } from "@/lib/ved/statuses";
+import { displayStageId, stagesForProcess } from "@/lib/ved/process-stage-filters";
 import { cpByIdFrom, usePlatformStore, visibleForms } from "@/lib/ved/platform-store";
 import { useProcessRolesRows } from "@/lib/ved/use-process-roles-snapshot";
 import type { VedRole } from "@/lib/ved/types";
@@ -196,14 +196,16 @@ function RoleDashboard() {
     [scoped, role, processRoles],
   );
 
+  const stages = useMemo(() => stagesForProcess(processRoles), [processRoles]);
+
   const byStage = useMemo(() => {
     const map = new Map<string, number>();
     scoped.forEach((f) => {
-      const stage = statusMeta(f.status).stage;
+      const stage = displayStageId(f.status, processRoles);
       map.set(stage, (map.get(stage) ?? 0) + 1);
     });
     return map;
-  }, [scoped]);
+  }, [scoped, processRoles]);
 
   const recent = useMemo(
     () => [...scoped].sort((a, b) => b.updatedAt.localeCompare(a.updatedAt)).slice(0, 6),
@@ -303,7 +305,9 @@ function RoleDashboard() {
           <h2 className="text-sm font-semibold">Сделки по этапам</h2>
 
           <ul className="mt-3 space-y-1">
-            {STAGES.filter((stage) => (byStage.get(stage.id) ?? 0) > 0).map((stage) => (
+            {stages
+              .filter((stage) => (byStage.get(stage.id) ?? 0) > 0)
+              .map((stage) => (
               <li key={stage.id}>
                 <VedLink
                   segment="/forms"
