@@ -1,4 +1,3 @@
-import { statusMeta } from "@/lib/ved/statuses";
 import { statusMetaForProcess } from "@/lib/ved/process-stage-filters";
 import type { ProcessRoleRow } from "@/lib/api/process-roles";
 import type { FormStatus, StatusTone } from "@/lib/ved/types";
@@ -23,7 +22,7 @@ export function StatusBadge({
   processRoles?: ProcessRoleRow[];
   className?: string;
 }) {
-  const meta = processRoles?.length ? statusMetaForProcess(status, processRoles) : statusMeta(status);
+  const meta = statusMetaForProcess(status, processRoles);
   return (
     <span
       title={meta.label}

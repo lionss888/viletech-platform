@@ -1,6 +1,6 @@
 import type { ProcessRoleRow } from "@/lib/api/process-roles";
 import { isProcessSlotDisabled } from "@/lib/ved/process-role-filter";
-import { STAGES, statusMeta, type StatusMeta } from "@/lib/ved/statuses";
+import { STAGES, STATUS_FILTERS, statusMeta, type StatusMeta } from "@/lib/ved/statuses";
 import type { FormStatus, StageId } from "@/lib/ved/types";
 
 const COMPLIANCE_ROLES = ["internal_compliance_officer", "compliance_officer"] as const;
@@ -19,6 +19,16 @@ export function isComplianceProcessActive(roles: ProcessRoleRow[] | undefined): 
 /** Registry summary card / filter label for org+form verification stages. */
 export function verificationQueueLabel(roles: ProcessRoleRow[] | undefined): string {
   return isComplianceProcessActive(roles) ? "На комплаенсе" : "На проверке";
+}
+
+/** Status dropdown options — rename «На комплаенсе» when ICO/ECO slots are off. */
+export function statusFiltersForProcess(
+  roles: ProcessRoleRow[] | undefined,
+): typeof STATUS_FILTERS {
+  if (isComplianceProcessActive(roles)) return STATUS_FILTERS;
+  return STATUS_FILTERS.map((filter) =>
+    filter.value === "compliance" ? { ...filter, label: "На проверке" } : filter,
+  );
 }
 
 const CONTINUITY_STATUS_LABELS: Partial<Record<string, Pick<StatusMeta, "label" | "short">>> = {

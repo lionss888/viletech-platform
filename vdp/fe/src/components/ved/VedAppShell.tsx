@@ -305,7 +305,7 @@ export function VedAppShell({ children, title, subtitle }: { children: ReactNode
         footer={<ModalButton onClick={() => setSupportOpen(false)}>Понятно</ModalButton>}
       >
         <div className="space-y-1 text-sm">
-          <p>Почта: support@viletech.ru</p>
+          <p>Почта: support@vedy.io</p>
           <p>Телефон: +7 495 000-00-00</p>
           <p className="text-muted-foreground">Рабочие часы: пн–пт, 09:00–19:00 МСК</p>
         </div>

@@ -10,15 +10,15 @@ import { actionsFor } from "@/lib/ved/actions";
 import { money } from "@/lib/ved/format";
 import { daysIdle, stuckForms } from "@/lib/ved/health";
 import type { FormsSearch } from "@/lib/ved/forms-search";
-import { verificationQueueLabel } from "@/lib/ved/process-stage-filters";
+import { verificationQueueLabel, displayStageId, stagesForProcess, statusFiltersForProcess, statusMetaForProcess } from "@/lib/ved/process-stage-filters";
 import { roleTitle } from "@/lib/ved/roles";
-import { STAGES, STATUS_FILTERS, statusMeta } from "@/lib/ved/statuses";
 import { cpByIdFrom, orgByIdFrom, usePlatformStore, visibleForms } from "@/lib/ved/platform-store";
 import { providerCsvHeader, providerCsvRow, providerFormSearchHaystack } from "@/lib/ved/provider-acl";
 import { dateTime } from "@/lib/ved/format";
 import { useProcessRolesRows } from "@/lib/ved/use-process-roles-snapshot";
 import { cn } from "@/lib/utils";
 import type { FormAction, VedRole } from "@/lib/ved/types";
+import type { ProcessRoleRow } from "@/lib/api/process-roles";
 export function FormsList() {
   const { forms, session, applyBulk, organizations, counterparties } = usePlatformStore();
   const preset = useSearch({ strict: false }) as FormsSearch;
@@ -38,15 +38,17 @@ export function FormsList() {
   const stuck = useMemo(() => stuckForms(scoped), [scoped]);
   const stuckIds = useMemo(() => new Set(stuck.map((f) => f.id)), [stuck]);
   const verificationLabel = verificationQueueLabel(processRoles);
+  const statusFilters = useMemo(() => statusFiltersForProcess(processRoles), [processRoles]);
+  const stages = useMemo(() => stagesForProcess(processRoles), [processRoles]);
 
   const rows = useMemo(() => {
-    const statusPreset = STATUS_FILTERS.find((f) => f.value === filter);
+    const statusPreset = statusFilters.find((f) => f.value === filter);
     return scoped.filter((form) => {
       if (statusPreset && statusPreset.statuses.length > 0 && !statusPreset.statuses.includes(form.status)) return false;
       if (stageFilter === "verification") {
-        const stage = statusMeta(form.status).stage;
+        const stage = displayStageId(form.status, processRoles);
         if (stage !== "organization_verification" && stage !== "form_verification") return false;
-      } else if (stageFilter && statusMeta(form.status).stage !== stageFilter) return false;
+      } else if (stageFilter && displayStageId(form.status, processRoles) !== stageFilter) return false;
       if (onlyMine && actionsFor(role, form.status, processRoles).length === 0) return false;
       if (onlyStuck && !stuckIds.has(form.id)) return false;
       if (query) {
@@ -60,7 +62,7 @@ export function FormsList() {
       }
       return true;
     });
-  }, [scoped, filter, stageFilter, onlyMine, onlyStuck, stuckIds, query, role, counterparties, organizations, processRoles]);
+  }, [scoped, filter, stageFilter, onlyMine, onlyStuck, stuckIds, query, role, counterparties, organizations, processRoles, statusFilters]);
 
   const bulkActions = useMemo(() => {
     const chosen = rows.filter((f) => selected.includes(f.id));
@@ -74,11 +76,11 @@ export function FormsList() {
   const counters = useMemo(() => {
     const map = new Map<string, number>();
     scoped.forEach((f) => {
-      const stage = statusMeta(f.status).stage;
+      const stage = displayStageId(f.status, processRoles);
       map.set(stage, (map.get(stage) ?? 0) + 1);
     });
     return map;
-  }, [scoped]);
+  }, [scoped, processRoles]);
 
   return (
     <VedAppShell title="Реестр платёжных заявок" subtitle={`${roleTitle(role)} · видимых заявок: ${scoped.length}`}>
@@ -147,7 +149,7 @@ export function FormsList() {
           )}
           <button
             type="button"
-            onClick={() => downloadCsv(formsToCsv(rows, organizations, counterparties, role), "zayavki.csv")}
+            onClick={() => downloadCsv(formsToCsv(rows, organizations, counterparties, role, processRoles), "zayavki.csv")}
             className="w-full rounded-md border border-border px-3 py-2 text-xs font-semibold sm:w-auto sm:py-1.5"
           >
             Скачать заявки ({rows.length})
@@ -157,7 +159,7 @@ export function FormsList() {
             disabled={selected.length === 0}
             onClick={() =>
               downloadCsv(
-                formsToCsv(rows.filter((f) => selected.includes(f.id)), organizations, counterparties, role),
+                formsToCsv(rows.filter((f) => selected.includes(f.id)), organizations, counterparties, role, processRoles),
                 "zayavki-vybrannye.csv",
               )
             }
@@ -176,7 +178,7 @@ export function FormsList() {
             className="field max-w-xs"
           />
           <select value={filter} onChange={(e) => setFilter(e.target.value)} className="field max-w-[200px] text-sm">
-            {STATUS_FILTERS.map((f) => (
+            {statusFilters.map((f) => (
               <option key={f.value} value={f.value}>
                 {f.label}
               </option>
@@ -185,7 +187,7 @@ export function FormsList() {
           <select value={stageFilter} onChange={(e) => setStageFilter(e.target.value)} className="field max-w-[180px] text-sm">
             <option value="">Все этапы</option>
             <option value="verification">{verificationLabel}</option>
-            {STAGES.map((s) => (
+            {stages.map((s) => (
               <option key={s.id} value={s.id}>
                 Этап: {s.label}
               </option>
@@ -394,6 +396,7 @@ function formsToCsv(
   organizations: ReturnType<typeof usePlatformStore>["organizations"],
   counterparties: ReturnType<typeof usePlatformStore>["counterparties"],
   role: VedRole = "user",
+  processRoles?: ProcessRoleRow[],
 ): string {
   const escape = (v: string) => (/[",;\n]/.test(v) ? `"${v.replace(/"/g, '""')}"` : v);
   const isProvider = role === "provider";
@@ -417,8 +420,9 @@ function formsToCsv(
     const cpName = cpByIdFrom(counterparties, form.counterpartyId)?.name ?? "";
     const cpCountry = cpByIdFrom(counterparties, form.counterpartyId)?.countryCode ?? "";
     const orgName = orgByIdFrom(organizations, form.organizationId)?.name ?? "";
-    const statusLabel = statusMeta(form.status).label;
-    const stage = statusMeta(form.status).stage;
+    const meta = statusMetaForProcess(form.status, processRoles);
+    const statusLabel = meta.label;
+    const stage = displayStageId(form.status, processRoles);
     const updatedLabel = dateTime(form.updatedAt);
     const cells = isProvider
       ? providerCsvRow(form, statusLabel, stage, cpName, cpCountry, orgName, updatedLabel)
