@@ -1,4 +1,4 @@
-.PHONY: deps test test-integration test-adapters build db-setup db-migrate compose-db-migrate run-hub run-core run smoke stop compose-up compose-up-prod compose-down compose-ps compose-e2e compose-fe-smoke compose-fe-refresh compose-fe-prod-smoke compose-playwright lovable-seed-check integration-gate playwright-e2e playwright-pilot playwright-pilot-matrix robot-matrix-check docs-format-check release-gate image-build image-push image-build-push compose-release-config-check compose-release-up deploy-alpha deploy-beta deploy-gamma rollback-alpha rollback-beta rollback-gamma test-cd-scripts notify-mgmt core-seed-reset
+.PHONY: deps test test-integration test-adapters build db-setup db-migrate compose-db-migrate run-hub run-core run smoke stop compose-up compose-up-prod compose-down compose-ps compose-e2e compose-fe-smoke compose-fe-refresh compose-fe-prod-smoke compose-playwright lovable-seed-check integration-gate playwright-e2e playwright-pilot playwright-pilot-matrix robot-matrix-check docs-format-check release-gate image-build image-push image-build-push compose-release-config-check compose-release-up deploy-alpha deploy-beta deploy-gamma rollback-alpha rollback-beta rollback-gamma test-cd-scripts notify-mgmt core-seed-reset install-git-hooks precommit-gate ci-pr-fast ci-pr
 
 CORE_DIR := core
 HUB_DIR := hub
@@ -188,6 +188,24 @@ integration-gate:
 	$(MAKE) test
 	$(MAKE) compose-e2e
 
+# Local PR parity for VDP CI (vdp-ci.yml) without full nightly Playwright / release-gate.
+# Fast: docs + CD contract + adapters + integration-gate (fe unit + go unit + compose-e2e).
+ci-pr-fast:
+	$(MAKE) docs-format-check
+	$(MAKE) test-cd-scripts
+	$(MAKE) test-adapters
+	$(MAKE) integration-gate
+	@echo "ci-pr-fast green (PR parity without browser E2E)"
+
+# Full PR-required surface: ci-pr-fast + narrow Playwright (same PLAYWRIGHT_ARGS as pull_request job).
+# Pause matches release-gate: compose-e2e / smoke can exhaust gateway rate-limit before browser login.
+ci-pr: ci-pr-fast
+	@echo "ci-pr: pause 65s for gateway rate-limit window before browser E2E"
+	@sleep 65
+	PLAYWRIGHT_ARGS='e2e/login-form.spec.ts e2e/user-submit.spec.ts e2e/provider-acl.spec.ts e2e/reject-path.spec.ts' \
+		$(MAKE) playwright-e2e
+	@echo "ci-pr green (local insurance for VDP CI on pull_request)"
+
 # Keep fe/src/lib/ved/mock.ts byte-identical to lovable-vdp/dev0; demo patches → demo-seed-overlay.ts.
 lovable-seed-check:
 	@chmod +x scripts/lovable-seed-check.sh
@@ -302,3 +320,14 @@ notify-mgmt:
 		$(if $(REVISION),--revision "$(REVISION)") \
 		$(if $(NEXT),--next "$(NEXT)") \
 		$(if $(DRY_RUN),--dry-run)
+
+# Local unit gate + management Telegram (pass and fail). Used by .githooks/pre-commit.
+precommit-gate:
+	@chmod +x scripts/precommit-mgmt-notify.sh
+	./scripts/precommit-mgmt-notify.sh
+
+# From repo root: make -C vdp install-git-hooks
+install-git-hooks:
+	@git -C .. config core.hooksPath .githooks
+	@chmod +x ../.githooks/pre-commit scripts/precommit-mgmt-notify.sh
+	@echo "git hooksPath=.githooks (pre-commit → precommit-mgmt-notify)"

@@ -4,6 +4,7 @@
 # Required: DEPLOY_HOST, pin file with VDP_*_IMAGE refs.
 # Optional: DEPLOY_USER, DEPLOY_PATH, SSH_KEY_PATH, REGISTRY_USER/REGISTRY_TOKEN (registry login),
 #           SKIP_SMOKE=1 to skip staging-smoke.
+# Optional notify: MGMT_NOTIFY_TOKEN + MGMT_NOTIFY_CHAT_ID (promote success/fail after smoke).
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
@@ -17,6 +18,7 @@ REGISTRY_USER="${REGISTRY_USER:-}"
 REGISTRY_TOKEN="${REGISTRY_TOKEN:-}"
 SKIP_SMOKE="${SKIP_SMOKE:-0}"
 PIN_FILE="${PIN_FILE:-$ROOT/.release-images.env}"
+NOTIFY="$ROOT/scripts/notify-mgmt.sh"
 
 if [ ! -f "$PIN_FILE" ]; then
   echo "missing pin file: $PIN_FILE" >&2
@@ -32,6 +34,25 @@ source "$PIN_FILE"
 : "${VDP_EXTRACTION_IMAGE:?VDP_EXTRACTION_IMAGE required in pin file}"
 : "${VDP_FE_IMAGE:?VDP_FE_IMAGE required in pin file}"
 # VDP_MAIL_IMAGE / VDP_SMS_IMAGE optional — enable compose profile gateways when set.
+
+REV_SHORT="$(printf '%s' "${GIT_REVISION:-${IMAGE_TAG:-unknown}}" | sed 's/^sha-//' | cut -c1-7)"
+
+notify_deploy() {
+  local status="$1"
+  local body="${2:-}"
+  [ -x "$NOTIFY" ] || chmod +x "$NOTIFY" 2>/dev/null || true
+  [ -f "$NOTIFY" ] || return 0
+  if [ -n "$body" ]; then
+    "$NOTIFY" --kind promote --env "$ENVIRONMENT" --status "$status" --revision "$REV_SHORT" --body "$body" || true
+  else
+    "$NOTIFY" --kind promote --env "$ENVIRONMENT" --status "$status" --revision "$REV_SHORT" || true
+  fi
+}
+
+on_deploy_err() {
+  notify_deploy failed "выкат или дымовые не прошли"
+}
+trap on_deploy_err ERR
 
 SSH_OPTS=(-o StrictHostKeyChecking=accept-new -o BatchMode=yes)
 if [ -n "$SSH_KEY_PATH" ]; then
@@ -134,5 +155,15 @@ ssh "${SSH_OPTS[@]}" "$REMOTE" \
   "DEPLOY_PATH='${DEPLOY_PATH}' ENVIRONMENT_OVERRIDE='${ENVIRONMENT}' COMPOSE_FILES='${COMPOSE_FILES}' \
    REGISTRY_HOST='${REGISTRY_HOST}' REGISTRY_USER='${REGISTRY_USER}' REGISTRY_TOKEN='${REGISTRY_TOKEN}' \
    SKIP_SMOKE='${SKIP_SMOKE}' bash -s" <<< "$REMOTE_CMD"
+
+trap - ERR
+
+SMOKE_BODY="дымовые на среде: ок"
+if [ "$ENVIRONMENT" = "gamma" ] || [ "$SKIP_SMOKE" = "1" ]; then
+  SMOKE_BODY="выкат без дымовых (политика среды)"
+elif [ "$ENVIRONMENT" = "alpha" ]; then
+  SMOKE_BODY="дымовые на среде alpha: ок"
+fi
+notify_deploy success "$SMOKE_BODY"
 
 echo "deploy ${ENVIRONMENT} ok (tag=${IMAGE_TAG:-unknown})"

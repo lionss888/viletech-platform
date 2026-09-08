@@ -58,6 +58,10 @@ compose-up затем scripts/compose-e2e.sh. Команда make compose-e2e.
 
 npm test в fe, make test, make compose-e2e. Команда make integration-gate.
 
+## ci-pr-fast и ci-pr
+
+Локальная страховка required checks VDP CI на pull_request. `make ci-pr-fast`: docs-format-check, test-cd-scripts, test-adapters, integration-gate. `make ci-pr`: то же плюс узкий Playwright (login-form, user-submit, provider-acl, reject-path) — как `PLAYWRIGHT_ARGS` в job playwright на PR. Не заменяет `make release-gate` (полный suite / handover). Процесс агента: `.cursor/rules/vdp-ci-local-gate.mdc`.
+
 ## playwright-e2e и compose-playwright
 
 Browser E2E через Docker. Команды make playwright-e2e, make compose-playwright.
