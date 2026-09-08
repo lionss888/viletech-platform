@@ -1,0 +1,26 @@
+---
+description: Management Telegram notify — no tool/IDE brand names
+alwaysApply: true
+---
+
+# Management TG notifications
+
+Канал статуса для менеджмента и eng: invite `https://t.me/+XAl4Vq3otV81YzVi`.
+
+## MUST
+
+- После закрытия волны / выката / блокера в график — уведомить через `vdp/scripts/notify-mgmt.sh` (или `make -C vdp notify-mgmt …`).
+- Текст **без** названий IDE, моделей, раннеров тестов, фреймворков, путей планов, `localhost`, учёток и секретов.
+- Санитайзер: `vdp/scripts/mgmt-notify-sanitize.py` (всегда проходит перед отправкой).
+
+## Kinds
+
+`done` | `progress` | `gate` | `promote` | `uptime` | `blocker` | `schedule` | `raw`
+
+Продукт — для менеджмента; `gate` / `promote` / `blocker` — техслой тем же языком процесса (проверки, выкат, ревизия), не брендами стека.
+
+## Анти-паттерны
+
+- Писать в чат пути `.cursor/plans/…`, plan id, счётчики конкретного раннера.
+- Слать пароли / ссылки локальной среды с учётками.
+- Обходить санитайзер «ручным curl».

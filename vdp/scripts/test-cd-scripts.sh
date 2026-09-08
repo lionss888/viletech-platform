@@ -5,6 +5,8 @@ set -euo pipefail
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 cd "$ROOT"
 
+fail() { echo "FAIL: $*" >&2; exit 1; }
+
 for script in \
   scripts/ci-bootstrap-postgres.sh \
   scripts/image-build-push.sh \
@@ -18,15 +20,23 @@ for script in \
   scripts/compose-db-migrate.sh \
   scripts/compose-playwright.sh \
   scripts/vdp-compose-up.sh \
-  scripts/staging-smoke.sh; do
+  scripts/staging-smoke.sh \
+  scripts/notify-mgmt.sh; do
   bash -n "$script"
   echo "syntax ok: $script"
 done
 
+echo "== mgmt-notify-sanitize self-test =="
+python3 scripts/mgmt-notify-sanitize.py --self-test
+
+echo "== notify-mgmt dry-run strips brands =="
+DRY="$(bash scripts/notify-mgmt.sh --dry-run --kind raw --body $'vitest OK\n.cursor/plans/foo.plan.md\nlocalhost:5173')"
+echo "$DRY" | grep -qi vitest && fail "dry-run must strip vitest"
+echo "$DRY" | grep -qi 'localhost' && fail "dry-run must strip localhost"
+echo "$DRY" | grep -qi '\.cursor/' && fail "dry-run must strip .cursor paths"
+
 TMP="$(mktemp -d)"
 trap 'rm -rf "$TMP"' EXIT
-
-fail() { echo "FAIL: $*" >&2; exit 1; }
 
 write_pin() {
   cat >"$1"
