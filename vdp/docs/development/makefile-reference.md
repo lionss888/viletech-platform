@@ -80,7 +80,15 @@ Browser E2E через Docker. Команды make playwright-e2e, make compose-
 
 ## docs-format-check
 
-Проверка markdown в vdp/docs и vdp/README.md на запрещённую разметку. Команда make docs-format-check.
+Проверка markdown в vdp/docs и vdp/README.md на запрещённую разметку. Команда make docs-format-check. Входит в `precommit-gate` и в `ci-pr` / `release-gate`.
+
+## precommit-gate
+
+Локальный хук-агрегат: `docs-format-check`, затем `make test`, затем TG notify (pass/fail). Команда `make precommit-gate` / `.githooks/pre-commit`. Не заменяет `ci-pr`.
+
+## compose-db-migrate
+
+Накатывает core/hub `*.sql` в compose Postgres. Ждёт стабильный ready (post-initdb restart) и ретраит psql при `shutting down`. Команда `make compose-db-migrate`; вызывается из `compose-up` / release up.
 
 ## release-gate
 

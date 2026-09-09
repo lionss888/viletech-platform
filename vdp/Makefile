@@ -86,8 +86,9 @@ compose-db-migrate:
 	@./scripts/compose-db-migrate.sh
 
 # Existing Postgres volumes skip docker-entrypoint-initdb.d; migrate before core seed.
+# --wait: healthy after start; compose-db-migrate also waits through post-initdb restart.
 compose-up:
-	docker compose up -d --build postgres-core postgres-hub
+	docker compose up -d --build --wait postgres-core postgres-hub
 	@$(MAKE) compose-db-migrate
 	docker compose up -d --build
 	@echo "waiting for core+hub+fe health..."
@@ -113,7 +114,7 @@ core-seed-reset:
 	@echo "core restarted; seed accounts kept, forms wiped (local only)"
 
 compose-up-prod:
-	docker compose --profile prod up -d --build postgres-core postgres-hub
+	docker compose --profile prod up -d --build --wait postgres-core postgres-hub
 	@$(MAKE) compose-db-migrate
 	docker compose --profile prod up -d --build
 	@echo "waiting for core+hub+fe-prod health..."
@@ -321,7 +322,7 @@ notify-mgmt:
 		$(if $(NEXT),--next "$(NEXT)") \
 		$(if $(DRY_RUN),--dry-run)
 
-# Local unit gate + management Telegram (pass and fail). Used by .githooks/pre-commit.
+# Local docs-format + unit gate + management Telegram (pass and fail). Used by .githooks/pre-commit.
 precommit-gate:
 	@chmod +x scripts/precommit-mgmt-notify.sh
 	./scripts/precommit-mgmt-notify.sh

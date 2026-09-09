@@ -35,7 +35,7 @@ if [ -n "${VDP_MAIL_IMAGE:-}" ] || [ -n "${VDP_SMS_IMAGE:-}" ]; then
   PROFILES+=(--profile gateways)
 fi
 
-dc "${PROFILES[@]}" up -d --no-build postgres-core postgres-hub
+dc "${PROFILES[@]}" up -d --no-build --wait postgres-core postgres-hub
 chmod +x ./scripts/compose-db-migrate.sh
 ./scripts/compose-db-migrate.sh
 

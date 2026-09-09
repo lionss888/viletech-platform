@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
-# Local pre-commit gate: run make test, then notify management (pass and fail).
-# Missing MGMT_NOTIFY token/chat → notify skips; tests still required.
+# Local pre-commit gate: docs-format-check + make test, then notify management (pass and fail).
+# Missing MGMT_NOTIFY token/chat → notify skips; gates still required.
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
@@ -9,12 +9,24 @@ cd "$ROOT"
 
 REVISION="$(git -C "$ROOT/.." rev-parse --short HEAD 2>/dev/null || git rev-parse --short HEAD 2>/dev/null || echo local)"
 STATUS=passed
+CODE=0
+
+set +e
+make docs-format-check
+DOCS_CODE=$?
+set -e
+if [ "$DOCS_CODE" -ne 0 ]; then
+  CODE=$DOCS_CODE
+  STATUS=failed
+fi
+
+# Still run unit tests when docs fail so the notify body reflects both surfaces.
 set +e
 make test
-CODE=$?
+TEST_CODE=$?
 set -e
-
-if [ "$CODE" -ne 0 ]; then
+if [ "$TEST_CODE" -ne 0 ]; then
+  CODE=$TEST_CODE
   STATUS=failed
 fi
 

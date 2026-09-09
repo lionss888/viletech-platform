@@ -1,6 +1,6 @@
 # CI/CD для VDP
 
-GitHub Actions — канон: merge в main, теги vdp-v, GHCR, deploy. GitLab (группа sandbox6902635) — вторичный форж: зеркало, параллельные MR, тот же тестовый контур. Настройка зеркала: [gitlab-setup.md](gitlab-setup.md). Памятка кнопки обновления: [how-to-update.md](how-to-update.md).
+GitHub Actions — канон: merge в main, теги vdp-v, GHCR, deploy. GitLab (группа [vdp888](https://gitlab.com/vdp888)) — вторичный форж: зеркало, параллельные MR, тот же тестовый контур. Настройка зеркала: [gitlab-setup.md](gitlab-setup.md) (кратко) и [../development/gitlab-setup.md](../development/gitlab-setup.md) (howto). Памятка кнопки обновления: [how-to-update.md](how-to-update.md).
 
 ## Topology
 
@@ -26,9 +26,9 @@ Job playwright (browser E2E): compose плюс make playwright-e2e. Переме
 
 Далее vdp-preview.yml: PR с label preview, образы с ветки, compose-проект pr-N на VM test, Caddy pr-N.preview.vedy.io, без сборки на хосте.
 
-Далее vdp-lovable-sync.yml: fetch lionss888/vdp, открыть PR в vdp/fe, не merge в main.
+Далее vdp-lovable-sync.yml: fetch GitHub lionss888/vdp (Lovable), открыть PR в vdp/fe, не merge в main. На GitLab тот же UI-репо лежит как [vdp888/vdp](https://gitlab.com/vdp888/vdp) — отдельно от зеркала монорепо [vdp888/viletech-platform](https://gitlab.com/vdp888/viletech-platform); см. [gitlab-setup.md](gitlab-setup.md) и [../development/gitlab-setup.md](../development/gitlab-setup.md).
 
-Далее vdp-mirror-gitlab.yml: из GitHub в GitLab. CD на GitLab — волна 3.
+Далее vdp-mirror-gitlab.yml: GitHub monorepo → https://gitlab.com/vdp888/viletech-platform. Не путать с Lovable-репо vdp888/vdp. CD на GitLab — волна 3.
 
 Images: build и push образов vdp-core, vdp-hub, vdp-docs, vdp-extraction, vdp-mail, vdp-sms, vdp-fe (production target) в GHCR по digest; copy digest в GitLab Container Registry. После push pin публикуется GitHub Release как каталог обновлений. workflow_dispatch принимает поле ref (ветка, тег или SHA).
 

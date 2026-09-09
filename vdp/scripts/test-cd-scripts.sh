@@ -27,7 +27,8 @@ for script in \
   scripts/staging-smoke.sh \
   scripts/notify-mgmt.sh \
   scripts/ci-mgmt-notify.sh \
-  scripts/precommit-mgmt-notify.sh; do
+  scripts/precommit-mgmt-notify.sh \
+  scripts/configure-gitlab-mirror.sh; do
   [ -f "$script" ] || fail "missing $script"
   bash -n "$script"
   echo "syntax ok: $script"
@@ -41,6 +42,10 @@ DRY="$(bash scripts/notify-mgmt.sh --dry-run --kind raw --body $'vitest OK\n.cur
 echo "$DRY" | grep -qi vitest && fail "dry-run must strip vitest"
 echo "$DRY" | grep -qi 'localhost' && fail "dry-run must strip localhost"
 echo "$DRY" | grep -qi '\.cursor/' && fail "dry-run must strip .cursor paths"
+
+echo "== precommit-mgmt-notify must run docs-format-check =="
+grep -q 'docs-format-check' scripts/precommit-mgmt-notify.sh || fail "precommit-mgmt-notify.sh must invoke docs-format-check"
+grep -q 'make test' scripts/precommit-mgmt-notify.sh || fail "precommit-mgmt-notify.sh must invoke make test"
 
 echo "== ci-mgmt-notify gate-summary pass =="
 GATE_PASS="$(
@@ -227,6 +232,12 @@ grep -q 'for f in' scripts/db-migrate-host.sh \
   || fail "db-migrate-host must iterate migration files"
 grep -q 'for f in\|for file in\|/\*\.sql' scripts/compose-db-migrate.sh \
   || fail "compose-db-migrate must iterate migration files"
+grep -qi 'shutting down' scripts/compose-db-migrate.sh \
+  || fail "compose-db-migrate must retry when postgres is shutting down (post-initdb)"
+grep -qE 'got=|consecutive|need=' scripts/compose-db-migrate.sh \
+  || fail "compose-db-migrate must wait for consecutive ready probes"
+grep -q -- '--wait' Makefile \
+  || fail "compose-up must use docker compose --wait for postgres"
 for mig in core/migrations/*.sql; do
   base="$(basename "$mig")"
   [[ "$base" =~ ^[0-9]{3}_ ]] || fail "unexpected migration name: $base"
@@ -295,6 +306,36 @@ grep -q 'wait for VDP CI\|wait-vdp-ci\|wait-for-ci' "$CI_DOC" \
   || fail "ci.md must document Images waiting for VDP CI on main"
 grep -q 'PLAYWRIGHT_ARGS' "$CI_DOC" \
   || fail "ci.md must document PLAYWRIGHT_ARGS PR vs main"
+
+echo "== VDP Mirror to GitLab (vdp888) =="
+WF_MIRROR="$REPO_ROOT/.github/workflows/vdp-mirror-gitlab.yml"
+[ -f "$WF_MIRROR" ] || fail "missing $WF_MIRROR"
+grep -q 'GITLAB_MIRROR_URL' "$WF_MIRROR" \
+  || fail "vdp-mirror-gitlab must require GITLAB_MIRROR_URL"
+grep -q 'GITLAB_MIRROR_TOKEN' "$WF_MIRROR" \
+  || fail "vdp-mirror-gitlab must require GITLAB_MIRROR_TOKEN"
+grep -q 'vdp888/viletech-platform' "$WF_MIRROR" \
+  || fail "vdp-mirror-gitlab must target vdp888/viletech-platform"
+grep -q 'vdp888/vdp' "$WF_MIRROR" \
+  || fail "vdp-mirror-gitlab must guard against mirroring into Lovable vdp888/vdp"
+# Silent skip on missing secrets must not be the default push path
+if grep -q 'not set — skip mirror' "$WF_MIRROR"; then
+  fail "vdp-mirror-gitlab must not silently skip when secrets missing"
+fi
+grep -q '::error::' "$WF_MIRROR" \
+  || fail "vdp-mirror-gitlab must error when secrets missing"
+[ -f scripts/configure-gitlab-mirror.sh ] \
+  || fail "missing scripts/configure-gitlab-mirror.sh"
+GL_DOC="$ROOT/docs/development/gitlab-setup.md"
+[ -f "$GL_DOC" ] || fail "missing $GL_DOC"
+grep -q 'vdp888' "$GL_DOC" \
+  || fail "development/gitlab-setup.md must target group vdp888"
+grep -q 'configure-gitlab-mirror.sh' "$GL_DOC" \
+  || fail "development/gitlab-setup.md must document configure-gitlab-mirror.sh"
+GL_OPS="$ROOT/docs/operations/gitlab-setup.md"
+[ -f "$GL_OPS" ] || fail "missing $GL_OPS"
+grep -q 'development/gitlab-setup.md' "$GL_OPS" \
+  || fail "operations/gitlab-setup.md must point to development howto"
 
 echo "== Pilot Robot Matrix contract =="
 [ -f scripts/robot-matrix-check.sh ] || fail "missing scripts/robot-matrix-check.sh"
