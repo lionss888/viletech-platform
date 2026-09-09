@@ -158,6 +158,20 @@ export async function createSubmittedForm(tokens: ApiTokens, suffix: string): Pr
   return id;
 }
 
+/**
+ * Force org into unverified state, then submit — soft-skip forbidden for ico_org_pending_approve.
+ */
+export async function createOrgPendingForm(tokens: ApiTokens, suffix: string): Promise<string> {
+  await tryPut(tokens.ico, `/api/v1/admin/internal-compliance-officer/organization/${ORG_ID}/un-approve`);
+  const id = await createDraftForm(tokens, suffix);
+  await authPut(tokens.user, `/api/v1/site/form-payment/${id}/form/accept`);
+  const st = await formStatus(tokens.user, `/api/v1/site/form-payment/${id}`);
+  if (st !== "organization_waiting_verification" && st !== "organization_verification") {
+    throw new Error(`createOrgPendingForm: want organization_waiting_verification got ${st}`);
+  }
+  return id;
+}
+
 /** Advance to form_accepted (manager queue). */
 export async function createFormAccepted(tokens: ApiTokens, suffix: string): Promise<string> {
   const id = await createSubmittedForm(tokens, suffix);
@@ -166,9 +180,17 @@ export async function createFormAccepted(tokens: ApiTokens, suffix: string): Pro
 }
 
 /** ECO/manager reject → form_waiting_corrections (continuity when ECO slot off). */
-export async function createRejectedForm(tokens: ApiTokens, suffix: string): Promise<string> {
+export async function createRejectedForm(
+  tokens: ApiTokens,
+  suffix: string,
+  opts: { reason?: string; mark?: string; comment?: string } = {},
+): Promise<string> {
   const id = await createSubmittedForm(tokens, suffix);
-  const body = { reason: "Playwright: уточните контракт", mark: "docs", comment: "Playwright: уточните контракт" };
+  const body = {
+    reason: opts.reason ?? "Playwright: уточните контракт",
+    mark: opts.mark ?? "docs",
+    comment: opts.comment ?? opts.reason ?? "Playwright: уточните контракт",
+  };
   let st = await formStatus(tokens.user, `/api/v1/site/form-payment/${id}`);
   if (st === "organization_waiting_verification" || st === "organization_verification") {
     await tryPut(tokens.ico, `/api/v1/admin/internal-compliance-officer/organization/${ORG_ID}/approve`);
@@ -243,7 +265,7 @@ export async function seedForScenario(scenarioId: ScenarioSeedId, tokens: ApiTok
     case "eco_reject_resubmit":
       return createRejectedForm(tokens, suffix);
     case "ico_org_pending_approve":
-      return createSubmittedForm(tokens, suffix);
+      return createOrgPendingForm(tokens, suffix);
     case "manager_payment_assign_provider":
       return createFormAccepted(tokens, suffix);
     case "provider_payment_no_pii":

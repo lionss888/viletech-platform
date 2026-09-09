@@ -50,7 +50,8 @@ func main() {
 		log.Info("seed wipe forms done", "environment", cfg.Environment)
 	}
 	forms := service.NewFormPaymentService(store, box, newID).
-		WithExtractionURL(cfg.ExtractionURL, cfg.HubSharedSecret)
+		WithExtractionURL(cfg.ExtractionURL, cfg.HubSharedSecret).
+		WithManagerOps(service.NewManagerOpsPublisher(cfg.ManagerOpsURL, cfg.HubSharedSecret, 3*time.Second))
 	orgs := service.NewOrganizationService(store).WithOutbox(box)
 	catalog := service.NewCatalogService(store, box, newID)
 	if blobs, err := openBlobStore(cfg); err != nil {

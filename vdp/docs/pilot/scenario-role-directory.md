@@ -36,7 +36,7 @@
 
 Идентификатор eco_reject_resubmit. Название Возврат на доработку и повторная подача. Смысл возврат клиенту и повторная отправка. Роли ECO или менеджер при ECO off, затем клиент. Исход form_waiting_corrections затем form_waiting_verification. Пилот через менеджера. Покрытие API compose-e2e reject. Покрытие UI reject-path и pilot-matrix reject. Статус covered. Примечание в matrix eco_off_alias_manager_reject.
 
-Идентификатор ico_org_pending_approve. Название Проверка организации клиента. Смысл организация ещё не одобрена. Роли клиент, ICO или менеджер continuity. Исход organization_waiting_verification затем form_waiting_verification. Пилот требует детерминированный unapprove в gate. Покрытие API compose-e2e и scenarioverify без soft-skip. Покрытие UI ico-org spot. Статус covered после волны B.
+Идентификатор ico_org_pending_approve. Название Проверка организации клиента. Смысл организация ещё не одобрена. Роли клиент, ICO или менеджер continuity. Исход organization_waiting_verification затем form_waiting_verification. Пилот требует детерминированный unapprove в gate. Покрытие API compose-e2e и scenarioverify без soft-skip. Покрытие UI ico-org spot. Статус covered.
 
 Идентификатор manager_payment_assign_provider. Название Приём оплаты и передача провайдеру. Роли менеджер. Исход payment_received затем payment_processing. Пилот да. Покрытие API compose-e2e. Покрытие UI manager-payment и pilot-matrix. Статус covered.
 
@@ -60,11 +60,11 @@
 
 Идентификатор user_resubmit_after_reject. Название Клиент повторно отправляет после коррекции. Роли клиент. Исход form_waiting_verification. Пилот да. Покрытие API reject. Покрытие UI pilot-matrix. Статус covered.
 
-Идентификатор provider_return_to_manager. Название Провайдер возвращает платёж менеджеру. Роли провайдер. Исход manager_checking. Пилот да. Покрытие API compose-e2e и scenarioverify. Покрытие UI spot при наличии CTA. Статус covered после волны B.
+Идентификатор provider_return_to_manager. Название Провайдер возвращает платёж менеджеру. Роли провайдер. Исход manager_checking. Пилот да. Покрытие API compose-e2e и scenarioverify. Покрытие UI provider-return. Статус covered.
 
 Идентификатор extraction_confirm_updates_amount. Название Подтверждение OCR обновляет сумму. Роли клиент. Исход сумма и валюта в заявке. Пилот side-path. Покрытие API scenarioverify. Покрытие UI form-ux-deadends spot. Статус covered.
 
-Идентификатор manager_sets_deal_rate. Название Менеджер задаёт курс сделки. Роли менеджер. Исход курс в карточке. Пилот да. Покрытие API compose-e2e и scenarioverify. Покрытие UI spot при наличии поля курса. Статус covered после волны B.
+Идентификатор manager_sets_deal_rate. Название Менеджер задаёт курс сделки. Роли менеджер (API) и клиент на экране коррекции (UI поле курса). Исход курс в карточке. Пилот да. Покрытие API compose-e2e и scenarioverify. Покрытие UI manager-rate. Статус covered.
 
 ## Расширение матрицы
 

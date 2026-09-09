@@ -21,18 +21,32 @@ async function waitForLoginReady(page: Page): Promise<void> {
 /** Log in via /login using compose seed credentials. */
 export async function loginAs(page: Page, role: SeedRole): Promise<void> {
   const seed = SEED_BY_ROLE[role];
-  await waitForLoginReady(page);
-  await page.getByLabel("E-mail").fill(seed.email);
-  await page.getByLabel("Пароль").fill(seed.password);
-  await page.getByRole("button", { name: "Войти" }).click();
-  const error = page.locator("p.text-destructive, .text-destructive");
-  await Promise.race([
-    page.waitForURL(/\/dashboard/, { timeout: 20_000 }),
-    error.waitFor({ state: "visible", timeout: 20_000 }).then(async () => {
-      throw new Error(`login failed: ${await error.textContent()}`);
-    }),
-  ]);
-  await expect(page).toHaveURL(/\/dashboard/);
+  let lastErr: Error | null = null;
+  for (let attempt = 1; attempt <= 3; attempt += 1) {
+    try {
+      await waitForLoginReady(page);
+      await page.getByLabel("E-mail").fill(seed.email);
+      await page.getByLabel("Пароль").fill(seed.password);
+      const loginResponse = page.waitForResponse(
+        (res) => res.url().includes("/api/v1/auth/login") && res.request().method() === "POST",
+        { timeout: 30_000 },
+      );
+      await page.getByRole("button", { name: "Войти" }).click();
+      const res = await loginResponse;
+      if (!res.ok()) {
+        const error = page.locator("p.text-destructive, .text-destructive");
+        const errText = (await error.first().textContent().catch(() => null))?.trim();
+        throw new Error(`login http ${res.status()} for ${role}: ${errText ?? ""}`.trim());
+      }
+      await page.waitForURL(/\/dashboard/, { timeout: 20_000 });
+      await expect(page).toHaveURL(/\/dashboard/);
+      return;
+    } catch (err) {
+      lastErr = err instanceof Error ? err : new Error(String(err));
+      await page.waitForTimeout(750 * attempt);
+    }
+  }
+  throw lastErr ?? new Error(`login failed for ${role}`);
 }
 
 /** End app session and return to login screen. */

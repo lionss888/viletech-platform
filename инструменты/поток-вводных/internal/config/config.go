@@ -12,12 +12,15 @@ import (
 
 // Config holds intake runtime settings.
 type Config struct {
-	Token          string
-	ChatIDs        map[int64]struct{}
-	Home           string
-	BotUsername    string
-	HTTPTimeout    time.Duration
-	PollTimeoutSec int
+	Token            string
+	ChatIDs          map[int64]struct{}
+	Home             string
+	BotUsername      string
+	HTTPTimeout      time.Duration
+	PollTimeoutSec   int
+	Workspace        string
+	ReminderInterval time.Duration
+	MaxReminders     int
 }
 
 // Load reads env and optional INTAKE_HOME/env or ~/.vdp-intake/env.
@@ -62,13 +65,25 @@ func Load() (Config, error) {
 	if pollSec <= 0 {
 		pollSec = 25
 	}
+	workspace := strings.TrimSpace(os.Getenv("INTAKE_WORKSPACE"))
+	remindHours, _ := strconv.Atoi(envOr("INTAKE_REMINDER_HOURS", "24"))
+	if remindHours <= 0 {
+		remindHours = 24
+	}
+	maxRemind, _ := strconv.Atoi(envOr("INTAKE_MAX_REMINDERS", "2"))
+	if maxRemind <= 0 {
+		maxRemind = 2
+	}
 	return Config{
-		Token:          token,
-		ChatIDs:        chats,
-		Home:           home,
-		BotUsername:    bot,
-		HTTPTimeout:    time.Duration(timeoutMS) * time.Millisecond,
-		PollTimeoutSec: pollSec,
+		Token:            token,
+		ChatIDs:          chats,
+		Home:             home,
+		BotUsername:      bot,
+		HTTPTimeout:      time.Duration(timeoutMS) * time.Millisecond,
+		PollTimeoutSec:   pollSec,
+		Workspace:        workspace,
+		ReminderInterval: time.Duration(remindHours) * time.Hour,
+		MaxReminders:     maxRemind,
 	}, nil
 }
 

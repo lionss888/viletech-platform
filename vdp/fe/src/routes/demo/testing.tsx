@@ -176,6 +176,37 @@ export function TestingPage() {
   const selectedCount = Object.values(selected).filter(Boolean).length;
   const allSelected = catalog.length > 0 && catalog.every((item) => selected[item.id]);
 
+  /** Latest completed/failed/running result per scenario from history + current batch. */
+  const lastResultByScenario = useMemo(() => {
+    const map = new Map<string, ScenarioRun>();
+    for (const h of history ?? []) {
+      if (!map.has(h.scenario_id)) {
+        map.set(h.scenario_id, h);
+      }
+    }
+    for (const r of runs) {
+      map.set(r.scenario_id, r);
+    }
+    return map;
+  }, [history, runs]);
+
+  function lastResultLabel(scenarioId: string): string {
+    const run = lastResultByScenario.get(scenarioId);
+    if (!run) return "ещё не запускали";
+    if (run.status === "passed") return "успешно";
+    if (run.status === "failed") return "сбой";
+    if (run.status === "running") return "выполняется";
+    return run.status;
+  }
+
+  function lastResultClass(scenarioId: string): string {
+    const run = lastResultByScenario.get(scenarioId);
+    if (!run) return "text-muted-foreground";
+    if (run.status === "passed") return "text-done";
+    if (run.status === "failed") return "text-destructive";
+    return "text-muted-foreground";
+  }
+
   function selectAllScenarios(on: boolean) {
     setSelected((prev) => {
       const next = { ...prev };
@@ -247,9 +278,9 @@ export function TestingPage() {
           <p className="label-caps">Что проверить</p>
           <p className="mt-1 text-xs text-muted-foreground">
             В каталоге {catalog.length || "…"} сценариев (фиксированный набор). Это не число заявок в
-            системе — в футере «сделок в системе» считается отдельно ({forms.length} сейчас). Отметьте
-            сценарии и нажмите «Запустить». Система сама пройдёт шаги ролей на тестовых данных и
-            покажет, где всё хорошо, а где сбой. Режим: {modeLabel}
+            системе — в футере «сделок в системе» считается отдельно ({forms.length} сейчас). Галочка —
+            выбор. Статус справа — итог последней проверки. Отметьте сценарии и нажмите «Запустить».
+            Режим: {modeLabel}
             {policy && !policy.allows_mutating_runs
               ? ". В этой среде нельзя менять заявки — только безопасная сверка."
               : ""}
@@ -277,11 +308,16 @@ export function TestingPage() {
           {catalog.length > 0 && (
             <ul className="mt-3 space-y-2">
               {catalog.map((item) => (
-                <li key={item.id} className="flex items-start gap-2 text-sm">
+                <li
+                  key={item.id}
+                  className="grid grid-cols-[auto_1fr_auto] items-start gap-2 text-sm"
+                  data-testid={`scenario-row-${item.id}`}
+                >
                   <input
                     id={`sc-${item.id}`}
                     type="checkbox"
                     className="mt-1"
+                    aria-label={`Выбрать: ${item.title}`}
                     checked={Boolean(selected[item.id])}
                     onChange={(ev) =>
                       setSelected((prev) => ({ ...prev, [item.id]: ev.target.checked }))
@@ -291,6 +327,13 @@ export function TestingPage() {
                     <span className="font-medium">{item.title}</span>
                     <span className="mt-0.5 block text-xs text-muted-foreground">{item.description}</span>
                   </label>
+                  <span
+                    className={`mt-1 whitespace-nowrap text-xs font-medium ${lastResultClass(item.id)}`}
+                    data-testid={`scenario-last-result-${item.id}`}
+                    title="Итог последней проверки (не галочка выбора)"
+                  >
+                    {lastResultLabel(item.id)}
+                  </span>
                 </li>
               ))}
             </ul>

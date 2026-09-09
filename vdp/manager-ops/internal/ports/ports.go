@@ -14,10 +14,13 @@ type Store interface {
 	UpsertChat(ctx context.Context, c domain.Chat) error
 	ReplaceMemberships(ctx context.Context, chatID string, members []domain.Membership) error
 	ListMemberships(ctx context.Context, chatID string) ([]domain.Membership, error)
+	PersonByTelegram(ctx context.Context, telegramUserID string) (domain.Person, bool, error)
+	HasActiveMembership(ctx context.Context, telegramUserID, accountID string) (bool, error)
 	SetConsent(ctx context.Context, c domain.Consent) error
 	Consent(ctx context.Context, accountID string) (domain.Consent, bool, error)
 	SaveEvent(ctx context.Context, e managerops.Event) (created bool, err error)
 	ListEvents(ctx context.Context, accountID string, since time.Time) ([]managerops.Event, error)
+	ListAllEvents(ctx context.Context, since time.Time) ([]managerops.Event, error)
 	UpsertScore(ctx context.Context, s domain.ScoreAggregate) error
 	Score(ctx context.Context, accountID, period string) (domain.ScoreAggregate, bool, error)
 }

@@ -26,6 +26,7 @@ type Config struct {
 	MailHealthURL      string
 	SMSHealthURL       string
 	ManagerOpsHealthURL string
+	ManagerOpsURL       string
 }
 
 func Load() *Config {
@@ -48,6 +49,7 @@ func Load() *Config {
 		MailHealthURL:      getEnv("MAIL_HEALTH_URL", "http://localhost:8091/health"),
 		SMSHealthURL:       getEnv("SMS_HEALTH_URL", "http://localhost:8092/health"),
 		ManagerOpsHealthURL: getEnv("MANAGER_OPS_HEALTH_URL", ""),
+		ManagerOpsURL:       getEnv("MANAGER_OPS_URL", ""),
 	}
 }
 

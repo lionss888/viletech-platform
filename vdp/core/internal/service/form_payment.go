@@ -18,13 +18,14 @@ import (
 type IDFunc func() string
 
 type FormPaymentService struct {
-	store          repository.Store
-	box            outbox.Store
-	newID          IDFunc
-	bus            *FormEventBus
-	roles          *ProcessRoleService
-	extractionURL  string
+	store           repository.Store
+	box             outbox.Store
+	newID           IDFunc
+	bus             *FormEventBus
+	roles           *ProcessRoleService
+	extractionURL   string
 	hubSharedSecret string
+	managerOps      *ManagerOpsPublisher
 }
 
 func NewFormPaymentService(store repository.Store, box outbox.Store, newID IDFunc) *FormPaymentService {
@@ -205,6 +206,7 @@ func (s *FormPaymentService) TransitionWithComment(ctx context.Context, principa
 		return formpayment.Form{}, err
 	}
 	s.maybeEnqueueBankWebhook(ctx, next, payload)
+	s.emitManagerOps(ctx, principal, next, action, history.ID)
 	return next, nil
 }
 

@@ -7,16 +7,16 @@ todos:
     status: completed
   - id: wa-honesty
     content: "WA: в справочнике/matrix честные API/UI/missing; запрет soft-skip ICO в gate"
-    status: in_progress
+    status: completed
   - id: wb-robots
     content: "WB: роботы provider_return, deal_rate, ico_org deterministic, eco→manager alias, health в matrix"
-    status: pending
+    status: completed
   - id: wc-testing-ui
     content: "WC: /testing — статус последнего прогона отдельно от чекбокса выбора"
-    status: pending
+    status: completed
   - id: wd-gate
     content: "WD: robot-matrix-check + compose-e2e + playwright-pilot-matrix + notify-mgmt gate"
-    status: pending
+    status: completed
 isProject: false
 ---
 

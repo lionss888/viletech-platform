@@ -39,6 +39,14 @@ func New(home string) *Store {
 	return &Store{home: home}
 }
 
+// Home returns the intake data directory.
+func (s *Store) Home() string {
+	if s == nil {
+		return ""
+	}
+	return s.home
+}
+
 // Seen reports whether update_id was already processed.
 func (s *Store) Seen(updateID int64) (bool, error) {
 	s.mu.Lock()

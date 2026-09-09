@@ -75,6 +75,11 @@ func (e Event) Validate() error {
 	return nil
 }
 
+// ValidateExport re-checks PII bans for dataset export.
+func ValidateExport(e Event) error {
+	return e.Validate()
+}
+
 // Key returns the idempotency key for ingest.
 func (e Event) Key() string {
 	if k := strings.TrimSpace(e.IdempotencyKey); k != "" {

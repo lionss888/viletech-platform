@@ -160,6 +160,9 @@ services:
       HUB_SHARED_SECRET: vdp-s2s-dev-secret
       TELEGRAM_BOT_TOKEN: ${TELEGRAM_BOT_TOKEN:-}
       MANAGER_OPS_CHAT_IDS: ${MANAGER_OPS_CHAT_IDS:-}
+      MANAGER_OPS_DATA_DIR: /var/lib/manager-ops
+    volumes:
+      - manager_ops_data:/var/lib/manager-ops
     ports:
       - "${MANAGER_OPS_BIND:-0.0.0.0}:8094:8094"
     depends_on:
@@ -233,7 +236,8 @@ services:
       MAIL_HEALTH_URL: http://mail-gateway:8091/health
       SMS_HEALTH_URL: http://sms-gateway:8092/health
       # Optional: set when COMPOSE_PROFILES=manager-ops
-      # MANAGER_OPS_HEALTH_URL: http://manager-ops:8094/health
+      MANAGER_OPS_URL: ${MANAGER_OPS_URL:-}
+      MANAGER_OPS_HEALTH_URL: ${MANAGER_OPS_HEALTH_URL:-}
       DATABASE_URL: postgres://vdp_core:vdp_core@postgres-core:5432/vdp_core?sslmode=disable
       VDP_BLOB_DIR: /var/vdp/blobs
     volumes:
@@ -299,6 +303,7 @@ services:
       start_period: 30s
 
 volumes:
+  manager_ops_data:
   fe_node_modules:
   core_blobs:
   extraction_gold:

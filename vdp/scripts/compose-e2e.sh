@@ -12,8 +12,11 @@
 #   provider_payment_no_pii — RD7 provider_start spot
 #   root_cancel — RD8 root cancel + admin spot
 #   bank_channel_badge — RD9 bank channel spot
-#   ico_org_pending_approve — RH2 ICO org-pending spot
+#   ico_org_pending_approve — RH2 ICO org-pending spot (un-approve; soft-skip forbidden)
 #   eco_reject_resubmit — RH2 ECO/manager reject + user resubmit
+#   provider_return_to_manager — provider returns payment to manager
+#   manager_sets_deal_rate — manager POST /forms/{id}/rate
+#   health_core — health curl at start
 # Root on-demand runner: POST /api/v1/admin/scenario-runs (system.admin).
 set -euo pipefail
 
@@ -201,33 +204,33 @@ if [[ "$BCH" != "bank" ]]; then
 fi
 echo "RD9 bank spot ok"
 
-echo "== RH2 ICO org-pending spot =="
+echo "== RH2 ICO org-pending spot (soft_skip_forbidden) =="
+# Force org into unverified state so the scenario cannot soft-skip.
+try_put "$ICO_T" "/api/v1/admin/internal-compliance-officer/organization/$ORG_ID/un-approve" || true
 FORM5=$(auth_post "$USER_T" /api/v1/site/form-payment \
   '{"currency":"USD","invoice_amount":"120","no_documents":true,"contract_number":"RH2-ICO"}')
 ID5=$(echo "$FORM5" | python3 -c 'import sys,json; print(json.load(sys.stdin)["id"])')
 auth_post "$USER_T" "/api/v1/forms/$ID5/actions/recognize_complete" '{}' >/dev/null
 auth_put "$USER_T" "/api/v1/site/form-payment/$ID5/form/accept"
 ST5=$(form_status "$USER_T" "/api/v1/site/form-payment/$ID5")
-if [[ "$ST5" == "organization_waiting_verification" || "$ST5" == "organization_verification" ]]; then
-  try_put "$ICO_T" "/api/v1/admin/internal-compliance-officer/organization/$ORG_ID/approve" || true
-  if ! try_put "$ICO_T" "/api/v1/ico/form-payment/$ID5/form/start"; then
-    try_post "$MGR_T" "/api/v1/forms/$ID5/actions/ico_start" '{}' || true
-  fi
-  if ! try_put "$ICO_T" "/api/v1/ico/form-payment/$ID5/form/accept"; then
-    try_post "$MGR_T" "/api/v1/forms/$ID5/actions/ico_approve" '{}' || true
-  fi
-  ST5B=$(form_status "$USER_T" "/api/v1/site/form-payment/$ID5")
-  if [[ "$ST5B" != "form_waiting_verification" && "$ST5B" != "form_verification" && "$ST5B" != "form_accepted" ]]; then
-    echo "FAIL RH2 ICO continuity status=$ST5B form=$ID5" >&2
-    exit 1
-  fi
-  echo "RH2 ICO org-pending path ok form=$ID5 status=$ST5B"
-elif [[ "$ST5" == "form_waiting_verification" ]]; then
-  echo "RH2 ICO spot skipped (org already approved) form=$ID5 status=$ST5"
-else
-  echo "FAIL RH2 ICO entry status=$ST5 form=$ID5" >&2
+if [[ "$ST5" != "organization_waiting_verification" && "$ST5" != "organization_verification" ]]; then
+  echo "FAIL RH2 ICO entry status=$ST5 form=$ID5 want organization_waiting_verification after un-approve" >&2
   exit 1
 fi
+try_put "$ICO_T" "/api/v1/admin/internal-compliance-officer/organization/$ORG_ID/approve" || true
+try_post "$MGR_T" "/api/v1/organizations/$ORG_ID/approve" '{}' || true
+if ! try_put "$ICO_T" "/api/v1/ico/form-payment/$ID5/form/start"; then
+  try_post "$MGR_T" "/api/v1/forms/$ID5/actions/ico_start" '{}' || true
+fi
+if ! try_put "$ICO_T" "/api/v1/ico/form-payment/$ID5/form/accept"; then
+  try_post "$MGR_T" "/api/v1/forms/$ID5/actions/ico_approve" '{}' || true
+fi
+ST5B=$(form_status "$USER_T" "/api/v1/site/form-payment/$ID5")
+if [[ "$ST5B" != "form_waiting_verification" && "$ST5B" != "form_verification" && "$ST5B" != "form_accepted" ]]; then
+  echo "FAIL RH2 ICO continuity status=$ST5B form=$ID5" >&2
+  exit 1
+fi
+echo "RH2 ICO org-pending path ok form=$ID5 status=$ST5B"
 
 echo "== RH2 ECO/manager reject + user resubmit =="
 FORM6=$(auth_post "$USER_T" /api/v1/site/form-payment \
@@ -313,5 +316,47 @@ if [[ "$ST8C" != "completed" ]]; then
 fi
 echo "P5 shipment ok form=$ID8"
 
+echo "== provider_return_to_manager =="
+# Re-approve org for subsequent forms (ICO spot left it approved; ensure baseline).
+try_put "$ICO_T" "/api/v1/admin/internal-compliance-officer/organization/$ORG_ID/approve" || true
+FORM9=$(auth_post "$USER_T" /api/v1/site/form-payment \
+  '{"currency":"USD","invoice_amount":"640","no_documents":true,"contract_number":"PROV-RET"}')
+ID9=$(echo "$FORM9" | python3 -c 'import sys,json; print(json.load(sys.stdin)["id"])')
+auth_post "$USER_T" "/api/v1/forms/$ID9/actions/recognize_complete" '{}' >/dev/null
+auth_put "$USER_T" "/api/v1/site/form-payment/$ID9/form/accept"
+advance_compliance "$ID9"
+auth_put "$MGR_T" "/api/v1/manager/form-payment/$ID9/order/signing"
+auth_put "$USER_T" "/api/v1/site/form-payment/$ID9/order"
+auth_put "$MGR_T" "/api/v1/manager/form-payment/$ID9/order/start"
+auth_put "$MGR_T" "/api/v1/manager/form-payment/$ID9/order/accept"
+auth_put "$MGR_T" "/api/v1/manager/form-payment/$ID9/payment/received"
+auth_post "$MGR_T" "/api/v1/forms/$ID9/provider" \
+  '{"provider_id":"55555555-5555-5555-5555-555555555555","client_agreed":true}' >/dev/null
+auth_put "$MGR_T" "/api/v1/manager/form-payment/$ID9/payment/start"
+auth_put "$PROV_T" "/api/v1/provider/form-payment/$ID9/payment/start"
+auth_put "$PROV_T" "/api/v1/provider/form-payment/$ID9/form/manager"
+ST9=$(form_status "$MGR_T" "/api/v1/manager/form-payment/$ID9")
+if [[ "$ST9" != "manager_checking" ]]; then
+  echo "FAIL provider_return status=$ST9 want manager_checking form=$ID9" >&2
+  exit 1
+fi
+echo "provider_return_to_manager ok form=$ID9"
+
+echo "== manager_sets_deal_rate =="
+FORM10=$(auth_post "$USER_T" /api/v1/site/form-payment \
+  '{"currency":"USD","invoice_amount":"410","no_documents":true,"contract_number":"DEAL-RATE"}')
+ID10=$(echo "$FORM10" | python3 -c 'import sys,json; print(json.load(sys.stdin)["id"])')
+auth_post "$USER_T" "/api/v1/forms/$ID10/actions/recognize_complete" '{}' >/dev/null
+auth_put "$USER_T" "/api/v1/site/form-payment/$ID10/form/accept"
+advance_compliance "$ID10"
+auth_post "$MGR_T" "/api/v1/forms/$ID10/rate" '{"value":"92.5","currency":"RUB","source":"manual"}' >/dev/null
+RATE_VAL=$(curl -sf "$BASE/api/v1/manager/form-payment/$ID10" -H "Authorization: Bearer $MGR_T" \
+  | python3 -c 'import sys,json; r=json.load(sys.stdin).get("rate") or {}; print(r.get("value") or "")')
+if [[ -z "$RATE_VAL" ]]; then
+  echo "FAIL manager_sets_deal_rate empty rate form=$ID10" >&2
+  exit 1
+fi
+echo "manager_sets_deal_rate ok form=$ID10 rate=$RATE_VAL"
+
 curl -sf -X POST "$BASE/api/v1/internal/outbox/flush" -H "X-VDP-S2S: $S2S" >/dev/null
-echo "RH10 compose E2E green (main=$ID RD7=$ID3 RD8=$ID4 RH2=$ID6 P5=$ID8)"
+echo "RH10 compose E2E green (main=$ID RD7=$ID3 RD8=$ID4 RH2=$ID6 P5=$ID8 ret=$ID9 rate=$ID10)"
