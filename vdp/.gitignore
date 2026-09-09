@@ -11,6 +11,7 @@ release-images.env
 !.env.example
 extraction/.export/
 extraction/.gold/
+extraction/.corpus-runs/
 extraction/artifacts/
 
 # Customer robot fixtures (sensitive). Keep pack.json / README / .gitkeep tracked.

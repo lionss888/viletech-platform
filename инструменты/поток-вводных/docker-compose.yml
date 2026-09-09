@@ -1,5 +1,9 @@
+# Standalone Docker Desktop project (separate from "vdp" product stack).
+name: vdp-intake
+
 services:
   intake:
+    container_name: vdp-intake
     build: .
     env_file:
       - ${INTAKE_ENV_FILE:-${HOME}/.vdp-intake/env}

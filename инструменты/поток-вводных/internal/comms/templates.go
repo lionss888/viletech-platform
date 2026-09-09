@@ -29,7 +29,7 @@ func ConflictWarn(plain string, question string) string {
 	return SanitizeManager(b.String())
 }
 
-// Proposal asks for HITL approve with timeline phrase (no paths).
+// Proposal shows proposal + timeline only (no fake “execute?” CTA).
 func Proposal(summary, timelinePhrase string) string {
 	var b strings.Builder
 	b.WriteString("принято\n\n")
@@ -37,7 +37,6 @@ func Proposal(summary, timelinePhrase string) string {
 	b.WriteString(strings.TrimSpace(summary))
 	b.WriteString("\nОриентир по сроку: ")
 	b.WriteString(strings.TrimSpace(timelinePhrase))
-	b.WriteString("\n\nПлан готов — выполнить?")
 	return SanitizeManager(b.String())
 }
 
@@ -53,7 +52,7 @@ func DeclinedAck() string {
 
 // Reminder soft-nudges without spam or tech.
 func Reminder() string {
-	return SanitizeManager("Напоминаю: по прошлому предложению ждём ответ — выполнить или отложить?")
+	return SanitizeManager("Напоминаю: по прошлому предложению ещё нет ответа. Можете коротко написать, актуально ли оно.")
 }
 
 // StaleNotice closes the waiting loop politely.

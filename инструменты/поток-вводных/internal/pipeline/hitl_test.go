@@ -46,8 +46,11 @@ func TestHITLProposalWritesPlanWithoutTechInChat(t *testing.T) {
 		t.Fatalf("texts=%v", fm.texts)
 	}
 	reply := fm.texts[0]
-	if !strings.Contains(reply, "Предложение") || !strings.Contains(reply, "выполнить?") {
+	if !strings.Contains(reply, "Предложение") || !strings.Contains(reply, "Ориентир по сроку") {
 		t.Fatalf("reply=%q", reply)
+	}
+	if strings.Contains(reply, "выполнить?") || strings.Contains(reply, "План готов") {
+		t.Fatalf("must not ask execute: %q", reply)
 	}
 	if strings.Contains(reply, ".cursor") || strings.Contains(reply, "тгбот") || strings.Contains(reply, "класс=") {
 		t.Fatalf("tech leak in chat: %q", reply)
@@ -174,6 +177,9 @@ func TestProcessRemindersSoftThenStale(t *testing.T) {
 	}
 	if len(fm.texts) != 1 || !strings.Contains(fm.texts[0], "Напоминаю") {
 		t.Fatalf("reminder=%v", fm.texts)
+	}
+	if strings.Contains(fm.texts[0], "выполнить") {
+		t.Fatalf("reminder must not say execute: %q", fm.texts[0])
 	}
 	got, err := p.Cards.Get(c.ID)
 	if err != nil {

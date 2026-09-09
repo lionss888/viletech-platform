@@ -20,9 +20,12 @@ func TestSanitizeManagerStripsTech(t *testing.T) {
 
 func TestProposalHasNoPaths(t *testing.T) {
 	t.Parallel()
-	out := comms.Proposal("исправить отображение статуса", "около 1–2 рабочих часов")
-	if !strings.Contains(out, "выполнить?") {
-		t.Fatalf("missing hitl question: %q", out)
+	out := comms.Proposal("исправить отображение статуса", "около 2 рабочих часов")
+	if !strings.Contains(out, "Ориентир по сроку") {
+		t.Fatalf("missing timeline: %q", out)
+	}
+	if strings.Contains(out, "выполнить?") || strings.Contains(out, "План готов") {
+		t.Fatalf("must not ask execute: %q", out)
 	}
 	if strings.Contains(out, ".cursor") || strings.Contains(out, "тгбот/") {
 		t.Fatalf("tech leak: %q", out)

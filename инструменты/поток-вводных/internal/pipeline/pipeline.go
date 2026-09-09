@@ -250,7 +250,7 @@ func (p *Pipeline) handleHITLIntake(_ context.Context, msg *telegram.Message, fr
 		return comms.ConflictWarn(f.Plain, f.Question), nil
 	}
 	prop := proposal.Summary(msg.Text, p.BotUser, analysis.Class)
-	est := estimate.FromSignals(analysis.Class, analysis.Chars, analysis.Words)
+	est := estimate.FromSignals(analysis.Class, analysis.Chars, analysis.Words, msg.Text)
 	c.Proposal = prop
 	c.TimelinePhrase = est.ManagerPhrase
 	c.Status = card.StatusAwaitingApprove

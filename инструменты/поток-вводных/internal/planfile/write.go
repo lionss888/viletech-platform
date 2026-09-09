@@ -103,7 +103,7 @@ func WriteMarkdown(workspace string, doc Document) (string, error) {
 		b.WriteString(fmt.Sprintf("%d. %s\n", i+1, s))
 	}
 	b.WriteString("\n")
-	b.WriteString("Человек утверждает выполнение в чате. Автозапуск агента/проверок/выката на этом этапе не выполняется.\n")
+	b.WriteString("Черновик для eng. Оценка срока — ориентир по скорости команды; автозапуск работ из чата не выполняется.\n")
 	if err := os.WriteFile(path, []byte(b.String()), 0o644); err != nil {
 		return "", err
 	}
