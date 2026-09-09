@@ -43,6 +43,10 @@ echo "$DRY" | grep -qi vitest && fail "dry-run must strip vitest"
 echo "$DRY" | grep -qi 'localhost' && fail "dry-run must strip localhost"
 echo "$DRY" | grep -qi '\.cursor/' && fail "dry-run must strip .cursor paths"
 
+echo "== precommit-mgmt-notify must run docs-format-check =="
+grep -q 'docs-format-check' scripts/precommit-mgmt-notify.sh || fail "precommit-mgmt-notify.sh must invoke docs-format-check"
+grep -q 'make test' scripts/precommit-mgmt-notify.sh || fail "precommit-mgmt-notify.sh must invoke make test"
+
 echo "== ci-mgmt-notify gate-summary pass =="
 GATE_PASS="$(
   NEED_fast_RESULT=success NEED_docs_RESULT=success \
@@ -228,6 +232,12 @@ grep -q 'for f in' scripts/db-migrate-host.sh \
   || fail "db-migrate-host must iterate migration files"
 grep -q 'for f in\|for file in\|/\*\.sql' scripts/compose-db-migrate.sh \
   || fail "compose-db-migrate must iterate migration files"
+grep -qi 'shutting down' scripts/compose-db-migrate.sh \
+  || fail "compose-db-migrate must retry when postgres is shutting down (post-initdb)"
+grep -qE 'got=|consecutive|need=' scripts/compose-db-migrate.sh \
+  || fail "compose-db-migrate must wait for consecutive ready probes"
+grep -q -- '--wait' Makefile \
+  || fail "compose-up must use docker compose --wait for postgres"
 for mig in core/migrations/*.sql; do
   base="$(basename "$mig")"
   [[ "$base" =~ ^[0-9]{3}_ ]] || fail "unexpected migration name: $base"

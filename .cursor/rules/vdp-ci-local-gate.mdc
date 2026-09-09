@@ -1,17 +1,17 @@
 ---
-description: Локальная страховка VDP CI — make ci-pr перед push/PR; не заявлять зелёный CI без прогона
+description: Локальная страховка VDP CI — make ci-pr перед push/PR; docs-format после правок docs; не заявлять зелёный CI без прогона
 alwaysApply: true
 ---
 
 # VDP: локальная страховка CI (Cursor process)
 
-Источник: паритет с `.github/workflows/vdp-ci.yml`. Команды — из каталога `vdp`. Связано: `тесты-архитектуры`, `честность-готовности`, `vdp-fe-docker-пересборка`, `mgmt-tg-notify`.
+Источник: паритет с `.github/workflows/vdp-ci.yml`. Команды — из каталога `vdp`. Связано: `тесты-архитектуры`, `честность-готовности`, `vdp-fe-docker-пересборка`, `mgmt-tg-notify`, `docs/conventions/format.md`.
 
 ## Лестница gate (не путать)
 
 | Уровень | Команда | Когда |
 |---|---|---|
-| Pre-commit (быстро) | `make precommit-gate` / хук `.githooks` | каждый коммит: в основном `make test` + TG gate |
+| Pre-commit (быстро) | `make precommit-gate` / хук `.githooks` | каждый коммит: `docs-format-check` + `make test` + TG gate |
 | PR-паритет без browser | `make ci-pr-fast` | итерации backend/API, пока UI E2E не нужен |
 | PR-паритет (required checks) | `make ci-pr` | перед push / PR / «готово к CI» |
 | Main / handover | `make release-gate` | только по явной просьбе или перед тегом/`vdp-v*` (долго) |
@@ -26,15 +26,20 @@ alwaysApply: true
 1. Пользователь просит **push**, **PR**, «готово к CI», «застраховать CI», «проверь как в CI», merge-ready по `vdp/**`.
 2. Агент собирается утверждать, что **CI будет зелёным** / PR можно мержить после правок в `vdp/`.
 3. После фикса **красного** VDP CI — перед новым «готово» снова прогон.
+4. Агент **создал или существенно правил** файлы под `vdp/docs/**` или `vdp/README.md` (особенно вне `docs/development/`) — **до** «готово» / коммита / следующего шага прогнать из `vdp/`:
+   - минимум **`make docs-format-check`**;
+   - не ждать только pre-commit хука (history чата не ослабляет).
 
 Действия:
 
 1. Предложить и при согласии (или если пользователь уже сказал «прогони») выполнить из `vdp/`:
    - по умолчанию **`make ci-pr`**;
-   - если пользователь просит быстрее / без browser — **`make ci-pr-fast`**, и честно сказать, что Playwright PR-smoke ещё не гонялся.
+   - если пользователь просит быстрее / без browser — **`make ci-pr-fast`**, и честно сказать, что Playwright PR-smoke ещё не гонялся;
+   - при правках только документации — достаточно **`make docs-format-check`** (+ при желании `test-cd-scripts`, если трогали CD-контракты).
 2. Красный gate → **не** утверждать готовность CI; починить или явно перечислить пробел.
 3. `make release-gate` — только если пользователь просит полный контур / handover / тег.
 4. FE Docker deps: по-прежнему **спросить** перед `compose-fe-refresh` (`vdp-fe-docker-пересборка`).
+5. Ops/product docs вне `docs/development/`: без таблиц, списков, bold, backticks, fence — см. `docs/conventions/format.md`. How-to с командами/таблицами — в `docs/development/`.
 
 ## MUST NOT
 
@@ -42,10 +47,11 @@ alwaysApply: true
 - Подменять `ci-pr` одним `make test` или только unit FE.
 - Класть полный `release-gate` в pre-commit или гонять его без запроса (дорого, не PR-паритет).
 - Обходить Docker Playwright на macOS host `npx playwright install`, если команда — Makefile `playwright-e2e`.
+- Закрывать волну/PR после правок `vdp/docs/**` без локального `docs-format-check`.
 
 ## Что делать человеку (коротко)
 
-Один раз: `make -C vdp install-git-hooks` (лёгкий pre-commit).  
+Один раз: `make -C vdp install-git-hooks` (pre-commit = docs-format + unit + TG).  
 Перед push в PR: `cd vdp && make ci-pr`.  
 Перед handover: `make release-gate`.
 
@@ -53,4 +59,5 @@ alwaysApply: true
 
 - «Локально собралось» без compose-e2e / узкого Playwright при изменении journey/API.
 - Тихий skip Playwright при заявлении полного PR-паритета.
-- Путать `precommit-gate` (unit) с `ci-pr` (CI PR).
+- Путать `precommit-gate` (docs + unit) с `ci-pr` (полный CI PR).
+- Писать rich markdown в `docs/operations/` и чинить только после красного GitHub docs job.
