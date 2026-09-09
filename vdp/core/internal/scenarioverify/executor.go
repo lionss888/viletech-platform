@@ -786,36 +786,41 @@ func (e *Executor) mutatingICO(run *Run, sc Scenario) error {
 	start := time.Now()
 	titleOrg := stepTitle(sc, "org_waiting", "Заявка ждёт проверки организации")
 	titleICO := stepTitle(sc, "ico_accept", "Внутренний комплаенс одобрил")
+	// Force org into unverified state so the scenario cannot soft-skip.
+	_ = e.put(tok.ico, "/api/v1/admin/internal-compliance-officer/organization/"+e.orgID()+"/un-approve", map[string]any{})
 	id, err := e.createProbeForm(tok, "ico")
 	run.FormID = id
 	if err != nil {
 		e.appendStep(run, "org_waiting", titleOrg, "organization_waiting_verification", "", err, start)
 		return err
 	}
-	_ = e.put(tok.user, "/api/v1/site/form-payment/"+id+"/form/accept", map[string]any{})
-	st, _ := e.getStatus(tok.user, "/api/v1/site/form-payment/"+id)
-	if st == "organization_waiting_verification" {
-		e.appendStep(run, "org_waiting", titleOrg, "organization_waiting_verification", st, nil, start)
-		start = time.Now()
-		_ = e.put(tok.ico, "/api/v1/admin/internal-compliance-officer/organization/"+e.orgID()+"/approve", map[string]any{})
-		_ = e.put(tok.ico, "/api/v1/ico/form-payment/"+id+"/form/start", map[string]any{})
-		if err := e.put(tok.ico, "/api/v1/ico/form-payment/"+id+"/form/accept", map[string]any{}); err != nil {
-			e.appendStep(run, "ico_accept", titleICO, "form_waiting_verification", "", err, start)
-			return err
-		}
-		st, _ = e.getStatus(tok.user, "/api/v1/site/form-payment/"+id)
-		e.appendStep(run, "ico_accept", titleICO, "form_waiting_verification", st, nil, start)
-		return nil
+	if err := e.put(tok.user, "/api/v1/site/form-payment/"+id+"/form/accept", map[string]any{}); err != nil {
+		e.appendStep(run, "org_waiting", titleOrg, "organization_waiting_verification", "", err, start)
+		return err
 	}
-	// Org already approved — soft-pass so the check stays repeatable.
+	st, _ := e.getStatus(tok.user, "/api/v1/site/form-payment/"+id)
+	if st != "organization_waiting_verification" && st != "organization_verification" {
+		err := fmt.Errorf("ожидали organization_waiting_verification после un-approve, получили %s", st)
+		e.appendStep(run, "org_waiting", titleOrg, "organization_waiting_verification", st, err, start)
+		return err
+	}
 	e.appendStep(run, "org_waiting", titleOrg, "organization_waiting_verification", st, nil, start)
-	run.Steps[len(run.Steps)-1].OK = true
-	run.Steps[len(run.Steps)-1].Detail = "организация уже была одобрена раньше — шаг пропускаем"
-	run.Steps = append(run.Steps, StepResult{
-		StepID: "ico_accept", Title: titleICO,
-		ExpectedStatus: "form_waiting_verification", ActualStatus: st,
-		OK: true, Detail: "организация уже одобрена — отдельное одобрение не требуется",
-	})
+	start = time.Now()
+	_ = e.put(tok.ico, "/api/v1/admin/internal-compliance-officer/organization/"+e.orgID()+"/approve", map[string]any{})
+	if err := e.put(tok.ico, "/api/v1/ico/form-payment/"+id+"/form/start", map[string]any{}); err != nil {
+		if _, err2 := e.post(tok.manager, "/api/v1/forms/"+id+"/actions/ico_start", map[string]any{}); err2 != nil {
+			e.appendStep(run, "ico_accept", titleICO, "form_waiting_verification", "", err2, start)
+			return err2
+		}
+	}
+	if err := e.put(tok.ico, "/api/v1/ico/form-payment/"+id+"/form/accept", map[string]any{}); err != nil {
+		if _, err2 := e.post(tok.manager, "/api/v1/forms/"+id+"/actions/ico_approve", map[string]any{}); err2 != nil {
+			e.appendStep(run, "ico_accept", titleICO, "form_waiting_verification", "", err2, start)
+			return err2
+		}
+	}
+	st, _ = e.getStatus(tok.user, "/api/v1/site/form-payment/"+id)
+	e.appendStep(run, "ico_accept", titleICO, "form_waiting_verification", st, nil, start)
 	return nil
 }
 
