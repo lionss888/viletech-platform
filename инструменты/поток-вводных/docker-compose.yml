@@ -1,0 +1,11 @@
+services:
+  intake:
+    build: .
+    env_file:
+      - ${INTAKE_ENV_FILE:-${HOME}/.vdp-intake/env}
+    environment:
+      INTAKE_HOME: /var/lib/vdp-intake
+      INTAKE_ANALYZE: ${INTAKE_ANALYZE:-1}
+    volumes:
+      - ${HOME}/.vdp-intake:/var/lib/vdp-intake
+    restart: unless-stopped

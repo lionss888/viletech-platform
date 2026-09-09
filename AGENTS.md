@@ -10,6 +10,7 @@ This file is a stub so tools that still look for `AGENTS.md` do not invent a sec
 | Plan vs rules | `планирование-сверка-с-rules`, `базовые-правила-инструмента` |
 | Docker FE refresh (ask first) | `vdp-fe-docker-пересборка` |
 | Local CI before push/PR | `vdp-ci-local-gate` |
+| Local QG canvas Run | `vdp-ci-local-gate` (Shell без sandbox; кнопка Run = выполнить) |
 | Management TG notify | `mgmt-tg-notify` |
 
 Do not duplicate process here — edit the matching `.mdc` under `.cursor/rules`.
