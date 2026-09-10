@@ -168,10 +168,12 @@ var transitionsImportForm = map[Status][]Status{
 		StatusAdvanceSigningOrderAccepted,
 	},
 	// Nest checkTransit: import advance may go PAYMENT_SENT → REPORT_WAITING without postpay overlay.
-	StatusPaymentSent: {StatusManagerChecking, StatusReportWaiting, StatusReportAccepted, StatusShipmentWaiting, StatusAdvanceSigningOrder, StatusPaymentRefundWaiting},
+	// report_accept closes the deal (completed); report_accepted remains for Nest/advance edges.
+	StatusPaymentSent: {StatusManagerChecking, StatusReportWaiting, StatusReportAccepted, StatusCompleted, StatusShipmentWaiting, StatusAdvanceSigningOrder, StatusPaymentRefundWaiting},
 	StatusReportWaitingVerification: {
 		StatusReportVerification,
 		StatusReportAccepted,
+		StatusCompleted,
 		StatusCanceledByManager,
 		StatusCanceledByUser,
 	},
@@ -181,6 +183,7 @@ var transitionsImportForm = map[Status][]Status{
 		StatusSigningOrderAccepted,
 		StatusAdvanceSigningOrderAccepted,
 		StatusReportAccepted,
+		StatusCompleted,
 		StatusReportWaitingDiadoc,
 		StatusReportWaitingVerification,
 	},
@@ -196,6 +199,7 @@ var transitionsImportForm = map[Status][]Status{
 		StatusReportWaitingCorrections,
 		StatusFormWaitingCorrections,
 		StatusReportAccepted,
+		StatusCompleted,
 		StatusCanceledByManager,
 		StatusCanceledByUser,
 		StatusSigningOrderAccepted,
@@ -309,10 +313,12 @@ var transitionsExportForm = map[Status][]Status{
 		StatusAdvanceSigningOrder,
 		StatusPaymentProcessing,
 		StatusReportAccepted,
+		StatusCompleted,
 	},
 	StatusPaymentSent: {
 		StatusReportWaiting,
 		StatusReportAccepted,
+		StatusCompleted,
 		StatusManagerChecking,
 		StatusPaymentReceived,
 		StatusSigningOrderAccepted,

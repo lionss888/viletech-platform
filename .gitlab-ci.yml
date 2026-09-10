@@ -78,27 +78,36 @@ stages:
   after_script:
     - rm -f ~/.ssh/deploy_key || true
     - |
-      # Management TG notify (optional CI vars: MGMT_NOTIFY_TOKEN + MGMT_NOTIFY_CHAT_ID)
-      if [ -z "${MGMT_NOTIFY_TOKEN:-${TELEGRAM_INTAKE_TOKEN:-}}" ]; then
-        echo "mgmt notify: skip (no token)"
-        exit 0
-      fi
+      # Strict management TG after real promote attempt (CI vars required).
       if [ -z "${DEPLOY_SSH_KEY:-}" ] || [ -z "${DEPLOY_HOST:-}" ]; then
         echo "mgmt notify: skip (no deploy attempt)"
         exit 0
       fi
+      if [ -z "${MGMT_NOTIFY_TOKEN:-${TELEGRAM_INTAKE_TOKEN:-}}" ] || [ -z "${MGMT_NOTIFY_CHAT_ID:-${TELEGRAM_INTAKE_CHAT_IDS:-}}" ]; then
+        echo "mgmt notify: required after promote but token/chat not configured" >&2
+        exit 1
+      fi
       apk add --no-cache python3 >/dev/null 2>&1 || true
       chmod +x vdp/scripts/notify-mgmt.sh
       STATUS=failed
-      [ "${CI_JOB_STATUS:-}" = "success" ] && STATUS=success
+      BODY="Выкат или дымовые проверки на среде не прошли. Стенд мог остаться на прошлой ревизии."
+      if [ "${CI_JOB_STATUS:-}" = "success" ]; then
+        STATUS=success
+        BODY="Среда обновлена. Дымовые проверки прошли."
+        if [ "${DEPLOY_ENVIRONMENT:-}" = "alpha" ]; then
+          BODY="Среда alpha обновлена. Дымовые проверки прошли — вход и API доступны."
+        fi
+      fi
       REV="${CI_COMMIT_SHORT_SHA:-${CI_COMMIT_SHA:-}}"
       MGMT_NOTIFY_TOKEN="${MGMT_NOTIFY_TOKEN:-${TELEGRAM_INTAKE_TOKEN:-}}" \
       MGMT_NOTIFY_CHAT_ID="${MGMT_NOTIFY_CHAT_ID:-${TELEGRAM_INTAKE_CHAT_IDS:-}}" \
         ./vdp/scripts/notify-mgmt.sh \
+          --require \
           --kind promote \
           --env "${DEPLOY_ENVIRONMENT:-среда}" \
           --status "$STATUS" \
-          --revision "$REV" || true
+          --revision "$REV" \
+          --body "$BODY"
 
 # Management TG on job failure (optional CI vars MGMT_NOTIFY_TOKEN + MGMT_NOTIFY_CHAT_ID)
 .mgmt_notify_on_fail: &mgmt_notify_on_fail |

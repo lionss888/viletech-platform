@@ -100,7 +100,7 @@ const MATRIX: Partial<Record<VedRole, Partial<Record<string, AppFormAction[]>>>>
       { id: "report_start", label: "Взять отчёт в проверку", tone: "primary", coreAction: "report_start" },
     ],
     report_verification: [
-      { id: "report_accept", label: "Подтвердить отчёт", tone: "accent", coreAction: "report_accept" },
+      { id: "report_accept", label: "Подтвердить отчет и завершить сделку", tone: "accent", coreAction: "report_accept" },
     ],
     shipment_waiting_verification: [
       { id: "shipment_start", label: "Взять отгрузку в проверку", tone: "primary", coreAction: "shipment_start" },

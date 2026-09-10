@@ -176,12 +176,20 @@ run_notify() {
   local kind="$1"
   shift
   chmod +x "$NOTIFY"
+  local req=()
+  if [ "${MGMT_NOTIFY_REQUIRE:-0}" = "1" ]; then
+    req=(--require)
+  fi
   if [ "$DRY" = 1 ]; then
     echo "ci-mgmt-notify dry-run kind=$kind $*"
     "$NOTIFY" --dry-run --kind "$kind" "$@" || true
     return 0
   fi
-  "$NOTIFY" --kind "$kind" "$@" || true
+  if [ "${MGMT_NOTIFY_REQUIRE:-0}" = "1" ]; then
+    "$NOTIFY" "${req[@]}" --kind "$kind" "$@"
+  else
+    "$NOTIFY" --kind "$kind" "$@" || true
+  fi
 }
 
 send_push() {
@@ -230,16 +238,18 @@ send_gate_summary() {
 send_deploy_ok() {
   local env_l="${ENV_NAME:-среда}"
   local body="${EXTRA_BODY:-}"
-  if [ -n "$body" ]; then
-    run_notify promote --env "$env_l" --status success --revision "$REVISION" --body "$body"
-  else
-    run_notify promote --env "$env_l" --status success --revision "$REVISION"
+  if [ -z "$body" ]; then
+    case "$env_l" in
+      alpha) body="Среда alpha обновлена. Дымовые проверки прошли — вход и API доступны." ;;
+      *) body="Среда обновлена. Дымовые проверки прошли." ;;
+    esac
   fi
+  run_notify promote --env "$env_l" --status success --revision "$REVISION" --body "$body"
 }
 
 send_deploy_fail() {
   local env_l="${ENV_NAME:-среда}"
-  local body="${EXTRA_BODY:-выкат или дымовые не прошли}"
+  local body="${EXTRA_BODY:-Выкат или дымовые проверки на среде не прошли. Стенд мог остаться на прошлой ревизии.}"
   run_notify promote --env "$env_l" --status failed --revision "$REVISION" --body "$body"
   run_notify pipeline --status failed --title "выкат" --branch "${ENV_NAME:-$BRANCH}" --revision "$REVISION"
 }

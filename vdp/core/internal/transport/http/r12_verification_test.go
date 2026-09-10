@@ -176,17 +176,12 @@ func TestR12UserToProviderE2EPath(t *testing.T) {
 		}
 	}
 
-	// REPORT_ACCEPTED path: signing → accept (upload/verify optional; Nest allows payment_sent→report_accepted)
+	// REPORT path: signing → accept closes deal (completed); shipment ladder not required.
 	mustOK(t, core, manager, http.MethodPut, "/api/v1/manager/form-payment/"+id+"/report/signing", nil)
 	mustOK(t, core, manager, http.MethodPut, "/api/v1/manager/form-payment/"+id+"/report/accept", nil)
 	got := getJSON(t, core, manager, "/api/v1/manager/form-payment/"+id)
-	if got["status"] != "report_accepted" {
-		t.Fatalf("after report accept status=%v", got["status"])
-	}
-	mustOK(t, core, manager, http.MethodPut, "/api/v1/manager/form-payment/"+id+"/completed", nil)
-	got = getJSON(t, core, manager, "/api/v1/manager/form-payment/"+id)
 	if got["status"] != "completed" {
-		t.Fatalf("final status=%v want completed", got["status"])
+		t.Fatalf("after report accept status=%v want completed", got["status"])
 	}
 
 	// Refund branch smoke on a second form that holds funds

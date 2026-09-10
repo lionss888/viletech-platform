@@ -164,7 +164,7 @@ const MATRIX: Record<VedRole, Record<string, FormAction[]>> = {
       { id: "mgr_report_start", label: "Взять отчёт в проверку", tone: "primary", nextStatus: "report_verification" },
     ],
     report_verification: [
-      { id: "mgr_report_accept", label: "Подтвердить отчёт", tone: "accent", nextStatus: "report_accepted" },
+      { id: "mgr_report_accept", label: "Подтвердить отчет и завершить сделку", tone: "accent", nextStatus: "completed" },
       { id: "mgr_report_reject", label: "Вернуть отчёт", tone: "quiet", requiresReason: true, nextStatus: "report_waiting_corrections" },
     ],
     report_accepted: [
@@ -237,8 +237,11 @@ const CONTINUITY_LABELS: Record<string, string> = {
 function withContinuityLabels(actions: FormAction[]): FormAction[] {
   return actions.map((action) => {
     const label = CONTINUITY_LABELS[action.id];
-    if (!label) return action;
-    return { ...action, label };
+    // Manager continuity reject: text reason only (no compliance-tools catalog).
+    const stripMark = action.id === "ico_form_reject" || action.id === "eco_form_reject";
+    const next: FormAction = stripMark ? { ...action, requiresMark: false } : { ...action };
+    if (!label) return next;
+    return { ...next, label };
   });
 }
 

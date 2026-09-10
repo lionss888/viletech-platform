@@ -294,8 +294,29 @@ WF_DEPLOY="$REPO_ROOT/.github/workflows/vdp-deploy.yml"
 [ -f "$WF_DEPLOY" ] || fail "missing $WF_DEPLOY"
 grep -q 'deploy-fail' "$WF_DEPLOY" \
   || fail "vdp-deploy must notify deploy-fail on failure"
-grep -q 'notify_deploy\|дымовые на среде' scripts/deploy-compose-release.sh \
-  || fail "deploy-compose-release must notify promote after smoke"
+grep -q 'deploy-ok' "$WF_DEPLOY" \
+  || fail "vdp-deploy must notify deploy-ok on success"
+grep -q 'MGMT_NOTIFY_REQUIRE' "$WF_DEPLOY" \
+  || fail "vdp-deploy deploy notify must set MGMT_NOTIFY_REQUIRE"
+grep -q 'MGMT_NOTIFY_FROM_DEPLOY' "$WF_DEPLOY" \
+  || fail "vdp-deploy must set MGMT_NOTIFY_FROM_DEPLOY so script does not double-notify"
+grep -q 'notify-resolve-fail' "$WF_DEPLOY" \
+  || fail "vdp-deploy must notify when pin resolve fails"
+grep -q 'MGMT_NOTIFY_FROM_DEPLOY\|deferred to CI' scripts/deploy-compose-release.sh \
+  || fail "deploy-compose-release must defer notify when FROM_DEPLOY=1"
+grep -q 'notify_deploy\|Среда.*обновлена\|Дымовые' scripts/deploy-compose-release.sh \
+  || fail "deploy-compose-release must still have notify_deploy for non-CI path"
+grep -q '\-\-require' scripts/notify-mgmt.sh \
+  || fail "notify-mgmt must support --require (no silent skip)"
+
+echo "== notify-mgmt --require fails without token =="
+REQ_OUT="$(
+  MGMT_NOTIFY_TOKEN= MGMT_NOTIFY_CHAT_ID= UPTIME_BOT_TOKEN= UPTIME_CHAT_ID= \
+  MGMT_NOTIFY_ENV_FILE=/dev/null \
+  bash scripts/notify-mgmt.sh --require --kind promote --env alpha --status success --revision abc1234 2>&1
+)" && fail "notify-mgmt --require must exit non-zero without token" || true
+echo "$REQ_OUT" | grep -qi 'required\|token/chat' \
+  || fail "notify-mgmt --require must say token/chat required"
 
 # docs/operations/ci.md must describe required checks (contract for ops)
 CI_DOC="$ROOT/docs/operations/ci.md"

@@ -36,13 +36,6 @@ async function confirmModal(page: Page): Promise<void> {
   await expect(confirm).toBeHidden({ timeout: 30_000 });
 }
 
-async function fillRejectMarkIfPresent(page: Page): Promise<void> {
-  const markSelect = page.locator("label").filter({ hasText: /Отметка/ }).locator("select");
-  if (await markSelect.isVisible().catch(() => false)) {
-    await markSelect.selectOption({ index: 1 });
-  }
-}
-
 async function attachModalFile(page: Page, pdf: Buffer, fileName: string): Promise<void> {
   const input = page.locator('input[type="file"]');
   await expect(input).toBeVisible({ timeout: 15_000 });
@@ -68,7 +61,6 @@ test.describe("Pilot robot matrix full UI ladder @pilot-matrix", () => {
     const contractPdf = readRobotPdf(packDir, pack.docs.contract_pdf);
     const orderPdf = readRobotPdf(packDir, pack.docs.order_pdf);
     const reportPdf = readRobotPdf(packDir, pack.docs.report_pdf);
-    const shipmentPdf = readRobotPdf(packDir, pack.docs.shipment_pdf);
 
     const tokens = await loginAllRoles();
     await purgeDemoMockCounterparties(tokens.root);
@@ -235,33 +227,13 @@ test.describe("Pilot robot matrix full UI ladder @pilot-matrix", () => {
     await confirmModal(page);
     await expectFormStatus(page, "report_waiting_verification", { timeout: 30_000 });
 
-    // 18–20. Manager report + shipment waiting
+    // 18–19. Manager report review → completed (no shipment ladder)
     await logout();
     await loginAs("manager");
     await waitForFormDetail(page, formId);
     await clickAction(page, /^Взять отчёт в проверку$/);
     await expectFormStatus(page, "report_verification", { timeout: 30_000 });
-    await clickAction(page, /^Подтвердить отчёт$/);
-    await expectFormStatus(page, "report_accepted", { timeout: 30_000 });
-    await clickAction(page, /^Перейти к документам отгрузки$/);
-    await expectFormStatus(page, "shipment_waiting", { timeout: 30_000 });
-
-    // 21. User shipment docs
-    await logout();
-    await loginAs("user");
-    await waitForFormDetail(page, formId);
-    await clickAction(page, /^Загрузить документы об отгрузке$/);
-    await attachModalFile(page, shipmentPdf, "shipment-docs.pdf");
-    await confirmModal(page);
-    await expectFormStatus(page, "shipment_waiting_verification", { timeout: 30_000 });
-
-    // 22–23. Manager close
-    await logout();
-    await loginAs("manager");
-    await waitForFormDetail(page, formId);
-    await clickAction(page, /^Взять отгрузку в проверку$/);
-    await expectFormStatus(page, "shipment_verification", { timeout: 30_000 });
-    await clickAction(page, /^Закрыть заявку$/);
+    await clickAction(page, /^Подтвердить отчет и завершить сделку$/);
     await expectFormStatus(page, "completed", { timeout: 30_000 });
   });
 
@@ -293,7 +265,7 @@ test.describe("Pilot robot matrix full UI ladder @pilot-matrix", () => {
     await expect(rejectBtn).toBeVisible({ timeout: 20_000 });
     await rejectBtn.click();
     await page.getByPlaceholder("Что именно нужно исправить или предоставить").fill("Matrix: догрузите инвойс");
-    await fillRejectMarkIfPresent(page);
+    await expect(page.locator("label").filter({ hasText: /Отметка/ })).toHaveCount(0);
     await confirmModal(page);
     await expectFormStatus(page, "form_waiting_corrections", { timeout: 30_000 });
 
