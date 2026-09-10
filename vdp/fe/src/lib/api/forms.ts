@@ -16,6 +16,7 @@ export type CoreForm = {
   correlation_id?: string;
   invoice_amount?: string;
   currency?: string;
+  payment_method?: string;
   contract_number?: string;
   contract_date?: string;
   no_documents?: boolean;
@@ -116,6 +117,7 @@ export type PatchFormInput = {
   organization_id?: string;
   invoice_amount?: string;
   currency?: string;
+  payment_method?: string;
   contract_number?: string;
   contract_date?: string;
   direction?: string;

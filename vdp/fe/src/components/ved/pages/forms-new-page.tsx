@@ -1,18 +1,39 @@
 import { useNavigate } from "@tanstack/react-router";
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import { CounterpartyPickDialog } from "@/components/ved/CounterpartyPickDialog";
 import { OrganizationPickDialog } from "@/components/ved/OrganizationPickDialog";
 import { VedAppShell } from "@/components/ved/VedAppShell";
+import {
+  attachFormHsCodes,
+  getForm,
+  nestFormPrefixForRole,
+  patchForm,
+  transitionForm,
+} from "@/lib/api/forms";
+import { assertFileSize, UploadError } from "@/lib/api/files";
+import {
+  CREATE_REVIEW_OCR_BANNER,
+  CREATE_REVIEW_OCR_CAPTION,
+  CREATE_REVIEW_OCR_PENDING,
+} from "@/lib/ved/create-review-copy";
+import { parseExtractionResult } from "@/lib/ved/extraction";
 import { usePlatformBasePath, usePlatformMode } from "@/lib/ved/platform-mode";
 import { usePlatformStore } from "@/lib/ved/platform-store";
 import { sortCurrencyRecords } from "@/lib/ved/sort-currencies";
-import { assertFileSize, UploadError } from "@/lib/api/files";
-import { CREATE_REVIEW_OCR_BANNER, CREATE_REVIEW_OCR_CAPTION } from "@/lib/ved/create-review-copy";
 import type { FormCondition, FormDirection, FormKind } from "@/lib/ved/types";
+import {
+  conditionToPaymentMethod,
+  deriveInvoiceCurrency,
+  documentsLabel,
+  mergeExtractionPrefill,
+  WIZARD_STEP,
+  WIZARD_STEPS,
+  type WizardTouched,
+} from "@/lib/ved/wizard-steps";
 import { cn } from "@/lib/utils";
 
-const STEPS = ["Направление", "Стороны", "Условия", "Документы", "Проверка"];
+type FinalizeMode = "draft" | "submit";
 
 export function NewForm() {
   const { organizations, counterparties, currencies, hsCodes, createForm, session } = usePlatformStore();
@@ -21,9 +42,15 @@ export function NewForm() {
   const mode = usePlatformMode();
   const [step, setStep] = useState(0);
   const [submitting, setSubmitting] = useState(false);
+  const [bootstrapping, setBootstrapping] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [orgDialogOpen, setOrgDialogOpen] = useState(false);
   const [cpDialogOpen, setCpDialogOpen] = useState(false);
+  const [formId, setFormId] = useState<string | null>(null);
+  const [ocrPending, setOcrPending] = useState(false);
+  const [ocrReady, setOcrReady] = useState(false);
+  const touchedRef = useRef<WizardTouched>({});
+  const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const [draft, setDraft] = useState({
     direction: "import" as FormDirection,
     kind: "good" as FormKind,
@@ -31,7 +58,6 @@ export function NewForm() {
     organizationId: "",
     counterpartyId: "",
     amount: "",
-    currency: "RUB",
     clientCurrency: "RUB",
     counterpartyCurrency: "CNY",
     hsCode: "",
@@ -45,6 +71,7 @@ export function NewForm() {
   });
   const currencyOptions = useMemo(() => sortCurrencyRecords(currencies), [currencies]);
   const hasClientOrg = organizations.length > 0;
+  const derivedCurrency = deriveInvoiceCurrency(draft.clientCurrency, draft.counterpartyCurrency);
 
   useEffect(() => {
     setDraft((prev) => {
@@ -57,17 +84,15 @@ export function NewForm() {
           ? prev.counterpartyId
           : (counterparties[0]?.id ?? "");
       const nextHs =
-        prev.hsCode && hsCodes.some((h) => h.code === prev.hsCode) ? prev.hsCode : "";
+        prev.hsCode && hsCodes.some((h) => h.code === prev.hsCode) ? prev.hsCode : prev.hsCode;
       const prefer = (code: string, fallback: string) =>
         currencyOptions.some((c) => c.code === code) ? code : (currencyOptions[0]?.code ?? fallback);
-      const nextCurrency = prefer(prev.currency, "RUB");
       const nextClientCurrency = prefer(prev.clientCurrency, "RUB");
       const nextCounterpartyCurrency = prefer(prev.counterpartyCurrency, "CNY");
       if (
         nextOrg === prev.organizationId &&
         nextCp === prev.counterpartyId &&
         nextHs === prev.hsCode &&
-        nextCurrency === prev.currency &&
         nextClientCurrency === prev.clientCurrency &&
         nextCounterpartyCurrency === prev.counterpartyCurrency
       ) {
@@ -78,39 +103,108 @@ export function NewForm() {
         organizationId: nextOrg,
         counterpartyId: nextCp,
         hsCode: nextHs,
-        currency: nextCurrency,
         clientCurrency: nextClientCurrency,
         counterpartyCurrency: nextCounterpartyCurrency,
       };
     });
   }, [organizations, counterparties, hsCodes, currencyOptions]);
 
-  function set<K extends keyof typeof draft>(key: K, value: (typeof draft)[K]) {
+  const applyOcrPrefill = useCallback((invoiceJson: string | undefined | null) => {
+    const extraction = parseExtractionResult(invoiceJson);
+    if (!extraction) return;
+    setDraft((prev) => {
+      const merged = mergeExtractionPrefill(
+        {
+          amount: prev.amount,
+          counterpartyCurrency: prev.counterpartyCurrency,
+          invoiceNumber: prev.invoiceNumber,
+          contractNumber: prev.contractNumber,
+          hsCode: prev.hsCode,
+        },
+        touchedRef.current,
+        extraction,
+      );
+      return {
+        ...prev,
+        amount: merged.amount ?? prev.amount,
+        counterpartyCurrency: merged.counterpartyCurrency ?? prev.counterpartyCurrency,
+        invoiceNumber: merged.invoiceNumber ?? prev.invoiceNumber,
+        contractNumber: merged.contractNumber ?? prev.contractNumber,
+        hsCode: merged.hsCode ?? prev.hsCode,
+      };
+    });
+    setOcrReady(true);
+    setOcrPending(false);
+  }, []);
+
+  useEffect(() => {
+    if (!formId || mode !== "app" || draft.noDocuments || ocrReady) return;
+    setOcrPending(true);
+    const tick = async () => {
+      try {
+        const form = await getForm(formId);
+        if (form.invoice_json?.trim()) {
+          applyOcrPrefill(form.invoice_json);
+          if (pollRef.current) {
+            clearInterval(pollRef.current);
+            pollRef.current = null;
+          }
+        }
+      } catch {
+        /* keep polling */
+      }
+    };
+    void tick();
+    pollRef.current = setInterval(() => void tick(), 1500);
+    return () => {
+      if (pollRef.current) {
+        clearInterval(pollRef.current);
+        pollRef.current = null;
+      }
+    };
+  }, [formId, mode, draft.noDocuments, ocrReady, applyOcrPrefill]);
+
+  function setField<K extends keyof typeof draft>(key: K, value: (typeof draft)[K]) {
     setDraft((prev) => ({ ...prev, [key]: value }));
+  }
+
+  function setTouchedField(key: keyof WizardTouched, value: string) {
+    touchedRef.current = { ...touchedRef.current, [key]: true };
+    setField(key as keyof typeof draft, value as never);
   }
 
   function onFilePick(key: "invoiceFile" | "contractFile", file: File | null) {
     if (!file) {
-      set(key, null);
+      setField(key, null);
       return;
     }
     try {
       assertFileSize(file);
-      set(key, file);
+      setField(key, file);
       setError(null);
     } catch (e) {
-      set(key, null);
+      setField(key, null);
       setError(e instanceof UploadError ? e.message : "Недопустимый файл");
     }
   }
 
   function validateStep(): string | null {
-    if (step === 1) {
+    if (step === WIZARD_STEP.docs && !draft.noDocuments) {
+      if (!draft.invoiceFile && mode === "app") {
+        return "Загрузите инвойс или выберите «У меня нет документов»";
+      }
+    }
+    if (step === WIZARD_STEP.docs && draft.noDocuments) {
+      if (!draft.contractNumber.trim() || !draft.contractDate.trim()) {
+        return "Без документов укажите номер и дату контракта вручную";
+      }
+    }
+    if (step === WIZARD_STEP.parties) {
       if (!hasClientOrg || !draft.organizationId) {
         return "Сначала создайте организацию клиента";
       }
     }
-    if (step === 2) {
+    if (step === WIZARD_STEP.terms) {
       const amount = Number(String(draft.amount).replace(/\s/g, "").replace(",", "."));
       if (!Number.isFinite(amount) || amount <= 0) {
         return "Укажите сумму платежа больше нуля";
@@ -124,20 +218,49 @@ export function NewForm() {
         return "Для товара с авансом укажите дату отгрузки";
       }
     }
-    if (step === 3 && !draft.noDocuments) {
-      if (!draft.invoiceFile && mode === "app") return "Загрузите инвойс или выберите «У меня нет документов»";
-      if (!draft.contractFile && mode === "app") return "Загрузите контракт или выберите «У меня нет документов»";
-    }
-    if (step === 3 && draft.noDocuments) {
-      if (!draft.contractNumber.trim() || !draft.contractDate.trim()) {
-        return "Без документов укажите номер и дату контракта вручную";
-      }
-    }
     return null;
   }
 
-  function nextStep() {
-    if (step === 0 && !hasClientOrg) {
+  async function ensureEarlyForm(): Promise<string> {
+    if (formId) return formId;
+    if (!hasClientOrg || !draft.organizationId) {
+      throw new Error("Сначала создайте организацию клиента");
+    }
+    const created = await Promise.resolve(
+      createForm({
+        direction: draft.direction,
+        kind: draft.kind,
+        condition: draft.condition,
+        organizationId: draft.organizationId,
+        counterpartyId: draft.counterpartyId,
+        amountMinor: Math.round(Number(draft.amount || 0) * 100),
+        currency: derivedCurrency,
+        clientCurrency: draft.clientCurrency,
+        counterpartyCurrency: draft.counterpartyCurrency,
+        hsCode: draft.hsCode || "—",
+        invoiceNumber: draft.noDocuments ? draft.contractNumber : draft.invoiceNumber || "—",
+        shipmentDate: draft.shipmentDate || undefined,
+        noDocuments: draft.noDocuments,
+        invoiceFile: draft.invoiceFile ?? undefined,
+        contractFile: draft.contractFile ?? undefined,
+        documents: [],
+      } as Parameters<typeof createForm>[0]),
+    );
+    setFormId(created.id);
+    if (mode === "app" && !draft.noDocuments) {
+      setOcrPending(true);
+    }
+    if (mode === "app" && draft.condition) {
+      await patchForm(created.id, nestFormPrefixForRole(session?.role ?? "user"), {
+        payment_method: conditionToPaymentMethod(draft.condition),
+        currency: derivedCurrency,
+      });
+    }
+    return created.id;
+  }
+
+  async function nextStep() {
+    if (step === WIZARD_STEP.docs && !hasClientOrg) {
       setError("Нет организации клиента — создайте организацию, чтобы продолжить");
       setOrgDialogOpen(true);
       return;
@@ -148,10 +271,62 @@ export function NewForm() {
       return;
     }
     setError(null);
+    if (step === WIZARD_STEP.docs && mode === "app" && !formId) {
+      setBootstrapping(true);
+      try {
+        await ensureEarlyForm();
+      } catch (e) {
+        setError(e instanceof Error ? e.message : "Не удалось создать черновик заявки");
+        setBootstrapping(false);
+        return;
+      }
+      setBootstrapping(false);
+    }
     setStep(step + 1);
   }
 
-  async function submit() {
+  async function syncFormFields(id: string): Promise<void> {
+    const amount = String(draft.amount || "0").replace(/\s/g, "").replace(",", ".");
+    const contractNumber = draft.noDocuments
+      ? draft.contractNumber
+      : draft.contractNumber || draft.invoiceNumber || "";
+    const patch: {
+      invoice_amount: string;
+      currency: string;
+      payment_method: string;
+      direction: FormDirection;
+      kind: FormKind;
+      contract_number?: string;
+      contract_date?: string;
+      organization_id?: string;
+      counterparty_id?: string;
+    } = {
+      invoice_amount: amount,
+      currency: derivedCurrency,
+      payment_method: conditionToPaymentMethod(draft.condition),
+      direction: draft.direction,
+      kind: draft.kind,
+    };
+    if (contractNumber) patch.contract_number = contractNumber;
+    const date = draft.shipmentDate || draft.contractDate;
+    if (date) patch.contract_date = date;
+    if (draft.organizationId) patch.organization_id = draft.organizationId;
+    if (draft.counterpartyId) patch.counterparty_id = draft.counterpartyId;
+    await patchForm(id, nestFormPrefixForRole(session?.role ?? "user"), patch);
+    if (draft.hsCode && draft.hsCode !== "—") {
+      await attachFormHsCodes(id, [draft.hsCode]);
+    }
+  }
+
+  async function ensureDraftStatus(id: string): Promise<void> {
+    if (mode !== "app") return;
+    const current = await getForm(id);
+    if (current.status === "creating") {
+      await transitionForm(id, "recognize_complete");
+    }
+  }
+
+  async function finalize(finalizeMode: FinalizeMode) {
     if (!hasClientOrg || !draft.organizationId) {
       setError("Сначала создайте организацию клиента");
       setOrgDialogOpen(true);
@@ -165,56 +340,44 @@ export function NewForm() {
     setSubmitting(true);
     setError(null);
     try {
-      const payload = {
-        direction: draft.direction,
-        kind: draft.kind,
-        condition: draft.condition,
-        organizationId: draft.organizationId,
-        counterpartyId: draft.counterpartyId,
-        amountMinor: Math.round(Number(draft.amount || 0) * 100),
-        currency: draft.currency,
-        clientCurrency: draft.clientCurrency,
-        counterpartyCurrency: draft.counterpartyCurrency,
-        hsCode: draft.hsCode || "—",
-        invoiceNumber: draft.noDocuments ? draft.contractNumber : draft.invoiceNumber || "—",
-        shipmentDate: draft.shipmentDate || undefined,
-        noDocuments: draft.noDocuments,
-        invoiceFile: draft.invoiceFile ?? undefined,
-        contractFile: draft.contractFile ?? undefined,
-        documents:
-          draft.invoiceFile || draft.contractFile
-            ? [
-                ...(draft.invoiceFile
-                  ? [
-                      {
-                        id: "doc-invoice",
-                        title: draft.invoiceFile.name,
-                        ext: "PDF" as const,
-                        size: "—",
-                        uploadedAt: new Date().toISOString(),
-                        kind: "invoice" as const,
-                      },
-                    ]
-                  : []),
-                ...(draft.contractFile
-                  ? [
-                      {
-                        id: "doc-contract",
-                        title: draft.contractFile.name,
-                        ext: "PDF" as const,
-                        size: "—",
-                        uploadedAt: new Date().toISOString(),
-                        kind: "contract" as const,
-                      },
-                    ]
-                  : []),
-              ]
-            : [],
-      };
-      const created = await Promise.resolve(createForm(payload));
-      navigate({ to: `${base}/forms/$id` as "/forms/$id", params: { id: created.id } });
+      let id = formId;
+      if (!id) {
+        id = await ensureEarlyForm();
+      } else if (mode === "app") {
+        await syncFormFields(id);
+      } else {
+        const created = await Promise.resolve(
+          createForm({
+            direction: draft.direction,
+            kind: draft.kind,
+            condition: draft.condition,
+            organizationId: draft.organizationId,
+            counterpartyId: draft.counterpartyId,
+            amountMinor: Math.round(Number(draft.amount || 0) * 100),
+            currency: derivedCurrency,
+            clientCurrency: draft.clientCurrency,
+            counterpartyCurrency: draft.counterpartyCurrency,
+            hsCode: draft.hsCode || "—",
+            invoiceNumber: draft.noDocuments ? draft.contractNumber : draft.invoiceNumber || "—",
+            shipmentDate: draft.shipmentDate || undefined,
+            noDocuments: draft.noDocuments,
+            invoiceFile: draft.invoiceFile ?? undefined,
+            contractFile: draft.contractFile ?? undefined,
+            documents: [],
+          } as Parameters<typeof createForm>[0]),
+        );
+        id = created.id;
+      }
+      if (mode === "app") {
+        await syncFormFields(id);
+        await ensureDraftStatus(id);
+        if (finalizeMode === "submit") {
+          await transitionForm(id, "submit");
+        }
+      }
+      navigate({ to: `${base}/forms/$id` as "/forms/$id", params: { id } });
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Не удалось создать заявку");
+      setError(e instanceof Error ? e.message : "Не удалось сохранить заявку");
     } finally {
       setSubmitting(false);
     }
@@ -226,12 +389,12 @@ export function NewForm() {
       subtitle={
         mode === "demo"
           ? "Черновик создаётся локально; после create — CTA «Завершить распознавание» на статусе creating"
-          : "Черновик создаётся в ядре; документы загружаются через API после create"
+          : "Сначала документы — распознавание идёт параллельно заполнению формы"
       }
     >
       <div className="panel p-4">
-        <ol className="flex flex-wrap gap-2">
-          {STEPS.map((label, i) => (
+        <ol className="flex flex-wrap gap-2" data-testid="wizard-steps">
+          {WIZARD_STEPS.map((label, i) => (
             <li
               key={label}
               className={cn(
@@ -247,23 +410,118 @@ export function NewForm() {
 
       <div className="panel mt-4 max-w-2xl p-5">
         {error && <p className="mb-4 rounded-md bg-destructive-soft px-2 py-1.5 text-xs text-destructive">{error}</p>}
+        {ocrPending && !ocrReady && step > WIZARD_STEP.docs && (
+          <p className="mb-4 rounded-md bg-wait-soft px-3 py-2 text-sm text-wait" data-testid="wizard-ocr-pending">
+            {CREATE_REVIEW_OCR_PENDING}
+          </p>
+        )}
 
-        {step === 0 && (
-          <div className="grid gap-4 sm:grid-cols-3">
+        {step === WIZARD_STEP.docs && (
+          <div className="grid gap-4" data-testid="wizard-docs-step">
+            {!hasClientOrg && (
+              <p className="rounded-md bg-muted/60 px-3 py-2 text-xs text-muted-foreground">
+                Нет организации клиента.{" "}
+                <button
+                  type="button"
+                  className="font-semibold text-accent hover:underline"
+                  onClick={() => setOrgDialogOpen(true)}
+                >
+                  Создать организацию
+                </button>{" "}
+                — без неё заявку создать нельзя.
+              </p>
+            )}
+            <button
+              type="button"
+              onClick={() => setField("noDocuments", !draft.noDocuments)}
+              className={cn(
+                "rounded-md px-3 py-2 text-sm font-semibold",
+                draft.noDocuments ? "bg-wait-soft text-wait" : "bg-muted text-muted-foreground",
+              )}
+              data-testid="wizard-no-documents"
+            >
+              {draft.noDocuments ? "✓ У меня нет документов" : "У меня нет документов"}
+            </button>
+            {!draft.noDocuments && (
+              <>
+                <Field label="Инвойс (PDF, до 15 МБ)">
+                  <input
+                    type="file"
+                    accept=".pdf,application/pdf"
+                    data-testid="wizard-invoice-file"
+                    onChange={(e) => onFilePick("invoiceFile", e.target.files?.[0] ?? null)}
+                    className="text-xs text-muted-foreground"
+                  />
+                </Field>
+                <Field label="Контракт (PDF, до 15 МБ) — необязательно">
+                  <input
+                    type="file"
+                    accept=".pdf,application/pdf"
+                    data-testid="wizard-contract-file"
+                    onChange={(e) => onFilePick("contractFile", e.target.files?.[0] ?? null)}
+                    className="text-xs text-muted-foreground"
+                  />
+                </Field>
+                <p className="text-xs text-muted-foreground">
+                  Чаще достаточно инвойса. После «Далее» распознавание пойдёт в фоне — можно заполнять форму дальше.
+                </p>
+              </>
+            )}
+            {draft.noDocuments && (
+              <div className="grid gap-4 sm:grid-cols-2">
+                <Field label="Номер контракта">
+                  <input
+                    value={draft.contractNumber}
+                    onChange={(e) => setTouchedField("contractNumber", e.target.value)}
+                    className="field font-mono"
+                  />
+                </Field>
+                <Field label="Дата контракта">
+                  <input
+                    type="date"
+                    value={draft.contractDate}
+                    onChange={(e) => setField("contractDate", e.target.value)}
+                    className="field"
+                  />
+                </Field>
+              </div>
+            )}
+            <OrganizationPickDialog
+              open={orgDialogOpen}
+              onOpenChange={setOrgDialogOpen}
+              role={session?.role}
+              organizations={organizations}
+              selectedId={draft.organizationId}
+              onSelect={(id) => setField("organizationId", id)}
+            />
+          </div>
+        )}
+
+        {step === WIZARD_STEP.direction && (
+          <div className="grid gap-4 sm:grid-cols-3" data-testid="wizard-direction-step">
             <Field label="Направление">
-              <select value={draft.direction} onChange={(e) => set("direction", e.target.value as FormDirection)} className="field">
+              <select
+                value={draft.direction}
+                onChange={(e) => setField("direction", e.target.value as FormDirection)}
+                className="field"
+              >
                 <option value="import">Импорт</option>
                 <option value="export">Экспорт</option>
               </select>
             </Field>
             <Field label="Предмет">
-              <select value={draft.kind} onChange={(e) => set("kind", e.target.value as FormKind)} className="field">
+              <select value={draft.kind} onChange={(e) => setField("kind", e.target.value as FormKind)} className="field">
                 <option value="good">Товар</option>
                 <option value="service">Услуга</option>
               </select>
             </Field>
-            <Field label="Условие оплаты">
-              <select value={draft.condition} onChange={(e) => set("condition", e.target.value as FormCondition)} className="field">
+            <Field label="Условие оплаты с поставщиком">
+              <select
+                value={draft.condition}
+                onChange={(e) => setField("condition", e.target.value as FormCondition)}
+                className="field"
+                data-testid="wizard-payment-condition"
+              >
                 <option value="advance">Аванс</option>
                 <option value="postPayment">Постоплата</option>
               </select>
@@ -271,7 +529,7 @@ export function NewForm() {
           </div>
         )}
 
-        {step === 1 && (
+        {step === WIZARD_STEP.parties && (
           <div className="grid gap-4" data-testid="wizard-parties-step">
             {!hasClientOrg && (
               <p
@@ -286,8 +544,7 @@ export function NewForm() {
                   onClick={() => setOrgDialogOpen(true)}
                 >
                   Создать организацию
-                </button>
-                {" "}
+                </button>{" "}
                 — без неё заявку создать нельзя.
               </p>
             )}
@@ -295,7 +552,7 @@ export function NewForm() {
               <div className="flex flex-wrap gap-2">
                 <select
                   value={draft.organizationId}
-                  onChange={(e) => set("organizationId", e.target.value)}
+                  onChange={(e) => setField("organizationId", e.target.value)}
                   className="field flex-1"
                   disabled={!hasClientOrg}
                 >
@@ -320,7 +577,7 @@ export function NewForm() {
               <div className="flex flex-wrap gap-2">
                 <select
                   value={draft.counterpartyId}
-                  onChange={(e) => set("counterpartyId", e.target.value)}
+                  onChange={(e) => setField("counterpartyId", e.target.value)}
                   className="field flex-1"
                 >
                   {counterparties.length === 0 && <option value="">Нет контрагентов — создайте здесь</option>}
@@ -352,7 +609,7 @@ export function NewForm() {
               role={session?.role}
               organizations={organizations}
               selectedId={draft.organizationId}
-              onSelect={(id) => set("organizationId", id)}
+              onSelect={(id) => setField("organizationId", id)}
             />
             <CounterpartyPickDialog
               open={cpDialogOpen}
@@ -360,28 +617,30 @@ export function NewForm() {
               role={session?.role}
               counterparties={counterparties}
               selectedId={draft.counterpartyId}
-              onSelect={(id) => set("counterpartyId", id)}
+              onSelect={(id) => setField("counterpartyId", id)}
             />
           </div>
         )}
 
-        {step === 2 && (
-          <div className="grid gap-4 sm:grid-cols-2">
+        {step === WIZARD_STEP.terms && (
+          <div className="grid gap-4 sm:grid-cols-2" data-testid="wizard-terms-step">
             <Field label="Сумма инвойса">
-              <input value={draft.amount} onChange={(e) => set("amount", e.target.value)} inputMode="decimal" placeholder="1250000" className="field font-mono" />
-            </Field>
-            <Field label="Валюта инвойса">
-              <select value={draft.currency} onChange={(e) => set("currency", e.target.value)} className="field">
-                {currencyOptions.length === 0 && <option value="">Нет валют в справочнике</option>}
-                {currencyOptions.map((c) => (
-                  <option key={c.code} value={c.code}>
-                    {c.code} · {c.title}
-                  </option>
-                ))}
-              </select>
+              <input
+                value={draft.amount}
+                onChange={(e) => setTouchedField("amount", e.target.value)}
+                inputMode="decimal"
+                placeholder="1250000"
+                className="field font-mono"
+                data-testid="wizard-amount"
+              />
             </Field>
             <Field label="Валюта клиента">
-              <select value={draft.clientCurrency} onChange={(e) => set("clientCurrency", e.target.value)} className="field">
+              <select
+                value={draft.clientCurrency}
+                onChange={(e) => setField("clientCurrency", e.target.value)}
+                className="field"
+                data-testid="wizard-client-currency"
+              >
                 {currencyOptions.length === 0 && <option value="">Нет валют в справочнике</option>}
                 {currencyOptions.map((c) => (
                   <option key={c.code} value={c.code}>
@@ -391,7 +650,12 @@ export function NewForm() {
               </select>
             </Field>
             <Field label="Валюта контрагента">
-              <select value={draft.counterpartyCurrency} onChange={(e) => set("counterpartyCurrency", e.target.value)} className="field">
+              <select
+                value={draft.counterpartyCurrency}
+                onChange={(e) => setTouchedField("counterpartyCurrency", e.target.value)}
+                className="field"
+                data-testid="wizard-counterparty-currency"
+              >
                 {currencyOptions.length === 0 && <option value="">Нет валют в справочнике</option>}
                 {currencyOptions.map((c) => (
                   <option key={c.code} value={c.code}>
@@ -404,7 +668,7 @@ export function NewForm() {
               <Field label="Код ТН ВЭД">
                 <select
                   value={draft.hsCode}
-                  onChange={(e) => set("hsCode", e.target.value)}
+                  onChange={(e) => setTouchedField("hsCode", e.target.value)}
                   className="field font-mono"
                   aria-label="Код ТН ВЭД из справочника"
                 >
@@ -421,65 +685,27 @@ export function NewForm() {
             )}
             {draft.kind === "good" && draft.condition === "advance" && (
               <Field label="Дата отгрузки">
-                <input type="date" value={draft.shipmentDate} onChange={(e) => set("shipmentDate", e.target.value)} className="field" />
+                <input
+                  type="date"
+                  value={draft.shipmentDate}
+                  onChange={(e) => setField("shipmentDate", e.target.value)}
+                  className="field"
+                />
               </Field>
             )}
             <Field label="Номер инвойса">
-              <input value={draft.invoiceNumber} onChange={(e) => set("invoiceNumber", e.target.value)} placeholder="INV-2026-0001" className="field font-mono" />
+              <input
+                value={draft.invoiceNumber}
+                onChange={(e) => setTouchedField("invoiceNumber", e.target.value)}
+                placeholder="INV-2026-0001"
+                className="field font-mono"
+              />
             </Field>
           </div>
         )}
 
-        {step === 3 && (
-          <div className="grid gap-4">
-            <button
-              type="button"
-              onClick={() => set("noDocuments", !draft.noDocuments)}
-              className={cn(
-                "rounded-md px-3 py-2 text-sm font-semibold",
-                draft.noDocuments ? "bg-wait-soft text-wait" : "bg-muted text-muted-foreground",
-              )}
-            >
-              {draft.noDocuments ? "✓ У меня нет документов" : "У меня нет документов"}
-            </button>
-            {!draft.noDocuments && (
-              <>
-                <Field label="Инвойс (PDF, до 15 МБ)">
-                  <input
-                    type="file"
-                    accept=".pdf,application/pdf"
-                    onChange={(e) => onFilePick("invoiceFile", e.target.files?.[0] ?? null)}
-                    className="text-xs text-muted-foreground"
-                  />
-                </Field>
-                <Field label="Контракт (PDF, до 15 МБ)">
-                  <input
-                    type="file"
-                    accept=".pdf,application/pdf"
-                    onChange={(e) => onFilePick("contractFile", e.target.files?.[0] ?? null)}
-                    className="text-xs text-muted-foreground"
-                  />
-                </Field>
-              </>
-            )}
-            {draft.noDocuments && (
-              <div className="grid gap-4 sm:grid-cols-2">
-                <Field label="Номер контракта">
-                  <input value={draft.contractNumber} onChange={(e) => set("contractNumber", e.target.value)} className="field font-mono" />
-                </Field>
-                <Field label="Дата контракта">
-                  <input type="date" value={draft.contractDate} onChange={(e) => set("contractDate", e.target.value)} className="field" />
-                </Field>
-              </div>
-            )}
-            {draft.condition === "postPayment" && (
-              <p className="text-xs text-muted-foreground">Постоплата: closing docs можно загрузить на этапе shipment_waiting.</p>
-            )}
-          </div>
-        )}
-
-        {step === 4 && (
-          <div className="grid gap-4">
+        {step === WIZARD_STEP.review && (
+          <div className="grid gap-4" data-testid="wizard-review-step">
             {!draft.noDocuments && (
               <p className="rounded-md bg-muted px-3 py-2 text-sm text-foreground">{CREATE_REVIEW_OCR_BANNER}</p>
             )}
@@ -487,13 +713,16 @@ export function NewForm() {
               {[
                 ["Направление", draft.direction === "import" ? "Импорт" : "Экспорт"],
                 ["Предмет", draft.kind === "good" ? "Товар" : "Услуга"],
-                ["Условие", draft.condition === "advance" ? "Аванс" : "Постоплата"],
+                ["Условие оплаты", draft.condition === "advance" ? "Аванс" : "Постоплата"],
                 ["Организация", organizations.find((o) => o.id === draft.organizationId)?.name ?? ""],
                 ["Контрагент", counterparties.find((c) => c.id === draft.counterpartyId)?.name ?? ""],
-                ["Сумма", `${draft.amount || 0} ${draft.currency}`],
+                ["Сумма", `${draft.amount || 0} ${derivedCurrency}`],
                 ["Валюты", `${draft.clientCurrency} / ${draft.counterpartyCurrency}`],
                 ["ТН ВЭД", draft.hsCode || "—"],
-                ["Документы", draft.noDocuments ? "Без файлов (ручной контракт)" : "Инвойс + контракт"],
+                [
+                  "Документы",
+                  documentsLabel(draft.noDocuments, Boolean(draft.invoiceFile), Boolean(draft.contractFile)),
+                ],
               ].map(([k, v]) => (
                 <div key={k}>
                   <dt className="label-caps">{k}</dt>
@@ -505,28 +734,49 @@ export function NewForm() {
         )}
 
         <div className="mt-6 flex flex-col gap-2">
-          <div className="flex gap-2">
+          <div className="flex flex-wrap gap-2">
             {step > 0 && (
-              <button type="button" onClick={() => setStep(step - 1)} className="rounded-md px-3 py-2 text-sm font-semibold text-muted-foreground hover:bg-muted">
+              <button
+                type="button"
+                onClick={() => setStep(step - 1)}
+                className="rounded-md px-3 py-2 text-sm font-semibold text-muted-foreground hover:bg-muted"
+              >
                 Назад
               </button>
             )}
-            {step < STEPS.length - 1 ? (
-              <button type="button" onClick={nextStep} className="rounded-md bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground">
-                Далее
-              </button>
-            ) : (
+            {step < WIZARD_STEPS.length - 1 ? (
               <button
                 type="button"
-                onClick={() => void submit()}
-                disabled={submitting}
-                className="rounded-md bg-accent px-4 py-2 text-sm font-semibold text-accent-foreground disabled:opacity-50"
+                onClick={() => void nextStep()}
+                disabled={bootstrapping}
+                className="rounded-md bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground disabled:opacity-50"
               >
-                {submitting ? "Создание…" : "Создать заявку"}
+                {bootstrapping ? "Создание…" : "Далее"}
               </button>
+            ) : (
+              <>
+                <button
+                  type="button"
+                  onClick={() => void finalize("draft")}
+                  disabled={submitting}
+                  data-testid="wizard-save-draft"
+                  className="rounded-md bg-muted px-4 py-2 text-sm font-semibold text-foreground disabled:opacity-50"
+                >
+                  {submitting ? "Сохранение…" : "Сохранить черновик"}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => void finalize("submit")}
+                  disabled={submitting}
+                  data-testid="wizard-send-manager"
+                  className="rounded-md bg-accent px-4 py-2 text-sm font-semibold text-accent-foreground disabled:opacity-50"
+                >
+                  {submitting ? "Отправка…" : "Отправить менеджеру"}
+                </button>
+              </>
             )}
           </div>
-          {step === 4 && !draft.noDocuments && (
+          {step === WIZARD_STEP.review && !draft.noDocuments && (
             <p className="text-xs text-muted-foreground">{CREATE_REVIEW_OCR_CAPTION}</p>
           )}
         </div>
