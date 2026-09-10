@@ -77,6 +77,12 @@ func TestImportTransitionCoverage(t *testing.T) {
 	if !IsAllowedTransition(StatusReportAccepted, StatusShipmentWaiting, DirectionImport, false) {
 		t.Fatal("report_accepted -> shipment_waiting")
 	}
+	if !IsAllowedTransition(StatusReportVerification, StatusCompleted, DirectionImport, false) {
+		t.Fatal("report_verification -> completed (confirm report closes deal)")
+	}
+	if !IsAllowedTransition(StatusReportWaiting, StatusCompleted, DirectionImport, false) {
+		t.Fatal("report_waiting -> completed (Nest shortcut report/accept)")
+	}
 	if !IsAllowedTransition(StatusPaymentSent, StatusAdvanceSigningOrder, DirectionImport, true) {
 		t.Fatal("rate-on-provider overlay missing")
 	}

@@ -265,6 +265,7 @@ export function nextStepHint(status: string, role?: VedRole, processRoles?: Proc
     return "Исправьте замечания и отправьте повторно.";
   }
   if (status.startsWith("payment")) return "Контролируйте исполнение платежа.";
+  if (status === "report_verification") return "Подтвердите отчет и завершите сделку.";
   if (status.startsWith("report") || status.startsWith("shipment")) return "Закройте документы и отгрузку.";
   if (status === "completed") return "Заявка закрыта.";
   if (status.startsWith("canceled")) return "Заявка отменена.";

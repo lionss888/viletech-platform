@@ -12,6 +12,7 @@ import (
 
 	"github.com/viletech/tools/intake/internal/card"
 	"github.com/viletech/tools/intake/internal/config"
+	"github.com/viletech/tools/intake/internal/console"
 	"github.com/viletech/tools/intake/internal/pipeline"
 	"github.com/viletech/tools/intake/internal/store"
 	"github.com/viletech/tools/intake/internal/telegram"
@@ -40,6 +41,8 @@ func main() {
 		Store:            st,
 		Cards:            card.NewStore(cfg.Home),
 		Messenger:        tg,
+		Media:            tg,
+		MediaOut:         tg,
 		ChatIDs:          cfg.ChatIDs,
 		BotUser:          cfg.BotUsername,
 		Log:              log,
@@ -48,9 +51,40 @@ func main() {
 		Workspace:        workspace,
 		ReminderInterval: cfg.ReminderInterval,
 		MaxReminders:     cfg.MaxReminders,
+		MaxMediaBytes:    cfg.MaxMediaBytes,
 	}
 	ctx, stop := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
 	defer stop()
+
+	var cons *console.Server
+	if cfg.ConsoleEnabled {
+		if cfg.ConsoleToken == "" {
+			log.Warn("console enabled but INTAKE_CONSOLE_TOKEN empty; console not started")
+		} else {
+			cons = &console.Server{
+				Addr:      cfg.ConsoleAddr,
+				Token:     cfg.ConsoleToken,
+				Pipeline:  p,
+				Store:     st,
+				Cards:     p.Cards,
+				Workspace: workspace,
+				Log:       log,
+				UI:        console.UI,
+				MaxUpload: cfg.MaxMediaBytes,
+			}
+			if err := cons.Start(); err != nil {
+				log.Error("console start", "err", err)
+				os.Exit(1)
+			}
+			log.Info("console listening", "addr", cfg.ConsoleAddr)
+			defer func() {
+				shCtx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+				defer cancel()
+				_ = cons.Shutdown(shCtx)
+			}()
+		}
+	}
+
 	offset, err := st.LoadOffset()
 	if err != nil {
 		log.Error("load offset", "err", err)

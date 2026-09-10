@@ -15,11 +15,14 @@
 #   ./scripts/notify-mgmt.sh --kind uptime --env alpha --status down
 #   echo "text" | ./scripts/notify-mgmt.sh --kind raw
 #   ./scripts/notify-mgmt.sh --dry-run --kind gate --title "Стабильность" --status passed
+#   ./scripts/notify-mgmt.sh --require --kind promote --env alpha --status success
+# --require: exit non-zero if token/chat missing or Telegram rejects (no silent skip).
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 SANITIZE="$ROOT/scripts/mgmt-notify-sanitize.py"
 DRY_RUN=0
+REQUIRE=0
 KIND=""
 TITLE=""
 BODY=""
@@ -30,13 +33,14 @@ NEXT=""
 BRANCH=""
 
 usage() {
-  sed -n '2,22p' "$0" | sed 's/^# \{0,1\}//'
+  sed -n '2,24p' "$0" | sed 's/^# \{0,1\}//'
   exit 2
 }
 
 while [ $# -gt 0 ]; do
   case "$1" in
     --dry-run) DRY_RUN=1; shift ;;
+    --require) REQUIRE=1; shift ;;
     --kind) KIND="${2:-}"; shift 2 ;;
     --title) TITLE="${2:-}"; shift 2 ;;
     --body) BODY="${2:-}"; shift 2 ;;
@@ -49,6 +53,10 @@ while [ $# -gt 0 ]; do
     *) echo "unknown arg: $1" >&2; usage ;;
   esac
 done
+# Env override for CI: MGMT_NOTIFY_REQUIRE=1 ≡ --require
+if [ "${MGMT_NOTIFY_REQUIRE:-0}" = "1" ]; then
+  REQUIRE=1
+fi
 
 [ -n "$KIND" ] || { echo "notify-mgmt: --kind required" >&2; exit 2; }
 
@@ -196,6 +204,10 @@ CHAT="${CHAT:-${UPTIME_CHAT_ID:-}}"
 CHAT="${CHAT%%,*}"
 
 if [ -z "$TOKEN" ] || [ -z "$CHAT" ]; then
+  if [ "$REQUIRE" = 1 ]; then
+    echo "notify-mgmt: required but token/chat not configured" >&2
+    exit 1
+  fi
   echo "notify-mgmt: skip (token/chat not configured)" >&2
   exit 0
 fi

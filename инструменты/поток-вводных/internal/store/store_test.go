@@ -6,25 +6,30 @@ import (
 	"testing"
 )
 
-func TestSeenAndInbox(t *testing.T) {
+func TestListInboxAndMedia(t *testing.T) {
+	t.Parallel()
 	home := t.TempDir()
-	st := New(home)
-	ok, err := st.Seen(1)
-	if err != nil || ok {
-		t.Fatalf("seen=%v err=%v", ok, err)
-	}
-	if err := st.MarkSeen(1); err != nil {
+	s := New(home)
+	if err := s.AppendInbox(Record{Text: "a", Kind: "intake"}); err != nil {
 		t.Fatal(err)
 	}
-	ok, err = st.Seen(1)
-	if err != nil || !ok {
-		t.Fatalf("seen after mark=%v err=%v", ok, err)
-	}
-	if err := st.AppendInbox(Record{UpdateID: 1, MessageID: 2, ChatID: -100, Trigger: "mention", Text: "x"}); err != nil {
+	if err := s.AppendInbox(Record{Text: "b", Kind: "intake"}); err != nil {
 		t.Fatal(err)
 	}
-	entries, err := os.ReadDir(filepath.Join(home, "inbox"))
-	if err != nil || len(entries) != 1 {
-		t.Fatalf("inbox entries=%v err=%v", entries, err)
+	recs, err := s.ListInboxRecent(10)
+	if err != nil || len(recs) != 2 {
+		t.Fatalf("recs=%v err=%v", recs, err)
+	}
+	att, err := s.SaveMedia("m1", "x.go", []byte("package x"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	abs := s.AbsMediaPath(att.Path)
+	b, err := os.ReadFile(abs)
+	if err != nil || string(b) != "package x" {
+		t.Fatalf("read %v %v", b, err)
+	}
+	if filepath.Base(abs) == "" {
+		t.Fatal("empty base")
 	}
 }

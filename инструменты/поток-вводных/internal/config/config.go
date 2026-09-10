@@ -21,6 +21,10 @@ type Config struct {
 	Workspace        string
 	ReminderInterval time.Duration
 	MaxReminders     int
+	ConsoleAddr      string
+	ConsoleToken     string
+	ConsoleEnabled   bool
+	MaxMediaBytes    int64
 }
 
 // Load reads env and optional INTAKE_HOME/env or ~/.vdp-intake/env.
@@ -74,6 +78,14 @@ func Load() (Config, error) {
 	if maxRemind <= 0 {
 		maxRemind = 2
 	}
+	consoleAddr := envOr("INTAKE_CONSOLE_ADDR", "127.0.0.1:8787")
+	consoleToken := strings.TrimSpace(os.Getenv("INTAKE_CONSOLE_TOKEN"))
+	consoleOn := envOr("INTAKE_CONSOLE", "1")
+	consoleEnabled := consoleOn != "0" && !strings.EqualFold(consoleOn, "false") && !strings.EqualFold(consoleOn, "off")
+	maxMediaMB, _ := strconv.Atoi(envOr("INTAKE_MAX_MEDIA_MB", "25"))
+	if maxMediaMB <= 0 {
+		maxMediaMB = 25
+	}
 	return Config{
 		Token:            token,
 		ChatIDs:          chats,
@@ -84,6 +96,10 @@ func Load() (Config, error) {
 		Workspace:        workspace,
 		ReminderInterval: time.Duration(remindHours) * time.Hour,
 		MaxReminders:     maxRemind,
+		ConsoleAddr:      consoleAddr,
+		ConsoleToken:     consoleToken,
+		ConsoleEnabled:   consoleEnabled,
+		MaxMediaBytes:    int64(maxMediaMB) << 20,
 	}, nil
 }
 

@@ -126,6 +126,7 @@ jobs:
           chmod 600 ~/.ssh/deploy_key
 
       - name: Promote pinned digests (compose pull, no build)
+        id: promote
         env:
           DEPLOY_HOST: ${{ secrets.DEPLOY_HOST }}
           DEPLOY_USER: ${{ secrets.DEPLOY_USER }}
@@ -136,20 +137,51 @@ jobs:
           REGISTRY_HOST: ghcr.io
           REGISTRY_USER: ${{ github.actor }}
           REGISTRY_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          MGMT_NOTIFY_TOKEN: ${{ secrets.MGMT_NOTIFY_TOKEN || secrets.TELEGRAM_INTAKE_TOKEN }}
-          MGMT_NOTIFY_CHAT_ID: ${{ secrets.MGMT_NOTIFY_CHAT_ID || secrets.TELEGRAM_INTAKE_CHAT_IDS }}
+          # TG notify is owned by the steps below (strict require); script must not duplicate.
           MGMT_NOTIFY_FROM_DEPLOY: "1"
         run: |
           chmod +x vdp/scripts/deploy-compose-release.sh vdp/scripts/notify-mgmt.sh
           ./vdp/scripts/deploy-compose-release.sh
 
-      - name: Notify management on deploy failure
+      - name: Notify management — deploy success
+        if: success()
+        env:
+          MGMT_NOTIFY_TOKEN: ${{ secrets.MGMT_NOTIFY_TOKEN || secrets.TELEGRAM_INTAKE_TOKEN }}
+          MGMT_NOTIFY_CHAT_ID: ${{ secrets.MGMT_NOTIFY_CHAT_ID || secrets.TELEGRAM_INTAKE_CHAT_IDS }}
+          MGMT_NOTIFY_REQUIRE: "1"
+          MGMT_CI_ENV: ${{ needs.resolve-pin.outputs.target_env }}
+          MGMT_CI_REVISION: ${{ needs.resolve-pin.outputs.revision }}
+        run: |
+          chmod +x vdp/scripts/ci-mgmt-notify.sh vdp/scripts/notify-mgmt.sh
+          ./vdp/scripts/ci-mgmt-notify.sh deploy-ok
+
+      - name: Notify management — deploy failure
         if: failure()
         env:
           MGMT_NOTIFY_TOKEN: ${{ secrets.MGMT_NOTIFY_TOKEN || secrets.TELEGRAM_INTAKE_TOKEN }}
           MGMT_NOTIFY_CHAT_ID: ${{ secrets.MGMT_NOTIFY_CHAT_ID || secrets.TELEGRAM_INTAKE_CHAT_IDS }}
+          MGMT_NOTIFY_REQUIRE: "1"
           MGMT_CI_ENV: ${{ needs.resolve-pin.outputs.target_env }}
           MGMT_CI_REVISION: ${{ needs.resolve-pin.outputs.revision }}
+        run: |
+          chmod +x vdp/scripts/ci-mgmt-notify.sh vdp/scripts/notify-mgmt.sh
+          ./vdp/scripts/ci-mgmt-notify.sh deploy-fail
+
+  notify-resolve-fail:
+    name: notify pin resolve failure
+    needs: [resolve-pin]
+    if: failure() && needs.resolve-pin.result == 'failure'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Notify management — could not start deploy
+        env:
+          MGMT_NOTIFY_TOKEN: ${{ secrets.MGMT_NOTIFY_TOKEN || secrets.TELEGRAM_INTAKE_TOKEN }}
+          MGMT_NOTIFY_CHAT_ID: ${{ secrets.MGMT_NOTIFY_CHAT_ID || secrets.TELEGRAM_INTAKE_CHAT_IDS }}
+          MGMT_NOTIFY_REQUIRE: "1"
+          MGMT_CI_ENV: ${{ needs.resolve-pin.outputs.target_env || 'alpha' }}
+          MGMT_CI_REVISION: ${{ github.sha }}
+          MGMT_CI_BODY: "Не удалось подготовить выкат: не собрали pin образов или ревизию. Стенд не обновляли."
         run: |
           chmod +x vdp/scripts/ci-mgmt-notify.sh vdp/scripts/notify-mgmt.sh
           ./vdp/scripts/ci-mgmt-notify.sh deploy-fail

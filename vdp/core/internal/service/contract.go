@@ -249,15 +249,19 @@ func (s *FormPaymentService) ResolveContractBranch(ctx context.Context, principa
 	var best *domain.Contract
 	for i := range orgs {
 		c := orgs[i]
-		if c.AgentID != "" && c.AgentID != form.AgentID {
-			continue
-		}
 		if c.Type != domain.ContractTypeAgency && c.Type != domain.ContractTypeSubagency {
 			continue
 		}
-		best = &c
+		// Prefer any accepted agency for this org (reuse across deals).
 		if c.Status == domain.ContractStatusAccepted {
+			best = &c
 			break
+		}
+		if c.AgentID != "" && c.AgentID != form.AgentID {
+			continue
+		}
+		if best == nil {
+			best = &c
 		}
 	}
 	prev := form.Status

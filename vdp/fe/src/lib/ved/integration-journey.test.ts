@@ -33,7 +33,7 @@ export const INTEGRATION_JOURNEY: IntegrationJourneyStep[] = [
   { rd: "RD6", role: "user", status: "report_waiting", actionId: "upload_report", bridge: "file", coreHint: "report_upload" },
   { rd: "RD6", role: "manager", status: "report_waiting_verification", actionId: "mgr_report_start", bridge: "transition", coreHint: "report_start" },
   { rd: "RD6", role: "manager", status: "report_verification", actionId: "mgr_report_accept", bridge: "transition", coreHint: "report_accept" },
-  { rd: "RD6", role: "manager", status: "report_accepted", actionId: "mgr_shipment_waiting", bridge: "transition", coreHint: "shipment_waiting" },
+  // Shipment ladder is optional Nest/advance branch — not required after report_accept → completed.
   { rd: "RD6", role: "user", status: "shipment_waiting", actionId: "upload_shipment", bridge: "file", coreHint: "shipment_upload" },
   { rd: "RD6", role: "manager", status: "shipment_verification", actionId: "mgr_completed", bridge: "transition", coreHint: "complete" },
   { rd: "RD8", role: "root", status: "draft", actionId: "root_cancel_form", bridge: "transition", coreHint: "cancel_by_manager" },

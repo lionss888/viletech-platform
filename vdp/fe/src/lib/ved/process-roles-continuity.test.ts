@@ -116,4 +116,11 @@ describe("process-roles continuity v3", () => {
     expect(ids).toContain("eco_form_accept");
     expect(ids).toContain("eco_form_reject");
   });
+
+  it("manager continuity reject is text-only without compliance mark catalog", () => {
+    const reject = actionsFor("manager", "form_verification", v3).find((a) => a.id === "eco_form_reject");
+    expect(reject).toBeTruthy();
+    expect(reject?.requiresReason).toBe(true);
+    expect(reject?.requiresMark).toBe(false);
+  });
 });

@@ -7,6 +7,7 @@ import (
 
 	"github.com/viletech/vdp/core/internal/authz"
 	"github.com/viletech/vdp/core/internal/domain"
+	"github.com/viletech/vdp/core/internal/domain/formpayment"
 	"github.com/viletech/vdp/core/internal/outbox"
 	"github.com/viletech/vdp/core/internal/repository"
 	"github.com/viletech/vdp/core/internal/service"
@@ -100,8 +101,25 @@ func TestFileACLUserCannotPreviewForeignFormFile(t *testing.T) {
 		t.Fatal("foreign user must not preview form file")
 	}
 	provider := authz.Principal{AccountID: "prov", Role: domain.RoleProvider}
-	if _, _, _, err := catalog.PreviewFile(context.Background(), provider, file.ID); err != nil {
-		t.Fatalf("provider may preview for ops: %v", err)
+	if _, _, _, err := catalog.PreviewFile(context.Background(), provider, file.ID); err == nil {
+		t.Fatal("provider must not preview form file without assigned form")
+	}
+	assignedForm := formpayment.Form{
+		ID:             "form-assigned",
+		AccountID:      owner.AccountID,
+		OrganizationID: owner.OrganizationID,
+		ProviderID:     provider.AccountID,
+		Status:         formpayment.StatusPaymentProcessing,
+	}
+	if err := store.SaveForm(context.Background(), assignedForm); err != nil {
+		t.Fatal(err)
+	}
+	dealFile, err := catalog.UploadFileBytes(context.Background(), owner, assignedForm.ID, "application/pdf", []byte("deal"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, _, data, err := catalog.PreviewFile(context.Background(), provider, dealFile.ID); err != nil || string(data) != "deal" {
+		t.Fatalf("assigned provider may preview deal doc: err=%v data=%q", err, data)
 	}
 }
 

@@ -18,9 +18,9 @@ type fakeMsg struct {
 	texts []string
 }
 
-func (f *fakeMsg) SendMessage(_ context.Context, _, _ int64, text string) error {
+func (f *fakeMsg) SendMessage(_ context.Context, _, _ int64, text string) (int64, error) {
 	f.texts = append(f.texts, text)
-	return nil
+	return int64(len(f.texts)), nil
 }
 
 func TestHandleMentionAckWithoutAnalyze(t *testing.T) {

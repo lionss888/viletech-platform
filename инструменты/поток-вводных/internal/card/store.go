@@ -150,6 +150,18 @@ func (s *Store) ListDueReminders(now time.Time, interval time.Duration) ([]*Card
 	return out, nil
 }
 
+// ListAll returns all cards (newest first).
+func (s *Store) ListAll() ([]*Card, error) {
+	all, err := s.listAll()
+	if err != nil {
+		return nil, err
+	}
+	sort.Slice(all, func(i, j int) bool {
+		return all[i].UpdatedAt.After(all[j].UpdatedAt)
+	})
+	return all, nil
+}
+
 func (s *Store) listAll() ([]*Card, error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()

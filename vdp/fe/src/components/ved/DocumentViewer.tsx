@@ -25,10 +25,12 @@ function isPdfDocument(doc: AttachedDocument): boolean {
 type DocumentListProps = {
   documents: AttachedDocument[];
   formId?: string;
+  canDelete?: boolean;
+  onDelete?: (doc: AttachedDocument) => void | Promise<void>;
 };
 
 /** Document list with preview/download in app mode when fileId is present. */
-export function DocumentList({ documents, formId: _formId }: DocumentListProps) {
+export function DocumentList({ documents, formId: _formId, canDelete = false, onDelete }: DocumentListProps) {
   const mode = usePlatformMode();
   const [open, setOpen] = useState<AttachedDocument | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
@@ -113,6 +115,17 @@ export function DocumentList({ documents, formId: _formId }: DocumentListProps) 
                 >
                   Скачать
                 </button>
+                {canDelete && onDelete && (
+                  <button
+                    type="button"
+                    disabled={busy}
+                    data-testid="doc-delete"
+                    onClick={() => void onDelete(d)}
+                    className="rounded-md bg-destructive-soft px-2 py-1 text-[11px] font-semibold text-destructive hover:opacity-90"
+                  >
+                    Удалить
+                  </button>
+                )}
               </span>
             ) : (
               <button

@@ -1,11 +1,17 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import { useQuery } from "@tanstack/react-query";
 
 import { Modal, ModalButton } from "@/components/ved/Modal";
 import { actionsFor } from "@/lib/ved/actions";
 import { waitingActorLabel } from "@/lib/api/mappers";
-import type { ContractType } from "@/lib/api/contract";
+import {
+  listOrgContracts,
+  orgHasAcceptedAgencyContract,
+  type ContractType,
+} from "@/lib/api/contract";
 import { assertFileSize, UploadError } from "@/lib/api/files";
 import { marksFor } from "@/lib/ved/compliance";
+import { filterAgencyContractActions } from "@/lib/ved/agency-contract-ux";
 import { blocksPaymentStartWithoutProvider, PAYMENT_START_PROVIDER_LOCK } from "@/lib/ved/manager-payment";
 import { usePlatformStore } from "@/lib/ved/platform-store";
 import { useProcessRolesRows } from "@/lib/ved/use-process-roles-snapshot";
@@ -67,6 +73,25 @@ export function ActionPanel({
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [paymentWarn, setPaymentWarn] = useState<string | null>(null);
+  const [orgHasAcceptedAgency, setOrgHasAcceptedAgency] = useState(false);
+
+  const orgContractsQuery = useQuery({
+    queryKey: ["org-contracts", form.organizationId],
+    queryFn: async () => {
+      const rows = await listOrgContracts(form.organizationId);
+      return orgHasAcceptedAgencyContract(rows);
+    },
+    enabled:
+      Boolean(form.organizationId) &&
+      form.organizationId !== "—" &&
+      (form.status === "contract_waiting" || form.status === "contract_waiting_correction"),
+  });
+
+  useEffect(() => {
+    if (typeof orgContractsQuery.data === "boolean") {
+      setOrgHasAcceptedAgency(orgContractsQuery.data);
+    }
+  }, [orgContractsQuery.data]);
 
   const executionProviders = users.filter((u) => u.role === "provider" && !u.blocked);
   const providerOptions =
@@ -75,7 +100,11 @@ export function ActionPanel({
       : providers;
 
   const role = session?.role ?? "user";
-  const actions = actionsFor(role, form.status, processRoles);
+  const actions = filterAgencyContractActions(actionsFor(role, form.status, processRoles), {
+    status: form.status,
+    contractId: form.contractId,
+    orgHasAcceptedAgency,
+  });
   const { operationalActions, rootCancelAction } = useMemo(() => {
     if (role !== "root") {
       return { operationalActions: actions, rootCancelAction: null as FormAction | null };

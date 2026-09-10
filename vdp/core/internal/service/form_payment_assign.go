@@ -123,6 +123,23 @@ func (s *FormPaymentService) SetConfirmation(ctx context.Context, principal auth
 	}
 	if fileID != "" {
 		form.ConfirmationFileID = fileID
+		form.UnpackDocsJSON()
+		refs := formpayment.ParseDocRefs(form.DocsJSON)
+		already := false
+		for _, ref := range refs {
+			if ref.FileID == fileID {
+				already = true
+				break
+			}
+		}
+		if !already {
+			refs = append(refs, formpayment.DocFileRef{FileID: fileID, Kind: "payment", Label: "payment_confirmation"})
+			var pog *formpayment.POGState
+			if form.POGStatus != "" || form.POGFileID != "" {
+				pog = &formpayment.POGState{Status: form.POGStatus, FileID: form.POGFileID, Attempts: form.POGAttempts, Kind: form.POGKind}
+			}
+			form.DocsJSON = formpayment.EncodeDocRefs(refs, pog)
+		}
 	}
 	form.UpdatedAt = time.Now().UTC()
 	return form, s.store.SaveForm(ctx, form)

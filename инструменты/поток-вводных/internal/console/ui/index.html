@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Intake console</title>
+  <link rel="stylesheet" href="/app.css" />
+</head>
+<body>
+  <header class="top">
+    <h1>Консоль вводных</h1>
+    <p class="sub">Telegram + локальный пульт. Один inbox.</p>
+    <label class="token-row">Токен
+      <input id="token" type="password" placeholder="INTAKE_CONSOLE_TOKEN" autocomplete="off" />
+    </label>
+  </header>
+
+  <main class="layout">
+    <section class="thread" aria-label="Лента">
+      <div class="section-head">
+        <h2>Лента</h2>
+        <button type="button" id="refresh" class="quiet">Обновить</button>
+      </div>
+      <ol id="thread" class="msgs"></ol>
+    </section>
+
+    <section class="side" aria-label="Карточки и действия">
+      <h2>Карточки HITL</h2>
+      <ul id="cards" class="cards"></ul>
+
+      <h2>Удалить в Telegram</h2>
+      <form id="del-form" class="stack">
+        <input name="message_id" type="number" placeholder="message_id" required />
+        <input name="chat_id" type="number" placeholder="chat_id (опц.)" />
+        <button type="submit">Удалить сообщение</button>
+      </form>
+
+      <h2>Готово для менеджмента</h2>
+      <form id="mgmt-form" class="stack">
+        <input name="title" placeholder="Заголовок" required />
+        <textarea name="body" rows="4" placeholder="Продуктовый текст для менеджера"></textarea>
+        <input name="next" placeholder="Дальше (опц.)" />
+        <button type="submit">Отправить в чат</button>
+      </form>
+    </section>
+  </main>
+
+  <footer class="composer" aria-label="Сообщение">
+    <form id="composer" class="composer-form">
+      <textarea id="text" rows="3" placeholder="Текст… Можно вставить код. Отметьте «как ввод» для HITL."></textarea>
+      <div class="composer-row">
+        <label><input type="checkbox" id="as_intake" checked /> как ввод</label>
+        <label><input type="checkbox" id="mirror" checked /> в Telegram</label>
+        <input type="file" id="file" multiple />
+        <button type="submit" class="primary">Отправить</button>
+        <button type="button" id="to-cursor" class="quiet">В Cursor</button>
+      </div>
+      <ul id="uploads" class="uploads"></ul>
+      <p id="status" class="status" role="status"></p>
+    </form>
+  </footer>
+  <script src="/app.js"></script>
+</body>
+</html>

@@ -23,7 +23,7 @@ func TestGetUpdatesAndSend(t *testing.T) {
 				},
 			})
 		case r.URL.Path == "/botTOK/sendMessage":
-			_ = json.NewEncoder(w).Encode(map[string]any{"ok": true})
+			_ = json.NewEncoder(w).Encode(map[string]any{"ok": true, "result": map[string]any{"message_id": 99}})
 		default:
 			http.NotFound(w, r)
 		}
@@ -35,7 +35,8 @@ func TestGetUpdatesAndSend(t *testing.T) {
 	if err != nil || len(ups) != 1 {
 		t.Fatalf("ups=%v err=%v", ups, err)
 	}
-	if err := c.SendMessage(context.Background(), -1, 2, "принято"); err != nil {
-		t.Fatal(err)
+	id, err := c.SendMessage(context.Background(), -1, 2, "принято")
+	if err != nil || id != 99 {
+		t.Fatalf("id=%d err=%v", id, err)
 	}
 }

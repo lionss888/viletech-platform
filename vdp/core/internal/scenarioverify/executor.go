@@ -513,8 +513,7 @@ func (e *Executor) mutatingHappy(run *Run, sc Scenario) error {
 	start = time.Now()
 	titleDone := stepTitle(sc, "completed", "Менеджер закрыл заявку")
 	_ = e.put(tok.manager, "/api/v1/manager/form-payment/"+id+"/report/signing", map[string]any{})
-	_ = e.put(tok.manager, "/api/v1/manager/form-payment/"+id+"/report/accept", map[string]any{})
-	if err := e.put(tok.manager, "/api/v1/manager/form-payment/"+id+"/completed", map[string]any{}); err != nil {
+	if err := e.put(tok.manager, "/api/v1/manager/form-payment/"+id+"/report/accept", map[string]any{}); err != nil {
 		e.appendStep(run, "completed", titleDone, "completed", "", err, start)
 		return err
 	}

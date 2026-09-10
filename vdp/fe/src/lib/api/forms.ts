@@ -23,6 +23,7 @@ export type CoreForm = {
   docs_json?: string;
   invoice_json?: string;
   confirmation_hash?: string;
+  confirmation_file_id?: string;
   created_at: string;
   updated_at: string;
 };

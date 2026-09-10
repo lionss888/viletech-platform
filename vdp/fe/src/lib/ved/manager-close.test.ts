@@ -48,9 +48,13 @@ describe("manager report/close bridge", () => {
     const reportQueue = actionsFor("manager", "report_waiting_verification").map((a) => a.id);
     expect(reportQueue).toContain("mgr_report_start");
 
-    const reportReview = actionsFor("manager", "report_verification").map((a) => a.id);
-    expect(reportReview).toContain("mgr_report_accept");
+    const reportReview = actionsFor("manager", "report_verification");
+    expect(reportReview.map((a) => a.id)).toContain("mgr_report_accept");
+    const accept = reportReview.find((a) => a.id === "mgr_report_accept");
+    expect(accept?.label).toBe("Подтвердить отчет и завершить сделку");
+    expect(accept?.nextStatus).toBe("completed");
 
+    // Shipment CTAs remain for Nest/advance branch, not post-report happy path.
     const afterReport = actionsFor("manager", "report_accepted").map((a) => a.id);
     expect(afterReport).toContain("mgr_shipment_waiting");
 

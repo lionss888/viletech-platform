@@ -108,10 +108,17 @@
 	•	П. 8 — invoice-only OK.
 	•	П. 18 — превью: черновик или отправить менеджеру (= accept_form).
 
+Волна 3 — Docs / provider / agency (п. 10, 12, 13, 13.1, 14–14.3): сделано.
+	•	П. 10 — upload вне completed/cancel.
+	•	П. 12 — «Назначить платёжного провайдера».
+	•	П. 13/13.1 — reuse accepted agency; одна CTA confirm+order.
+	•	П. 14–14.3 — платёжка в docs; deal docs без агентского; scrub; delete до sent.
+
+Волна 4 — Report close / corrections text (п. 17, 19): сделано.
+	•	П. 17 — «Подтвердить отчет и завершить сделку» → сразу completed; лестница отгрузки не в happy path.
+	•	П. 19 — возврат менеджером на доработку: только текст, без справочника отметок.
+
 Последующие волны (ещё не закрыты):
-	•	Волна 3 (ориентир): п. 10, 12, 13, 13.1, 14, 14.1–14.3.
-	•	Волна 4 (ориентир): п. 17, 19 (+ polish).
 	•	П. 15, 16 — блокер до инфо от заказчика / Даши.
 
-Планы в workspace: `.cursor/plans/wave_hygiene_ux_*.plan.md`, Wave 1 parties, Wave 2 wizard OCR.
-)
+Планы в workspace: `.cursor/plans/wave_hygiene_ux_*.plan.md`, Wave 1–4, Wave docs provider.

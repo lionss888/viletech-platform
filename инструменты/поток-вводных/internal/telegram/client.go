@@ -1,10 +1,12 @@
 package telegram
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
 	"io"
+	"mime/multipart"
 	"net/http"
 	"net/url"
 	"strconv"
@@ -42,12 +44,41 @@ type Update struct {
 
 // Message is a Telegram message subset.
 type Message struct {
-	MessageID int64    `json:"message_id"`
-	Date      int64    `json:"date"`
-	Text      string   `json:"text"`
-	Chat      Chat     `json:"chat"`
-	From      *User    `json:"from"`
-	Entities  []Entity `json:"entities"`
+	MessageID int64     `json:"message_id"`
+	Date      int64     `json:"date"`
+	Text      string    `json:"text"`
+	Caption   string    `json:"caption"`
+	Chat      Chat      `json:"chat"`
+	From      *User     `json:"from"`
+	Entities  []Entity  `json:"entities"`
+	Photo     []PhotoSize `json:"photo"`
+	Document  *Document `json:"document"`
+	Video     *Video    `json:"video"`
+}
+
+// PhotoSize is one photo variant.
+type PhotoSize struct {
+	FileID   string `json:"file_id"`
+	FileUniqueID string `json:"file_unique_id"`
+	Width    int    `json:"width"`
+	Height   int    `json:"height"`
+	FileSize int    `json:"file_size"`
+}
+
+// Document is a Telegram document.
+type Document struct {
+	FileID   string `json:"file_id"`
+	FileName string `json:"file_name"`
+	MimeType string `json:"mime_type"`
+	FileSize int    `json:"file_size"`
+}
+
+// Video is a Telegram video.
+type Video struct {
+	FileID   string `json:"file_id"`
+	MimeType string `json:"mime_type"`
+	FileSize int    `json:"file_size"`
+	FileName string `json:"file_name"`
 }
 
 // Chat holds chat id.
@@ -66,6 +97,38 @@ type Entity struct {
 	Type   string `json:"type"`
 	Offset int    `json:"offset"`
 	Length int    `json:"length"`
+}
+
+// FileMeta is getFile result.
+type FileMeta struct {
+	FileID   string `json:"file_id"`
+	FilePath string `json:"file_path"`
+	FileSize int    `json:"file_size"`
+}
+
+// PrimaryText returns text or caption.
+func (m *Message) PrimaryText() string {
+	if m == nil {
+		return ""
+	}
+	if strings.TrimSpace(m.Text) != "" {
+		return m.Text
+	}
+	return m.Caption
+}
+
+// BestPhotoFileID returns largest photo file_id.
+func (m *Message) BestPhotoFileID() string {
+	if m == nil || len(m.Photo) == 0 {
+		return ""
+	}
+	best := m.Photo[0]
+	for _, p := range m.Photo[1:] {
+		if p.FileSize > best.FileSize || (p.Width*p.Height) > (best.Width*best.Height) {
+			best = p
+		}
+	}
+	return best.FileID
 }
 
 // GetUpdates long-polls for updates.
@@ -92,8 +155,8 @@ func (c *Client) GetUpdates(ctx context.Context, offset int64, timeoutSec int) (
 	return wrap.Result, nil
 }
 
-// SendMessage posts a reply; replyTo may be 0.
-func (c *Client) SendMessage(ctx context.Context, chatID, replyTo int64, text string) error {
+// SendMessage posts a reply; replyTo may be 0. Returns Telegram message_id.
+func (c *Client) SendMessage(ctx context.Context, chatID, replyTo int64, text string) (int64, error) {
 	form := url.Values{}
 	form.Set("chat_id", strconv.FormatInt(chatID, 10))
 	form.Set("text", text)
@@ -102,16 +165,128 @@ func (c *Client) SendMessage(ctx context.Context, chatID, replyTo int64, text st
 		form.Set("reply_to_message_id", strconv.FormatInt(replyTo, 10))
 	}
 	var wrap struct {
-		OK          bool   `json:"ok"`
+		OK          bool `json:"ok"`
+		Result      struct {
+			MessageID int64 `json:"message_id"`
+		} `json:"result"`
 		Description string `json:"description"`
 	}
 	if err := c.postForm(ctx, "sendMessage", form, &wrap); err != nil {
+		return 0, err
+	}
+	if !wrap.OK {
+		return 0, fmt.Errorf("sendMessage: %s", wrap.Description)
+	}
+	return wrap.Result.MessageID, nil
+}
+
+// DeleteMessage removes a chat message.
+func (c *Client) DeleteMessage(ctx context.Context, chatID, messageID int64) error {
+	form := url.Values{}
+	form.Set("chat_id", strconv.FormatInt(chatID, 10))
+	form.Set("message_id", strconv.FormatInt(messageID, 10))
+	var wrap struct {
+		OK          bool   `json:"ok"`
+		Description string `json:"description"`
+	}
+	if err := c.postForm(ctx, "deleteMessage", form, &wrap); err != nil {
 		return err
 	}
 	if !wrap.OK {
-		return fmt.Errorf("sendMessage: %s", wrap.Description)
+		return fmt.Errorf("deleteMessage: %s", wrap.Description)
 	}
 	return nil
+}
+
+// GetFile resolves a file_id to download path.
+func (c *Client) GetFile(ctx context.Context, fileID string) (FileMeta, error) {
+	q := url.Values{}
+	q.Set("file_id", fileID)
+	var wrap struct {
+		OK          bool     `json:"ok"`
+		Result      FileMeta `json:"result"`
+		Description string   `json:"description"`
+	}
+	if err := c.get(ctx, "getFile", q, &wrap); err != nil {
+		return FileMeta{}, err
+	}
+	if !wrap.OK {
+		return FileMeta{}, fmt.Errorf("getFile: %s", wrap.Description)
+	}
+	return wrap.Result, nil
+}
+
+// DownloadFile downloads bytes for a getFile path.
+func (c *Client) DownloadFile(ctx context.Context, filePath string) ([]byte, error) {
+	u := fmt.Sprintf("%s/file/bot%s/%s", c.baseURL, c.token, strings.TrimPrefix(filePath, "/"))
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, u, nil)
+	if err != nil {
+		return nil, err
+	}
+	res, err := c.httpClient.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	defer res.Body.Close()
+	if res.StatusCode >= 300 {
+		b, _ := io.ReadAll(io.LimitReader(res.Body, 200))
+		return nil, fmt.Errorf("download status %d: %s", res.StatusCode, string(b))
+	}
+	return io.ReadAll(res.Body)
+}
+
+// SendPhoto uploads a photo with optional caption.
+func (c *Client) SendPhoto(ctx context.Context, chatID int64, filename string, data []byte, caption string) (int64, error) {
+	return c.sendMultipart(ctx, "sendPhoto", chatID, "photo", filename, data, caption)
+}
+
+// SendDocument uploads a document with optional caption.
+func (c *Client) SendDocument(ctx context.Context, chatID int64, filename string, data []byte, caption string) (int64, error) {
+	return c.sendMultipart(ctx, "sendDocument", chatID, "document", filename, data, caption)
+}
+
+// SendVideo uploads a video with optional caption.
+func (c *Client) SendVideo(ctx context.Context, chatID int64, filename string, data []byte, caption string) (int64, error) {
+	return c.sendMultipart(ctx, "sendVideo", chatID, "video", filename, data, caption)
+}
+
+func (c *Client) sendMultipart(ctx context.Context, method string, chatID int64, field, filename string, data []byte, caption string) (int64, error) {
+	var buf bytes.Buffer
+	w := multipart.NewWriter(&buf)
+	_ = w.WriteField("chat_id", strconv.FormatInt(chatID, 10))
+	if caption != "" {
+		_ = w.WriteField("caption", caption)
+	}
+	part, err := w.CreateFormFile(field, filename)
+	if err != nil {
+		return 0, err
+	}
+	if _, err := part.Write(data); err != nil {
+		return 0, err
+	}
+	if err := w.Close(); err != nil {
+		return 0, err
+	}
+	u := fmt.Sprintf("%s/bot%s/%s", c.baseURL, c.token, method)
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, u, &buf)
+	if err != nil {
+		return 0, err
+	}
+	req.Header.Set("Content-Type", w.FormDataContentType())
+	var wrap struct {
+		OK bool `json:"ok"`
+		Result struct {
+			MessageID int64 `json:"message_id"`
+		} `json:"result"`
+		Description string `json:"description"`
+	}
+	if err := c.do(req, &wrap); err != nil {
+		return 0, err
+	}
+	if !wrap.OK {
+		return 0, fmt.Errorf("%s: %s", method, wrap.Description)
+	}
+	return wrap.Result.MessageID, nil
 }
 
 func (c *Client) get(ctx context.Context, method string, q url.Values, out any) error {

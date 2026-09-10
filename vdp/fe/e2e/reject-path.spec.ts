@@ -45,10 +45,7 @@ test.describe("Reject path (ECO → corrections → user resubmit)", () => {
     await expect(rejectBtn).toBeVisible({ timeout: 20_000 });
     await rejectBtn.click();
     await page.getByPlaceholder("Что именно нужно исправить или предоставить").fill("E2E: исправьте документы");
-    const markSelect = page.locator("label").filter({ hasText: /Отметка/ }).locator("select");
-    if (await markSelect.isVisible().catch(() => false)) {
-      await markSelect.selectOption({ index: 1 });
-    }
+    await expect(page.locator("label").filter({ hasText: /Отметка/ })).toHaveCount(0);
     await page.getByRole("button", { name: "Подтвердить" }).click();
     await expectFormStatus(page, "form_waiting_corrections", { timeout: 20_000 });
   });

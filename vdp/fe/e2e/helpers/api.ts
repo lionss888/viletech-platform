@@ -45,7 +45,7 @@ export async function loginAllRoles(): Promise<ApiTokens> {
   return { user, ico, eco, manager, provider, root };
 }
 
-async function authPut(token: string, path: string, body: Record<string, unknown> = {}): Promise<void> {
+export async function authPut(token: string, path: string, body: Record<string, unknown> = {}): Promise<void> {
   const res = await fetch(`${CORE_URL}${path}`, {
     method: "PUT",
     headers: {
@@ -251,7 +251,6 @@ export async function createCompletedForm(tokens: ApiTokens, suffix: string): Pr
   await authPut(tokens.provider, `/api/v1/provider/form-payment/${id}/payment/sent`);
   await authPut(tokens.manager, `/api/v1/manager/form-payment/${id}/report/signing`);
   await authPut(tokens.manager, `/api/v1/manager/form-payment/${id}/report/accept`);
-  await authPut(tokens.manager, `/api/v1/manager/form-payment/${id}/completed`);
   return id;
 }
 

@@ -212,7 +212,7 @@ func TargetStatus(form Form, action Action, orgApproved bool) (Status, error) {
 	case ActionReportStop:
 		return StatusReportWaitingVerification, nil
 	case ActionReportAccept:
-		return StatusReportAccepted, nil
+		return StatusCompleted, nil
 	case ActionReportReject:
 		return StatusReportWaitingCorrections, nil
 	case ActionReportRevoke:

@@ -5,6 +5,8 @@
 # Optional: DEPLOY_USER, DEPLOY_PATH, SSH_KEY_PATH, REGISTRY_USER/REGISTRY_TOKEN (registry login),
 #           SKIP_SMOKE=1 to skip staging-smoke.
 # Optional notify: MGMT_NOTIFY_TOKEN + MGMT_NOTIFY_CHAT_ID (promote success/fail after smoke).
+# MGMT_NOTIFY_FROM_DEPLOY=1 → skip in-script notify (CI workflow owns deploy-ok/deploy-fail).
+# MGMT_NOTIFY_REQUIRE=1 → fail if notify cannot send (local/manual strict path).
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
@@ -19,6 +21,8 @@ REGISTRY_TOKEN="${REGISTRY_TOKEN:-}"
 SKIP_SMOKE="${SKIP_SMOKE:-0}"
 PIN_FILE="${PIN_FILE:-$ROOT/.release-images.env}"
 NOTIFY="$ROOT/scripts/notify-mgmt.sh"
+FROM_DEPLOY_CI="${MGMT_NOTIFY_FROM_DEPLOY:-0}"
+NOTIFY_REQUIRE="${MGMT_NOTIFY_REQUIRE:-0}"
 
 if [ ! -f "$PIN_FILE" ]; then
   echo "missing pin file: $PIN_FILE" >&2
@@ -40,17 +44,34 @@ REV_SHORT="$(printf '%s' "${GIT_REVISION:-${IMAGE_TAG:-unknown}}" | sed 's/^sha-
 notify_deploy() {
   local status="$1"
   local body="${2:-}"
+  # CI workflow sends deploy-ok / deploy-fail — avoid duplicate promote in TG.
+  if [ "$FROM_DEPLOY_CI" = "1" ]; then
+    echo "deploy notify: deferred to CI (MGMT_NOTIFY_FROM_DEPLOY=1)"
+    return 0
+  fi
   [ -x "$NOTIFY" ] || chmod +x "$NOTIFY" 2>/dev/null || true
   [ -f "$NOTIFY" ] || return 0
+  local req=()
+  if [ "$NOTIFY_REQUIRE" = "1" ]; then
+    req=(--require)
+  fi
   if [ -n "$body" ]; then
-    "$NOTIFY" --kind promote --env "$ENVIRONMENT" --status "$status" --revision "$REV_SHORT" --body "$body" || true
+    if [ "$NOTIFY_REQUIRE" = "1" ]; then
+      "$NOTIFY" "${req[@]}" --kind promote --env "$ENVIRONMENT" --status "$status" --revision "$REV_SHORT" --body "$body"
+    else
+      "$NOTIFY" --kind promote --env "$ENVIRONMENT" --status "$status" --revision "$REV_SHORT" --body "$body" || true
+    fi
   else
-    "$NOTIFY" --kind promote --env "$ENVIRONMENT" --status "$status" --revision "$REV_SHORT" || true
+    if [ "$NOTIFY_REQUIRE" = "1" ]; then
+      "$NOTIFY" "${req[@]}" --kind promote --env "$ENVIRONMENT" --status "$status" --revision "$REV_SHORT"
+    else
+      "$NOTIFY" --kind promote --env "$ENVIRONMENT" --status "$status" --revision "$REV_SHORT" || true
+    fi
   fi
 }
 
 on_deploy_err() {
-  notify_deploy failed "выкат или дымовые не прошли"
+  notify_deploy failed "Выкат или дымовые проверки на среде не прошли. Стенд мог остаться на прошлой ревизии."
 }
 trap on_deploy_err ERR
 
@@ -158,11 +179,11 @@ ssh "${SSH_OPTS[@]}" "$REMOTE" \
 
 trap - ERR
 
-SMOKE_BODY="дымовые на среде: ок"
+SMOKE_BODY="Среда обновлена. Дымовые проверки прошли."
 if [ "$ENVIRONMENT" = "gamma" ] || [ "$SKIP_SMOKE" = "1" ]; then
-  SMOKE_BODY="выкат без дымовых (политика среды)"
+  SMOKE_BODY="Среда обновлена. Дымовые по политике среды не гонялись."
 elif [ "$ENVIRONMENT" = "alpha" ]; then
-  SMOKE_BODY="дымовые на среде alpha: ок"
+  SMOKE_BODY="Среда alpha обновлена. Дымовые проверки прошли — вход и API доступны."
 fi
 notify_deploy success "$SMOKE_BODY"
 
