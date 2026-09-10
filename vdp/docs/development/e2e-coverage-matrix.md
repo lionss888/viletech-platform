@@ -72,6 +72,8 @@ S-Pilot-E2E handoff U→M→U→M→P→M. Spec pilot-form-flow. Layer UI partia
 
 Honest (pilot-flow): payment mid-steps may stay API-seeded. Full click-through is Pilot Robot Matrix below (`@pilot-matrix`).
 
+Post-suite wipe: compose-playwright calls probe-data wipe after Playwright (E2E_WIPE_AFTER default 1). Alpha allows wipe for Root «Очистить все заявки» and CI cleanup. Accounts and orgs are kept.
+
 ## Pilot Robot Matrix (QG 100%)
 
 Closed matrix for process spine User + Manager + Provider (ICO/ECO off, manager continuity) + Root admin spots. Source files: `testdata/robot-fixtures/matrix-rows.json`, `manifest.json`, packs `template` and `customer`. Env: `VDP_ROBOT_FIXTURE_PACK=template|customer`.

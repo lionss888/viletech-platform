@@ -66,6 +66,8 @@ npm test в fe, make test, make compose-e2e. Команда make integration-gat
 
 Browser E2E через Docker. Команды make playwright-e2e, make compose-playwright.
 
+После suite (успех или fail) compose-playwright вызывает POST probe-data wipe от root, чтобы не оставлять следы заявок. Отключить: E2E_WIPE_AFTER=0. Wipe разрешён на local/development/test/ci/alpha; кнопка Root «Очистить все заявки» на /testing для ручного QA.
+
 ## playwright-pilot
 
 Быстрый UI-прогон default актёров (User/Manager/Provider/Root) по тегу `@pilot-flow` в `fe/e2e/pilot-form-flow.spec.ts`. Команда make playwright-pilot (`PLAYWRIGHT_ARGS='--grep @pilot-flow'` → compose-playwright).

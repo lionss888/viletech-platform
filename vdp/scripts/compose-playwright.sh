@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 # RD11: Playwright E2E against compose stack via official Linux image (browsers preinstalled).
 # Host stack must be up: cd vdp && make compose-up
+# After the suite (pass or fail), probe forms are wiped unless E2E_WIPE_AFTER=0.
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
@@ -9,6 +10,7 @@ PLAYWRIGHT_IMAGE="${PLAYWRIGHT_IMAGE:-mcr.microsoft.com/playwright:v1.62.1-jammy
 # In-container URLs on compose network (ignore host CORE_URL / PLAYWRIGHT_BASE_URL from Makefile).
 E2E_FE_URL="${E2E_FE_URL:-http://fe:5173}"
 E2E_CORE_URL="${E2E_CORE_URL:-http://core:8080}"
+E2E_WIPE_AFTER="${E2E_WIPE_AFTER:-1}"
 
 echo "== health (compose network ${COMPOSE_NETWORK}) =="
 docker run --rm --network "${COMPOSE_NETWORK}" curlimages/curl:latest \
@@ -37,12 +39,13 @@ docker run --rm \
   -e CORE_URL="${E2E_CORE_URL}" \
   -e CI="${CI:-}" \
   -e PLAYWRIGHT_ARGS="${PLAYWRIGHT_ARGS}" \
+  -e E2E_WIPE_AFTER="${E2E_WIPE_AFTER}" \
   -e VDP_ROBOT_FIXTURE_PACK="${VDP_ROBOT_FIXTURE_PACK}" \
   -e VDP_ROBOT_FIXTURES_ROOT="/testdata/robot-fixtures" \
   "${PLAYWRIGHT_IMAGE}" \
   bash -lc '
 set -euo pipefail
-echo "node=$(node -v) npm=$(npm -v) CI=${CI:-}"
+echo "node=$(node -v) npm=$(npm -v) CI=${CI:-} E2E_WIPE_AFTER=${E2E_WIPE_AFTER:-1}"
 mkdir -p /work
 # Exclude host/container node_modules and Vite caches from the copy.
 tar -C /fe --exclude=node_modules --exclude=playwright-report --exclude=test-results \
@@ -54,7 +57,39 @@ npm ci --ignore-scripts
 # shellcheck disable=SC2086
 set -- ${PLAYWRIGHT_ARGS:-}
 echo "running: npx playwright test $*"
-npx playwright test "$@"
+PW_EXIT=0
+npx playwright test "$@" || PW_EXIT=$?
+if [ "${E2E_WIPE_AFTER:-1}" != "0" ]; then
+  echo "== e2e wipe probe forms (post-suite) =="
+  node <<'"'"'NODE'"'"'
+const core = (process.env.CORE_URL || "http://core:8080").replace(/\/$/, "");
+(async () => {
+  try {
+    const login = await fetch(core + "/api/v1/auth/login", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email: "root@vdp.local", password: "root" }),
+    });
+    if (!login.ok) {
+      console.error("wipe login failed", login.status, await login.text());
+      return;
+    }
+    const { token } = await login.json();
+    const wipe = await fetch(core + "/api/v1/admin/probe-data/wipe", {
+      method: "POST",
+      headers: { Authorization: "Bearer " + token },
+    });
+    const text = await wipe.text();
+    console.log("wipe status", wipe.status, text);
+  } catch (err) {
+    console.error("wipe error", err);
+  }
+})();
+NODE
+else
+  echo "E2E wipe skipped (E2E_WIPE_AFTER=0)"
+fi
+exit "$PW_EXIT"
 '
 
 echo "playwright e2e green"

@@ -453,7 +453,7 @@ func (s *Store) FormByID(ctx context.Context, id string) (formpayment.Form, erro
 }
 
 func (s *Store) ListForms(ctx context.Context) []formpayment.Form {
-	rows, err := s.db.QueryContext(ctx, `SELECT id FROM form_payments`)
+	rows, err := s.db.QueryContext(ctx, `SELECT id FROM form_payments ORDER BY updated_at DESC`)
 	if err != nil {
 		return nil
 	}

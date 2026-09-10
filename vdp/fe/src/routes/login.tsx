@@ -19,8 +19,8 @@ export const Route = createFileRoute("/login")({
 function LoginPage() {
   const { login, isAuthenticated, ready } = useAuth();
   const navigate = useNavigate();
-  const [email, setEmail] = useState("user@vdp.local");
-  const [password, setPassword] = useState("user");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
 
@@ -101,10 +101,12 @@ function LoginPage() {
           </button>
         </form>
 
-        <p className="mt-4 text-xs text-muted-foreground">
-          Seed: <span className="font-mono">user@vdp.local</span> / <span className="font-mono">user</span> · нужен{" "}
-          <span className="font-mono">vdp/core</span>
-        </p>
+        {import.meta.env.DEV && (
+          <p className="mt-4 text-xs text-muted-foreground">
+            Seed: <span className="font-mono">user@vdp.local</span> / <span className="font-mono">user</span> · нужен{" "}
+            <span className="font-mono">vdp/core</span>
+          </p>
+        )}
         <p className="mt-3 text-center text-xs text-muted-foreground">
           <Link to="/demo/login" className="font-semibold text-foreground hover:underline">
             Открыть демо-контур

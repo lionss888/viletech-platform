@@ -12,6 +12,7 @@ import {
   type RegistryDef,
 } from "@/lib/ved/registry";
 import { usePlatformStore } from "@/lib/ved/platform-store";
+import { nextSortDirection, sortRowsBy, type SortDirection } from "@/lib/ved/table-sort";
 import type { VedRole } from "@/lib/ved/types";
 import { roleTitle } from "@/lib/ved/roles";
 import { cn } from "@/lib/utils";
@@ -47,7 +48,15 @@ export function RegistryManager({
     [def.fields, hideFormKeys],
   );
 
+  const defaultSortKey = useMemo(() => {
+    const dateField = def.fields.find((f) => /updated|created|date/i.test(f.key));
+    return dateField?.key ?? def.fields[0]?.key ?? def.idField;
+  }, [def.fields, def.idField]);
   const [query, setQuery] = useState("");
+  const [sortKey, setSortKey] = useState(defaultSortKey);
+  const [sortDir, setSortDir] = useState<SortDirection>(() =>
+    /updated|created|date/i.test(defaultSortKey) ? "desc" : "asc",
+  );
   const [draft, setDraft] = useState<RefRecord | null>(null);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [formError, setFormError] = useState<string | null>(null);
@@ -59,13 +68,22 @@ export function RegistryManager({
   const [notice, setNotice] = useState<string | null>(null);
   const fileRef = useRef<HTMLInputElement | null>(null);
 
-  const rows = useMemo(() => {
+  const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
     if (!q) return records;
     return records.filter((record) =>
       def.fields.some((field) => String(record[field.key] ?? "").toLowerCase().includes(q)),
     );
   }, [records, query, def.fields]);
+
+  const rows = useMemo(() => {
+    return sortRowsBy(filtered, (record) => record[sortKey], sortDir);
+  }, [filtered, sortKey, sortDir]);
+
+  function onSort(nextKey: string) {
+    setSortDir(nextSortDirection(sortKey, nextKey, sortDir));
+    setSortKey(nextKey);
+  }
 
   function openCreate() {
     setDraft(emptyRecord(def));
@@ -177,11 +195,26 @@ export function RegistryManager({
           <table className="w-full text-sm">
             <thead>
               <tr className="border-b border-border text-left">
-                {def.fields.map((field) => (
-                  <th key={field.key} className="label-caps py-2 pr-4 whitespace-nowrap">
-                    {field.label}
-                  </th>
-                ))}
+                {def.fields.map((field) => {
+                  const active = sortKey === field.key;
+                  const marker = active ? (sortDir === "asc" ? " ↑" : " ↓") : "";
+                  return (
+                    <th key={field.key} className="label-caps py-2 pr-4 whitespace-nowrap">
+                      <button
+                        type="button"
+                        onClick={() => onSort(field.key)}
+                        className={cn(
+                          "inline-flex items-center hover:text-foreground",
+                          active ? "text-foreground" : "text-muted-foreground",
+                        )}
+                        aria-sort={active ? (sortDir === "asc" ? "ascending" : "descending") : "none"}
+                      >
+                        {field.label}
+                        <span aria-hidden="true">{marker}</span>
+                      </button>
+                    </th>
+                  );
+                })}
                 {extraColumns.map((col) => (
                   <th key={col.label} className="label-caps py-2 pr-4 text-right whitespace-nowrap">
                     {col.label}

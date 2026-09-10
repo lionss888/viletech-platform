@@ -2,6 +2,7 @@ package repository
 
 import (
 	"context"
+	"sort"
 	"sync"
 	"time"
 
@@ -237,6 +238,9 @@ func (s *MemoryStore) ListForms(_ context.Context) []formpayment.Form {
 	for _, form := range s.forms {
 		out = append(out, form)
 	}
+	sort.SliceStable(out, func(i, j int) bool {
+		return out[i].UpdatedAt.After(out[j].UpdatedAt)
+	})
 	return out
 }
 
