@@ -111,6 +111,7 @@ func (s *Server) handleCreateForm(w http.ResponseWriter, r *http.Request, princi
 		NoDocuments    bool   `json:"no_documents"`
 		ContractNumber string `json:"contract_number"`
 		ContractDate   string `json:"contract_date"`
+		OrganizationID string `json:"organization_id"`
 		CounterpartyID string `json:"counterparty_id"`
 	}
 	_ = json.NewDecoder(r.Body).Decode(&body)
@@ -122,6 +123,7 @@ func (s *Server) handleCreateForm(w http.ResponseWriter, r *http.Request, princi
 		NoDocuments:    body.NoDocuments,
 		ContractNumber: body.ContractNumber,
 		ContractDate:   body.ContractDate,
+		OrganizationID: body.OrganizationID,
 		CounterpartyID: body.CounterpartyID,
 	})
 	if err != nil {

@@ -1,6 +1,8 @@
 import { useNavigate } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
 
+import { CounterpartyPickDialog } from "@/components/ved/CounterpartyPickDialog";
+import { OrganizationPickDialog } from "@/components/ved/OrganizationPickDialog";
 import { VedAppShell } from "@/components/ved/VedAppShell";
 import { usePlatformBasePath, usePlatformMode } from "@/lib/ved/platform-mode";
 import { usePlatformStore } from "@/lib/ved/platform-store";
@@ -13,13 +15,15 @@ import { cn } from "@/lib/utils";
 const STEPS = ["Направление", "Стороны", "Условия", "Документы", "Проверка"];
 
 export function NewForm() {
-  const { organizations, counterparties, currencies, hsCodes, createForm } = usePlatformStore();
+  const { organizations, counterparties, currencies, hsCodes, createForm, session } = usePlatformStore();
   const navigate = useNavigate();
   const base = usePlatformBasePath();
   const mode = usePlatformMode();
   const [step, setStep] = useState(0);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [orgDialogOpen, setOrgDialogOpen] = useState(false);
+  const [cpDialogOpen, setCpDialogOpen] = useState(false);
   const [draft, setDraft] = useState({
     direction: "import" as FormDirection,
     kind: "good" as FormKind,
@@ -40,6 +44,7 @@ export function NewForm() {
     contractFile: null as File | null,
   });
   const currencyOptions = useMemo(() => sortCurrencyRecords(currencies), [currencies]);
+  const hasClientOrg = organizations.length > 0;
 
   useEffect(() => {
     setDraft((prev) => {
@@ -100,6 +105,11 @@ export function NewForm() {
   }
 
   function validateStep(): string | null {
+    if (step === 1) {
+      if (!hasClientOrg || !draft.organizationId) {
+        return "Сначала создайте организацию клиента";
+      }
+    }
     if (step === 2) {
       const amount = Number(String(draft.amount).replace(/\s/g, "").replace(",", "."));
       if (!Number.isFinite(amount) || amount <= 0) {
@@ -127,6 +137,11 @@ export function NewForm() {
   }
 
   function nextStep() {
+    if (step === 0 && !hasClientOrg) {
+      setError("Нет организации клиента — создайте организацию, чтобы продолжить");
+      setOrgDialogOpen(true);
+      return;
+    }
     const err = validateStep();
     if (err) {
       setError(err);
@@ -137,6 +152,11 @@ export function NewForm() {
   }
 
   async function submit() {
+    if (!hasClientOrg || !draft.organizationId) {
+      setError("Сначала создайте организацию клиента");
+      setOrgDialogOpen(true);
+      return;
+    }
     const err = validateStep();
     if (err) {
       setError(err);
@@ -253,36 +273,95 @@ export function NewForm() {
 
         {step === 1 && (
           <div className="grid gap-4" data-testid="wizard-parties-step">
+            {!hasClientOrg && (
+              <p
+                className="rounded-md bg-muted/60 px-3 py-2 text-xs text-muted-foreground"
+                data-testid="wizard-empty-organizations"
+              >
+                Нет организации клиента.{" "}
+                <button
+                  type="button"
+                  className="font-semibold text-accent hover:underline"
+                  data-testid="wizard-create-organization"
+                  onClick={() => setOrgDialogOpen(true)}
+                >
+                  Создать организацию
+                </button>
+                {" "}
+                — без неё заявку создать нельзя.
+              </p>
+            )}
             <Field label="Организация клиента">
-              <select value={draft.organizationId} onChange={(e) => set("organizationId", e.target.value)} className="field">
-                {organizations.length === 0 && <option value="">Нет организаций</option>}
-                {organizations.map((o) => (
-                  <option key={o.id} value={o.id}>
-                    {o.name} · ИНН {o.inn}
-                  </option>
-                ))}
-              </select>
+              <div className="flex flex-wrap gap-2">
+                <select
+                  value={draft.organizationId}
+                  onChange={(e) => set("organizationId", e.target.value)}
+                  className="field flex-1"
+                  disabled={!hasClientOrg}
+                >
+                  {organizations.length === 0 && <option value="">Нет организаций</option>}
+                  {organizations.map((o) => (
+                    <option key={o.id} value={o.id}>
+                      {o.name} · ИНН {o.inn}
+                    </option>
+                  ))}
+                </select>
+                <button
+                  type="button"
+                  className="rounded-md px-3 py-2 text-xs font-semibold text-accent hover:bg-muted"
+                  data-testid="wizard-create-org-btn"
+                  onClick={() => setOrgDialogOpen(true)}
+                >
+                  Создать организацию
+                </button>
+              </div>
             </Field>
             <Field label="Контрагент">
-              <select value={draft.counterpartyId} onChange={(e) => set("counterpartyId", e.target.value)} className="field">
-                {counterparties.length === 0 && <option value="">Нет контрагентов — добавьте в справочник</option>}
-                {counterparties.map((c) => (
-                  <option key={c.id} value={c.id}>
-                    {c.name} · {c.country}
-                  </option>
-                ))}
-              </select>
+              <div className="flex flex-wrap gap-2">
+                <select
+                  value={draft.counterpartyId}
+                  onChange={(e) => set("counterpartyId", e.target.value)}
+                  className="field flex-1"
+                >
+                  {counterparties.length === 0 && <option value="">Нет контрагентов — создайте здесь</option>}
+                  {counterparties.map((c) => (
+                    <option key={c.id} value={c.id}>
+                      {c.name} · {c.country}
+                    </option>
+                  ))}
+                </select>
+                <button
+                  type="button"
+                  className="rounded-md px-3 py-2 text-xs font-semibold text-accent hover:bg-muted"
+                  data-testid="wizard-create-cp-btn"
+                  onClick={() => setCpDialogOpen(true)}
+                >
+                  Создать контрагента
+                </button>
+              </div>
             </Field>
             {counterparties.length === 0 && (
               <p className="rounded-md bg-muted/60 px-3 py-2 text-xs text-muted-foreground" data-testid="wizard-empty-counterparties">
-                Справочник контрагентов пуст.{" "}
-                <a href={`${base}/counterparties`} className="font-semibold text-accent hover:underline">
-                  Добавьте контрагента
-                </a>
-                {" "}
-                или продолжите создание — документы можно догрузить на карточке заявки после сохранения.
+                Справочник контрагентов пуст. Создайте контрагента здесь или продолжите — документы можно догрузить на
+                карточке заявки после сохранения.
               </p>
             )}
+            <OrganizationPickDialog
+              open={orgDialogOpen}
+              onOpenChange={setOrgDialogOpen}
+              role={session?.role}
+              organizations={organizations}
+              selectedId={draft.organizationId}
+              onSelect={(id) => set("organizationId", id)}
+            />
+            <CounterpartyPickDialog
+              open={cpDialogOpen}
+              onOpenChange={setCpDialogOpen}
+              role={session?.role}
+              counterparties={counterparties}
+              selectedId={draft.counterpartyId}
+              onSelect={(id) => set("counterpartyId", id)}
+            />
           </div>
         )}
 

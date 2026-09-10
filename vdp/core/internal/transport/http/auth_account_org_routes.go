@@ -298,13 +298,14 @@ func (s *Server) handleOrgFetchINN(w http.ResponseWriter, r *http.Request, princ
 
 func (s *Server) handleOrgCreate(w http.ResponseWriter, r *http.Request, principal authz.Principal) {
 	var body struct {
-		Name    string `json:"name"`
-		INN     string `json:"inn"`
-		Country string `json:"country"`
-		Type    string `json:"type"`
+		Name         string `json:"name"`
+		INN          string `json:"inn"`
+		Country      string `json:"country"`
+		LegalAddress string `json:"legal_address"`
+		Type         string `json:"type"`
 	}
 	_ = json.NewDecoder(r.Body).Decode(&body)
-	org, err := s.orgs.Create(r.Context(), principal, body.Name, body.INN, body.Country, domain.OrganizationType(body.Type))
+	org, err := s.orgs.Create(r.Context(), principal, body.Name, body.INN, body.Country, body.LegalAddress, domain.OrganizationType(body.Type))
 	if err != nil {
 		writeError(w, err)
 		return
@@ -451,7 +452,7 @@ func (s *Server) handleProviderOrgCreate(w http.ResponseWriter, r *http.Request,
 		Country string `json:"country"`
 	}
 	_ = json.NewDecoder(r.Body).Decode(&body)
-	org, err := s.orgs.Create(r.Context(), principal, body.Name, body.INN, body.Country, domain.OrgTypeProvider)
+	org, err := s.orgs.Create(r.Context(), principal, body.Name, body.INN, body.Country, "", domain.OrgTypeProvider)
 	if err != nil {
 		writeError(w, err)
 		return

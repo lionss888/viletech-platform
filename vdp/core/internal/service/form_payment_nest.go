@@ -3,6 +3,7 @@ package service
 import (
 	"context"
 	"encoding/json"
+	"strings"
 	"time"
 
 	"github.com/viletech/vdp/core/internal/authz"
@@ -134,6 +135,11 @@ func (s *FormPaymentService) PatchForm(ctx context.Context, principal authz.Prin
 	}
 	if input.AgentID != "" && (principal.Role == domain.RoleManager || principal.Role == domain.RoleRoot) {
 		form.AgentID = input.AgentID
+	}
+	if input.CounterpartyID != "" || input.OrganizationID != "" {
+		if err := s.authorizePartyPatch(principal, form); err != nil {
+			return formpayment.Form{}, err
+		}
 	}
 	if input.CounterpartyID != "" {
 		form.CounterpartyID = input.CounterpartyID
@@ -274,16 +280,38 @@ func (s *FormPaymentService) DeleteFileRef(ctx context.Context, principal authz.
 	return form, s.store.SaveForm(ctx, form)
 }
 
+// authorizePartyPatch: org/CP only for user|root on draft|creating|*corrections*; manager never.
+func (s *FormPaymentService) authorizePartyPatch(principal authz.Principal, form formpayment.Form) error {
+	switch principal.Role {
+	case domain.RoleUser, domain.RoleRoot:
+		if !formAllowsPartyChange(form.Status) {
+			return apperrors.New(apperrors.ErrCodeForbidden, "organization and counterparty locked after submit")
+		}
+		return nil
+	case domain.RoleManager:
+		return apperrors.New(apperrors.ErrCodeForbidden, "manager cannot change organization or counterparty")
+	default:
+		return apperrors.New(apperrors.ErrCodeForbidden, "role cannot change organization or counterparty")
+	}
+}
+
+func formAllowsPartyChange(status formpayment.Status) bool {
+	if status == formpayment.StatusCreating || status == formpayment.StatusDraft {
+		return true
+	}
+	return strings.Contains(string(status), "corrections")
+}
+
 func (s *FormPaymentService) authorizeOrganizationPatch(ctx context.Context, principal authz.Principal, _ formpayment.Form, orgID string) error {
 	org, err := s.store.OrganizationByID(ctx, orgID)
 	if err != nil {
 		return apperrors.New(apperrors.ErrCodeValidation, "organization not found")
 	}
 	switch principal.Role {
-	case domain.RoleRoot, domain.RoleManager:
+	case domain.RoleRoot:
 		return nil
 	case domain.RoleUser:
-		if principal.OrganizationID != "" && orgID != principal.OrganizationID && org.AccountID != principal.AccountID {
+		if !formOrgVisibleTo(principal, org) {
 			return apperrors.New(apperrors.ErrCodeForbidden, "organization not available to this account")
 		}
 		return nil

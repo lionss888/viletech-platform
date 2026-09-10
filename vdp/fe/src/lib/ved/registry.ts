@@ -15,7 +15,7 @@ export type RegistryKey =
 export type RegistryField = {
   key: string;
   label: string;
-  type: "text" | "number" | "select" | "boolean";
+  type: "text" | "number" | "select" | "boolean" | "banks";
   options?: { value: string; label: string }[];
   mono?: boolean;
   required?: boolean;
@@ -35,7 +35,7 @@ export type RegistryDef = {
   fields: RegistryField[];
 };
 
-export type RefRecord = Record<string, string | number | boolean | undefined>;
+export type RefRecord = Record<string, string | number | boolean | undefined | unknown>;
 
 /** Default first option is pending — Client must not self-approve on create. */
 const STATUS_APPROVAL = [
@@ -55,6 +55,7 @@ export const REGISTRIES: Record<RegistryKey, RegistryDef> = {
       { key: "name", label: "Организация", type: "text", required: true, placeholder: 'ООО "Северный Импорт"' },
       { key: "inn", label: "ИНН", type: "text", required: true, mono: true, placeholder: "7701234567" },
       { key: "legalAddress", label: "Юридический адрес", type: "text", placeholder: "г. Москва, ул. Тверская, 1" },
+      { key: "country", label: "Страна", type: "text", placeholder: "RU" },
       {
         key: "status",
         label: "Статус",
@@ -76,10 +77,9 @@ export const REGISTRIES: Record<RegistryKey, RegistryDef> = {
     autoId: true,
     fields: [
       { key: "name", label: "Наименование", type: "text", required: true, placeholder: "Например, Acme Trading Ltd" },
-      { key: "country", label: "Страна", type: "text", required: true, placeholder: "Китай" },
+      { key: "country", label: "Страна", type: "text", placeholder: "Китай" },
       { key: "countryCode", label: "Код страны", type: "text", mono: true, placeholder: "CN" },
-      { key: "bank", label: "Банк", type: "text", placeholder: "Bank of China" },
-      { key: "swift", label: "SWIFT", type: "text", mono: true, placeholder: "BKCHCNBJ" },
+      { key: "banks", label: "Банки", type: "banks" },
       {
         key: "scope",
         label: "Тип",
@@ -227,6 +227,7 @@ export function emptyRecord(def: Pick<RegistryDef, "fields">): RefRecord {
     if (field.type === "boolean") draft[field.key] = false;
     else if (field.type === "select") draft[field.key] = field.options?.[0]?.value ?? "";
     else if (field.type === "number") draft[field.key] = 0;
+    else if (field.type === "banks") draft[field.key] = [];
     else draft[field.key] = "";
   }
   return draft;
@@ -235,6 +236,16 @@ export function emptyRecord(def: Pick<RegistryDef, "fields">): RefRecord {
 export function labelFor(field: RegistryField, value: unknown): string {
   if (field.type === "boolean") return value ? "Да" : "Нет";
   if (field.type === "select") return field.options?.find((o) => o.value === value)?.label ?? String(value ?? "—");
+  if (field.type === "banks") {
+    if (!Array.isArray(value) || value.length === 0) return "—";
+    return value
+      .map((row) => {
+        const r = row as { name?: string; swift?: string };
+        const name = r.name?.trim() || "—";
+        return r.swift ? `${name} (${r.swift})` : name;
+      })
+      .join("; ");
+  }
   const text = value === undefined || value === null || value === "" ? "—" : String(value);
   return text;
 }

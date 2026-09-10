@@ -47,12 +47,14 @@ export function ModalButton({
   variant = "primary",
   disabled,
   className,
+  "data-testid": dataTestId,
 }: {
   children: ReactNode;
   onClick: () => void;
   variant?: "primary" | "danger" | "quiet" | undefined;
   disabled?: boolean | undefined;
   className?: string | undefined;
+  "data-testid"?: string | undefined;
 }) {
   const cls =
     variant === "danger"
@@ -65,6 +67,7 @@ export function ModalButton({
       type="button"
       onClick={onClick}
       disabled={disabled}
+      data-testid={dataTestId}
       className={`rounded-md px-3 py-2 text-sm font-semibold transition-opacity hover:opacity-90 disabled:opacity-40 ${cls} ${className ?? ""}`}
     >
       {children}

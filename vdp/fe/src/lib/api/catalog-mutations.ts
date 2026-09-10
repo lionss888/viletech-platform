@@ -12,6 +12,7 @@ export type CreateOrganizationInput = {
   name: string;
   inn: string;
   country?: string;
+  legal_address?: string;
   type?: string;
 };
 
@@ -26,10 +27,18 @@ export type PatchOrganizationProfileInput = {
   legal_address?: string;
 };
 
+export type CounterpartyBankInput = {
+  uuid?: string;
+  name: string;
+  swift?: string;
+  accounts?: Array<{ uuid?: string; number?: string; currency?: string; iban?: string }>;
+};
+
 export type CreateCounterpartyInput = {
   name: string;
   country?: string;
   inn?: string;
+  banks?: CounterpartyBankInput[];
 };
 
 export type CreateAgentInput = {
@@ -76,14 +85,20 @@ export type PatchAdminInput = {
 };
 
 export function createOrganization(input: CreateOrganizationInput): Promise<CoreOrganization> {
+  const body: Record<string, string> = {
+    name: input.name,
+    inn: input.inn,
+    type: input.type ?? "client",
+  };
+  if (input.country?.trim()) {
+    body.country = input.country.trim();
+  }
+  if (input.legal_address?.trim()) {
+    body.legal_address = input.legal_address.trim();
+  }
   return apiFetch<CoreOrganization>("/api/v1/organization", {
     method: "POST",
-    body: JSON.stringify({
-      name: input.name,
-      inn: input.inn,
-      country: input.country ?? "RU",
-      type: input.type ?? "client",
-    }),
+    body: JSON.stringify(body),
   });
 }
 
@@ -132,14 +147,24 @@ export function unApproveOrganization(id: string): Promise<CoreOrganization> {
 export function createCounterparty(input: CreateCounterpartyInput): Promise<CoreCounterparty> {
   return apiFetch<CoreCounterparty>("/api/v1/counterparty/create", {
     method: "POST",
-    body: JSON.stringify(input),
+    body: JSON.stringify({
+      name: input.name,
+      country: input.country,
+      inn: input.inn,
+      banks: input.banks ?? [],
+    }),
   });
 }
 
 export function updateCounterparty(id: string, input: CreateCounterpartyInput): Promise<CoreCounterparty> {
   return apiFetch<CoreCounterparty>(`/api/v1/counterparty/${id}`, {
     method: "PATCH",
-    body: JSON.stringify(input),
+    body: JSON.stringify({
+      name: input.name,
+      country: input.country,
+      inn: input.inn,
+      ...(input.banks !== undefined ? { banks: input.banks } : {}),
+    }),
   });
 }
 

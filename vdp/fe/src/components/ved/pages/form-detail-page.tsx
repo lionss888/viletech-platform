@@ -111,9 +111,13 @@ export function FormDetail() {
     (form?.status === "draft" ||
       form?.status === "creating" ||
       String(form?.status ?? "").includes("corrections"));
-  /** Org/CP pick: same roles as CP link — Client can switch parties without leaving the card. */
+  /** Org/CP: only user|root on draft|creating|*corrections* — never manager. */
   const canChangeParties =
-    mode === "app" && (role === "user" || role === "manager" || role === "root");
+    mode === "app" &&
+    (role === "user" || role === "root") &&
+    (form?.status === "draft" ||
+      form?.status === "creating" ||
+      String(form?.status ?? "").includes("corrections"));
 
   async function onUploadDocs(fileList: FileList | null) {
     if (!fileList?.length || !form) return;
@@ -343,6 +347,7 @@ export function FormDetail() {
                     {canChangeParties && (
                       <button
                         type="button"
+                        data-testid="change-counterparty"
                         className="mt-2 text-sm font-semibold text-accent hover:underline"
                         onClick={() => setCpDialogOpen(true)}
                       >

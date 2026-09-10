@@ -301,6 +301,24 @@ export async function createPaymentAgentApi(
   return { id: created.id, name: created.name ?? name };
 }
 
+/** Create client organization for the authenticated principal. */
+export async function createOrganizationApi(
+  token: string,
+  input: { name: string; inn: string; legal_address?: string; country?: string },
+): Promise<{ id: string; name: string }> {
+  const created = (await authPost(token, "/api/v1/organization", {
+    name: input.name,
+    inn: input.inn,
+    type: "client",
+    ...(input.country ? { country: input.country } : {}),
+    ...(input.legal_address ? { legal_address: input.legal_address } : {}),
+  })) as { id: string; name: string };
+  if (!created?.id) {
+    throw new Error(`create organization: missing id in ${JSON.stringify(created)}`);
+  }
+  return created;
+}
+
 /** Create counterparty for the seed user org. */
 export async function createCounterpartyApi(
   token: string,

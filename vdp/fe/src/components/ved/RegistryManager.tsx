@@ -1,5 +1,6 @@
 import { useMemo, useRef, useState } from "react";
 
+import { BanksEditor, type BankDraftRow } from "@/components/ved/BanksEditor";
 import { Modal, ModalButton } from "@/components/ved/Modal";
 import {
   emptyRecord,
@@ -16,6 +17,21 @@ import { nextSortDirection, sortRowsBy, type SortDirection } from "@/lib/ved/tab
 import type { VedRole } from "@/lib/ved/types";
 import { roleTitle } from "@/lib/ved/roles";
 import { cn } from "@/lib/utils";
+
+function banksFromRecord(record: RefRecord): BankDraftRow[] {
+  const raw = record.banks;
+  if (Array.isArray(raw) && raw.length > 0) {
+    return raw.map((row) => {
+      const r = row as { name?: string; swift?: string; account?: string };
+      return {
+        name: String(r.name ?? ""),
+        swift: String(r.swift ?? ""),
+        account: String(r.account ?? ""),
+      };
+    });
+  }
+  return [];
+}
 
 type Extra = { label: string; value: (record: RefRecord) => string };
 
@@ -334,46 +350,54 @@ export function RegistryManager({
       >
         {draft && (
           <div className="space-y-3">
-            {formFields.map((field) => (
-              <label key={field.key} className="block">
-                <span className="label-caps">{field.label}</span>
-                {field.type === "select" ? (
-                  <select
-                    value={String(draft[field.key] ?? "")}
-                    onChange={(e) => setDraft({ ...draft, [field.key]: e.target.value })}
-                    className="field mt-1"
-                  >
-                    {field.options?.map((option) => (
-                      <option key={option.value} value={option.value}>
-                        {option.label}
-                      </option>
-                    ))}
-                  </select>
-                ) : field.type === "boolean" ? (
-                  <span className="mt-1 flex items-center gap-2 text-sm">
+            {formFields.map((field) =>
+              field.type === "banks" ? (
+                <BanksEditor
+                  key={field.key}
+                  rows={banksFromRecord(draft)}
+                  onChange={(rows) => setDraft({ ...draft, banks: rows })}
+                />
+              ) : (
+                <label key={field.key} className="block">
+                  <span className="label-caps">{field.label}</span>
+                  {field.type === "select" ? (
+                    <select
+                      value={String(draft[field.key] ?? "")}
+                      onChange={(e) => setDraft({ ...draft, [field.key]: e.target.value })}
+                      className="field mt-1"
+                    >
+                      {field.options?.map((option) => (
+                        <option key={option.value} value={option.value}>
+                          {option.label}
+                        </option>
+                      ))}
+                    </select>
+                  ) : field.type === "boolean" ? (
+                    <span className="mt-1 flex items-center gap-2 text-sm">
+                      <input
+                        type="checkbox"
+                        checked={Boolean(draft[field.key])}
+                        onChange={(e) => setDraft({ ...draft, [field.key]: e.target.checked })}
+                      />
+                      Требуется
+                    </span>
+                  ) : (
                     <input
-                      type="checkbox"
-                      checked={Boolean(draft[field.key])}
-                      onChange={(e) => setDraft({ ...draft, [field.key]: e.target.checked })}
+                      type={field.type === "number" ? "number" : "text"}
+                      value={String(draft[field.key] ?? "")}
+                      placeholder={field.placeholder}
+                      onChange={(e) =>
+                        setDraft({
+                          ...draft,
+                          [field.key]: field.type === "number" ? Number(e.target.value) : e.target.value,
+                        })
+                      }
+                      className="field mt-1"
                     />
-                    Требуется
-                  </span>
-                ) : (
-                  <input
-                    type={field.type === "number" ? "number" : "text"}
-                    value={String(draft[field.key] ?? "")}
-                    placeholder={field.placeholder}
-                    onChange={(e) =>
-                      setDraft({
-                        ...draft,
-                        [field.key]: field.type === "number" ? Number(e.target.value) : e.target.value,
-                      })
-                    }
-                    className="field mt-1"
-                  />
-                )}
-              </label>
-            ))}
+                  )}
+                </label>
+              ),
+            )}
             {formError && <p className="text-xs text-destructive">{formError}</p>}
           </div>
         )}
