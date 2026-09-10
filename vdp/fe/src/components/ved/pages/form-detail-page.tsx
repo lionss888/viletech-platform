@@ -35,6 +35,7 @@ import {
   subjectsPendingReview,
 } from "@/lib/ved/compliance";
 import { canControlExtraction } from "@/lib/ved/extraction";
+import { canProviderDeleteDocuments, canUploadDocuments } from "@/lib/ved/doc-upload-policy";
 import { dateTime, money } from "@/lib/ved/format";
 import { usePlatformMode } from "@/lib/ved/platform-mode";
 import { cpByIdFrom, orgByIdFrom, usePlatformStore } from "@/lib/ved/platform-store";
@@ -54,7 +55,8 @@ export function FormDetail() {
   const formId = id ?? "";
   const mode = usePlatformMode();
   const auth = useAuth();
-  const { forms, session, organizations, counterparties, users, addDocuments } = usePlatformStore();
+  const { forms, session, organizations, counterparties, users, addDocuments, deleteDocument } =
+    usePlatformStore();
   const processRoles = useProcessRolesRows();
   const [cpDialogOpen, setCpDialogOpen] = useState(false);
   const [orgDialogOpen, setOrgDialogOpen] = useState(false);
@@ -178,7 +180,12 @@ export function FormDetail() {
   const orgPending = orgPendingIco(subjects);
   const subjectsPending = subjectsPendingReview(subjects);
   const isProvider = role === "provider";
-  const canUploadDocs = Boolean(canEditParams && !isProvider && mode === "app");
+  const canUploadDocs = Boolean(mode === "app" && !isProvider && canUploadDocuments(form.status, role));
+  const canDeleteDocs = Boolean(
+    mode === "app" &&
+      ((isProvider && canProviderDeleteDocuments(form.status)) ||
+        (canUploadDocs && (role === "user" || role === "root"))),
+  );
   const canReviewSubjects = compliance || role === "manager" || role === "root";
   const providerLabel =
     users.find((u) => u.id === form.providerId)?.name ?? form.providerName ?? "не назначен";
@@ -402,7 +409,7 @@ export function FormDetail() {
           <div className="panel p-4" data-testid="form-documents">
             <div className="flex flex-wrap items-center justify-between gap-2">
               <p className="label-caps">
-                {isProvider ? "Документы платежа" : "Документы"} ({visibleDocuments.length})
+                {isProvider ? "Документы сделки" : "Документы"} ({visibleDocuments.length})
               </p>
               {canUploadDocs && (
                 <div className="flex flex-wrap items-center gap-2">
@@ -437,7 +444,7 @@ export function FormDetail() {
             {visibleDocuments.length === 0 ? (
               <p className="mt-2 text-sm text-muted-foreground">
                 {isProvider
-                  ? "Подтверждение платежа можно прикрепить через действие на карточке."
+                  ? "Документы сделки (без агентского договора). Платёжку можно прикрепить через действие на карточке."
                   : canUploadDocs
                     ? String(form.status).includes("correction")
                       ? "Документы не загружены. Загрузите файлы здесь, затем нажмите «Отправить исправления» справа."
@@ -445,7 +452,21 @@ export function FormDetail() {
                     : "Документы пока не загружены."}
               </p>
             ) : (
-              <DocumentList documents={visibleDocuments} formId={formId} />
+              <DocumentList
+                documents={visibleDocuments}
+                formId={formId}
+                canDelete={canDeleteDocs}
+                onDelete={
+                  canDeleteDocs
+                    ? async (doc) => {
+                        const fileId = doc.fileId || doc.id;
+                        if (!fileId) return;
+                        await deleteDocument(form.id, fileId);
+                        await formQuery.refetch();
+                      }
+                    : undefined
+                }
+              />
             )}
             {uploadError && <p className="mt-2 text-xs text-destructive">{uploadError}</p>}
           </div>

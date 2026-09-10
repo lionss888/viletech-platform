@@ -359,6 +359,9 @@ func (s *FormPaymentService) List(ctx context.Context, principal authz.Principal
 	out := make([]formpayment.Form, 0)
 	for _, form := range s.store.ListForms(ctx) {
 		if formpayment.CanSeeForm(principal.Role, principal.AccountID, form) {
+			if principal.Role == domain.RoleProvider || principal.Role == domain.RoleSeniorProvider {
+				form = formpayment.ScrubFormForProvider(form)
+			}
 			out = append(out, form)
 		}
 	}

@@ -6,36 +6,52 @@ import (
 )
 
 type ProviderView struct {
-	ID                string               `json:"id"`
-	Status            Status               `json:"status"`
-	Direction         Direction            `json:"direction"`
-	Kind              Kind                 `json:"kind"`
-	Channel           string               `json:"channel,omitempty"`
-	ExecutionDeadline *string              `json:"execution_deadline,omitempty"`
-	InvoiceAmount     string               `json:"invoice_amount,omitempty"`
-	Currency          string               `json:"currency,omitempty"`
-	Rate              Rate                 `json:"rate"`
-	Commission        Commission           `json:"commission"`
-	ProviderID        string               `json:"provider_id"`
-	OrganizationID    string               `json:"organization_id"`
-	ActiveOrderID     string               `json:"active_order_id,omitempty"`
-	ActiveOrder       *ActiveOrderSnapshot `json:"active_order,omitempty"`
+	ID                 string               `json:"id"`
+	Status             Status               `json:"status"`
+	Direction          Direction            `json:"direction"`
+	Kind               Kind                 `json:"kind"`
+	Channel            string               `json:"channel,omitempty"`
+	ExecutionDeadline  *string              `json:"execution_deadline,omitempty"`
+	InvoiceAmount      string               `json:"invoice_amount,omitempty"`
+	Currency           string               `json:"currency,omitempty"`
+	Rate               Rate                 `json:"rate"`
+	Commission         Commission           `json:"commission"`
+	ProviderID         string               `json:"provider_id"`
+	OrganizationID     string               `json:"organization_id"`
+	ActiveOrderID      string               `json:"active_order_id,omitempty"`
+	ActiveOrder        *ActiveOrderSnapshot `json:"active_order,omitempty"`
+	DocsJSON           string               `json:"docs_json,omitempty"`
+	ConfirmationFileID string               `json:"confirmation_file_id,omitempty"`
+	ConfirmationHash   string               `json:"confirmation_hash,omitempty"`
+	ContractNumber     string               `json:"contract_number,omitempty"`
+	CreatedAt          string               `json:"created_at,omitempty"`
+	UpdatedAt          string               `json:"updated_at,omitempty"`
 }
 
 func ProjectForProvider(form Form) ProviderView {
 	view := ProviderView{
-		ID:             form.ID,
-		Status:         form.Status,
-		Direction:      form.Direction,
-		Kind:           form.Kind,
-		Channel:        form.Channel,
-		InvoiceAmount:  form.InvoiceAmount,
-		Currency:       form.Currency,
-		Rate:           form.Rate,
-		Commission:     form.Commission,
-		ProviderID:     form.ProviderID,
-		OrganizationID: form.OrganizationID,
-		ActiveOrderID:  form.ActiveOrderID,
+		ID:                 form.ID,
+		Status:             form.Status,
+		Direction:          form.Direction,
+		Kind:               form.Kind,
+		Channel:            form.Channel,
+		InvoiceAmount:      form.InvoiceAmount,
+		Currency:           form.Currency,
+		Rate:               form.Rate,
+		Commission:         form.Commission,
+		ProviderID:         form.ProviderID,
+		OrganizationID:     form.OrganizationID,
+		ActiveOrderID:      form.ActiveOrderID,
+		DocsJSON:           ScrubDocsJSONForProvider(form.DocsJSON),
+		ConfirmationFileID: form.ConfirmationFileID,
+		ConfirmationHash:   form.ConfirmationHash,
+		ContractNumber:     form.ContractNumber,
+	}
+	if !form.CreatedAt.IsZero() {
+		view.CreatedAt = form.CreatedAt.UTC().Format("2006-01-02T15:04:05Z")
+	}
+	if !form.UpdatedAt.IsZero() {
+		view.UpdatedAt = form.UpdatedAt.UTC().Format("2006-01-02T15:04:05Z")
 	}
 	if form.ExecutionDeadline != nil {
 		formatted := form.ExecutionDeadline.UTC().Format("2006-01-02T15:04:05Z")

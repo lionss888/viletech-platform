@@ -1,9 +1,9 @@
-# Intake Telegram poller — own Docker Desktop project "vdp-intake" (not vdp product stack).
+# Intake Telegram poller + local operator console — Docker project "vdp-intake".
 ROOT := $(abspath ../..)
 export INTAKE_WORKSPACE_HOST ?= $(ROOT)
 export INTAKE_WORKSPACE ?= /workspace
 
-.PHONY: up down logs restart ps build
+.PHONY: up down logs restart ps build test console-url
 
 up:
 	docker compose up -d --build
@@ -22,3 +22,9 @@ ps:
 
 build:
 	docker compose build
+
+test:
+	go test ./...
+
+console-url:
+	@echo "http://127.0.0.1:8787  (set INTAKE_CONSOLE_TOKEN; Authorization: Bearer …)"

@@ -102,10 +102,13 @@ const MATRIX: Record<VedRole, Record<string, FormAction[]>> = {
       { id: "mgr_form_reject", label: "Вернуть на коррекцию", tone: "quiet", requiresReason: true, nextStatus: "form_waiting_corrections" },
     ],
     contract_verification: [
-      { id: "mgr_contract_confirm", label: "Подтвердить договор", tone: "accent", nextStatus: "signing_order" },
+      {
+        id: "mgr_contract_confirm",
+        label: "Подтвердить договор и сформировать поручение",
+        tone: "accent",
+        nextStatus: "signing_order",
+      },
       { id: "mgr_contract_return", label: "Вернуть договор клиенту", tone: "quiet", requiresReason: true, nextStatus: "contract_waiting_correction" },
-      { id: "mgr_order_generate", label: "Сформировать поручение принципала", tone: "accent", nextStatus: "signing_order" },
-      { id: "mgr_order_attach", label: "Загрузить своё поручение", tone: "quiet", requiresFile: true, nextStatus: "signing_order" },
     ],
     contract_waiting: [
       { id: "mgr_contract_confirm", label: "Проверить ветку договора", tone: "primary", nextStatus: "contract_verification" },
@@ -134,7 +137,7 @@ const MATRIX: Record<VedRole, Record<string, FormAction[]>> = {
       { id: "mgr_order_advance_stop", label: "Приостановить", tone: "quiet", nextStatus: "advance_signing_order_waiting_verification" },
     ],
     payment_received: [
-      { id: "mgr_assign_provider", label: "Назначить провайдера", tone: "primary", nextStatus: "payment_received" },
+      { id: "mgr_assign_provider", label: "Назначить платёжного провайдера", tone: "primary", nextStatus: "payment_received" },
       { id: "mgr_assign_deadline", label: "Установить срок исполнения", tone: "quiet", nextStatus: "payment_received" },
       { id: "mgr_payment_start", label: "Запустить исполнение платежа", tone: "accent", nextStatus: "payment_processing" },
       { id: "mgr_refund_init", label: "Инициировать возврат средств", tone: "danger", requiresReason: true, nextStatus: "payment_refund_waiting" },

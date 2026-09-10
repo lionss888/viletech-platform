@@ -712,9 +712,25 @@ func (s *CatalogService) canPreviewFile(ctx context.Context, principal authz.Pri
 	if f.OwnerID == principal.AccountID || principal.Role == domain.RoleRoot {
 		return nil
 	}
+	if principal.Role == domain.RoleProvider || principal.Role == domain.RoleSeniorProvider {
+		if f.FormID != "" {
+			if form, err := s.store.FormByID(ctx, f.FormID); err == nil {
+				if err := authz.CanAccessForm(principal, form); err != nil {
+					return err
+				}
+				for _, ref := range formpayment.ParseDocRefs(form.DocsJSON) {
+					if ref.FileID == f.ID && formpayment.IsAgencyContractDocKind(ref.Kind, ref.Label) {
+						return apperrors.ErrForbidden
+					}
+				}
+				return nil
+			}
+		}
+		return apperrors.ErrForbidden
+	}
 	switch principal.Role {
 	case domain.RoleManager, domain.RoleComplianceOfficer,
-		domain.RoleInternalComplianceOfficer, domain.RoleProvider, domain.RoleSeniorProvider, domain.RoleOneC:
+		domain.RoleInternalComplianceOfficer, domain.RoleOneC:
 		return nil
 	}
 	if f.FormID != "" {

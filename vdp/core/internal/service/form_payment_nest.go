@@ -262,6 +262,9 @@ func (s *FormPaymentService) DeleteFileRef(ctx context.Context, principal authz.
 	if err != nil {
 		return formpayment.Form{}, err
 	}
+	if err := s.authorizeDocDelete(principal, form); err != nil {
+		return formpayment.Form{}, err
+	}
 	if form.DocsJSON == "" || fileID == "" {
 		return form, nil
 	}
@@ -275,9 +278,27 @@ func (s *FormPaymentService) DeleteFileRef(ctx context.Context, principal authz.
 		kept = append(kept, ref)
 	}
 	form.DocsJSON = formpayment.EncodeDocRefs(kept, nil)
+	if form.ConfirmationFileID == fileID {
+		form.ConfirmationFileID = ""
+	}
 	form.PackDocsJSON()
 	form.UpdatedAt = time.Now().UTC()
 	return form, s.store.SaveForm(ctx, form)
+}
+
+func (s *FormPaymentService) authorizeDocDelete(principal authz.Principal, form formpayment.Form) error {
+	switch principal.Role {
+	case domain.RoleRoot, domain.RoleUser, domain.RoleManager:
+		return nil
+	case domain.RoleProvider, domain.RoleSeniorProvider:
+		st := string(form.Status)
+		if st == "payment_processing" || st == "payment_received" || st == "manager_checking" {
+			return nil
+		}
+		return apperrors.New(apperrors.ErrCodeForbidden, "provider cannot delete documents after payment sent")
+	default:
+		return apperrors.New(apperrors.ErrCodeForbidden, "role cannot delete form documents")
+	}
 }
 
 // authorizePartyPatch: org/CP only for user|root on draft|creating|*corrections*; manager never.

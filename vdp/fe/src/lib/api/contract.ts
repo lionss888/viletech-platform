@@ -41,3 +41,23 @@ export function rejectContract(contractId: string, text: string): Promise<Record
     body: JSON.stringify({ text }),
   });
 }
+
+export type OrgContractRow = {
+  id: string;
+  status?: string;
+  type?: string;
+};
+
+/** Org contract history — used to skip agency upload when accepted already exists. */
+export function listOrgContracts(orgId: string): Promise<OrgContractRow[]> {
+  return apiFetch<OrgContractRow[]>(`/api/v1/organizations/${orgId}/contracts`);
+}
+
+export function orgHasAcceptedAgencyContract(rows: OrgContractRow[]): boolean {
+  return rows.some((row) => {
+    const st = (row.status ?? "").toLowerCase();
+    const typ = (row.type ?? "").toLowerCase();
+    const agency = typ === "agency" || typ === "subagency" || typ === "";
+    return agency && (st === "accepted" || st === "active" || st === "signed");
+  });
+}

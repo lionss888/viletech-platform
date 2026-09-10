@@ -110,6 +110,39 @@ func WriteMarkdown(workspace string, doc Document) (string, error) {
 	return path, nil
 }
 
+// WritePrompt writes an engineer prompt beside the plan draft.
+func WritePrompt(workspace, cardID, instruction string) (string, error) {
+	if strings.TrimSpace(workspace) == "" {
+		return "", fmt.Errorf("workspace required")
+	}
+	dir := Dir(workspace)
+	if err := os.MkdirAll(dir, 0o755); err != nil {
+		return "", err
+	}
+	name := cardID
+	if name == "" {
+		name = fmt.Sprintf("prompt-%d", time.Now().Unix())
+	}
+	name = strings.Map(func(r rune) rune {
+		if (r >= 'a' && r <= 'z') || (r >= 'A' && r <= 'Z') || (r >= '0' && r <= '9') || r == '-' || r == '_' {
+			return r
+		}
+		return '-'
+	}, name)
+	path := filepath.Join(dir, name+".prompt.md")
+	var b strings.Builder
+	b.WriteString("# Указание агенту (из консоли intake)\n\n")
+	b.WriteString("Обновлено: ")
+	b.WriteString(time.Now().UTC().Format(time.RFC3339))
+	b.WriteString("\n\n")
+	b.WriteString(strings.TrimSpace(instruction))
+	b.WriteString("\n")
+	if err := os.WriteFile(path, []byte(b.String()), 0o644); err != nil {
+		return "", err
+	}
+	return path, nil
+}
+
 func defaultSteps(class string) []string {
 	switch class {
 	case "bug":

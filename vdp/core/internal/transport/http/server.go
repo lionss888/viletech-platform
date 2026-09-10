@@ -14,6 +14,7 @@ import (
 
 	"github.com/viletech/vdp/core/internal/authz"
 	"github.com/viletech/vdp/core/internal/domain"
+	"github.com/viletech/vdp/core/internal/domain/formpayment"
 	"github.com/viletech/vdp/core/internal/service"
 	"github.com/viletech/vdp/core/pkg/config"
 	apperrors "github.com/viletech/vdp/core/pkg/errors"
@@ -144,7 +145,8 @@ func (s *Server) handleGetForm(w http.ResponseWriter, r *http.Request, principal
 		return
 	}
 	if principal.Role == domain.RoleProvider || principal.Role == domain.RoleSeniorProvider {
-		writeJSON(w, http.StatusOK, s.mustProviderView(r.Context(), principal, form.ID))
+		// Scrubbed form keeps FE CoreForm mapping (docs_json) without agency/PII dump.
+		writeJSON(w, http.StatusOK, formpayment.ScrubFormForProvider(form))
 		return
 	}
 	writeJSON(w, http.StatusOK, form)

@@ -53,7 +53,10 @@ describe("manager contract/order bridge", () => {
 
     const verification = actionsFor("manager", "contract_verification").map((a) => a.id);
     expect(verification).toContain("mgr_contract_confirm");
-    expect(verification).toContain("mgr_order_generate");
+    expect(verification).not.toContain("mgr_order_generate");
+    expect(actionsFor("manager", "contract_verification").find((a) => a.id === "mgr_contract_confirm")?.label).toMatch(
+      /поручение/i,
+    );
 
     const orderQueue = actionsFor("manager", "signing_order_waiting_verification").map((a) => a.id);
     expect(orderQueue).toContain("mgr_order_start");

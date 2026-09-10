@@ -79,9 +79,21 @@ export function providerPaymentRequisites(
   ];
 }
 
-/** Documents provider may see on the card (payment proof only). */
+/** Documents provider may see: deal docs except agency/contract. */
 export function providerVisibleDocuments(form: PaymentForm): PaymentForm["documents"] {
-  return form.documents.filter((doc) => doc.kind === "payment");
+  return form.documents.filter((doc) => !isAgencyContractDocument(doc));
+}
+
+export function isAgencyContractDocument(doc: {
+  kind?: string;
+  title?: string;
+}): boolean {
+  const kind = (doc.kind ?? "").toLowerCase();
+  if (kind === "contract" || kind === "agency" || kind === "agency_contract" || kind === "subagency") {
+    return true;
+  }
+  const title = (doc.title ?? "").toLowerCase();
+  return title.includes("агентск") || title.includes("agency");
 }
 
 export function isProviderHiddenField(field: string): boolean {

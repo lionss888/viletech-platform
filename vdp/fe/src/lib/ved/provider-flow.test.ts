@@ -103,10 +103,38 @@ describe("provider ACL helpers", () => {
     expect(joined).not.toContain("Secret St");
   });
 
-  it("visible documents are payment kind only", () => {
-    const docs = providerVisibleDocuments(stubForm());
-    expect(docs).toHaveLength(1);
-    expect(docs[0]?.kind).toBe("payment");
+  it("visible documents exclude agency contract but keep deal docs", () => {
+    const docs = providerVisibleDocuments(
+      stubForm({
+        documents: [
+          {
+            id: "d0",
+            title: "Invoice",
+            ext: "PDF",
+            size: "1 MB",
+            uploadedAt: "2026-08-01T10:00:00Z",
+            kind: "invoice",
+          },
+          {
+            id: "d1",
+            title: "Contract",
+            ext: "PDF",
+            size: "1 MB",
+            uploadedAt: "2026-08-01T10:00:00Z",
+            kind: "contract",
+          },
+          {
+            id: "d2",
+            title: "Payment proof",
+            ext: "PDF",
+            size: "200 KB",
+            uploadedAt: "2026-08-02T10:00:00Z",
+            kind: "payment",
+          },
+        ],
+      }),
+    );
+    expect(docs.map((d) => d.kind).sort()).toEqual(["invoice", "payment"]);
   });
 
   it("PROVIDER_HIDDEN_FIELDS covers client PII keys", () => {

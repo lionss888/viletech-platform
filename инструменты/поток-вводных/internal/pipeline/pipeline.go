@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"log/slog"
+	"os"
 	"strings"
 	"time"
 
@@ -23,23 +24,40 @@ import (
 
 // Messenger sends replies to Telegram.
 type Messenger interface {
-	SendMessage(ctx context.Context, chatID, replyTo int64, text string) error
+	SendMessage(ctx context.Context, chatID, replyTo int64, text string) (int64, error)
+}
+
+// MediaFetcher downloads Telegram files (optional).
+type MediaFetcher interface {
+	GetFile(ctx context.Context, fileID string) (telegram.FileMeta, error)
+	DownloadFile(ctx context.Context, filePath string) ([]byte, error)
+}
+
+// MediaSender uploads/deletes Telegram media (optional).
+type MediaSender interface {
+	SendPhoto(ctx context.Context, chatID int64, filename string, data []byte, caption string) (int64, error)
+	SendDocument(ctx context.Context, chatID int64, filename string, data []byte, caption string) (int64, error)
+	SendVideo(ctx context.Context, chatID int64, filename string, data []byte, caption string) (int64, error)
+	DeleteMessage(ctx context.Context, chatID, messageID int64) error
 }
 
 // Pipeline processes Telegram updates into inbox + replies.
 type Pipeline struct {
-	Store             *store.Store
-	Cards             *card.Store
-	Messenger         Messenger
-	ChatIDs           map[int64]struct{}
-	BotUser           string
-	Log               *slog.Logger
-	WithAnalyze       bool
-	WithHITL          bool
-	Workspace         string
-	ReminderInterval  time.Duration
-	MaxReminders      int
-	now               func() time.Time
+	Store            *store.Store
+	Cards            *card.Store
+	Messenger        Messenger
+	Media            MediaFetcher
+	MediaOut         MediaSender
+	ChatIDs          map[int64]struct{}
+	BotUser          string
+	Log              *slog.Logger
+	WithAnalyze      bool
+	WithHITL         bool
+	Workspace        string
+	ReminderInterval time.Duration
+	MaxReminders     int
+	MaxMediaBytes    int64
+	now              func() time.Time
 }
 
 const helpText = `Шаблон ввода (отметьте бота или /vvod):
@@ -49,6 +67,24 @@ const helpText = `Шаблон ввода (отметьте бота или /vvo
 4) роль если важно
 5) номер заявки если есть
 6) срочность (низкая/средняя/высокая)`
+
+// ConsoleIngest is an operator message from the local console.
+type ConsoleIngest struct {
+	Text        string
+	ChatID      int64
+	AsIntake    bool
+	MirrorToTG  bool
+	Attachments []store.Attachment
+	FromUser    string
+}
+
+// ConsoleResult is the outcome of a console ingest.
+type ConsoleResult struct {
+	Record    store.Record `json:"record"`
+	Ack       string       `json:"ack,omitempty"`
+	TGMessage int64        `json:"tg_message_id,omitempty"`
+	CardID    string       `json:"card_id,omitempty"`
+}
 
 // HandleUpdate processes one update. Returns whether it was an intake event.
 func (p *Pipeline) HandleUpdate(ctx context.Context, u telegram.Update) (bool, error) {
@@ -78,6 +114,11 @@ func (p *Pipeline) HandleUpdate(ctx context.Context, u telegram.Update) (bool, e
 		fromID = msg.From.ID
 		fromUser = msg.From.Username
 	}
+	text := msg.PrimaryText()
+	atts, err := p.pullMedia(ctx, msg)
+	if err != nil {
+		log.Warn("media pull failed", "update_id", u.UpdateID, "err", err)
+	}
 	ents := make([]normalize.Entity, 0, len(msg.Entities))
 	for _, e := range msg.Entities {
 		ents = append(ents, normalize.Entity{Type: e.Type, Offset: e.Offset, Length: e.Length})
@@ -88,7 +129,7 @@ func (p *Pipeline) HandleUpdate(ctx context.Context, u telegram.Update) (bool, e
 		ChatID:    msg.Chat.ID,
 		FromID:    fromID,
 		FromUser:  fromUser,
-		Text:      msg.Text,
+		Text:      text,
 		Entities:  ents,
 		BotUser:   p.BotUser,
 	}
@@ -97,7 +138,7 @@ func (p *Pipeline) HandleUpdate(ctx context.Context, u telegram.Update) (bool, e
 		return false, nil
 	}
 	if trig == normalize.TriggerHelp {
-		_ = p.Messenger.SendMessage(ctx, msg.Chat.ID, msg.MessageID, comms.SanitizeManager(helpText))
+		_, _ = p.Messenger.SendMessage(ctx, msg.Chat.ID, msg.MessageID, comms.SanitizeManager(helpText))
 		_ = p.Store.MarkSeen(u.UpdateID)
 		return true, nil
 	}
@@ -111,7 +152,10 @@ func (p *Pipeline) HandleUpdate(ctx context.Context, u telegram.Update) (bool, e
 			return true, nil
 		}
 	}
-	redacted := redact.Text(msg.Text)
+	redacted := redact.Text(text)
+	if redacted == "" && len(atts) > 0 {
+		redacted = "[вложение]"
+	}
 	rec := store.Record{
 		UpdateID:     u.UpdateID,
 		MessageID:    msg.MessageID,
@@ -120,9 +164,11 @@ func (p *Pipeline) HandleUpdate(ctx context.Context, u telegram.Update) (bool, e
 		FromUsername: fromUser,
 		Trigger:      string(trig),
 		Kind:         "intake",
+		Source:       "telegram",
 		Text:         redacted,
+		Attachments:  atts,
 	}
-	analysis := analyze.Analyze(msg.Text, p.BotUser)
+	analysis := analyze.Analyze(text, p.BotUser)
 	if p.WithAnalyze || p.WithHITL {
 		rec.Class = analysis.Class
 		rec.Confidence = string(analysis.Confidence)
@@ -150,14 +196,241 @@ func (p *Pipeline) HandleUpdate(ctx context.Context, u telegram.Update) (bool, e
 		ack = formatAnalyzeReply(analysis)
 	}
 	ack = comms.SanitizeManager(ack)
-	if err := p.Messenger.SendMessage(ctx, msg.Chat.ID, msg.MessageID, ack); err != nil {
+	if _, err := p.Messenger.SendMessage(ctx, msg.Chat.ID, msg.MessageID, ack); err != nil {
 		log.Warn("ack failed", "update_id", u.UpdateID, "message_id", msg.MessageID, "err", err)
 	}
 	return true, nil
 }
 
+// IngestConsole handles operator console messages (same HITL path when AsIntake).
+func (p *Pipeline) IngestConsole(ctx context.Context, in ConsoleIngest) (ConsoleResult, error) {
+	chatID := in.ChatID
+	if chatID == 0 {
+		chatID = p.primaryChatID()
+	}
+	if chatID == 0 {
+		return ConsoleResult{}, fmt.Errorf("no chat_id configured")
+	}
+	text := strings.TrimSpace(in.Text)
+	redacted := redact.Text(text)
+	if redacted == "" && len(in.Attachments) > 0 {
+		redacted = "[вложение]"
+	}
+	now := p.clock()
+	updateID := -now.UnixNano()
+	msgID := now.Unix()%1_000_000_000 + 1
+	fromUser := in.FromUser
+	if fromUser == "" {
+		fromUser = "console"
+	}
+	rec := store.Record{
+		UpdateID:     updateID,
+		MessageID:    msgID,
+		ChatID:       chatID,
+		FromUsername: fromUser,
+		Trigger:      "console",
+		Kind:         "console",
+		Source:       "console",
+		Text:         redacted,
+		Attachments:  in.Attachments,
+		ReceivedAt:   now.Format(time.RFC3339),
+	}
+	var ack string
+	var cardID string
+	if in.AsIntake {
+		rec.Kind = "intake"
+		rec.Trigger = "vvod"
+		analysis := analyze.Analyze(text, p.BotUser)
+		if p.WithAnalyze || p.WithHITL {
+			rec.Class = analysis.Class
+			rec.Confidence = string(analysis.Confidence)
+			rec.Chars = analysis.Chars
+			rec.Tags = analysis.Tags
+		}
+		if err := p.Store.AppendInbox(rec); err != nil {
+			return ConsoleResult{}, err
+		}
+		fake := &telegram.Message{
+			MessageID: msgID,
+			Text:      text,
+			Chat:      telegram.Chat{ID: chatID},
+			From:      &telegram.User{Username: fromUser},
+		}
+		if p.WithHITL {
+			var err error
+			ack, err = p.handleHITLIntake(ctx, fake, fromUser, redacted, analysis)
+			if err != nil {
+				ack = comms.Accepted()
+			}
+			cardID = card.NewID(chatID, msgID)
+		} else if p.WithAnalyze {
+			ack = formatAnalyzeReply(analysis)
+		} else {
+			ack = comms.Accepted()
+		}
+		ack = comms.SanitizeManager(ack)
+	} else {
+		rec.Kind = "console_out"
+		if err := p.Store.AppendInbox(rec); err != nil {
+			return ConsoleResult{}, err
+		}
+		ack = redacted
+	}
+	var tgMsg int64
+	if in.MirrorToTG && p.Messenger != nil {
+		body := ack
+		if !in.AsIntake {
+			body = comms.SanitizeManager(redacted)
+		}
+		id, err := p.Messenger.SendMessage(ctx, chatID, 0, body)
+		if err != nil {
+			return ConsoleResult{Record: rec, Ack: ack, CardID: cardID}, err
+		}
+		tgMsg = id
+		if len(in.Attachments) > 0 && p.MediaOut != nil {
+			for _, a := range in.Attachments {
+				_ = p.mirrorAttachment(ctx, chatID, a)
+			}
+		}
+	}
+	return ConsoleResult{Record: rec, Ack: ack, TGMessage: tgMsg, CardID: cardID}, nil
+}
+
+// ApplyHITLDecision approves or declines a card from the console.
+func (p *Pipeline) ApplyHITLDecision(ctx context.Context, cardID string, approve bool, mirror bool) error {
+	if p.Cards == nil {
+		return fmt.Errorf("cards not configured")
+	}
+	c, err := p.Cards.Get(cardID)
+	if err != nil {
+		return err
+	}
+	if c.Status != card.StatusAwaitingApprove {
+		return fmt.Errorf("card not awaiting approve")
+	}
+	var ack string
+	if approve {
+		c.Status = card.StatusApproved
+		ack = comms.ApprovedAck()
+		_ = experience.Append(p.StoreHome(), experience.Event{
+			CardID: c.ID, Kind: "approve", Class: c.Class, TimelinePhrase: c.TimelinePhrase,
+		})
+	} else {
+		c.Status = card.StatusDeclined
+		ack = comms.DeclinedAck()
+		_ = experience.Append(p.StoreHome(), experience.Event{
+			CardID: c.ID, Kind: "decline", Class: c.Class, TimelinePhrase: c.TimelinePhrase,
+		})
+	}
+	_ = p.rewritePlan(c)
+	if err := p.Cards.Save(c); err != nil {
+		return err
+	}
+	if mirror && p.Messenger != nil {
+		_, _ = p.Messenger.SendMessage(ctx, c.ChatID, c.RootMessageID, ack)
+	}
+	return nil
+}
+
+// DeleteTGMessage removes a Telegram message when MediaOut is set.
+func (p *Pipeline) DeleteTGMessage(ctx context.Context, chatID, messageID int64) error {
+	if p.MediaOut == nil {
+		return fmt.Errorf("telegram delete not configured")
+	}
+	return p.MediaOut.DeleteMessage(ctx, chatID, messageID)
+}
+
+func (p *Pipeline) mirrorAttachment(ctx context.Context, chatID int64, a store.Attachment) error {
+	abs := p.Store.AbsMediaPath(a.Path)
+	if abs == "" {
+		return fmt.Errorf("bad media path")
+	}
+	data, err := os.ReadFile(abs)
+	if err != nil {
+		return err
+	}
+	name := a.Name
+	if name == "" {
+		name = "file.bin"
+	}
+	mime := strings.ToLower(a.MIME)
+	switch {
+	case strings.HasPrefix(mime, "image/"):
+		_, err = p.MediaOut.SendPhoto(ctx, chatID, name, data, "")
+	case strings.HasPrefix(mime, "video/"):
+		_, err = p.MediaOut.SendVideo(ctx, chatID, name, data, "")
+	default:
+		_, err = p.MediaOut.SendDocument(ctx, chatID, name, data, "")
+	}
+	return err
+}
+
+func (p *Pipeline) pullMedia(ctx context.Context, msg *telegram.Message) ([]store.Attachment, error) {
+	if p.Media == nil || p.Store == nil || msg == nil {
+		return nil, nil
+	}
+	max := p.MaxMediaBytes
+	if max <= 0 {
+		max = 25 << 20
+	}
+	type spec struct {
+		fileID, name, mime string
+	}
+	var specs []spec
+	if id := msg.BestPhotoFileID(); id != "" {
+		specs = append(specs, spec{id, "photo.jpg", "image/jpeg"})
+	}
+	if msg.Document != nil && msg.Document.FileID != "" {
+		name := msg.Document.FileName
+		if name == "" {
+			name = "document.bin"
+		}
+		specs = append(specs, spec{msg.Document.FileID, name, msg.Document.MimeType})
+	}
+	if msg.Video != nil && msg.Video.FileID != "" {
+		name := msg.Video.FileName
+		if name == "" {
+			name = "video.mp4"
+		}
+		specs = append(specs, spec{msg.Video.FileID, name, msg.Video.MimeType})
+	}
+	var out []store.Attachment
+	for _, sp := range specs {
+		meta, err := p.Media.GetFile(ctx, sp.fileID)
+		if err != nil {
+			return out, err
+		}
+		if int64(meta.FileSize) > max && meta.FileSize > 0 {
+			continue
+		}
+		data, err := p.Media.DownloadFile(ctx, meta.FilePath)
+		if err != nil {
+			return out, err
+		}
+		if int64(len(data)) > max {
+			continue
+		}
+		att, err := p.Store.SaveMedia(fmt.Sprintf("tg-%d", time.Now().UnixNano()), sp.name, data)
+		if err != nil {
+			return out, err
+		}
+		att.MIME = sp.mime
+		att.Source = "telegram"
+		att.TGFileID = sp.fileID
+		out = append(out, att)
+	}
+	return out, nil
+}
+
+func (p *Pipeline) primaryChatID() int64 {
+	for id := range p.ChatIDs {
+		return id
+	}
+	return 0
+}
+
 func (p *Pipeline) tryHITLDecision(ctx context.Context, msg *telegram.Message, fromUser string) (bool, error) {
-	stripped := normalize.StripTrigger(msg.Text, p.BotUser)
+	stripped := normalize.StripTrigger(msg.PrimaryText(), p.BotUser)
 	dec := comms.ParseHitlDecision(stripped)
 	if dec == comms.HitlNone {
 		return false, nil
@@ -176,7 +449,7 @@ func (p *Pipeline) tryHITLDecision(ctx context.Context, msg *telegram.Message, f
 	if target == nil {
 		return false, nil
 	}
-	now := p.clock()
+	_ = fromUser
 	switch dec {
 	case comms.HitlApprove:
 		target.Status = card.StatusApproved
@@ -185,9 +458,7 @@ func (p *Pipeline) tryHITLDecision(ctx context.Context, msg *telegram.Message, f
 		})
 		_ = p.rewritePlan(target)
 		_ = p.Cards.Save(target)
-		_ = p.Messenger.SendMessage(ctx, msg.Chat.ID, msg.MessageID, comms.ApprovedAck())
-		_ = fromUser
-		_ = now
+		_, _ = p.Messenger.SendMessage(ctx, msg.Chat.ID, msg.MessageID, comms.ApprovedAck())
 		return true, nil
 	case comms.HitlDecline:
 		target.Status = card.StatusDeclined
@@ -196,7 +467,7 @@ func (p *Pipeline) tryHITLDecision(ctx context.Context, msg *telegram.Message, f
 		})
 		_ = p.rewritePlan(target)
 		_ = p.Cards.Save(target)
-		_ = p.Messenger.SendMessage(ctx, msg.Chat.ID, msg.MessageID, comms.DeclinedAck())
+		_, _ = p.Messenger.SendMessage(ctx, msg.Chat.ID, msg.MessageID, comms.DeclinedAck())
 		return true, nil
 	default:
 		return false, nil
@@ -206,7 +477,6 @@ func (p *Pipeline) tryHITLDecision(ctx context.Context, msg *telegram.Message, f
 func (p *Pipeline) handleHITLIntake(_ context.Context, msg *telegram.Message, fromUser, redacted string, analysis analyze.Result) (string, error) {
 	now := p.clock()
 	id := card.NewID(msg.Chat.ID, msg.MessageID)
-	prevTexts := []string{}
 	c := &card.Card{
 		ID:            id,
 		ChatID:        msg.Chat.ID,
@@ -220,12 +490,13 @@ func (p *Pipeline) handleHITLIntake(_ context.Context, msg *telegram.Message, fr
 		UpdatedAt:     now,
 		LastAskAt:     now,
 	}
-	findings := conflict.Detect(analysis.Class, analysis.Tags, redacted, prevTexts)
+	findings := conflict.Detect(analysis.Class, analysis.Tags, redacted, nil)
 	var conflictPlains []string
 	for _, f := range findings {
 		conflictPlains = append(conflictPlains, f.Plain)
 	}
 	c.Conflicts = conflictPlains
+	rawText := msg.PrimaryText()
 	if analysis.Confidence == analyze.ConfidenceLow && len(findings) == 0 {
 		c.Status = card.StatusAwaitingClarify
 		if err := p.Cards.Save(c); err != nil {
@@ -249,8 +520,8 @@ func (p *Pipeline) handleHITLIntake(_ context.Context, msg *telegram.Message, fr
 		f := findings[0]
 		return comms.ConflictWarn(f.Plain, f.Question), nil
 	}
-	prop := proposal.Summary(msg.Text, p.BotUser, analysis.Class)
-	est := estimate.FromSignals(analysis.Class, analysis.Chars, analysis.Words, msg.Text)
+	prop := proposal.Summary(rawText, p.BotUser, analysis.Class)
+	est := estimate.FromSignals(analysis.Class, analysis.Chars, analysis.Words, rawText)
 	c.Proposal = prop
 	c.TimelinePhrase = est.ManagerPhrase
 	c.Status = card.StatusAwaitingApprove
@@ -322,13 +593,13 @@ func (p *Pipeline) ProcessReminders(ctx context.Context) error {
 			_ = experience.Append(p.StoreHome(), experience.Event{
 				CardID: c.ID, Kind: "stale", Class: c.Class, ReminderCount: c.ReminderCount,
 			})
-			_ = p.Messenger.SendMessage(ctx, c.ChatID, c.RootMessageID, comms.StaleNotice())
+			_, _ = p.Messenger.SendMessage(ctx, c.ChatID, c.RootMessageID, comms.StaleNotice())
 			continue
 		}
 		c.ReminderCount++
 		c.LastAskAt = p.clock()
 		_ = p.Cards.Save(c)
-		_ = p.Messenger.SendMessage(ctx, c.ChatID, c.RootMessageID, comms.Reminder())
+		_, _ = p.Messenger.SendMessage(ctx, c.ChatID, c.RootMessageID, comms.Reminder())
 	}
 	return nil
 }

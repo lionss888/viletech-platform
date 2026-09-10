@@ -161,7 +161,7 @@ test.describe("Pilot robot matrix full UI ladder @pilot-matrix", () => {
       await logout();
       await loginAs("manager");
       await waitForFormDetail(page, formId);
-      await clickAction(page, /^Подтвердить договор$/);
+      await clickAction(page, /^Подтвердить договор и сформировать поручение$|^Подтвердить договор$/);
       await expectFormStatus(page, "signing_order", { timeout: 30_000 });
     } else {
       await clickAction(page, /Прикрепить договор/i);
@@ -191,7 +191,7 @@ test.describe("Pilot robot matrix full UI ladder @pilot-matrix", () => {
     await expectFormStatus(page, "payment_received", { timeout: 30_000 });
 
     // 12–13. Assign provider + start payment
-    await clickAction(page, /^Назначить провайдера$/);
+    await clickAction(page, /^Назначить платёжного провайдера$/);
     const providerSelect = page.locator("label").filter({ hasText: /Провайдер исполнения/i }).locator("select");
     await expect(providerSelect).toBeVisible({ timeout: 10_000 });
     const provCount = await providerSelect.locator("option").count();
