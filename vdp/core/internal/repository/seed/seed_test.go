@@ -81,15 +81,24 @@ func TestShouldWipeForms(t *testing.T) {
 	if !seed.ShouldWipeForms("development") {
 		t.Fatal("development should wipe by default")
 	}
+	if !seed.ShouldWipeForms("alpha") {
+		t.Fatal("alpha should wipe by default (manual QA + post-e2e cleanup)")
+	}
 	if seed.ShouldWipeForms("production") {
 		t.Fatal("production must never wipe")
 	}
 	if seed.ShouldWipeForms("demo") {
 		t.Fatal("demo without flag must not wipe")
 	}
+	if seed.ShouldWipeForms("beta") {
+		t.Fatal("beta without flag must not wipe")
+	}
 	t.Setenv("SEED_WIPE_FORMS", "0")
 	if seed.ShouldWipeForms("development") {
 		t.Fatal("SEED_WIPE_FORMS=0 disables wipe")
+	}
+	if seed.ShouldWipeForms("alpha") {
+		t.Fatal("SEED_WIPE_FORMS=0 disables wipe on alpha")
 	}
 	t.Setenv("SEED_WIPE_FORMS", "1")
 	if !seed.ShouldWipeForms("demo") {

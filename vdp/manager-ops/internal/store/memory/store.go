@@ -9,7 +9,7 @@ import (
 	"github.com/viletech/vdp/shared/managerops"
 )
 
-// Store is an in-memory roster + behavior store for local/compose.
+// Store is an in-memory roster + behavior store for unit tests.
 type Store struct {
 	mu          sync.Mutex
 	people      map[string]domain.Person
@@ -69,6 +69,46 @@ func (s *Store) ListMemberships(_ context.Context, chatID string) ([]domain.Memb
 	return out, nil
 }
 
+func (s *Store) PersonByTelegram(_ context.Context, telegramUserID string) (domain.Person, bool, error) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	p, ok := s.people[telegramUserID]
+	return p, ok, nil
+}
+
+func (s *Store) HasActiveMembership(_ context.Context, telegramUserID, accountID string) (bool, error) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	tgIDs := map[string]struct{}{}
+	if telegramUserID != "" {
+		tgIDs[telegramUserID] = struct{}{}
+	}
+	if accountID != "" {
+		for id, p := range s.people {
+			if p.AccountID == accountID {
+				tgIDs[id] = struct{}{}
+			}
+		}
+	}
+	if len(tgIDs) == 0 {
+		return false, nil
+	}
+	for chatID, members := range s.memberships {
+		if c, ok := s.chats[chatID]; ok && !c.Active {
+			continue
+		}
+		for _, m := range members {
+			if m.LeftAt != nil {
+				continue
+			}
+			if _, ok := tgIDs[m.TelegramUserID]; ok {
+				return true, nil
+			}
+		}
+	}
+	return false, nil
+}
+
 func (s *Store) SetConsent(_ context.Context, c domain.Consent) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
@@ -101,7 +141,7 @@ func (s *Store) ListEvents(_ context.Context, accountID string, since time.Time)
 	out := make([]managerops.Event, 0)
 	for _, key := range s.eventOrder {
 		e := s.events[key]
-		if e.AccountID != accountID {
+		if accountID != "" && e.AccountID != accountID {
 			continue
 		}
 		if e.OccurredAt.Before(since) {
@@ -110,6 +150,10 @@ func (s *Store) ListEvents(_ context.Context, accountID string, since time.Time)
 		out = append(out, e)
 	}
 	return out, nil
+}
+
+func (s *Store) ListAllEvents(ctx context.Context, since time.Time) ([]managerops.Event, error) {
+	return s.ListEvents(ctx, "", since)
 }
 
 func (s *Store) UpsertScore(_ context.Context, score domain.ScoreAggregate) error {

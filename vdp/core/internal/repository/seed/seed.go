@@ -71,9 +71,9 @@ func Dev(store repository.Store) error {
 	return nil
 }
 
-// ShouldWipeForms reports whether local/compose should clear probe forms on boot or via admin wipe.
+// ShouldWipeForms reports whether local/compose/alpha may clear probe forms on boot or via admin wipe.
 // Explicit SEED_WIPE_FORMS=1 wins (even on demo). SEED_WIPE_FORMS=0 always disables.
-// Without the flag: wipe on development/local/test/ci; never on production/staging/named deploy envs.
+// Without the flag: wipe on development/local/test/ci/alpha; never on production/staging/beta/gamma/demo.
 func ShouldWipeForms(environment string) bool {
 	flag := strings.TrimSpace(os.Getenv("SEED_WIPE_FORMS"))
 	if flag == "0" || strings.EqualFold(flag, "false") || strings.EqualFold(flag, "off") {
@@ -84,9 +84,10 @@ func ShouldWipeForms(environment string) bool {
 	}
 	env := strings.ToLower(strings.TrimSpace(environment))
 	switch env {
-	case "production", "prod", "staging", "alpha", "beta", "gamma", "demo":
+	case "production", "prod", "staging", "beta", "gamma", "demo":
 		return false
 	default:
+		// development, local, test, ci, alpha, empty, …
 		return true
 	}
 }

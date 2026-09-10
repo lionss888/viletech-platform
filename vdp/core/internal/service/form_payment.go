@@ -11,6 +11,7 @@ import (
 	"github.com/viletech/vdp/core/internal/domain/formpayment"
 	"github.com/viletech/vdp/core/internal/outbox"
 	"github.com/viletech/vdp/core/internal/repository"
+	apperrors "github.com/viletech/vdp/core/pkg/errors"
 	"github.com/viletech/vdp/core/pkg/logger"
 	"github.com/viletech/vdp/shared/events"
 )
@@ -18,13 +19,14 @@ import (
 type IDFunc func() string
 
 type FormPaymentService struct {
-	store          repository.Store
-	box            outbox.Store
-	newID          IDFunc
-	bus            *FormEventBus
-	roles          *ProcessRoleService
-	extractionURL  string
+	store           repository.Store
+	box             outbox.Store
+	newID           IDFunc
+	bus             *FormEventBus
+	roles           *ProcessRoleService
+	extractionURL   string
 	hubSharedSecret string
+	managerOps      *ManagerOpsPublisher
 }
 
 func NewFormPaymentService(store repository.Store, box outbox.Store, newID IDFunc) *FormPaymentService {
@@ -62,6 +64,7 @@ type CreateInput struct {
 	NoDocuments    bool
 	ContractNumber string
 	ContractDate   string
+	OrganizationID string
 	CounterpartyID string
 }
 
@@ -75,6 +78,10 @@ func (s *FormPaymentService) Create(ctx context.Context, principal authz.Princip
 	if input.Kind == "" {
 		input.Kind = formpayment.KindGood
 	}
+	orgID, err := s.resolveCreateOrganizationID(ctx, principal, input.OrganizationID)
+	if err != nil {
+		return formpayment.Form{}, err
+	}
 	now := time.Now().UTC()
 	policyVersion := 1
 	if s.roles != nil {
@@ -85,7 +92,7 @@ func (s *FormPaymentService) Create(ctx context.Context, principal authz.Princip
 	form := formpayment.Form{
 		ID:                   s.newID(),
 		AccountID:            principal.AccountID,
-		OrganizationID:       principal.OrganizationID,
+		OrganizationID:       orgID,
 		CounterpartyID:       input.CounterpartyID,
 		Status:               formpayment.StatusCreating,
 		Channel:              formpayment.ChannelUI,
@@ -118,6 +125,75 @@ func (s *FormPaymentService) Create(ctx context.Context, principal authz.Princip
 		return formpayment.Form{}, err
 	}
 	return form, nil
+}
+
+// resolveCreateOrganizationID requires a visible client org for RoleUser and prefers an explicit id.
+func (s *FormPaymentService) resolveCreateOrganizationID(ctx context.Context, principal authz.Principal, requested string) (string, error) {
+	visible, err := s.visibleClientOrganizations(ctx, principal)
+	if err != nil {
+		return "", err
+	}
+	if len(visible) == 0 {
+		return "", apperrors.New(apperrors.ErrCodeForbidden, "client organization required before creating a form")
+	}
+	if requested != "" {
+		for _, org := range visible {
+			if org.ID == requested {
+				return requested, nil
+			}
+		}
+		return "", apperrors.New(apperrors.ErrCodeForbidden, "organization not available to this account")
+	}
+	if principal.OrganizationID != "" {
+		for _, org := range visible {
+			if org.ID == principal.OrganizationID {
+				return principal.OrganizationID, nil
+			}
+		}
+	}
+	return visible[0].ID, nil
+}
+
+func (s *FormPaymentService) visibleClientOrganizations(ctx context.Context, principal authz.Principal) ([]domain.Organization, error) {
+	all, err := s.store.ListOrganizations(ctx)
+	if err != nil {
+		return nil, err
+	}
+	out := make([]domain.Organization, 0)
+	for _, org := range all {
+		if org.Type == domain.OrgTypeProvider {
+			continue
+		}
+		if formOrgVisibleTo(principal, org) {
+			out = append(out, org)
+		}
+	}
+	return out, nil
+}
+
+func formOrgVisibleTo(principal authz.Principal, org domain.Organization) bool {
+	switch principal.Role {
+	case domain.RoleRoot, domain.RoleManager, domain.RoleTreasurer,
+		domain.RoleComplianceOfficer, domain.RoleInternalComplianceOfficer:
+		return true
+	case domain.RoleUser:
+		if org.AccountID == principal.AccountID || org.ID == principal.OrganizationID {
+			return true
+		}
+		for _, id := range org.Subaccounts {
+			if id == principal.AccountID {
+				return true
+			}
+		}
+		for _, id := range org.InvitedIDs {
+			if id == principal.AccountID {
+				return true
+			}
+		}
+		return false
+	default:
+		return false
+	}
 }
 
 func (s *FormPaymentService) Transition(ctx context.Context, principal authz.Principal, formID string, action formpayment.Action) (formpayment.Form, error) {
@@ -205,6 +281,7 @@ func (s *FormPaymentService) TransitionWithComment(ctx context.Context, principa
 		return formpayment.Form{}, err
 	}
 	s.maybeEnqueueBankWebhook(ctx, next, payload)
+	s.emitManagerOps(ctx, principal, next, action, history.ID)
 	return next, nil
 }
 

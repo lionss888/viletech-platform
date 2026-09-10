@@ -31,6 +31,14 @@ export type CoreCounterparty = {
   status?: string;
   last_approval_status?: string;
   inn?: string;
+  banks?: string | CounterpartyBankCore[];
+};
+
+export type CounterpartyBankCore = {
+  uuid?: string;
+  name?: string;
+  swift?: string;
+  accounts?: Array<{ uuid?: string; number?: string; currency?: string; iban?: string }>;
 };
 
 export type CoreAgent = {

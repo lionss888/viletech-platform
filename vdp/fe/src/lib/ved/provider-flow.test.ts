@@ -69,6 +69,7 @@ const cp: Counterparty = {
   countryCode: "DE",
   bank: "Deutsche Bank",
   swift: "DEUTDEFF",
+  banks: [{ name: "Deutsche Bank", swift: "DEUTDEFF" }],
   scope: "foreign",
   status: "approved",
 };

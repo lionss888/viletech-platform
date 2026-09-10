@@ -31,17 +31,36 @@ type systemClock struct{}
 func (systemClock) Now() time.Time { return time.Now().UTC() }
 
 // Ingest validates and stores one event; duplicates are no-ops.
+// Consent 2B: telegram requires active work-chat membership and no opt-out.
+// Core events are always accepted (cabinet is source of truth).
 func (s *Service) Ingest(ctx context.Context, e managerops.Event) (status string, err error) {
 	if err := e.Validate(); err != nil {
 		return "", err
 	}
-	if e.AccountID != "" {
-		consent, ok, cerr := s.store.Consent(ctx, e.AccountID)
-		if cerr != nil {
-			return "", cerr
+	if e.Source == managerops.SourceTelegram {
+		ok, herr := s.store.HasActiveMembership(ctx, e.TelegramUserID, e.AccountID)
+		if herr != nil {
+			return "", herr
 		}
-		if ok && !consent.Enabled && e.Source == managerops.SourceTelegram {
-			return "skipped_consent", nil
+		if !ok {
+			return "skipped_no_membership", nil
+		}
+		accountID := e.AccountID
+		if accountID == "" && e.TelegramUserID != "" {
+			if p, found, perr := s.store.PersonByTelegram(ctx, e.TelegramUserID); perr != nil {
+				return "", perr
+			} else if found {
+				accountID = p.AccountID
+			}
+		}
+		if accountID != "" {
+			consent, hasConsent, cerr := s.store.Consent(ctx, accountID)
+			if cerr != nil {
+				return "", cerr
+			}
+			if hasConsent && !consent.Enabled {
+				return "skipped_opt_out", nil
+			}
 		}
 	}
 	created, err := s.store.SaveEvent(ctx, e)
@@ -81,17 +100,24 @@ func (s *Service) Score(ctx context.Context, accountID, period string) (domain.S
 	return s.store.Score(ctx, accountID, period)
 }
 
-// Nudge sends a motivation message when consent is enabled.
+// Nudge sends a motivation message when membership exists and account has not opted out.
 func (s *Service) Nudge(ctx context.Context, accountID, chatID, text string) error {
 	if accountID == "" || chatID == "" || text == "" {
 		return fmt.Errorf("account_id, chat_id and text required")
 	}
-	consent, ok, err := s.store.Consent(ctx, accountID)
+	ok, err := s.store.HasActiveMembership(ctx, "", accountID)
 	if err != nil {
 		return err
 	}
-	if !ok || !consent.Enabled {
-		return fmt.Errorf("consent required")
+	if !ok {
+		return fmt.Errorf("active membership required")
+	}
+	consent, hasConsent, err := s.store.Consent(ctx, accountID)
+	if err != nil {
+		return err
+	}
+	if hasConsent && !consent.Enabled {
+		return fmt.Errorf("opted out")
 	}
 	if s.telegram == nil {
 		return fmt.Errorf("telegram adapter not configured")

@@ -29,6 +29,18 @@ describe("scenario-catalog mirror", () => {
     }
   });
 
+  it("every Go catalog id is present in FE SCENARIO_IDS", () => {
+    const catalogGo = readFileSync(catalogGoPath, "utf8");
+    const goIds = [
+      ...catalogGo.matchAll(/ID\w+\s*=\s*"([a-z0-9_]+)"/g),
+    ].map((m) => m[1]);
+    const feIds = new Set(Object.values(SCENARIO_IDS));
+    expect(goIds.length).toBeGreaterThanOrEqual(17);
+    for (const id of goIds) {
+      expect(feIds.has(id), `FE SCENARIO_IDS missing ${id}`).toBe(true);
+    }
+  });
+
   it("every UI_SCENARIO_SPECS path points at an existing Playwright file", () => {
     for (const [scenarioId, specs] of Object.entries(UI_SCENARIO_SPECS)) {
       const files = specs.split(/\s+/).filter(Boolean);

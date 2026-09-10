@@ -29,17 +29,28 @@ alwaysApply: true
 4. Агент **создал или существенно правил** файлы под `vdp/docs/**` или `vdp/README.md` (особенно вне `docs/development/`) — **до** «готово» / коммита / следующего шага прогнать из `vdp/`:
    - минимум **`make docs-format-check`**;
    - не ждать только pre-commit хука (history чата не ослабляет).
+5. Кнопка **Run** в Local QG canvas (`local-qg.canvas.tsx`) или промпт `Local QG RUN` — это **запуск**, не обсуждение: выполнить указанную команду сразу.
 
 Действия:
 
-1. Предложить и при согласии (или если пользователь уже сказал «прогони») выполнить из `vdp/`:
+1. Предложить и при согласии (или если пользователь уже сказал «прогони» / нажал Run в Local QG) выполнить из `vdp/`:
    - по умолчанию **`make ci-pr`**;
    - если пользователь просит быстрее / без browser — **`make ci-pr-fast`**, и честно сказать, что Playwright PR-smoke ещё не гонялся;
-   - при правках только документации — достаточно **`make docs-format-check`** (+ при желании `test-cd-scripts`, если трогали CD-контракты).
+   - при правках только документации — достаточно **`make docs-format-check`** (+ при желании `test-cd-scripts`, если трогали CD-контракты);
+   - при явной команде из Local QG — **ровно ту**, что в промпте (не подменять `precommit-gate` на `ci-pr`).
 2. Красный gate → **не** утверждать готовность CI; починить или явно перечислить пробел.
 3. `make release-gate` — только если пользователь просит полный контур / handover / тег.
 4. FE Docker deps: по-прежнему **спросить** перед `compose-fe-refresh` (`vdp-fe-docker-пересборка`).
 5. Ops/product docs вне `docs/development/`: без таблиц, списков, bold, backticks, fence — см. `docs/conventions/format.md`. How-to с командами/таблицами — в `docs/development/`.
+
+## Shell / sandbox (MUST)
+
+Для локальных VDP gate из агента (`make docs-format-check`, `make precommit-gate`, `make ci-pr-fast`, `make ci-pr`, `make release-gate` и их цепочки с `go test` / Docker / TG notify):
+
+1. **Первый** вызов Shell сразу с полным снятием sandbox (`required_permissions: ["all"]` или эквивалент).
+2. **Не** делать пробный запуск в readonly sandbox — ломает make (`No rule to make target`), chmod, module cache, notify.
+3. **Не** спрашивать пользователя «можно ли без sandbox» для этих команд: это часть Local QG / precommit / ci-pr.
+4. Один прогон: не «сначала sandbox, потом retry».
 
 ## MUST NOT
 
@@ -48,6 +59,7 @@ alwaysApply: true
 - Класть полный `release-gate` в pre-commit или гонять его без запроса (дорого, не PR-паритет).
 - Обходить Docker Playwright на macOS host `npx playwright install`, если команда — Makefile `playwright-e2e`.
 - Закрывать волну/PR после правок `vdp/docs/**` без локального `docs-format-check`.
+- Трактовать кнопку Run / `Local QG RUN` как «спроси, стоит ли гонять» — это команда на выполнение.
 
 ## Что делать человеку (коротко)
 
@@ -61,3 +73,4 @@ alwaysApply: true
 - Тихий skip Playwright при заявлении полного PR-паритета.
 - Путать `precommit-gate` (docs + unit) с `ci-pr` (полный CI PR).
 - Писать rich markdown в `docs/operations/` и чинить только после красного GitHub docs job.
+- Пробный `make` в sandbox агента → ложный fail / `No rule to make target`; потом «сориентировался» на all.

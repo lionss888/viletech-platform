@@ -328,6 +328,7 @@ func (s *Store) SaveForm(ctx context.Context, f formpayment.Form) error {
 		) VALUES (
 			$1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22,$23,$24,$25,$26,$27,$28,$29,$30,$31,$32,$33,$34,$35,$36,$37,$38,$39,NOW()
 		) ON CONFLICT (id) DO UPDATE SET
+			organization_id=EXCLUDED.organization_id,
 			provider_id=EXCLUDED.provider_id, agent_id=EXCLUDED.agent_id, manager_id=EXCLUDED.manager_id,
 			status=EXCLUDED.status, prev_status=EXCLUDED.prev_status, rate_on_provider=EXCLUDED.rate_on_provider,
 			execution_deadline=EXCLUDED.execution_deadline, rate_value=EXCLUDED.rate_value, rate_currency=EXCLUDED.rate_currency,
@@ -361,6 +362,7 @@ func (s *Store) SaveForm(ctx context.Context, f formpayment.Form) error {
 			) VALUES (
 				$1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22,$23,$24,$25,$26,$27,$28,$29,$30,$31,$32,$33,$34,$35,NOW()
 			) ON CONFLICT (id) DO UPDATE SET
+				organization_id=EXCLUDED.organization_id,
 				provider_id=EXCLUDED.provider_id, agent_id=EXCLUDED.agent_id, manager_id=EXCLUDED.manager_id,
 				status=EXCLUDED.status, prev_status=EXCLUDED.prev_status, rate_on_provider=EXCLUDED.rate_on_provider,
 				execution_deadline=EXCLUDED.execution_deadline, rate_value=EXCLUDED.rate_value, rate_currency=EXCLUDED.rate_currency,
@@ -453,7 +455,7 @@ func (s *Store) FormByID(ctx context.Context, id string) (formpayment.Form, erro
 }
 
 func (s *Store) ListForms(ctx context.Context) []formpayment.Form {
-	rows, err := s.db.QueryContext(ctx, `SELECT id FROM form_payments`)
+	rows, err := s.db.QueryContext(ctx, `SELECT id FROM form_payments ORDER BY updated_at DESC`)
 	if err != nil {
 		return nil
 	}

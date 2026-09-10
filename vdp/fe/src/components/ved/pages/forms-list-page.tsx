@@ -15,10 +15,14 @@ import { roleTitle } from "@/lib/ved/roles";
 import { cpByIdFrom, orgByIdFrom, usePlatformStore, visibleForms } from "@/lib/ved/platform-store";
 import { providerCsvHeader, providerCsvRow, providerFormSearchHaystack } from "@/lib/ved/provider-acl";
 import { dateTime } from "@/lib/ved/format";
+import { nextSortDirection, sortRowsBy, type SortDirection } from "@/lib/ved/table-sort";
 import { useProcessRolesRows } from "@/lib/ved/use-process-roles-snapshot";
 import { cn } from "@/lib/utils";
-import type { FormAction, VedRole } from "@/lib/ved/types";
+import type { FormAction, PaymentForm, VedRole } from "@/lib/ved/types";
 import type { ProcessRoleRow } from "@/lib/api/process-roles";
+
+type FormsSortKey = "number" | "status" | "counterparty" | "amount" | "client" | "updatedAt" | "idle";
+
 export function FormsList() {
   const { forms, session, applyBulk, organizations, counterparties } = usePlatformStore();
   const preset = useSearch({ strict: false }) as FormsSearch;
@@ -30,6 +34,8 @@ export function FormsList() {
   const [stageFilter, setStageFilter] = useState(preset.stage ?? "");
   const [bulkPending, setBulkPending] = useState<FormAction | null>(null);
   const [bulkReason, setBulkReason] = useState("");
+  const [sortKey, setSortKey] = useState<FormsSortKey>("updatedAt");
+  const [sortDir, setSortDir] = useState<SortDirection>("desc");
   const processRoles = useProcessRolesRows();
 
   const role = session?.role ?? "user";
@@ -41,7 +47,7 @@ export function FormsList() {
   const statusFilters = useMemo(() => statusFiltersForProcess(processRoles), [processRoles]);
   const stages = useMemo(() => stagesForProcess(processRoles), [processRoles]);
 
-  const rows = useMemo(() => {
+  const filtered = useMemo(() => {
     const statusPreset = statusFilters.find((f) => f.value === filter);
     return scoped.filter((form) => {
       if (statusPreset && statusPreset.statuses.length > 0 && !statusPreset.statuses.includes(form.status)) return false;
@@ -63,6 +69,15 @@ export function FormsList() {
       return true;
     });
   }, [scoped, filter, stageFilter, onlyMine, onlyStuck, stuckIds, query, role, counterparties, organizations, processRoles, statusFilters]);
+
+  const rows = useMemo(() => {
+    return sortRowsBy(filtered, (form) => formSortValue(form, sortKey, counterparties), sortDir);
+  }, [filtered, sortKey, sortDir, counterparties]);
+
+  function onSort(next: FormsSortKey) {
+    setSortDir(nextSortDirection(sortKey, next, sortDir));
+    setSortKey(next);
+  }
 
   const bulkActions = useMemo(() => {
     const chosen = rows.filter((f) => selected.includes(f.id));
@@ -291,13 +306,39 @@ export function FormsList() {
                     }}
                   />
                 </th>
-                <th className="label-caps py-2 pr-4">Заявка</th>
-                <th className="label-caps py-2 pr-4">Статус</th>
-                <th className="label-caps py-2 pr-4">Контрагент</th>
-                <th className="label-caps py-2 pr-4 text-right">Сумма</th>
-                {role !== "provider" && <th className="label-caps py-2 pr-4">Клиент</th>}
-                <th className="label-caps py-2 pr-4">Обновлено</th>
-                {role === "root" && <th className="label-caps py-2 pr-4 text-right">Простой</th>}
+                <SortTh label="Заявка" active={sortKey === "number"} dir={sortDir} onClick={() => onSort("number")} />
+                <SortTh label="Статус" active={sortKey === "status"} dir={sortDir} onClick={() => onSort("status")} />
+                <SortTh
+                  label="Контрагент"
+                  active={sortKey === "counterparty"}
+                  dir={sortDir}
+                  onClick={() => onSort("counterparty")}
+                />
+                <SortTh
+                  label="Сумма"
+                  active={sortKey === "amount"}
+                  dir={sortDir}
+                  align="right"
+                  onClick={() => onSort("amount")}
+                />
+                {role !== "provider" && (
+                  <SortTh label="Клиент" active={sortKey === "client"} dir={sortDir} onClick={() => onSort("client")} />
+                )}
+                <SortTh
+                  label="Обновлено"
+                  active={sortKey === "updatedAt"}
+                  dir={sortDir}
+                  onClick={() => onSort("updatedAt")}
+                />
+                {role === "root" && (
+                  <SortTh
+                    label="Простой"
+                    active={sortKey === "idle"}
+                    dir={sortDir}
+                    align="right"
+                    onClick={() => onSort("idle")}
+                  />
+                )}
               </tr>
             </thead>
             <tbody>
@@ -389,6 +430,63 @@ export function FormsList() {
       </Modal>
     </VedAppShell>
   );
+}
+
+function SortTh({
+  label,
+  active,
+  dir,
+  onClick,
+  align = "left",
+}: {
+  label: string;
+  active: boolean;
+  dir: SortDirection;
+  onClick: () => void;
+  align?: "left" | "right";
+}) {
+  const marker = active ? (dir === "asc" ? " ↑" : " ↓") : "";
+  return (
+    <th className={cn("label-caps py-2 pr-4", align === "right" && "text-right")}>
+      <button
+        type="button"
+        onClick={onClick}
+        className={cn(
+          "inline-flex items-center gap-0.5 hover:text-foreground",
+          active ? "text-foreground" : "text-muted-foreground",
+          align === "right" && "ml-auto",
+        )}
+        aria-sort={active ? (dir === "asc" ? "ascending" : "descending") : "none"}
+      >
+        {label}
+        <span aria-hidden="true">{marker}</span>
+      </button>
+    </th>
+  );
+}
+
+function formSortValue(
+  form: PaymentForm,
+  key: FormsSortKey,
+  counterparties: ReturnType<typeof usePlatformStore>["counterparties"],
+): string | number {
+  switch (key) {
+    case "number":
+      return form.number;
+    case "status":
+      return form.status;
+    case "counterparty":
+      return cpByIdFrom(counterparties, form.counterpartyId)?.name ?? "";
+    case "amount":
+      return form.amountMinor;
+    case "client":
+      return form.ownerName;
+    case "idle":
+      return daysIdle(form);
+    case "updatedAt":
+    default:
+      return form.updatedAt;
+  }
 }
 
 function formsToCsv(

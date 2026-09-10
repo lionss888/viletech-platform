@@ -22,7 +22,7 @@ func robotFixturesDir(t *testing.T) string {
 	return dir
 }
 
-func TestRobotMatrixRowsCoverCatalogSpine(t *testing.T) {
+func TestRobotMatrixRowsCoverFullCatalog(t *testing.T) {
 	t.Parallel()
 	raw, err := os.ReadFile(filepath.Join(robotFixturesDir(t), "matrix-rows.json"))
 	if err != nil {
@@ -30,36 +30,26 @@ func TestRobotMatrixRowsCoverCatalogSpine(t *testing.T) {
 	}
 	var doc struct {
 		Rows []struct {
-			ID string `json:"id"`
+			ID   string `json:"id"`
+			Note string `json:"note"`
 		} `json:"rows"`
 	}
 	if err := json.Unmarshal(raw, &doc); err != nil {
 		t.Fatal(err)
 	}
-	have := map[string]bool{}
+	have := map[string]string{}
 	for _, r := range doc.Rows {
-		have[r.ID] = true
+		have[r.ID] = r.Note
 	}
-	required := []string{
-		IDHappyPathToCompleted,
-		IDContinuityManagerForm,
-		IDManagerRejectCorrections,
-		IDUserResubmitAfterReject,
-		IDManagerPaymentAssignProvider,
-		IDProviderPaymentNoPII,
-		IDRootCancel,
-		IDDocPreviewVisible,
-		IDExtractionConfirmAmount,
-		IDManagerHidesDrafts,
-		IDRefundSmoke,
-		IDBankChannelBadge,
-	}
-	for _, id := range required {
-		if !have[id] {
-			t.Errorf("matrix-rows missing catalog id %s", id)
+	for _, s := range Catalog() {
+		if _, ok := have[s.ID]; !ok {
+			t.Errorf("matrix-rows missing catalog id %s", s.ID)
 		}
 	}
-	if !have["happy_path_shipment_branch"] {
+	if have[IDIcoOrgPendingApprove] != "soft_skip_forbidden" {
+		t.Errorf("ico_org_pending_approve note want soft_skip_forbidden got %q", have[IDIcoOrgPendingApprove])
+	}
+	if _, ok := have["happy_path_shipment_branch"]; !ok {
 		t.Error("matrix-rows missing happy_path_shipment_branch")
 	}
 }
@@ -89,5 +79,19 @@ func TestRobotTemplatePackHasNoDemoMocks(t *testing.T) {
 	}
 	if pack.Counterparty.Name == "" || pack.DealFields.InvoiceAmount == "" || pack.DealFields.InvoiceAmount == "0" {
 		t.Fatal("template pack must have realistic counterparty and amount")
+	}
+}
+
+func TestHandbookMentionsEveryCatalogID(t *testing.T) {
+	t.Parallel()
+	handbook := filepath.Clean(filepath.Join(robotFixturesDir(t), "..", "..", "docs", "pilot", "scenario-role-directory.md"))
+	raw, err := os.ReadFile(handbook)
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, s := range Catalog() {
+		if !bytes.Contains(raw, []byte(s.ID)) {
+			t.Errorf("handbook missing id %s", s.ID)
+		}
 	}
 }

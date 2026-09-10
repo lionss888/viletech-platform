@@ -136,6 +136,18 @@ fast:
   after_script:
     - *mgmt_notify_on_fail
 
+intake:
+  stage: fast
+  image: golang:${GO_VERSION}
+  rules:
+    - changes:
+        - "инструменты/поток-вводных/**/*"
+        - .gitlab-ci.yml
+  script:
+    - cd "инструменты/поток-вводных" && go test ./...
+  after_script:
+    - *mgmt_notify_on_fail
+
 docs:
   stage: docs
   image: alpine:3.20

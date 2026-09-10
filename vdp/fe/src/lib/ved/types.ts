@@ -69,6 +69,12 @@ export type Organization = {
   createdAt: string;
 };
 
+export type CounterpartyBank = {
+  name: string;
+  swift?: string;
+  account?: string;
+};
+
 export type Counterparty = {
   id: string;
   name: string;
@@ -76,6 +82,7 @@ export type Counterparty = {
   countryCode: string;
   bank: string;
   swift: string;
+  banks: CounterpartyBank[];
   scope: "foreign" | "russian";
   status: "approved" | "not_approved";
 };

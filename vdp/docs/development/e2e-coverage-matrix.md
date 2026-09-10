@@ -4,7 +4,9 @@
 
 Единый каталог сценариев: пакет `vdp/core/internal/scenarioverify` (ids ниже). Compose shell, Playwright (tag `ui`) и Root `/testing` (API runner) ссылаются на те же id.
 
-Не путать: длина каталога (сейчас 17 id) ≠ футер «сделок в системе» (число form_payments в БД). Root на `/testing` может очистить заявки кнопкой «Очистить все заявки» (POST probe-data/wipe, local only).
+Человекочитаемый справочник ролей и сценариев с покрытием: [scenario-role-directory.md](../pilot/scenario-role-directory.md). Тесты и Pilot Robot Matrix обязаны ссылаться на id из справочника.
+
+Не путать: длина каталога (сейчас 17 id) ≠ футер «сделок в системе» (число form_payments в БД). Root на `/testing` может очистить заявки кнопкой «Очистить все заявки» (POST probe-data/wipe, local only). Галочка выбора сценария на `/testing` ≠ успешный прогон.
 
 ## Легенда слоёв
 
@@ -70,39 +72,51 @@ S-Pilot-E2E handoff U→M→U→M→P→M. Spec pilot-form-flow. Layer UI partia
 
 Honest (pilot-flow): payment mid-steps may stay API-seeded. Full click-through is Pilot Robot Matrix below (`@pilot-matrix`).
 
+Post-suite wipe: compose-playwright calls probe-data wipe after Playwright (E2E_WIPE_AFTER default 1). Alpha allows wipe for Root «Очистить все заявки» and CI cleanup. Accounts and orgs are kept.
+
 ## Pilot Robot Matrix (QG 100%)
 
 Closed matrix for process spine User + Manager + Provider (ICO/ECO off, manager continuity) + Root admin spots. Source files: `testdata/robot-fixtures/matrix-rows.json`, `manifest.json`, packs `template` and `customer`. Env: `VDP_ROBOT_FIXTURE_PACK=template|customer`.
 
 QG 100% means every matrix row green on API + UI-ladder layers and fixture pack is `customer` (template pack is interim; do not claim customer QG until W4 import).
 
-Current gate status (post-implementation): API compose-e2e green; UI `@pilot-matrix` full ladder green on `fixture=template`. Customer pack status=awaiting_import — customer layer of QG 100% not claimed until `./scripts/robot-fixtures-import.sh` + re-run.
+Current gate status: API compose-e2e green; UI `@pilot-matrix` full ladder green on `fixture=template`. All 17 catalog ids listed in matrix-rows.json. Handbook: [scenario-role-directory.md](../pilot/scenario-role-directory.md). Customer pack status=awaiting_import — customer layer of QG not claimed until import + re-run.
 
-Row happy_path_to_completed. API compose-e2e main. UI full ladder: `pilot-matrix-full-ladder.spec.ts` `@pilot-matrix` (green on template). Fixture template until customer.
+Row happy_path_to_completed. API covered. UI covered (pilot-matrix). Fixture template until customer.
 
-Row happy_path_shipment_branch. API compose-e2e P5 shipment. UI included in full ladder shipment steps. Fixture template until customer.
+Row eco_reject_resubmit. API covered. UI covered. Note eco_off_alias_manager_reject. Fixture template until customer.
 
-Row continuity_manager_form_approve. API compose continuity. UI happy-path + pilot-matrix review. Fixture template until customer.
+Row ico_org_pending_approve. API covered without soft-skip. UI ico-org. Fixture template until customer.
 
-Row manager_reject_to_corrections. API compose reject. UI `@pilot-matrix` reject test. Fixture template until customer.
+Row manager_payment_assign_provider. API covered. UI covered. Fixture template until customer.
 
-Row user_resubmit_after_reject. API compose reject. UI `@pilot-matrix` reject test. Fixture template until customer.
+Row provider_payment_no_pii. API covered. UI covered. Fixture template until customer.
 
-Row manager_payment_assign_provider. API compose main. UI full ladder assign+start. Fixture template until customer.
+Row bank_channel_badge. API covered. UI bank-badge. Fixture n/a.
 
-Row provider_payment_no_pii. API RD7. UI full ladder provider step (no passport copy). Fixture template until customer.
+Row root_cancel. API covered. UI pilot-form-flow. Fixture n/a admin.
 
-Row root_cancel. API RD8. UI pilot-form-flow S-Root-02. Fixture n/a admin.
+Row refund_smoke. API covered. UI api_only. Fixture n/a.
 
-Row doc_preview_visible. API dash. UI api-core-ux + pilot. Fixture template PDF.
+Row manager_hides_drafts. API dash. UI covered. Fixture template until customer.
 
-Row extraction_confirm_updates_amount. API scenarioverify. UI form-ux-deadends spot. Fixture template PDF.
+Row doc_preview_visible. API dash. UI covered. Fixture template PDF.
 
-Row manager_hides_drafts. API dash. UI manager-hides-drafts. Fixture template until customer.
+Row health_core. API covered. UI api_smoke. Fixture n/a.
 
-Row refund_smoke. API compose. UI not in ladder (API-only spot). Fixture n/a.
+Row continuity_manager_form_approve. API covered. UI covered. Fixture template until customer.
 
-Row bank_channel_badge. API RD9. UI bank-badge. Fixture n/a.
+Row manager_reject_to_corrections. API covered. UI covered. Fixture template until customer.
+
+Row user_resubmit_after_reject. API covered. UI covered. Fixture template until customer.
+
+Row provider_return_to_manager. API covered. UI provider-return spot. Fixture template until customer.
+
+Row extraction_confirm_updates_amount. API covered. UI form-ux-deadends spot. Fixture template PDF.
+
+Row manager_sets_deal_rate. API covered. UI manager-rate spot. Fixture template until customer.
+
+Row happy_path_shipment_branch. Matrix extension. API P5 shipment. UI pilot-matrix shipment steps. Fixture template until customer.
 
 Commands: `make robot-matrix-check`, `make playwright-pilot-matrix`, `make compose-e2e`, `make release-gate`. Customer import: `./scripts/robot-fixtures-import.sh /path/to/pack`. Discrepancy report: `./scripts/robot-matrix-discrepancy-report.sh pass|fail`.
 

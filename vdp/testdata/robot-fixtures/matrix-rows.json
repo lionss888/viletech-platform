@@ -1,5 +1,6 @@
 {
-  "qg": "Pilot Robot Matrix QG 100%",
+  "qg": "Pilot Robot Matrix",
+  "handbook": "docs/pilot/scenario-role-directory.md",
   "process": {
     "user": "mandatory",
     "manager": "mandatory",
@@ -12,82 +13,115 @@
     {
       "id": "happy_path_to_completed",
       "deal_kind": "advance",
-      "api": "compose-e2e_main",
-      "ui_ladder": "pilot-matrix-full-ladder",
+      "api": "covered",
+      "ui": "covered",
+      "fixture": "template_until_customer"
+    },
+    {
+      "id": "eco_reject_resubmit",
+      "api": "covered",
+      "ui": "covered",
+      "note": "eco_off_alias_manager_reject",
+      "fixture": "template_until_customer"
+    },
+    {
+      "id": "ico_org_pending_approve",
+      "api": "covered",
+      "ui": "covered",
+      "note": "soft_skip_forbidden",
+      "fixture": "template_until_customer"
+    },
+    {
+      "id": "manager_payment_assign_provider",
+      "api": "covered",
+      "ui": "covered",
+      "fixture": "template_until_customer"
+    },
+    {
+      "id": "provider_payment_no_pii",
+      "api": "covered",
+      "ui": "covered",
+      "fixture": "template_until_customer"
+    },
+    {
+      "id": "bank_channel_badge",
+      "api": "covered",
+      "ui": "covered",
+      "fixture": "n_a"
+    },
+    {
+      "id": "root_cancel",
+      "api": "covered",
+      "ui": "covered",
+      "fixture": "n_a_admin"
+    },
+    {
+      "id": "refund_smoke",
+      "api": "covered",
+      "ui": "api_only",
+      "fixture": "n_a"
+    },
+    {
+      "id": "manager_hides_drafts",
+      "api": "dash",
+      "ui": "covered",
+      "fixture": "template_until_customer"
+    },
+    {
+      "id": "doc_preview_visible",
+      "api": "dash",
+      "ui": "covered",
+      "fixture": "template_pdf"
+    },
+    {
+      "id": "health_core",
+      "api": "covered",
+      "ui": "api_smoke",
+      "fixture": "n_a"
+    },
+    {
+      "id": "continuity_manager_form_approve",
+      "api": "covered",
+      "ui": "covered",
+      "fixture": "template_until_customer"
+    },
+    {
+      "id": "manager_reject_to_corrections",
+      "api": "covered",
+      "ui": "covered",
+      "fixture": "template_until_customer"
+    },
+    {
+      "id": "user_resubmit_after_reject",
+      "api": "covered",
+      "ui": "covered",
+      "fixture": "template_until_customer"
+    },
+    {
+      "id": "provider_return_to_manager",
+      "api": "covered",
+      "ui": "covered",
+      "fixture": "template_until_customer"
+    },
+    {
+      "id": "extraction_confirm_updates_amount",
+      "api": "covered",
+      "ui": "covered",
+      "fixture": "template_pdf"
+    },
+    {
+      "id": "manager_sets_deal_rate",
+      "api": "covered",
+      "ui": "covered",
       "fixture": "template_until_customer"
     },
     {
       "id": "happy_path_shipment_branch",
       "deal_kind": "shipment",
-      "api": "compose-e2e_P5_shipment",
-      "ui_ladder": "pilot-matrix-full-ladder_includes_shipment",
+      "api": "covered",
+      "ui": "covered",
+      "note": "matrix_extension_not_in_catalog_17",
       "fixture": "template_until_customer"
-    },
-    {
-      "id": "continuity_manager_form_approve",
-      "api": "compose-e2e_continuity",
-      "ui_ladder": "pilot-matrix_and_happy-path",
-      "fixture": "template_until_customer"
-    },
-    {
-      "id": "manager_reject_to_corrections",
-      "api": "compose-e2e_reject",
-      "ui_ladder": "pilot-matrix_reject_resubmit",
-      "fixture": "template_until_customer"
-    },
-    {
-      "id": "user_resubmit_after_reject",
-      "api": "compose-e2e_reject",
-      "ui_ladder": "pilot-matrix_reject_resubmit",
-      "fixture": "template_until_customer"
-    },
-    {
-      "id": "manager_payment_assign_provider",
-      "api": "compose-e2e_main",
-      "ui_ladder": "pilot-matrix-full-ladder",
-      "fixture": "template_until_customer"
-    },
-    {
-      "id": "provider_payment_no_pii",
-      "api": "compose-e2e_RD7",
-      "ui_ladder": "pilot-matrix-full-ladder_provider_step",
-      "fixture": "template_until_customer"
-    },
-    {
-      "id": "root_cancel",
-      "api": "compose-e2e_RD8",
-      "ui_ladder": "pilot-form-flow_S-Root-02",
-      "fixture": "n_a_admin"
-    },
-    {
-      "id": "doc_preview_visible",
-      "api": "dash",
-      "ui_ladder": "api-core-ux_and_pilot",
-      "fixture": "template_pdf"
-    },
-    {
-      "id": "extraction_confirm_updates_amount",
-      "api": "scenarioverify",
-      "ui_ladder": "form-ux-deadends_spot",
-      "fixture": "template_pdf"
-    },
-    {
-      "id": "manager_hides_drafts",
-      "api": "dash",
-      "ui_ladder": "manager-hides-drafts",
-      "fixture": "template_until_customer"
-    },
-    {
-      "id": "refund_smoke",
-      "api": "compose-e2e",
-      "ui_ladder": "not_in_ui_ladder_spot_api_only",
-      "fixture": "n_a"
-    },
-    {
-      "id": "bank_channel_badge",
-      "api": "compose-e2e_RD9",
-      "ui_ladder": "bank-badge",
-      "fixture": "n_a"
     }
   ]
 }

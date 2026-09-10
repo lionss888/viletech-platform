@@ -162,6 +162,7 @@ function OrganizationsRegistry() {
       )}
       <RegistryManager
         def={def}
+        writeRoles={["user", "manager", "root"]}
         badge={(record) => LABEL[String(record["status"])] ?? null}
         extraColumns={[
           {

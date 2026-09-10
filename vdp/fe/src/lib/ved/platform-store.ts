@@ -19,6 +19,7 @@ import {
   updateCounterparty,
   updateOrganization,
 } from "@/lib/api/catalog-mutations";
+import { banksDraftToPayload, type BankDraftRow } from "@/components/ved/BanksEditor";
 import { isComplianceRole } from "@/lib/ved/compliance";
 import {
   listAdminAccounts,
@@ -373,6 +374,13 @@ function useApiPlatformStore(): VedStore {
         organization_id: draft.organizationId !== "—" ? draft.organizationId : undefined,
         counterparty_id: counterpartyId,
       });
+      const organizationId =
+        draft.organizationId && draft.organizationId !== "—" ? draft.organizationId : undefined;
+      if (organizationId && created.organization_id !== organizationId) {
+        await patchForm(created.id, nestFormPrefixForRole(auth.role ?? "user"), {
+          organization_id: organizationId,
+        });
+      }
       // Ensure counterparty sticks even if create image lags behind CreateInput (PATCH is authoritative).
       if (counterpartyId && created.counterparty_id !== counterpartyId) {
         await patchForm(created.id, nestFormPrefixForRole(auth.role ?? "user"), {
@@ -459,11 +467,15 @@ function useApiPlatformStore(): VedStore {
           await updateOrganization(originalId, {
             name: String(record.name ?? ""),
             inn: String(record.inn ?? ""),
+            country: String(record.country ?? "") || undefined,
+            legal_address: String(record.legalAddress ?? "") || undefined,
           });
         } else {
           await createOrganization({
             name: String(record.name ?? ""),
             inn: String(record.inn ?? ""),
+            country: String(record.country ?? "") || undefined,
+            legal_address: String(record.legalAddress ?? "") || undefined,
           });
         }
         await invalidateRegistry(key);
@@ -472,6 +484,15 @@ function useApiPlatformStore(): VedStore {
       if (key === "counterparties") {
         const status = String(record.status ?? "");
         const canSetApproval = isComplianceRole(session?.role) || session?.role === "root";
+        const country = String(record.country ?? record.countryCode ?? "");
+        const bankRows = Array.isArray(record.banks) ? (record.banks as BankDraftRow[]) : [];
+        const banksPayload = banksDraftToPayload(bankRows);
+        const catalog = {
+          name: String(record.name ?? ""),
+          country,
+          inn: String(record.inn ?? ""),
+          banks: banksPayload,
+        };
         if (originalId && canSetApproval && (status === "approved" || status === "not_approved")) {
           await setCounterpartyApproval(
             originalId,
@@ -479,17 +500,9 @@ function useApiPlatformStore(): VedStore {
             String(record.complianceNote ?? ""),
           );
         } else if (originalId) {
-          await updateCounterparty(originalId, {
-            name: String(record.name ?? ""),
-            country: String(record.country ?? record.countryCode ?? ""),
-            inn: String(record.inn ?? ""),
-          });
+          await updateCounterparty(originalId, catalog);
         } else {
-          const created = await createCounterparty({
-            name: String(record.name ?? ""),
-            country: String(record.country ?? record.countryCode ?? ""),
-            inn: String(record.inn ?? ""),
-          });
+          const created = await createCounterparty(catalog);
           if (canSetApproval && (status === "approved" || status === "not_approved")) {
             await setCounterpartyApproval(
               created.id,

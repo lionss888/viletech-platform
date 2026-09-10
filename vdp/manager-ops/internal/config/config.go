@@ -9,12 +9,13 @@ import (
 
 // Config holds runtime settings for manager-ops.
 type Config struct {
-	Addr           string
-	CoreURL        string
+	Addr            string
+	CoreURL         string
 	HubSharedSecret string
-	TelegramToken  string
-	HTTPTimeout    time.Duration
-	AllowlistChats []string
+	TelegramToken   string
+	DataDir         string
+	HTTPTimeout     time.Duration
+	AllowlistChats  []string
 }
 
 // FromEnv loads config from environment.
@@ -28,6 +29,7 @@ func FromEnv() Config {
 		CoreURL:         strings.TrimRight(strings.TrimSpace(os.Getenv("CORE_URL")), "/"),
 		HubSharedSecret: os.Getenv("HUB_SHARED_SECRET"),
 		TelegramToken:   os.Getenv("TELEGRAM_BOT_TOKEN"),
+		DataDir:         env("MANAGER_OPS_DATA_DIR", "/var/lib/manager-ops"),
 		HTTPTimeout:     time.Duration(timeoutMS) * time.Millisecond,
 		AllowlistChats:  splitCSV(os.Getenv("MANAGER_OPS_CHAT_IDS")),
 	}

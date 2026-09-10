@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 
+import { BanksEditor, banksDraftToPayload, emptyBankRow, type BankDraftRow } from "@/components/ved/BanksEditor";
 import { Modal, ModalButton } from "@/components/ved/Modal";
 import { createCounterparty } from "@/lib/api/catalog-mutations";
 import { nestFormPrefixForRole, patchForm } from "@/lib/api/forms";
@@ -10,14 +11,15 @@ import type { Counterparty } from "@/lib/ved/types";
 type Props = {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  formId: string;
-  role: string | undefined;
+  formId?: string;
+  role?: string | undefined;
   counterparties: Counterparty[];
   selectedId?: string | undefined;
+  onSelect?: (counterpartyId: string) => void;
 };
 
 /**
- * Pick or create a counterparty without leaving the form card.
+ * Pick or create a counterparty without leaving the form card / wizard.
  */
 export function CounterpartyPickDialog({
   open,
@@ -26,6 +28,7 @@ export function CounterpartyPickDialog({
   role,
   counterparties,
   selectedId,
+  onSelect,
 }: Props) {
   const queryClient = useQueryClient();
   const [query, setQuery] = useState("");
@@ -33,6 +36,7 @@ export function CounterpartyPickDialog({
   const [creating, setCreating] = useState(false);
   const [newName, setNewName] = useState("");
   const [newCountry, setNewCountry] = useState("");
+  const [banks, setBanks] = useState<BankDraftRow[]>([]);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -41,6 +45,7 @@ export function CounterpartyPickDialog({
     setPickedId(selectedId && selectedId !== "—" ? selectedId : "");
     setQuery("");
     setCreating(false);
+    setBanks([]);
     setError(null);
   }, [open, selectedId]);
 
@@ -55,17 +60,24 @@ export function CounterpartyPickDialog({
     );
   }, [counterparties, query]);
 
-  async function assign(counterpartyId: string) {
-    setBusy(true);
-    setError(null);
-    try {
+  async function finish(counterpartyId: string) {
+    if (formId) {
       await patchForm(formId, nestFormPrefixForRole(role), { counterparty_id: counterpartyId });
       await Promise.all([
         queryClient.invalidateQueries({ queryKey: ["form", formId] }),
         queryClient.invalidateQueries({ queryKey: ["forms"] }),
-        queryClient.invalidateQueries({ queryKey: ["counterparties"] }),
       ]);
-      onOpenChange(false);
+    }
+    await queryClient.invalidateQueries({ queryKey: ["counterparties"] });
+    onSelect?.(counterpartyId);
+    onOpenChange(false);
+  }
+
+  async function assign(counterpartyId: string) {
+    setBusy(true);
+    setError(null);
+    try {
+      await finish(counterpartyId);
     } catch (e) {
       setError(
         e instanceof ApiError
@@ -88,20 +100,17 @@ export function CounterpartyPickDialog({
     setBusy(true);
     setError(null);
     try {
+      const payloadBanks = banksDraftToPayload(banks);
       const created = await createCounterparty({
         name,
-        country: newCountry.trim() || undefined,
+        ...(newCountry.trim() ? { country: newCountry.trim() } : {}),
+        ...(payloadBanks.length > 0 ? { banks: payloadBanks } : {}),
       });
-      await patchForm(formId, nestFormPrefixForRole(role), { counterparty_id: created.id });
-      await Promise.all([
-        queryClient.invalidateQueries({ queryKey: ["form", formId] }),
-        queryClient.invalidateQueries({ queryKey: ["forms"] }),
-        queryClient.invalidateQueries({ queryKey: ["counterparties"] }),
-      ]);
       setCreating(false);
       setNewName("");
       setNewCountry("");
-      onOpenChange(false);
+      setBanks([]);
+      await finish(created.id);
     } catch (e) {
       setError(
         e instanceof ApiError
@@ -122,7 +131,7 @@ export function CounterpartyPickDialog({
         if (!busy) onOpenChange(next);
       }}
       title="Контрагент заявки"
-      description="Выберите из справочника или создайте нового — останетесь на карточке заявки."
+      description="Выберите из справочника или создайте нового — останетесь в текущем сценарии."
       wide
       footer={
         <>
@@ -136,12 +145,12 @@ export function CounterpartyPickDialog({
                 if (pickedId) void assign(pickedId);
               }}
             >
-              {busy ? "Сохраняем…" : "Привязать к заявке"}
+              {busy ? "Сохраняем…" : formId ? "Привязать к заявке" : "Выбрать"}
             </ModalButton>
           )}
           {creating && (
             <ModalButton disabled={busy} onClick={() => void createAndAssign()}>
-              {busy ? "Создаём…" : "Создать и привязать"}
+              {busy ? "Создаём…" : "Создать и выбрать"}
             </ModalButton>
           )}
         </>
@@ -191,8 +200,10 @@ export function CounterpartyPickDialog({
           <button
             type="button"
             className="text-sm font-semibold text-accent hover:underline"
+            data-testid="cp-pick-create"
             onClick={() => {
               setCreating(true);
+              setBanks([emptyBankRow()]);
               setError(null);
             }}
           >
@@ -200,7 +211,7 @@ export function CounterpartyPickDialog({
           </button>
         </div>
       ) : (
-        <div className="space-y-3">
+        <div className="space-y-3" data-testid="cp-create-form">
           <label className="block text-xs font-medium text-muted-foreground">
             Наименование
             <input
@@ -220,6 +231,7 @@ export function CounterpartyPickDialog({
               placeholder="Китай"
             />
           </label>
+          <BanksEditor rows={banks} onChange={setBanks} disabled={busy} />
           <button
             type="button"
             className="text-sm text-muted-foreground underline"

@@ -1,0 +1,21 @@
+# Standalone Docker Desktop project (separate from "vdp" product stack).
+name: vdp-intake
+
+services:
+  intake:
+    container_name: vdp-intake
+    build: .
+    env_file:
+      - ${INTAKE_ENV_FILE:-${HOME}/.vdp-intake/env}
+    environment:
+      INTAKE_HOME: /var/lib/vdp-intake
+      INTAKE_ANALYZE: ${INTAKE_ANALYZE:-1}
+      INTAKE_HITL: ${INTAKE_HITL:-1}
+      INTAKE_WORKSPACE: ${INTAKE_WORKSPACE:-/workspace}
+      INTAKE_REMINDER_HOURS: ${INTAKE_REMINDER_HOURS:-24}
+      INTAKE_MAX_REMINDERS: ${INTAKE_MAX_REMINDERS:-2}
+    volumes:
+      - ${HOME}/.vdp-intake:/var/lib/vdp-intake
+      - ${INTAKE_WORKSPACE_HOST:-../..}:/workspace:rw
+    command: ["intake", "-hitl"]
+    restart: unless-stopped

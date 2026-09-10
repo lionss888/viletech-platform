@@ -70,7 +70,7 @@ func contains(xs []string, v string) bool {
 	return false
 }
 
-func (s *OrganizationService) Create(ctx context.Context, principal authz.Principal, name, inn, country string, orgType domain.OrganizationType) (domain.Organization, error) {
+func (s *OrganizationService) Create(ctx context.Context, principal authz.Principal, name, inn, country, legalAddress string, orgType domain.OrganizationType) (domain.Organization, error) {
 	if orgType == domain.OrgTypeProvider {
 		if err := authz.AuthorizeRoles(principal, domain.RoleSeniorProvider, domain.RoleRoot); err != nil {
 			return domain.Organization{}, err
@@ -82,14 +82,15 @@ func (s *OrganizationService) Create(ctx context.Context, principal authz.Princi
 		orgType = domain.OrgTypeClient
 	}
 	org := domain.Organization{
-		ID:        s.newID(),
-		AccountID: principal.AccountID,
-		Status:    domain.OrgNotApproved,
-		IsActive:  false,
-		Name:      name,
-		INN:       inn,
-		Country:   country,
-		Type:      orgType,
+		ID:           s.newID(),
+		AccountID:    principal.AccountID,
+		Status:       domain.OrgNotApproved,
+		IsActive:     false,
+		Name:         name,
+		INN:          inn,
+		Country:      country,
+		LegalAddress: legalAddress,
+		Type:         orgType,
 	}
 	if err := s.store.SaveOrganization(ctx, org); err != nil {
 		return domain.Organization{}, err

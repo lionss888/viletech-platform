@@ -5,8 +5,9 @@ import type {
   CoreCurrency,
   CoreHsCode,
   CoreOrganization,
+  CounterpartyBankCore,
 } from "./catalog";
-import type { Counterparty, Organization, PlatformUser, VedRole } from "@/lib/ved/types";
+import type { Counterparty, CounterpartyBank, Organization, PlatformUser, VedRole } from "@/lib/ved/types";
 import type { ComplianceToolRecord, CountryRecord, CurrencyRecord, HsCodeRecord, ProviderRecord } from "@/lib/ved/reference";
 import { staticCatalogSeed } from "@/lib/ved/catalog-source";
 
@@ -44,17 +45,53 @@ export function mapCoreOrganization(org: CoreOrganization): Organization {
   };
 }
 
+export function parseCounterpartyBanks(
+  raw: string | CounterpartyBankCore[] | undefined | null,
+): CounterpartyBank[] {
+  if (!raw) return [];
+  let list: CounterpartyBankCore[] = [];
+  if (typeof raw === "string") {
+    const trimmed = raw.trim();
+    if (!trimmed || trimmed === "[]") return [];
+    try {
+      const parsed = JSON.parse(trimmed) as unknown;
+      if (!Array.isArray(parsed)) return [];
+      list = parsed as CounterpartyBankCore[];
+    } catch {
+      return [];
+    }
+  } else if (Array.isArray(raw)) {
+    list = raw;
+  }
+  return list
+    .map((bank) => {
+      const account = bank.accounts?.[0]?.number?.trim() || undefined;
+      const name = bank.name?.trim() || "";
+      const swift = bank.swift?.trim() || undefined;
+      if (!name && !swift && !account) return null;
+      return {
+        name: name || "—",
+        ...(swift ? { swift } : {}),
+        ...(account ? { account } : {}),
+      } satisfies CounterpartyBank;
+    })
+    .filter((b): b is CounterpartyBank => b != null);
+}
+
 export function mapCoreCounterparty(cp: CoreCounterparty): Counterparty {
   const country = cp.country_code?.trim() || cp.country?.trim() || "—";
   const approved =
     cp.status === "approved" || cp.last_approval_status === "approved";
+  const banks = parseCounterpartyBanks(cp.banks);
+  const first = banks[0];
   return {
     id: cp.id,
     name: cp.name,
     country,
     countryCode: country,
-    bank: "—",
-    swift: "—",
+    bank: first?.name ?? "—",
+    swift: first?.swift ?? "—",
+    banks,
     scope: "foreign",
     status: approved ? "approved" : "not_approved",
   };

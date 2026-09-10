@@ -72,6 +72,36 @@ describe("mapCoreCounterparty", () => {
     expect(actual.country).toBe("CN");
     expect(actual.status).toBe("approved");
   });
+
+  it("parses multi-bank JSON into list and primary bank/swift", () => {
+    const actual = mapCoreCounterparty({
+      id: "cp-2",
+      name: "Multi Bank Co",
+      country: "DE",
+      banks: JSON.stringify([
+        { uuid: "b1", name: "Deutsche Bank", swift: "DEUTDEFF", accounts: [{ uuid: "a1", number: "DE00" }] },
+        { uuid: "b2", name: "Commerzbank", swift: "COBADEFF", accounts: [] },
+      ]),
+    });
+    expect(actual.banks).toHaveLength(2);
+    expect(actual.banks[0]?.name).toBe("Deutsche Bank");
+    expect(actual.banks[0]?.swift).toBe("DEUTDEFF");
+    expect(actual.banks[0]?.account).toBe("DE00");
+    expect(actual.banks[1]?.name).toBe("Commerzbank");
+    expect(actual.bank).toBe("Deutsche Bank");
+    expect(actual.swift).toBe("DEUTDEFF");
+  });
+
+  it("keeps empty banks as dash primary fields", () => {
+    const actual = mapCoreCounterparty({
+      id: "cp-3",
+      name: "No Bank Co",
+      banks: "[]",
+    });
+    expect(actual.banks).toEqual([]);
+    expect(actual.bank).toBe("—");
+    expect(actual.swift).toBe("—");
+  });
 });
 
 describe("mapCoreAgent", () => {

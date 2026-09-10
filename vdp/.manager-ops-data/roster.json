@@ -1,0 +1,14 @@
+{
+  "people": {},
+  "chats": {},
+  "memberships": {},
+  "scores": {
+    "mgr-smoke|2026-09-09": {
+      "AccountID": "mgr-smoke",
+      "Period": "2026-09-09",
+      "Events": 1,
+      "Score": 1,
+      "UpdatedAt": "2026-09-09T16:54:45.282635033Z"
+    }
+  }
+}
