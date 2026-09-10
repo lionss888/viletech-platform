@@ -2,6 +2,7 @@ import type { ComplianceHistoryEntry, CoreForm } from "./forms";
 import { actionsFor } from "@/lib/ved/actions";
 import { roleTitle } from "@/lib/ved/roles";
 import { statusMetaForProcess } from "@/lib/ved/process-stage-filters";
+import { paymentMethodToCondition } from "@/lib/ved/wizard-steps";
 import type {
   AttachedDocument,
   FormDirection,
@@ -221,7 +222,7 @@ export function mapCoreFormToPaymentForm(
     status: form.status,
     direction: mapDirection(form.direction),
     kind: mapKind(form.kind),
-    condition: "advance",
+    condition: paymentMethodToCondition(form.payment_method),
     amountMinor: parseAmountMinor(form.invoice_amount),
     currency: form.currency || "USD",
     organizationId: form.organization_id || "—",

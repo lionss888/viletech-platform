@@ -390,6 +390,12 @@ function useApiPlatformStore(): VedStore {
       if (draft.hsCode && draft.hsCode !== "—") {
         await attachFormHsCodes(created.id, [draft.hsCode]);
       }
+      if (draft.condition) {
+        const method = draft.condition === "postPayment" ? "post_payment" : "advance";
+        await patchForm(created.id, nestFormPrefixForRole(auth.role ?? "user"), {
+          payment_method: method,
+        });
+      }
       if (draft.invoiceFile) {
         const uploaded = await uploadFile(created.id, draft.invoiceFile);
         await attachDocToForm(created.id, uploaded.id, "invoice", draft.invoiceFile.name);
@@ -398,7 +404,8 @@ function useApiPlatformStore(): VedStore {
         const uploaded = await uploadFile(created.id, draft.contractFile);
         await attachDocToForm(created.id, uploaded.id, "contract", draft.contractFile.name);
       }
-      const postCreate = getPostCreateTransition("app");
+      const hasDocuments = Boolean(!draft.noDocuments && (draft.invoiceFile || draft.contractFile));
+      const postCreate = getPostCreateTransition("app", { hasDocuments });
       if (postCreate) {
         await transitionForm(created.id, postCreate);
       }

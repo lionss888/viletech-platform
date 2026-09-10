@@ -11,8 +11,10 @@ import (
 	"github.com/viletech/vdp/core/internal/authz"
 	"github.com/viletech/vdp/core/internal/domain"
 	"github.com/viletech/vdp/core/internal/domain/formpayment"
+	"github.com/viletech/vdp/core/internal/outbox"
 	"github.com/viletech/vdp/core/internal/storage"
 	apperrors "github.com/viletech/vdp/core/pkg/errors"
+	"github.com/viletech/vdp/shared/events"
 )
 
 // CounterpartyBank / CounterpartyBankAccount are stored inside Counterparty.Banks JSON.
@@ -453,6 +455,7 @@ func (s *CatalogService) AttachFileToForm(ctx context.Context, principal authz.P
 		return formpayment.Form{}, err
 	}
 	refs := formpayment.ParseDocRefs(form.DocsJSON)
+	firstAttach := len(refs) == 0
 	refs = append(refs, formpayment.DocFileRef{FileID: fileID, Kind: kind, Label: label})
 	var pog *formpayment.POGState
 	if form.POGStatus != "" || form.POGFileID != "" {
@@ -465,7 +468,23 @@ func (s *CatalogService) AttachFileToForm(ctx context.Context, principal authz.P
 		ID: s.newID(), FormPaymentID: formID, Type: kind, StorageKey: f.StorageKey, ContentHash: f.ContentHash,
 	})
 	form.UpdatedAt = time.Now().UTC()
-	return form, s.store.SaveForm(ctx, form)
+	if err := s.store.SaveForm(ctx, form); err != nil {
+		return formpayment.Form{}, err
+	}
+	if firstAttach && !form.NoDocuments && s.box != nil {
+		_ = s.box.Enqueue(ctx, outbox.Event{
+			ID:            s.newID(),
+			AggregateID:   form.ID,
+			AggregateType: events.AggregateFormPayment,
+			EventType:     events.TypeOCRRequested,
+			FormPaymentID: form.ID,
+			Payload:       map[string]any{"status": string(form.Status), "kind": "first_attach"},
+			Status:        "pending",
+			MaxRetries:    3,
+			CreatedAt:     time.Now().UTC(),
+		})
+	}
+	return form, nil
 }
 
 func (s *CatalogService) ListComplianceClients(ctx context.Context, principal authz.Principal) ([]domain.Organization, error) {

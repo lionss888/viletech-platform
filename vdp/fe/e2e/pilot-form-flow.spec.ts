@@ -44,6 +44,11 @@ test.describe("Pilot form flow @pilot-flow", () => {
     await loginAs("user");
     await page.goto("/forms/new");
     await expect(page.getByRole("heading", { name: /Новая платёжная заявка/i })).toBeVisible();
+    await expect(page.getByTestId("wizard-docs-step")).toBeVisible();
+    await page.getByTestId("wizard-no-documents").click();
+    await page.getByLabel(/Номер контракта/i).fill(`Pilot-CTR-${Date.now()}`);
+    await page.locator('input[type="date"]').first().fill("2026-09-01");
+    await page.getByRole("button", { name: "Далее" }).click();
     await page.getByRole("button", { name: "Далее" }).click();
     await expect(page.getByTestId("wizard-parties-step")).toBeVisible();
     const cpSelect = page.getByTestId("wizard-parties-step").locator("label").filter({ hasText: /Контрагент/i }).locator("select");

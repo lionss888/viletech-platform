@@ -117,13 +117,8 @@ func (s *FormPaymentService) Create(ctx context.Context, principal authz.Princip
 	}
 	ctx = logger.WithFormPaymentID(ctx, form.ID)
 	logger.FromContext(ctx, nil).Info("form created")
-	if input.NoDocuments {
-		// Explicit API contract: skip OCR; form stays CREATING until recognize_complete / manual draft.
-		return form, nil
-	}
-	if err := s.enqueue(ctx, form, events.TypeOCRRequested, map[string]any{"status": string(form.Status)}); err != nil {
-		return formpayment.Form{}, err
-	}
+	// OCR is deferred to first document attach (CatalogService.AttachFileToForm).
+	// NoDocuments still skips OCR entirely; form stays CREATING until recognize_complete.
 	return form, nil
 }
 

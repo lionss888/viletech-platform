@@ -56,6 +56,11 @@ test.describe("Wave1 parties / orgs", () => {
   test("wizard parties: create org and CP CTAs visible", async ({ page, loginAs }) => {
     await loginAs("user");
     await page.goto("/forms/new");
+    await expect(page.getByTestId("wizard-docs-step")).toBeVisible();
+    await page.getByTestId("wizard-no-documents").click();
+    await page.getByLabel(/Номер контракта/i).fill(`W1-CTR-${Date.now()}`);
+    await page.locator('input[type="date"]').first().fill("2026-09-01");
+    await page.getByRole("button", { name: "Далее" }).click();
     await page.getByRole("button", { name: "Далее" }).click();
     await expect(page.getByTestId("wizard-parties-step")).toBeVisible();
     await expect(page.getByTestId("wizard-create-org-btn")).toBeVisible();
