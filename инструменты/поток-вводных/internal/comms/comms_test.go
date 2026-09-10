@@ -44,3 +44,24 @@ func TestParseHitlDecision(t *testing.T) {
 		t.Fatalf("long text should not be decision, got %q", got)
 	}
 }
+
+func TestManagerDoneStripsTechAndKeepsProduct(t *testing.T) {
+	t.Parallel()
+	out := comms.ManagerDone(
+		"Стороны сделки",
+		[]string{"клиент создаёт организацию", "org-gate закрыт", "wave_report_close_40b7da56"},
+		"пилот",
+	)
+	low := strings.ToLower(out)
+	for _, bad := range []string{"org-gate", "vitest", "playwright", ".cursor"} {
+		if strings.Contains(low, bad) {
+			t.Fatalf("still contains %q in %q", bad, out)
+		}
+	}
+	if !strings.Contains(out, "Готово") || !strings.Contains(out, "Приёмка") {
+		t.Fatalf("missing product framing: %q", out)
+	}
+	if !strings.Contains(out, "клиент создаёт организацию") {
+		t.Fatalf("missing bullet: %q", out)
+	}
+}

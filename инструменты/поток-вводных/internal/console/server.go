@@ -15,6 +15,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/viletech/tools/intake/internal/agent"
 	"github.com/viletech/tools/intake/internal/card"
 	"github.com/viletech/tools/intake/internal/comms"
 	"github.com/viletech/tools/intake/internal/pipeline"
@@ -29,6 +30,7 @@ type Server struct {
 	Pipeline   *pipeline.Pipeline
 	Store      *store.Store
 	Cards      *card.Store
+	Agent      *agent.Runner
 	Workspace  string
 	Log        *slog.Logger
 	UI         fs.FS
@@ -37,7 +39,7 @@ type Server struct {
 	httpServer *http.Server
 }
 
-// Start serves on Addr (must be loopback). Non-blocking.
+// Start serves on Addr (must be loopback or 0.0.0.0 with token). Non-blocking.
 func (s *Server) Start() error {
 	if s.Addr == "" {
 		s.Addr = "127.0.0.1:8787"
@@ -63,6 +65,8 @@ func (s *Server) Start() error {
 	mux.HandleFunc("POST /api/upload", s.auth(s.handleUpload))
 	mux.HandleFunc("POST /api/hitl", s.auth(s.handleHITL))
 	mux.HandleFunc("POST /api/to-cursor", s.auth(s.handleToCursor))
+	mux.HandleFunc("POST /api/agent", s.auth(s.handleAgentStart))
+	mux.HandleFunc("GET /api/agent/", s.auth(s.handleAgentGet))
 	mux.HandleFunc("POST /api/tg/delete", s.auth(s.handleTGDelete))
 	mux.HandleFunc("POST /api/mgmt/done", s.auth(s.handleMgmtDone))
 	mux.HandleFunc("GET /api/media/", s.auth(s.handleMediaGet))
@@ -78,7 +82,7 @@ func (s *Server) Start() error {
 		Handler:           mux,
 		ReadHeaderTimeout: 10 * time.Second,
 		ReadTimeout:       60 * time.Second,
-		WriteTimeout:      60 * time.Second,
+		WriteTimeout:      120 * time.Second,
 	}
 	ln, err := net.Listen("tcp", s.Addr)
 	if err != nil {
@@ -122,17 +126,26 @@ func (s *Server) auth(next http.HandlerFunc) http.HandlerFunc {
 }
 
 func (s *Server) handleHealth(w http.ResponseWriter, _ *http.Request) {
-	writeJSON(w, http.StatusOK, map[string]any{"ok": true})
+	writeJSON(w, http.StatusOK, map[string]any{
+		"ok":            true,
+		"token_configured": s.Token != "",
+		"agent":         s.Agent != nil,
+	})
 }
 
 func (s *Server) handleThread(w http.ResponseWriter, r *http.Request) {
 	limit, _ := strconv.Atoi(r.URL.Query().Get("limit"))
-	recs, err := s.Store.ListInboxRecent(limit)
+	recs, err := s.Store.ListThreadRecent(limit)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	writeJSON(w, http.StatusOK, map[string]any{"items": recs})
+	writeJSON(w, http.StatusOK, map[string]any{
+		"items":   recs,
+		"live":    true,
+		"hint":    "Зеркало чата с момента запуска poller. Старые сообщения Telegram Bot API не отдаёт.",
+		"count":   len(recs),
+	})
 }
 
 func (s *Server) handleCards(w http.ResponseWriter, _ *http.Request) {
@@ -180,22 +193,19 @@ func (s *Server) resolveAttachments(ids []string) []store.Attachment {
 	if len(ids) == 0 {
 		return nil
 	}
-	// Attachments already on disk from upload; re-list recent and match by id.
-	recs, _ := s.Store.ListInboxRecent(200)
+	recs, _ := s.Store.ListThreadRecent(400)
 	byID := map[string]store.Attachment{}
 	for _, rec := range recs {
 		for _, a := range rec.Attachments {
 			byID[a.ID] = a
 		}
 	}
-	// Also scan media dir filenames for pending uploads tracked via upload response only.
 	var out []store.Attachment
 	for _, id := range ids {
 		if a, ok := byID[id]; ok {
 			out = append(out, a)
 			continue
 		}
-		// Lookup media/{id}_*
 		matches, _ := filepath.Glob(filepath.Join(s.Store.MediaDir(), id+"_*"))
 		if len(matches) == 0 {
 			continue
@@ -328,6 +338,59 @@ func (s *Server) handleToCursor(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusOK, map[string]any{"path": path, "mode": mode})
 }
 
+type agentReq struct {
+	Mode       string   `json:"mode"` // analyze_selected|analyze_chat|ask_agent
+	MessageIDs []string `json:"message_ids"`
+	Prompt     string   `json:"prompt"`
+}
+
+func (s *Server) handleAgentStart(w http.ResponseWriter, r *http.Request) {
+	if s.Agent == nil {
+		http.Error(w, "agent runner not configured", http.StatusServiceUnavailable)
+		return
+	}
+	var req agentReq
+	if err := json.NewDecoder(io.LimitReader(r.Body, 2<<20)).Decode(&req); err != nil {
+		http.Error(w, "bad json", http.StatusBadRequest)
+		return
+	}
+	mode := strings.TrimSpace(req.Mode)
+	if mode == "" {
+		mode = "analyze_selected"
+	}
+	switch mode {
+	case "analyze_selected", "analyze_chat", "ask_agent":
+	default:
+		http.Error(w, "unknown mode", http.StatusBadRequest)
+		return
+	}
+	job, err := s.Agent.StartJob(mode, req.MessageIDs, req.Prompt)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+	writeJSON(w, http.StatusAccepted, job)
+}
+
+func (s *Server) handleAgentGet(w http.ResponseWriter, r *http.Request) {
+	if s.Agent == nil {
+		http.Error(w, "agent runner not configured", http.StatusServiceUnavailable)
+		return
+	}
+	id := strings.TrimPrefix(r.URL.Path, "/api/agent/")
+	id = strings.Trim(id, "/")
+	if id == "" {
+		http.Error(w, "job id required", http.StatusBadRequest)
+		return
+	}
+	job, err := s.Agent.GetJob(id)
+	if err != nil {
+		http.Error(w, "not found", http.StatusNotFound)
+		return
+	}
+	writeJSON(w, http.StatusOK, job)
+}
+
 type tgDeleteReq struct {
 	ChatID    int64 `json:"chat_id"`
 	MessageID int64 `json:"message_id"`
@@ -353,9 +416,10 @@ func (s *Server) handleTGDelete(w http.ResponseWriter, r *http.Request) {
 }
 
 type mgmtDoneReq struct {
-	Title string `json:"title"`
-	Body  string `json:"body"`
-	Next  string `json:"next"`
+	Title   string   `json:"title"`
+	Body    string   `json:"body"`
+	Bullets []string `json:"bullets"`
+	Next    string   `json:"next"`
 }
 
 func (s *Server) handleMgmtDone(w http.ResponseWriter, r *http.Request) {
@@ -364,20 +428,17 @@ func (s *Server) handleMgmtDone(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "bad json", http.StatusBadRequest)
 		return
 	}
-	title := strings.TrimSpace(req.Title)
-	if title == "" {
-		title = "Готово"
+	bullets := req.Bullets
+	if len(bullets) == 0 && strings.TrimSpace(req.Body) != "" {
+		for _, line := range strings.Split(req.Body, "\n") {
+			line = strings.TrimSpace(line)
+			line = strings.TrimLeft(line, "•-*–— \t")
+			if line != "" {
+				bullets = append(bullets, line)
+			}
+		}
 	}
-	body := strings.TrimSpace(req.Body)
-	text := "✅ Готово · " + title
-	if body != "" {
-		text += "\n\n" + body
-	}
-	text += "\n\nПриёмка: пройдена"
-	if strings.TrimSpace(req.Next) != "" {
-		text += "\nДальше: " + strings.TrimSpace(req.Next)
-	}
-	text = comms.SanitizeManager(text)
+	text := comms.ManagerDone(req.Title, bullets, req.Next)
 	res, err := s.Pipeline.IngestConsole(r.Context(), pipeline.ConsoleIngest{
 		Text:       text,
 		AsIntake:   false,

@@ -22,12 +22,13 @@ Docker: `make up` publishes 8787; set `INTAKE_CONSOLE_TOKEN` in env file. Inside
 
 ## Console capabilities
 
-- Thread from inbox JSONL; HITL cards approve/decline
+- Live thread from `thread/` JSONL (in + out mirrors), not only inbox
+- HITL cards approve/decline; optional agent analyze/ask
 - Send text (as intake and/or mirror to Telegram)
 - Upload image/video/code files
 - Write Cursor artifacts under `.cursor/plans/тгбот/` (plan or prompt)
 - Delete a Telegram message by id
-- Manager-safe “done” template mirrored to the chat
+- Manager-safe “done” template (`comms.ManagerDone`) mirrored to the chat
 
 ## Tests
 
@@ -35,4 +36,8 @@ Docker: `make up` publishes 8787; set `INTAKE_CONSOLE_TOKEN` in env file. Inside
 
 ## Honesty gaps
 
-Stickers/voice not ingested. Console is operator-only (token), not a VED cabinet.
+- Stickers/voice are not ingested.
+- Media without intake trigger (`@bot` / `/vvod`) is mirrored into the thread only — it does not create an inbox HITL card.
+- Bot API does not return history from before the poller started; the console is a live mirror from process start.
+- Console is operator-only (bearer token on loopback), not a VED cabinet.
+- Not full parity of all Telegram update types.

@@ -1,6 +1,10 @@
 (() => {
   const $ = (id) => document.getElementById(id);
   const uploads = [];
+  const selected = new Set();
+  let pollTimer = null;
+  let lastSig = "";
+  let authed = false;
 
   function token() {
     const t = $("token").value.trim();
@@ -12,6 +16,20 @@
     $("status").textContent = msg || "";
   }
 
+  function setAuthUI(ok, detail) {
+    authed = !!ok;
+    $("auth-banner").classList.toggle("hidden", ok);
+    const hint = $("auth-hint");
+    hint.textContent = detail || (ok ? "доступ есть · лента обновляется" : "");
+    hint.classList.toggle("bad", !ok);
+    $("live").classList.toggle("off", !ok);
+    $("live").textContent = ok ? "● live" : "● нет доступа";
+  }
+
+  function enteredLen() {
+    return ($("token").value || "").trim().length;
+  }
+
   async function api(path, opts = {}) {
     const headers = Object.assign({}, opts.headers || {});
     const t = token();
@@ -19,40 +37,64 @@
     const res = await fetch(path, Object.assign({}, opts, { headers }));
     if (!res.ok) {
       const text = await res.text();
-      throw new Error(text || res.statusText);
+      const err = new Error(text || res.statusText);
+      err.status = res.status;
+      throw err;
     }
     const ct = res.headers.get("content-type") || "";
     if (ct.includes("application/json")) return res.json();
     return res.text();
   }
 
+  function updateSelCount() {
+    $("sel-count").textContent = "Выбрано: " + selected.size;
+  }
+
   function renderThread(items) {
     const ol = $("thread");
+    const stickBottom = ol.scrollHeight - ol.scrollTop - ol.clientHeight < 80;
     ol.innerHTML = "";
-    (items || []).slice().reverse().forEach((item) => {
+    (items || []).forEach((item) => {
       const li = document.createElement("li");
-      li.className = "msg";
+      const dir = item.direction || "in";
+      li.className = "msg " + dir;
+      if (selected.has(item.id)) li.classList.add("selected");
+      const pick = document.createElement("input");
+      pick.type = "checkbox";
+      pick.className = "pick";
+      pick.checked = selected.has(item.id);
+      pick.onchange = () => {
+        if (pick.checked) selected.add(item.id);
+        else selected.delete(item.id);
+        li.classList.toggle("selected", pick.checked);
+        updateSelCount();
+      };
+      const body = document.createElement("div");
       const meta = document.createElement("div");
       meta.className = "meta";
       meta.textContent = [
-        item.received_at || "",
-        item.source || "",
+        item.at || "",
+        item.from_user || "",
+        dir,
         item.kind || "",
-        item.from_username || "",
-        item.message_id ? "msg " + item.message_id : "",
+        item.message_id ? "#" + item.message_id : "",
       ].filter(Boolean).join(" · ");
       const pre = document.createElement("pre");
       pre.textContent = item.text || "";
-      li.appendChild(meta);
-      li.appendChild(pre);
+      body.appendChild(meta);
+      body.appendChild(pre);
       if (item.attachments && item.attachments.length) {
         const att = document.createElement("div");
         att.className = "meta";
         att.textContent = "вложения: " + item.attachments.map((a) => a.name || a.id).join(", ");
-        li.appendChild(att);
+        body.appendChild(att);
       }
+      li.appendChild(pick);
+      li.appendChild(body);
       ol.appendChild(li);
     });
+    updateSelCount();
+    if (stickBottom) ol.scrollTop = ol.scrollHeight;
   }
 
   function renderCards(items) {
@@ -77,12 +119,12 @@
         actions.appendChild(yes);
         actions.appendChild(no);
       }
-      const cur = document.createElement("button");
-      cur.type = "button";
-      cur.className = "quiet";
-      cur.textContent = "В Cursor";
-      cur.onclick = () => toCursor(c.id, c.proposal || c.summary || "", "prompt");
-      actions.appendChild(cur);
+      const ask = document.createElement("button");
+      ask.type = "button";
+      ask.className = "quiet";
+      ask.textContent = "Спросить у агента";
+      ask.onclick = () => startAgent("ask_agent", [], c.proposal || c.summary || "");
+      actions.appendChild(ask);
       li.appendChild(actions);
       ul.appendChild(li);
     });
@@ -98,13 +140,27 @@
   async function refresh() {
     try {
       const [thread, cards] = await Promise.all([
-        api("/api/thread?limit=80"),
+        api("/api/thread?limit=200"),
         api("/api/cards"),
       ]);
-      renderThread(thread.items || []);
+      const sig = JSON.stringify((thread.items || []).map((m) => m.id));
+      if (sig !== lastSig) {
+        lastSig = sig;
+        renderThread(thread.items || []);
+      }
       renderCards(cards.items || []);
+      setAuthUI(true, "live · " + ((thread.items || []).length) + " сообщ.");
       setStatus("обновлено");
     } catch (e) {
+      if (e.status === 401) {
+        const n = enteredLen();
+        const tip = n === 0
+          ? "токен пустой — вставь INTAKE_CONSOLE_TOKEN"
+          : "не совпал (длина " + n + "). Нужен INTAKE_CONSOLE_TOKEN из ~/.vdp-intake/env, не токен бота";
+        setAuthUI(false, tip);
+        setStatus("unauthorized");
+        return;
+      }
       setStatus(String(e.message || e));
     }
   }
@@ -122,22 +178,118 @@
     }
   }
 
-  async function toCursor(cardId, text, mode) {
+  async function savePrompt(cardId, text, mode) {
     try {
       const res = await api("/api/to-cursor", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ card_id: cardId || "", text: text || $("text").value, mode: mode || "prompt" }),
       });
-      setStatus("записано: " + (res.path || ""));
+      setStatus("промпт сохранён: " + (res.path || ""));
     } catch (e) {
       setStatus(String(e.message || e));
     }
   }
 
+  async function startAgent(mode, ids, extra) {
+    const resultEl = $("agent-result");
+    resultEl.hidden = false;
+    resultEl.textContent = "Запрос…";
+    setStatus("агент: " + mode);
+    try {
+      const job = await api("/api/agent", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          mode,
+          message_ids: ids,
+          prompt: extra || $("agent-prompt").value || "",
+        }),
+      });
+      await waitJob(job.id);
+    } catch (e) {
+      resultEl.textContent = String(e.message || e);
+      setStatus(String(e.message || e));
+    }
+  }
+
+  async function waitJob(id) {
+    const resultEl = $("agent-result");
+    for (let i = 0; i < 180; i++) {
+      const job = await api("/api/agent/" + encodeURIComponent(id));
+      if (job.status === "done" || job.status === "error") {
+        resultEl.textContent = job.result || job.error || job.status;
+        setStatus(job.status === "done" ? "ответ готов" : "ошибка агента");
+        await refresh();
+        return;
+      }
+      resultEl.textContent = "Статус: " + job.status + "…";
+      await new Promise((r) => setTimeout(r, 1000));
+    }
+    resultEl.textContent = "Таймаут ожидания ответа";
+  }
+
+  function startPoll() {
+    if (pollTimer) clearInterval(pollTimer);
+    pollTimer = setInterval(() => {
+      if (token()) refresh();
+    }, 2000);
+  }
+
   $("token").value = localStorage.getItem("intake_console_token") || "";
+  $("save-token").onclick = () => {
+    const t = token();
+    if (!t) {
+      setAuthUI(false, "токен пустой — вставь INTAKE_CONSOLE_TOKEN");
+      return;
+    }
+    setStatus("проверка…");
+    refresh();
+    startPoll();
+  };
+  $("toggle-token").onclick = () => {
+    const inp = $("token");
+    const show = inp.type === "password";
+    inp.type = show ? "text" : "password";
+    $("toggle-token").textContent = show ? "Скрыть" : "Показать";
+  };
+  $("clear-token").onclick = () => {
+    localStorage.removeItem("intake_console_token");
+    $("token").value = "";
+    setAuthUI(false, "сохранённый токен сброшен");
+    setStatus("");
+  };
   $("refresh").onclick = () => refresh();
-  $("to-cursor").onclick = () => toCursor("", $("text").value, "prompt");
+  $("save-prompt").onclick = () => savePrompt("", $("text").value, "prompt");
+  $("select-all").onclick = () => {
+    $("thread").querySelectorAll(".msg").forEach((li) => {
+      const cb = li.querySelector(".pick");
+      if (cb) {
+        cb.checked = true;
+        cb.dispatchEvent(new Event("change"));
+      }
+    });
+  };
+  $("select-none").onclick = () => {
+    selected.clear();
+    $("thread").querySelectorAll(".pick").forEach((cb) => {
+      cb.checked = false;
+    });
+    $("thread").querySelectorAll(".msg").forEach((li) => li.classList.remove("selected"));
+    updateSelCount();
+  };
+  $("analyze-sel").onclick = () => {
+    if (selected.size === 0) {
+      setStatus("сначала выберите сообщения");
+      return;
+    }
+    startAgent("analyze_selected", Array.from(selected), "");
+  };
+  $("analyze-chat").onclick = () => startAgent("analyze_chat", [], "");
+  $("ask-agent").onclick = () => {
+    const ids = selected.size ? Array.from(selected) : [];
+    startAgent("ask_agent", ids, $("agent-prompt").value);
+  };
 
   $("file").onchange = async () => {
     const files = Array.from($("file").files || []);
@@ -218,5 +370,10 @@
     }
   };
 
-  if (token()) refresh();
+  if (!token()) {
+    setAuthUI(false, "вставьте токен из env-файла");
+  } else {
+    refresh();
+    startPoll();
+  }
 })();

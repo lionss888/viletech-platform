@@ -10,6 +10,7 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/viletech/tools/intake/internal/agent"
 	"github.com/viletech/tools/intake/internal/card"
 	"github.com/viletech/tools/intake/internal/config"
 	"github.com/viletech/tools/intake/internal/console"
@@ -67,6 +68,12 @@ func main() {
 				Pipeline:  p,
 				Store:     st,
 				Cards:     p.Cards,
+				Agent: &agent.Runner{
+					Store:     st,
+					Workspace: workspace,
+					APIKey:    os.Getenv("CURSOR_API_KEY"),
+					BridgeJS:  os.Getenv("INTAKE_AGENT_BRIDGE"),
+				},
 				Workspace: workspace,
 				Log:       log,
 				UI:        console.UI,

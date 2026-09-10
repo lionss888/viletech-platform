@@ -14,6 +14,8 @@ var (
 	reBack  = regexp.MustCompile("`[^`]+`")
 	reClass = regexp.MustCompile(`(?i)класс\s*=\s*\S+`)
 	rePlanID = regexp.MustCompile(`(?i)\b[a-z]+_[a-z0-9]+_[a-f0-9]{8}\b`)
+	reOrgGate = regexp.MustCompile(`(?i)\borg-gate\b`)
+	reDoD    = regexp.MustCompile(`(?i)\bDoD\b`)
 )
 
 // SanitizeManager strips technical surface from manager-facing text.
@@ -26,6 +28,8 @@ func SanitizeManager(s string) string {
 	s = reBack.ReplaceAllString(s, "")
 	s = reClass.ReplaceAllString(s, "")
 	s = rePlanID.ReplaceAllString(s, "")
+	s = reOrgGate.ReplaceAllString(s, "")
+	s = reDoD.ReplaceAllString(s, "")
 	s = strings.ReplaceAll(s, ".cursor/plans", "")
 	s = strings.ReplaceAll(s, "тгбот/", "")
 	s = collapseSpace(s)

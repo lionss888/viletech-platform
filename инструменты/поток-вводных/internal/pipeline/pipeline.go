@@ -134,11 +134,28 @@ func (p *Pipeline) HandleUpdate(ctx context.Context, u telegram.Update) (bool, e
 		BotUser:   p.BotUser,
 	}
 	trig := normalize.Classify(nm)
+	display := redact.Text(text)
+	if display == "" && len(atts) > 0 {
+		display = "[вложение]"
+	}
+	_ = p.Store.AppendThread(store.ThreadMsg{
+		UpdateID:    u.UpdateID,
+		MessageID:   msg.MessageID,
+		ChatID:      msg.Chat.ID,
+		FromID:      fromID,
+		FromUser:    fromUser,
+		Direction:   "in",
+		Text:        display,
+		Kind:        "chat",
+		Trigger:     string(trig),
+		Attachments: atts,
+	})
 	if trig == normalize.TriggerNone {
+		_ = p.Store.MarkSeen(u.UpdateID)
 		return false, nil
 	}
 	if trig == normalize.TriggerHelp {
-		_, _ = p.Messenger.SendMessage(ctx, msg.Chat.ID, msg.MessageID, comms.SanitizeManager(helpText))
+		_, _ = p.sendAndMirror(ctx, msg.Chat.ID, msg.MessageID, comms.SanitizeManager(helpText))
 		_ = p.Store.MarkSeen(u.UpdateID)
 		return true, nil
 	}
@@ -196,10 +213,29 @@ func (p *Pipeline) HandleUpdate(ctx context.Context, u telegram.Update) (bool, e
 		ack = formatAnalyzeReply(analysis)
 	}
 	ack = comms.SanitizeManager(ack)
-	if _, err := p.Messenger.SendMessage(ctx, msg.Chat.ID, msg.MessageID, ack); err != nil {
+	if _, err := p.sendAndMirror(ctx, msg.Chat.ID, msg.MessageID, ack); err != nil {
 		log.Warn("ack failed", "update_id", u.UpdateID, "message_id", msg.MessageID, "err", err)
 	}
 	return true, nil
+}
+
+func (p *Pipeline) sendAndMirror(ctx context.Context, chatID, replyTo int64, text string) (int64, error) {
+	if p.Messenger == nil {
+		return 0, fmt.Errorf("messenger nil")
+	}
+	id, err := p.Messenger.SendMessage(ctx, chatID, replyTo, text)
+	if err != nil {
+		return 0, err
+	}
+	_ = p.Store.AppendThread(store.ThreadMsg{
+		MessageID: id,
+		ChatID:    chatID,
+		FromUser:  p.BotUser,
+		Direction: "out",
+		Text:      text,
+		Kind:      "bot",
+	})
+	return id, nil
 }
 
 // IngestConsole handles operator console messages (same HITL path when AsIntake).
@@ -276,13 +312,24 @@ func (p *Pipeline) IngestConsole(ctx context.Context, in ConsoleIngest) (Console
 		}
 		ack = redacted
 	}
+	_ = p.Store.AppendThread(store.ThreadMsg{
+		MessageID:   msgID,
+		ChatID:      chatID,
+		FromUser:    fromUser,
+		Direction:   "out",
+		Text:        redacted,
+		Kind:        "console",
+		Attachments: in.Attachments,
+	})
 	var tgMsg int64
 	if in.MirrorToTG && p.Messenger != nil {
 		body := ack
 		if !in.AsIntake {
 			body = comms.SanitizeManager(redacted)
 		}
-		id, err := p.Messenger.SendMessage(ctx, chatID, 0, body)
+		// Mirror operator text to TG (not the HITL ack) when not as_intake;
+		// when as_intake, send ack and also ensure proposal reaches chat.
+		id, err := p.sendAndMirror(ctx, chatID, 0, body)
 		if err != nil {
 			return ConsoleResult{Record: rec, Ack: ack, CardID: cardID}, err
 		}
@@ -327,7 +374,7 @@ func (p *Pipeline) ApplyHITLDecision(ctx context.Context, cardID string, approve
 		return err
 	}
 	if mirror && p.Messenger != nil {
-		_, _ = p.Messenger.SendMessage(ctx, c.ChatID, c.RootMessageID, ack)
+		_, _ = p.sendAndMirror(ctx, c.ChatID, c.RootMessageID, ack)
 	}
 	return nil
 }
@@ -458,7 +505,7 @@ func (p *Pipeline) tryHITLDecision(ctx context.Context, msg *telegram.Message, f
 		})
 		_ = p.rewritePlan(target)
 		_ = p.Cards.Save(target)
-		_, _ = p.Messenger.SendMessage(ctx, msg.Chat.ID, msg.MessageID, comms.ApprovedAck())
+		_, _ = p.sendAndMirror(ctx, msg.Chat.ID, msg.MessageID, comms.ApprovedAck())
 		return true, nil
 	case comms.HitlDecline:
 		target.Status = card.StatusDeclined
@@ -467,7 +514,7 @@ func (p *Pipeline) tryHITLDecision(ctx context.Context, msg *telegram.Message, f
 		})
 		_ = p.rewritePlan(target)
 		_ = p.Cards.Save(target)
-		_, _ = p.Messenger.SendMessage(ctx, msg.Chat.ID, msg.MessageID, comms.DeclinedAck())
+		_, _ = p.sendAndMirror(ctx, msg.Chat.ID, msg.MessageID, comms.DeclinedAck())
 		return true, nil
 	default:
 		return false, nil
@@ -593,13 +640,13 @@ func (p *Pipeline) ProcessReminders(ctx context.Context) error {
 			_ = experience.Append(p.StoreHome(), experience.Event{
 				CardID: c.ID, Kind: "stale", Class: c.Class, ReminderCount: c.ReminderCount,
 			})
-			_, _ = p.Messenger.SendMessage(ctx, c.ChatID, c.RootMessageID, comms.StaleNotice())
+			_, _ = p.sendAndMirror(ctx, c.ChatID, c.RootMessageID, comms.StaleNotice())
 			continue
 		}
 		c.ReminderCount++
 		c.LastAskAt = p.clock()
 		_ = p.Cards.Save(c)
-		_, _ = p.Messenger.SendMessage(ctx, c.ChatID, c.RootMessageID, comms.Reminder())
+		_, _ = p.sendAndMirror(ctx, c.ChatID, c.RootMessageID, comms.Reminder())
 	}
 	return nil
 }
