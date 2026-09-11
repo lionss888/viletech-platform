@@ -1,0 +1,6 @@
+fe/node_modules/
+fe/dist/
+fe/.output/
+fe/.vinxi/
+*.env
+!.env.example

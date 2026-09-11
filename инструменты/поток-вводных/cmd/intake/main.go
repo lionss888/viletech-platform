@@ -7,6 +7,7 @@ import (
 	"os"
 	"os/signal"
 	"path/filepath"
+	"strings"
 	"syscall"
 	"time"
 
@@ -63,21 +64,23 @@ func main() {
 			log.Warn("console enabled but INTAKE_CONSOLE_TOKEN empty; console not started")
 		} else {
 			cons = &console.Server{
-				Addr:      cfg.ConsoleAddr,
-				Token:     cfg.ConsoleToken,
-				Pipeline:  p,
-				Store:     st,
-				Cards:     p.Cards,
+				Addr:        cfg.ConsoleAddr,
+				Token:       cfg.ConsoleToken,
+				Pipeline:    p,
+				Store:       st,
+				Cards:       p.Cards,
 				Agent: &agent.Runner{
 					Store:     st,
 					Workspace: workspace,
 					APIKey:    os.Getenv("CURSOR_API_KEY"),
 					BridgeJS:  os.Getenv("INTAKE_AGENT_BRIDGE"),
 				},
-				Workspace: workspace,
-				Log:       log,
-				UI:        console.UI,
-				MaxUpload: cfg.MaxMediaBytes,
+				Workspace:   workspace,
+				Log:         log,
+				UI:          console.UI,
+				StaticDir:   strings.TrimSpace(os.Getenv("INTAKE_CONSOLE_STATIC")),
+				SPAUpstream: strings.TrimSpace(os.Getenv("INTAKE_CONSOLE_SPA_UPSTREAM")),
+				MaxUpload:   cfg.MaxMediaBytes,
 			}
 			if err := cons.Start(); err != nil {
 				log.Error("console start", "err", err)

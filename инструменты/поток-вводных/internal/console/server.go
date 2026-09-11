@@ -10,6 +10,9 @@ import (
 	"log/slog"
 	"net"
 	"net/http"
+	"net/http/httputil"
+	"net/url"
+	"os"
 	"path/filepath"
 	"strconv"
 	"strings"
@@ -25,18 +28,20 @@ import (
 
 // Server is the local operator console HTTP API + embedded UI.
 type Server struct {
-	Addr       string
-	Token      string
-	Pipeline   *pipeline.Pipeline
-	Store      *store.Store
-	Cards      *card.Store
-	Agent      *agent.Runner
-	Workspace  string
-	Log        *slog.Logger
-	UI         fs.FS
-	MaxUpload  int64
-	AllowMIME  map[string]struct{}
-	httpServer *http.Server
+	Addr        string
+	Token       string
+	Pipeline    *pipeline.Pipeline
+	Store       *store.Store
+	Cards       *card.Store
+	Agent       *agent.Runner
+	Workspace   string
+	Log         *slog.Logger
+	UI          fs.FS
+	StaticDir   string // optional SPA static root (fe/dist or .output/public)
+	SPAUpstream string // optional reverse-proxy to Nitro node-server (e.g. http://127.0.0.1:3000)
+	MaxUpload   int64
+	AllowMIME   map[string]struct{}
+	httpServer  *http.Server
 }
 
 // Start serves on Addr (must be loopback or 0.0.0.0 with token). Non-blocking.
@@ -70,12 +75,8 @@ func (s *Server) Start() error {
 	mux.HandleFunc("POST /api/tg/delete", s.auth(s.handleTGDelete))
 	mux.HandleFunc("POST /api/mgmt/done", s.auth(s.handleMgmtDone))
 	mux.HandleFunc("GET /api/media/", s.auth(s.handleMediaGet))
-	if s.UI != nil {
-		sub, err := fs.Sub(s.UI, "ui")
-		if err != nil {
-			return fmt.Errorf("console ui: %w", err)
-		}
-		mux.Handle("/", http.FileServer(http.FS(sub)))
+	if err := s.mountUI(mux); err != nil {
+		return err
 	}
 	s.httpServer = &http.Server{
 		Addr:              s.Addr,
@@ -509,4 +510,53 @@ func isAllowedConsoleHost(host string) bool {
 	}
 	ip := net.ParseIP(host)
 	return ip != nil && (ip.IsLoopback() || ip.IsUnspecified())
+}
+
+func (s *Server) mountUI(mux *http.ServeMux) error {
+	if upstream := strings.TrimSpace(s.SPAUpstream); upstream != "" {
+		u, err := url.Parse(upstream)
+		if err != nil {
+			return fmt.Errorf("spa upstream: %w", err)
+		}
+		proxy := httputil.NewSingleHostReverseProxy(u)
+		mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+			if strings.HasPrefix(r.URL.Path, "/api/") || r.URL.Path == "/health" {
+				http.NotFound(w, r)
+				return
+			}
+			proxy.ServeHTTP(w, r)
+		})
+		return nil
+	}
+	staticDir := strings.TrimSpace(s.StaticDir)
+	if staticDir == "" {
+		staticDir = strings.TrimSpace(os.Getenv("INTAKE_CONSOLE_STATIC"))
+	}
+	if staticDir != "" {
+		if st, err := os.Stat(staticDir); err == nil && st.IsDir() {
+			mux.Handle("/", spaFileServer(staticDir))
+			return nil
+		}
+	}
+	if s.UI != nil {
+		sub, err := fs.Sub(s.UI, "ui")
+		if err != nil {
+			return fmt.Errorf("console ui: %w", err)
+		}
+		mux.Handle("/", http.FileServer(http.FS(sub)))
+	}
+	return nil
+}
+
+func spaFileServer(dir string) http.Handler {
+	fileServer := http.FileServer(http.Dir(dir))
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		clean := filepath.Clean("/" + r.URL.Path)
+		path := filepath.Join(dir, clean)
+		if st, err := os.Stat(path); err == nil && !st.IsDir() {
+			fileServer.ServeHTTP(w, r)
+			return
+		}
+		http.ServeFile(w, r, filepath.Join(dir, "index.html"))
+	})
 }

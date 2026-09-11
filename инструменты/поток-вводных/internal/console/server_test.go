@@ -8,6 +8,7 @@ import (
 	"mime/multipart"
 	"net/http"
 	"net/http/httptest"
+	"os"
 	"path/filepath"
 	"strings"
 	"testing"
@@ -295,3 +296,73 @@ func TestHITLAndMgmtDoneAndDelete(t *testing.T) {
 		t.Fatalf("delete not called: %+v", mo)
 	}
 }
+
+func TestMountUIStaticServesIndexAndAPIUnaffected(t *testing.T) {
+	t.Parallel()
+	dir := t.TempDir()
+	if err := os.WriteFile(filepath.Join(dir, "index.html"), []byte("<!doctype html><title>spa</title>"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	st := store.New(t.TempDir())
+	s := &Server{Token: "secret", Store: st, StaticDir: dir}
+	mux := http.NewServeMux()
+	mux.HandleFunc("GET /health", func(w http.ResponseWriter, _ *http.Request) {
+		w.WriteHeader(http.StatusOK)
+		_, _ = w.Write([]byte("ok"))
+	})
+	mux.HandleFunc("GET /api/thread", s.auth(s.handleThread))
+	if err := s.mountUI(mux); err != nil {
+		t.Fatal(err)
+	}
+
+	req := httptest.NewRequest(http.MethodGet, "/", nil)
+	rr := httptest.NewRecorder()
+	mux.ServeHTTP(rr, req)
+	if rr.Code != 200 || !strings.Contains(rr.Body.String(), "spa") {
+		t.Fatalf("spa index: %d %s", rr.Code, rr.Body.String())
+	}
+
+	req = httptest.NewRequest(http.MethodGet, "/api/thread", nil)
+	rr = httptest.NewRecorder()
+	mux.ServeHTTP(rr, req)
+	if rr.Code != http.StatusUnauthorized {
+		t.Fatalf("api without token want 401 got %d", rr.Code)
+	}
+
+	req = httptest.NewRequest(http.MethodGet, "/api/thread", nil)
+	req.Header.Set("Authorization", "Bearer secret")
+	rr = httptest.NewRecorder()
+	mux.ServeHTTP(rr, req)
+	if rr.Code != 200 {
+		t.Fatalf("api with token: %d %s", rr.Code, rr.Body.String())
+	}
+}
+
+func TestMountUISPAUpstreamProxiesNonAPI(t *testing.T) {
+	t.Parallel()
+	upstream := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "text/html")
+		_, _ = w.Write([]byte("<html>nitro-spa</html>"))
+	}))
+	t.Cleanup(upstream.Close)
+	st := store.New(t.TempDir())
+	s := &Server{Token: "secret", Store: st, SPAUpstream: upstream.URL}
+	mux := http.NewServeMux()
+	mux.HandleFunc("GET /api/thread", s.auth(s.handleThread))
+	if err := s.mountUI(mux); err != nil {
+		t.Fatal(err)
+	}
+	req := httptest.NewRequest(http.MethodGet, "/", nil)
+	rr := httptest.NewRecorder()
+	mux.ServeHTTP(rr, req)
+	if rr.Code != 200 || !strings.Contains(rr.Body.String(), "nitro-spa") {
+		t.Fatalf("proxy spa: %d %s", rr.Code, rr.Body.String())
+	}
+	req = httptest.NewRequest(http.MethodGet, "/api/thread", nil)
+	rr = httptest.NewRecorder()
+	mux.ServeHTTP(rr, req)
+	if rr.Code != http.StatusUnauthorized {
+		t.Fatalf("api want 401 got %d body=%s", rr.Code, rr.Body.String())
+	}
+}
+

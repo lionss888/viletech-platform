@@ -1,0 +1,8 @@
+fe/node_modules/
+fe/dist/
+fe/.output/
+fe/.vinxi/
+.git/
+**/.git/
+*.md
+!README.md
