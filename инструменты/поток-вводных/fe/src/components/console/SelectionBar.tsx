@@ -35,6 +35,7 @@ export function SelectionBar({
             size="sm"
             className="h-7 gap-1 font-mono text-[11px] text-muted-foreground"
             onClick={onClear}
+            disabled={busy}
           >
             <X className="size-3" /> Снять выбор
           </Button>
@@ -45,6 +46,7 @@ export function SelectionBar({
           onChange={(e) => setQuestion(e.target.value)}
           placeholder="Вопрос агенту по выбранным сообщениям…"
           className="mt-2 min-h-16 resize-none border-border bg-background/50 text-sm"
+          disabled={busy}
         />
 
         <div className="mt-2 flex flex-wrap gap-2">
@@ -52,7 +54,7 @@ export function SelectionBar({
             size="sm"
             className="gap-1.5"
             disabled={busy}
-            onClick={() => onAnalyzeSelected(question)}
+            onClick={() => onAnalyzeSelected(question.trim())}
           >
             <Sparkle className="size-3.5" /> Разобрать выбранные
           </Button>
@@ -70,13 +72,13 @@ export function SelectionBar({
             variant="outline"
             className="border-border bg-surface"
             disabled={busy}
-            onClick={() => onAskAgent(question)}
+            onClick={() => onAskAgent(question.trim())}
           >
             Спросить у агента
           </Button>
         </div>
         <p className="mt-2 font-mono text-[10px] leading-relaxed text-muted-foreground">
-          «Разобрать» — локально. «Спросить у агента» — нужен CURSOR_API_KEY (key_…) в Доступ.
+          «Разобрать» — локально. «Спросить у агента» — нужен настроенный доступ к агенту.
         </p>
       </div>
     </div>

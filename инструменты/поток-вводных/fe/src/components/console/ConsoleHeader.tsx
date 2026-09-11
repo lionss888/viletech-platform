@@ -9,7 +9,6 @@ type Props = {
   selectedCount: number;
   pendingCards: number;
   signedIn: boolean;
-  statusText?: string;
   onOpenCards: () => void;
   onSignIn: (token: string) => void;
   onRefresh: () => void;
@@ -19,7 +18,6 @@ export function ConsoleHeader({
   messageCount,
   pendingCards,
   signedIn,
-  statusText,
   onOpenCards,
   onSignIn,
   onRefresh,
@@ -33,6 +31,10 @@ export function ConsoleHeader({
     setLocalToken(getToken());
     setLocalAgentKey(getAgentKey());
   }, []);
+
+  useEffect(() => {
+    if (signedIn) setAccessOpen(false);
+  }, [signedIn]);
 
   return (
     <header className="sticky top-0 z-30 border-b border-border bg-background/90 backdrop-blur">
@@ -50,12 +52,6 @@ export function ConsoleHeader({
             </span>
             <span aria-hidden>·</span>
             <span>{messageCount} сообщений</span>
-            {statusText ? (
-              <>
-                <span aria-hidden>·</span>
-                <span className="truncate">{statusText}</span>
-              </>
-            ) : null}
           </p>
         </div>
 
@@ -67,16 +63,6 @@ export function ConsoleHeader({
         >
           <KeyRound className="size-3.5" />
           <span className="hidden sm:inline">Доступ</span>
-        </Button>
-
-        <Button
-          variant="ghost"
-          size="icon"
-          className="size-9 text-muted-foreground"
-          aria-label="Обновить"
-          onClick={onRefresh}
-        >
-          <RotateCcw className="size-4" />
         </Button>
 
         <Button
@@ -113,10 +99,23 @@ export function ConsoleHeader({
                 size="icon"
                 variant="ghost"
                 className="size-9 text-muted-foreground"
-                aria-label={visible ? "Скрыть" : "Показать"}
+                aria-label={visible ? "Скрыть токен" : "Показать токен"}
                 onClick={() => setVisible((v) => !v)}
               >
                 {visible ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
+              </Button>
+              <Button
+                size="icon"
+                variant="ghost"
+                className="size-9 text-muted-foreground"
+                aria-label="Сбросить токен"
+                onClick={() => {
+                  setLocalToken("");
+                  setToken("");
+                  onRefresh();
+                }}
+              >
+                <RotateCcw className="size-4" />
               </Button>
               <Button
                 size="sm"

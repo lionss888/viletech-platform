@@ -5,7 +5,7 @@ export INTAKE_WORKSPACE ?= /workspace
 
 .PHONY: up down logs restart ps build test console-url fe-sync fe-dev fe-build fe-test smoke
 
-up:
+up: fe-build
 	docker compose up -d --build
 
 down:
@@ -20,7 +20,7 @@ logs:
 ps:
 	docker compose ps
 
-build:
+build: fe-build
 	docker compose build
 
 test:

@@ -24,19 +24,21 @@ export function Composer({ busy, onSend, onSavePrompt }: Props) {
 
   const placeholder = toTelegram
     ? asInput
-      ? "Напишите сообщение — оно уйдёт в Telegram и попадёт агенту как задание."
-      : "Напишите сообщение — оно уйдёт в Telegram собеседнику."
+      ? "Напишите сообщение — оно уйдёт в Telegram и попадёт агенту как задание. Например: «Ответь клиенту про сроки доставки»"
+      : "Напишите сообщение — оно уйдёт в Telegram собеседнику. Например: «Здравствуйте! Отправим заказ завтра»"
     : asInput
-      ? "Напишите задание / ввод для HITL — без зеркала в Telegram, если выключено."
-      : "Напишите заметку для себя — она останется в консоли (без Telegram).";
+      ? "Напишите задание для агента — собеседник этого не увидит. Например: «Подготовь вежливый отказ»"
+      : "Напишите заметку для себя — она останется в консоли и никуда не отправится";
 
   const hint = toTelegram
     ? asInput
-      ? "Уйдёт в Telegram и станет вводом (as intake)."
+      ? "Уйдёт в Telegram и станет заданием для агента."
       : "Уйдёт в Telegram как обычное сообщение."
     : asInput
-      ? "Останется здесь как ввод / задание."
+      ? "Останется здесь как задание для агента."
       : "Останется здесь как ваша заметка.";
+
+  const canSubmit = text.trim().length > 0 || files.length > 0;
 
   return (
     <div className="border-t border-border bg-background/90 backdrop-blur">
@@ -47,6 +49,7 @@ export function Composer({ busy, onSend, onSavePrompt }: Props) {
             onChange={(e) => setText(e.target.value)}
             placeholder={placeholder}
             aria-describedby="composer-hint"
+            disabled={busy}
             className="min-h-20 resize-none border-0 bg-transparent text-sm leading-relaxed shadow-none focus-visible:ring-0 placeholder:text-muted-foreground/80"
           />
           <div className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3 px-2 pb-2">
@@ -64,6 +67,7 @@ export function Composer({ busy, onSend, onSavePrompt }: Props) {
                 className="size-8 text-muted-foreground"
                 aria-label="Прикрепить файл"
                 type="button"
+                disabled={busy}
                 onClick={() => fileRef.current?.click()}
               >
                 <Paperclip className="size-4" />
@@ -74,11 +78,11 @@ export function Composer({ busy, onSend, onSavePrompt }: Props) {
                 </span>
               )}
               <label className="flex items-center gap-2 text-[12px] text-muted-foreground">
-                <Switch checked={asInput} onCheckedChange={setAsInput} />
-                Задание / ввод
+                <Switch checked={asInput} onCheckedChange={setAsInput} disabled={busy} />
+                Задание агенту
               </label>
               <label className="flex items-center gap-2 text-[12px] text-muted-foreground">
-                <Switch checked={toTelegram} onCheckedChange={setToTelegram} />
+                <Switch checked={toTelegram} onCheckedChange={setToTelegram} disabled={busy} />
                 Отправить в Telegram
               </label>
             </div>
@@ -87,9 +91,8 @@ export function Composer({ busy, onSend, onSavePrompt }: Props) {
                 variant="ghost"
                 size="sm"
                 className="h-8 gap-1.5 text-muted-foreground"
-                type="button"
                 disabled={busy || !text.trim()}
-                onClick={() => onSavePrompt(text)}
+                onClick={() => void onSavePrompt(text.trim())}
               >
                 <Bookmark className="size-3.5" />
                 <span className="hidden sm:inline">Сохранить запрос</span>
@@ -97,11 +100,11 @@ export function Composer({ busy, onSend, onSavePrompt }: Props) {
               <Button
                 size="sm"
                 className="h-8 gap-1.5"
-                type="button"
-                disabled={busy || !text.trim()}
+                disabled={busy || !canSubmit}
                 onClick={async () => {
+                  const payload = text.trim();
                   await onSend({
-                    text,
+                    text: payload,
                     asIntake: asInput,
                     mirrorToTg: toTelegram,
                     files,

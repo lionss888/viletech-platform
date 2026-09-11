@@ -18,7 +18,7 @@ go run ./cmd/intake -hitl
 
 Console: http://127.0.0.1:8787 — paste token, Authorization Bearer.
 
-Docker: `make up` publishes 8787; set `INTAKE_CONSOLE_TOKEN` in env file. Inside compose bind is `0.0.0.0:8787`. One container serves API + Lovable SPA (Nitro behind Go reverse-proxy).
+Docker: `make up` first runs `fe-build` (host Nitro → `fe/.output`), then builds the image that copies that output — in-container vite/rolldown native deps fail on Docker Desktop. Set `INTAKE_CONSOLE_TOKEN` in env; port `8787`.
 
 ## Frontend (Lovable Interface Refresh)
 

@@ -34,8 +34,16 @@ export const Route = createFileRoute("/")({
       {
         name: "description",
         content:
-          "Живая лента Telegram-чата, выделение сообщений, локальный разбор, вопросы агенту и карточки HITL.",
+          "Живая лента Telegram-чата, выделение сообщений, локальный разбор, вопросы агенту и карточки HITL в одном тёмном интерфейсе.",
       },
+      { property: "og:title", content: "Консоль чата — живое зеркало Telegram и разбор" },
+      {
+        property: "og:description",
+        content:
+          "Лента чата, выделение сообщений, разбор и карточки HITL в одном рабочем экране.",
+      },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary_large_image" },
     ],
   }),
   component: Index,
@@ -48,7 +56,6 @@ function Index() {
   const [messages, setMessages] = useState<ConsoleMessage[]>(demo ? demoMessages : []);
   const [cards, setCards] = useState<HitlCard[]>(demo ? demoCards : []);
   const [signedIn, setSignedIn] = useState(demo);
-  const [status, setStatus] = useState(demo ? "demo" : "");
   const [busy, setBusy] = useState(false);
 
   const refresh = useCallback(async () => {
@@ -60,7 +67,6 @@ function Index() {
     }
     if (!getToken()) {
       setSignedIn(false);
-      setStatus("нужен токен");
       return;
     }
     try {
@@ -68,15 +74,12 @@ function Index() {
       setMessages(thread);
       setCards(hitl);
       setSignedIn(true);
-      setStatus(`live · ${thread.length}`);
     } catch (e) {
       const err = e as Error & { status?: number };
       if (err.status === 401) {
         setSignedIn(false);
-        setStatus("unauthorized");
         return;
       }
-      setStatus(String(err.message || e));
     }
   }, [demo]);
 
@@ -118,14 +121,10 @@ function Index() {
     prompt: string,
   ) {
     setBusy(true);
-    setStatus(`агент: ${mode}`);
     try {
       const job = await startAgent({ mode, messageIds: ids, prompt });
-      const done = await waitAgentJob(job.id);
-      setStatus(done.error ? done.error : done.status);
+      await waitAgentJob(job.id);
       await refresh();
-    } catch (e) {
-      setStatus(String((e as Error).message || e));
     } finally {
       setBusy(false);
     }
@@ -138,14 +137,12 @@ function Index() {
         selectedCount={selected.length}
         pendingCards={pending}
         signedIn={signedIn}
-        statusText={status}
         onOpenCards={() => setCardsOpen(true)}
         onRefresh={() => void refresh()}
         onSignIn={async (token) => {
           setToken(token);
           const ok = demo ? true : await checkAuth().catch(() => false);
           setSignedIn(ok);
-          setStatus(ok ? "ok" : "неверный токен");
           if (ok) await refresh();
         }}
       />
@@ -153,8 +150,8 @@ function Index() {
       <main className="console-scroll min-h-0 flex-1 overflow-y-auto">
         <div className="mx-auto w-full max-w-4xl px-4 py-5">
           <div className="flex flex-wrap items-center justify-between gap-2 pb-3">
-            <p className="font-mono text-[11px] uppercase tracking-wide text-muted-foreground">
-              Лента чата · зеркало Telegram
+            <p className="text-[12px] text-muted-foreground">
+              Здесь видна вся переписка из Telegram — сообщения появляются автоматически
             </p>
             <div className="flex gap-1">
               <Button
@@ -211,12 +208,7 @@ function Index() {
         <Composer
           busy={busy}
           onSavePrompt={async (text) => {
-            try {
-              const res = await savePrompt(text);
-              setStatus(`промпт: ${res.path}`);
-            } catch (e) {
-              setStatus(String((e as Error).message || e));
-            }
+            await savePrompt(text);
           }}
           onSend={async ({ text, asIntake, mirrorToTg, files }) => {
             setBusy(true);
@@ -232,10 +224,7 @@ function Index() {
                 mirrorToTg,
                 attachmentIds: ids,
               });
-              setStatus("отправлено");
               await refresh();
-            } catch (e) {
-              setStatus(String((e as Error).message || e));
             } finally {
               setBusy(false);
             }
@@ -253,8 +242,6 @@ function Index() {
           try {
             await hitlDecide(id, true);
             await refresh();
-          } catch (e) {
-            setStatus(String((e as Error).message || e));
           } finally {
             setBusy(false);
           }
@@ -264,8 +251,6 @@ function Index() {
           try {
             await hitlDecide(id, false);
             await refresh();
-          } catch (e) {
-            setStatus(String((e as Error).message || e));
           } finally {
             setBusy(false);
           }

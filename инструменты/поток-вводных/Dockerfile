@@ -4,22 +4,16 @@ COPY go.mod ./
 COPY . ./
 RUN CGO_ENABLED=0 go build -o /intake ./cmd/intake
 
-FROM node:22-alpine AS febuild
-WORKDIR /fe
-COPY fe/package.json fe/package-lock.json* ./
-COPY fe/bun.lock* ./
-RUN npm install
-COPY fe/ ./
-# Preserve platform API client if present in build context
-RUN npm run build
-
-FROM node:22-alpine
-RUN apk add --no-cache ca-certificates
+# FE is built on the host (`cd fe && npm run build`) — Docker copies .output.
+# In-container vite/rolldown native optional deps fail under npm+Docker Desktop.
+FROM node:22-bookworm-slim
+RUN apt-get update && apt-get install -y --no-install-recommends ca-certificates \
+  && rm -rf /var/lib/apt/lists/*
 COPY --from=gobuild /intake /usr/local/bin/intake
 COPY agent-bridge /opt/agent-bridge
 WORKDIR /opt/agent-bridge
 RUN npm install --omit=dev
-COPY --from=febuild /fe/.output /opt/intake-fe
+COPY fe/.output /opt/intake-fe
 COPY scripts/docker-entrypoint.sh /usr/local/bin/docker-entrypoint.sh
 RUN chmod +x /usr/local/bin/docker-entrypoint.sh
 ENV INTAKE_HOME=/var/lib/vdp-intake
