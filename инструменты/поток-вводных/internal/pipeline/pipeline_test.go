@@ -105,3 +105,59 @@ func TestHandleWithAnalyzeLowQuestion(t *testing.T) {
 		t.Fatalf("want kind=clarify low, got kind=%s conf=%s", rec.Kind, rec.Confidence)
 	}
 }
+
+type fakeMedia struct {
+	data []byte
+}
+
+func (f *fakeMedia) GetFile(_ context.Context, fileID string) (telegram.FileMeta, error) {
+	return telegram.FileMeta{FileID: fileID, FilePath: "photos/x.jpg", FileSize: len(f.data)}, nil
+}
+
+func (f *fakeMedia) DownloadFile(_ context.Context, _ string) ([]byte, error) {
+	return f.data, nil
+}
+
+func TestPullMediaOnPhotoWithoutTriggerGoesToThreadOnly(t *testing.T) {
+	t.Parallel()
+	home := t.TempDir()
+	st := store.New(home)
+	fm := &fakeMsg{}
+	media := &fakeMedia{data: []byte("jpeg-bytes")}
+	p := &Pipeline{
+		Store:     st,
+		Messenger: fm,
+		Media:     media,
+		ChatIDs:   map[int64]struct{}{-100: {}},
+		BotUser:   "vdp_intake_bot",
+	}
+	u := telegram.Update{
+		UpdateID: 99,
+		Message: &telegram.Message{
+			MessageID: 7,
+			Chat:      telegram.Chat{ID: -100},
+			Photo:     []telegram.PhotoSize{{FileID: "fid-big", Width: 800, Height: 600, FileSize: 10}},
+		},
+	}
+	ok, err := p.HandleUpdate(context.Background(), u)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if ok {
+		t.Fatal("media without @bot/@vvod must not be intake")
+	}
+	thread, err := st.ListThreadRecent(10)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(thread) != 1 || len(thread[0].Attachments) != 1 {
+		t.Fatalf("want thread with attachment, got %+v", thread)
+	}
+	if thread[0].Text != "[вложение]" {
+		t.Fatalf("text=%q", thread[0].Text)
+	}
+	inbox, _ := st.ListInboxRecent(10)
+	if len(inbox) != 0 {
+		t.Fatalf("inbox should stay empty without trigger, got %d", len(inbox))
+	}
+}

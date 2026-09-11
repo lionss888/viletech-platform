@@ -64,3 +64,29 @@ func StaleNotice() string {
 func StatusLine(text string) string {
 	return SanitizeManager(text)
 }
+
+// ManagerDone formats a product-facing completion notice for the management chat.
+// Strips tech jargon via SanitizeManager (no plan-id, org-gate, runner names).
+func ManagerDone(title string, bullets []string, next string) string {
+	title = strings.TrimSpace(title)
+	if title == "" {
+		title = "Готово"
+	}
+	var b strings.Builder
+	b.WriteString("Готово · ")
+	b.WriteString(title)
+	for _, line := range bullets {
+		line = strings.TrimSpace(line)
+		if line == "" {
+			continue
+		}
+		b.WriteString("\n• ")
+		b.WriteString(line)
+	}
+	b.WriteString("\nПриёмка: пройдена")
+	if strings.TrimSpace(next) != "" {
+		b.WriteString("\nДальше: ")
+		b.WriteString(strings.TrimSpace(next))
+	}
+	return SanitizeManager(b.String())
+}

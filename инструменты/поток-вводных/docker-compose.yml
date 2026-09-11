@@ -16,7 +16,9 @@ services:
       INTAKE_MAX_REMINDERS: ${INTAKE_MAX_REMINDERS:-2}
       INTAKE_CONSOLE: ${INTAKE_CONSOLE:-1}
       INTAKE_CONSOLE_ADDR: ${INTAKE_CONSOLE_ADDR:-0.0.0.0:8787}
-      INTAKE_CONSOLE_TOKEN: ${INTAKE_CONSOLE_TOKEN:-}
+      INTAKE_AGENT_CLOUD: ${INTAKE_AGENT_CLOUD:-1}
+      INTAKE_AGENT_BRIDGE: /opt/agent-bridge/ask.mjs
+    # INTAKE_CONSOLE_TOKEN and CURSOR_API_KEY come from env_file (do not override here).
     ports:
       - "8787:8787"
     volumes:

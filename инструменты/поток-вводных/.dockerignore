@@ -1,0 +1,8 @@
+fe/node_modules/
+fe/dist/
+fe/.vinxi/
+# fe/.output is required by Docker (host `npm run build`)
+.git/
+**/.git/
+*.md
+!README.md

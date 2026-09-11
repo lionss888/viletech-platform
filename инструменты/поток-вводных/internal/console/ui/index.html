@@ -3,28 +3,63 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Intake console</title>
+  <title>Консоль чата</title>
   <link rel="stylesheet" href="/app.css" />
 </head>
 <body>
   <header class="top">
-    <h1>Консоль вводных</h1>
-    <p class="sub">Telegram + локальный пульт. Один inbox.</p>
-    <label class="token-row">Токен
-      <input id="token" type="password" placeholder="INTAKE_CONSOLE_TOKEN" autocomplete="off" />
-    </label>
+    <div class="top-main">
+      <h1>Консоль чата</h1>
+      <p class="sub">Живое зеркало Telegram · выделение · разбор · вопрос агенту</p>
+    </div>
+    <div class="auth-box" id="auth-box">
+      <label class="token-row">Токен консоли
+        <input id="token" type="password" placeholder="только INTAKE_CONSOLE_TOKEN из ~/.vdp-intake/env" autocomplete="off" spellcheck="false" />
+      </label>
+      <div class="auth-actions">
+        <button type="button" id="save-token" class="primary">Войти</button>
+        <button type="button" id="toggle-token" class="quiet">Показать</button>
+        <button type="button" id="clear-token" class="quiet">Сбросить</button>
+      </div>
+      <p id="auth-hint" class="auth-hint"></p>
+      <p class="auth-help">Нужен ключ <code>INTAKE_CONSOLE_TOKEN</code> (не токен Telegram-бота). Скопируй значение после <code>=</code> без пробелов и кавычек.</p>
+    </div>
   </header>
 
+  <div id="auth-banner" class="auth-banner hidden" role="alert">
+    Нет доступа: вставьте <strong>INTAKE_CONSOLE_TOKEN</strong> сверху и нажмите «Войти».
+  </div>
+
   <main class="layout">
-    <section class="thread" aria-label="Лента">
+    <section class="thread" aria-label="Чат">
       <div class="section-head">
-        <h2>Лента</h2>
-        <button type="button" id="refresh" class="quiet">Обновить</button>
+        <h2>Чат (как в Telegram)</h2>
+        <div class="head-actions">
+          <span id="live" class="live">● live</span>
+          <button type="button" id="select-all" class="quiet">Выбрать всё</button>
+          <button type="button" id="select-none" class="quiet">Снять</button>
+          <button type="button" id="refresh" class="quiet">Обновить</button>
+        </div>
       </div>
+      <p class="thread-hint">Новые сообщения появляются автоматически. История до запуска бота в Bot API недоступна.</p>
       <ol id="thread" class="msgs"></ol>
     </section>
 
-    <section class="side" aria-label="Карточки и действия">
+    <section class="side" aria-label="Действия">
+      <h2>С выбранным</h2>
+      <div class="agent-panel stack">
+        <p id="sel-count" class="meta">Выбрано: 0</p>
+        <label class="field-label" for="cursor-key">Ключ агента (CURSOR_API_KEY)</label>
+        <input id="cursor-key" type="password" placeholder="key_… из cursor.com/dashboard → Integrations" autocomplete="off" spellcheck="false" />
+        <label class="field-label" for="agent-prompt">Вопрос агенту</label>
+        <textarea id="agent-prompt" rows="2" placeholder="Что сделать с выбранными сообщениями…"></textarea>
+        <button type="button" id="analyze-sel" class="primary">Разобрать выбранные</button>
+        <button type="button" id="analyze-chat">Разобрать весь чат</button>
+        <button type="button" id="ask-agent">Спросить у агента</button>
+        <p class="auth-help">Нужен <strong>User API Key</strong> с <a href="https://cursor.com/dashboard?tab=integrations" target="_blank" rel="noopener">cursor.com/dashboard → Integrations</a> (обычно <code>key_…</code>). Строка <code>crsr_…</code> / токен бота / токен консоли — не подойдут. Ошибка <code>Invalid User API Key</code> = неверный ключ.</p>
+        <pre id="agent-result" class="agent-result" hidden></pre>
+      </div>
+
       <h2>Карточки HITL</h2>
       <ul id="cards" class="cards"></ul>
 
@@ -38,7 +73,7 @@
       <h2>Готово для менеджмента</h2>
       <form id="mgmt-form" class="stack">
         <input name="title" placeholder="Заголовок" required />
-        <textarea name="body" rows="4" placeholder="Продуктовый текст для менеджера"></textarea>
+        <textarea name="body" rows="4" placeholder="Буллеты — по одной строке (продуктовый язык)"></textarea>
         <input name="next" placeholder="Дальше (опц.)" />
         <button type="submit">Отправить в чат</button>
       </form>
@@ -47,13 +82,13 @@
 
   <footer class="composer" aria-label="Сообщение">
     <form id="composer" class="composer-form">
-      <textarea id="text" rows="3" placeholder="Текст… Можно вставить код. Отметьте «как ввод» для HITL."></textarea>
+      <textarea id="text" rows="3" placeholder="Написать в чат… Отметьте «как ввод» для HITL."></textarea>
       <div class="composer-row">
         <label><input type="checkbox" id="as_intake" checked /> как ввод</label>
         <label><input type="checkbox" id="mirror" checked /> в Telegram</label>
         <input type="file" id="file" multiple />
         <button type="submit" class="primary">Отправить</button>
-        <button type="button" id="to-cursor" class="quiet">В Cursor</button>
+        <button type="button" id="save-prompt" class="quiet">Сохранить промпт</button>
       </div>
       <ul id="uploads" class="uploads"></ul>
       <p id="status" class="status" role="status"></p>
