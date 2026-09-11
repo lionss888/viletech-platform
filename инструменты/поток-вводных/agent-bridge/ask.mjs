@@ -43,6 +43,6 @@ try {
     console.error("startup failed:", err.message);
     process.exit(1);
   }
-  console.error(err);
+  console.error(err?.message || err);
   process.exit(1);
 }

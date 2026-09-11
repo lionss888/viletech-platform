@@ -18,7 +18,7 @@
       </label>
       <div class="auth-actions">
         <button type="button" id="save-token" class="primary">Войти</button>
-        <button type="button" id="toggle-token" class="quiet" type="button">Показать</button>
+        <button type="button" id="toggle-token" class="quiet">Показать</button>
         <button type="button" id="clear-token" class="quiet">Сбросить</button>
       </div>
       <p id="auth-hint" class="auth-hint"></p>
@@ -49,10 +49,14 @@
       <h2>С выбранным</h2>
       <div class="agent-panel stack">
         <p id="sel-count" class="meta">Выбрано: 0</p>
-        <textarea id="agent-prompt" rows="3" placeholder="Доп. вопрос агенту (опц.)…"></textarea>
+        <label class="field-label" for="cursor-key">Ключ агента (CURSOR_API_KEY)</label>
+        <input id="cursor-key" type="password" placeholder="key_… из cursor.com/dashboard → Integrations" autocomplete="off" spellcheck="false" />
+        <label class="field-label" for="agent-prompt">Вопрос агенту</label>
+        <textarea id="agent-prompt" rows="2" placeholder="Что сделать с выбранными сообщениями…"></textarea>
         <button type="button" id="analyze-sel" class="primary">Разобрать выбранные</button>
         <button type="button" id="analyze-chat">Разобрать весь чат</button>
         <button type="button" id="ask-agent">Спросить у агента</button>
+        <p class="auth-help">Нужен <strong>User API Key</strong> с <a href="https://cursor.com/dashboard?tab=integrations" target="_blank" rel="noopener">cursor.com/dashboard → Integrations</a> (обычно <code>key_…</code>). Строка <code>crsr_…</code> / токен бота / токен консоли — не подойдут. Ошибка <code>Invalid User API Key</code> = неверный ключ.</p>
         <pre id="agent-result" class="agent-result" hidden></pre>
       </div>
 

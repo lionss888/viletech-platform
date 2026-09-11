@@ -36,7 +36,8 @@ type Runner struct {
 }
 
 // StartJob creates and runs a job in background.
-func (r *Runner) StartJob(mode string, msgIDs []string, extra string) (*Job, error) {
+// apiKeyOverride is used for ask_agent when set (from console UI); otherwise Runner.APIKey / env.
+func (r *Runner) StartJob(mode string, msgIDs []string, extra, apiKeyOverride string) (*Job, error) {
 	id := fmt.Sprintf("job-%d", time.Now().UnixNano())
 	msgs, err := r.Store.GetThreadByIDs(msgIDs)
 	if err != nil {
@@ -48,6 +49,16 @@ func (r *Runner) StartJob(mode string, msgIDs []string, extra string) (*Job, err
 			return nil, err
 		}
 		msgs = all
+	}
+	if mode == "ask_agent" && len(msgs) == 0 {
+		all, err := r.Store.ListThreadRecent(80)
+		if err != nil {
+			return nil, err
+		}
+		msgs = all
+	}
+	if looksLikeAPIKey(extra) {
+		return nil, fmt.Errorf("в поле вопроса похож на API-ключ — вставь ключ в CURSOR_API_KEY / поле «Ключ агента», а сюда — текст вопроса")
 	}
 	prompt := buildPrompt(mode, msgs, extra)
 	now := time.Now().UTC().Format(time.RFC3339)
@@ -63,11 +74,21 @@ func (r *Runner) StartJob(mode string, msgIDs []string, extra string) (*Job, err
 	if err := r.Store.SaveAgentJob(id, job); err != nil {
 		return nil, err
 	}
-	go r.run(job)
+	go r.run(job, strings.TrimSpace(apiKeyOverride))
 	return job, nil
 }
 
-func (r *Runner) run(job *Job) {
+func looksLikeAPIKey(s string) bool {
+	s = strings.TrimSpace(s)
+	if s == "" || strings.Contains(s, " ") || strings.Contains(s, "\n") {
+		return false
+	}
+	low := strings.ToLower(s)
+	return strings.HasPrefix(low, "key_") || strings.HasPrefix(low, "crsr_") ||
+		(len(s) >= 24 && len(s) <= 128 && !strings.ContainsAny(s, ".,;:!?"))
+}
+
+func (r *Runner) run(job *Job, apiKeyOverride string) {
 	job.Status = "running"
 	job.UpdatedAt = time.Now().UTC().Format(time.RFC3339)
 	_ = r.Store.SaveAgentJob(job.ID, job)
@@ -76,12 +97,13 @@ func (r *Runner) run(job *Job) {
 	var err error
 	switch job.Mode {
 	case "ask_agent":
-		result, err = r.runCursorAgent(context.Background(), job.Prompt)
+		result, err = r.runCursorAgent(context.Background(), job.Prompt, apiKeyOverride)
 		if err != nil {
 			// Fallback local analysis so UI always gets something useful.
 			fallback := localAnalyze(job.Prompt)
 			job.Status = "done"
-			job.Result = fallback + "\n\n---\nАгент IDE недоступен (" + err.Error() + "). Показан локальный разбор."
+			job.Error = err.Error()
+			job.Result = "Агент IDE: " + err.Error() + "\n\n---\n" + fallback
 			job.UpdatedAt = time.Now().UTC().Format(time.RFC3339)
 			_ = r.Store.SaveAgentJob(job.ID, job)
 			_ = r.mirrorAgentReply(job)
@@ -110,13 +132,16 @@ func (r *Runner) mirrorAgentReply(job *Job) error {
 	})
 }
 
-func (r *Runner) runCursorAgent(ctx context.Context, prompt string) (string, error) {
-	key := strings.TrimSpace(r.APIKey)
+func (r *Runner) runCursorAgent(ctx context.Context, prompt, apiKeyOverride string) (string, error) {
+	key := strings.TrimSpace(apiKeyOverride)
+	if key == "" {
+		key = strings.TrimSpace(r.APIKey)
+	}
 	if key == "" {
 		key = strings.TrimSpace(os.Getenv("CURSOR_API_KEY"))
 	}
 	if key == "" {
-		return "", fmt.Errorf("нет CURSOR_API_KEY")
+		return "", fmt.Errorf("нет CURSOR_API_KEY — вставь ключ в поле «Ключ агента» или в ~/.vdp-intake/env")
 	}
 	bridge := r.BridgeJS
 	if bridge == "" {

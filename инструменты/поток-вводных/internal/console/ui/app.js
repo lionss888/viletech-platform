@@ -194,6 +194,19 @@
   async function startAgent(mode, ids, extra) {
     const resultEl = $("agent-result");
     resultEl.hidden = false;
+    const key = ($("cursor-key").value || "").trim();
+    if (key) localStorage.setItem("intake_cursor_api_key", key);
+    const prompt = (extra || $("agent-prompt").value || "").trim();
+    if (mode === "ask_agent" && !key && !localStorage.getItem("intake_cursor_api_key")) {
+      resultEl.textContent = "Нужен ключ агента: вставь CURSOR_API_KEY в поле «Ключ агента» (не в вопрос).";
+      setStatus("нет ключа агента");
+      return;
+    }
+    if (/^(key_|crsr_)/i.test(prompt) && !prompt.includes(" ")) {
+      resultEl.textContent = "Похоже, API-ключ в поле вопроса. Перенеси его в «Ключ агента», а сюда напиши вопрос.";
+      setStatus("ключ не туда");
+      return;
+    }
     resultEl.textContent = "Запрос…";
     setStatus("агент: " + mode);
     try {
@@ -203,7 +216,8 @@
         body: JSON.stringify({
           mode,
           message_ids: ids,
-          prompt: extra || $("agent-prompt").value || "",
+          prompt,
+          api_key: key || localStorage.getItem("intake_cursor_api_key") || "",
         }),
       });
       await waitJob(job.id);
@@ -218,8 +232,14 @@
     for (let i = 0; i < 180; i++) {
       const job = await api("/api/agent/" + encodeURIComponent(id));
       if (job.status === "done" || job.status === "error") {
-        resultEl.textContent = job.result || job.error || job.status;
-        setStatus(job.status === "done" ? "ответ готов" : "ошибка агента");
+        const err = job.error || "";
+        const body = job.result || err || job.status;
+        resultEl.textContent = body;
+        if (/Invalid User API Key/i.test(body) || /Invalid User API Key/i.test(err)) {
+          setStatus("ключ агента отклонён Cursor — нужен User API Key (key_…) из dashboard");
+        } else {
+          setStatus(job.status === "done" && !err ? "ответ готов" : "ошибка агента");
+        }
         await refresh();
         return;
       }
@@ -237,6 +257,16 @@
   }
 
   $("token").value = localStorage.getItem("intake_console_token") || "";
+  $("cursor-key").value = localStorage.getItem("intake_cursor_api_key") || "";
+  // If old sessions put API key into the prompt box, move it.
+  {
+    const leftover = ($("agent-prompt").value || "").trim();
+    if (/^(key_|crsr_)/i.test(leftover) && !leftover.includes(" ")) {
+      $("cursor-key").value = leftover;
+      localStorage.setItem("intake_cursor_api_key", leftover);
+      $("agent-prompt").value = "";
+    }
+  }
   $("save-token").onclick = () => {
     const t = token();
     if (!t) {

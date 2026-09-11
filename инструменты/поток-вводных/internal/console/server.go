@@ -342,6 +342,7 @@ type agentReq struct {
 	Mode       string   `json:"mode"` // analyze_selected|analyze_chat|ask_agent
 	MessageIDs []string `json:"message_ids"`
 	Prompt     string   `json:"prompt"`
+	APIKey     string   `json:"api_key,omitempty"`
 }
 
 func (s *Server) handleAgentStart(w http.ResponseWriter, r *http.Request) {
@@ -364,7 +365,7 @@ func (s *Server) handleAgentStart(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "unknown mode", http.StatusBadRequest)
 		return
 	}
-	job, err := s.Agent.StartJob(mode, req.MessageIDs, req.Prompt)
+	job, err := s.Agent.StartJob(mode, req.MessageIDs, req.Prompt, req.APIKey)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return

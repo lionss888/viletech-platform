@@ -14,7 +14,7 @@ func TestStartJobAnalyzeLocal(t *testing.T) {
 	st := store.New(home)
 	_ = st.AppendThread(store.ThreadMsg{MessageID: 1, ChatID: 9, Direction: "in", Text: "need fix", FromUser: "u"})
 	r := &Runner{Store: st, Workspace: home}
-	job, err := r.StartJob("analyze_selected", nil, "")
+	job, err := r.StartJob("analyze_selected", nil, "", "")
 	if err != nil {
 		t.Fatal(err)
 	}
