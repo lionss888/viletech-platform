@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 
 import { Modal, ModalButton } from "@/components/ved/Modal";
+import { AddressAutocomplete } from "@/components/ved/AddressAutocomplete";
 import {
   createOrganization,
   patchOrganizationProfile,
@@ -61,6 +62,13 @@ export function OrganizationPickDialog({
         (org.inn ?? "").toLowerCase().includes(q),
     );
   }, [organizations, query]);
+
+  /** Адреса уже заведённых организаций дополняют справочник подсказок. */
+  const knownAddresses = useMemo(
+    () => organizations.map((org) => org.legalAddress).filter(Boolean),
+    [organizations],
+  );
+
 
   async function finish(organizationId: string) {
     if (formId) {
@@ -263,16 +271,16 @@ export function OrganizationPickDialog({
                 data-testid="org-create-inn"
               />
             </label>
-            <label className="block">
+            <div className="block">
               <span className="label-caps">Юридический адрес</span>
-              <input
+              <AddressAutocomplete
                 name="legal_address"
-                defaultValue=""
-                className="field mt-1 w-full"
-                placeholder="г. Москва, ул. Тверская, 1"
-                data-testid="org-create-address"
+                value={newAddress}
+                onChange={setNewAddress}
+                testId="org-create-address"
+                knownAddresses={knownAddresses}
               />
-            </label>
+            </div>
             <label className="block">
               <span className="label-caps">Страна (необязательно)</span>
               <input

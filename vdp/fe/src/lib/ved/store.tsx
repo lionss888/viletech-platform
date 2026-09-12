@@ -56,7 +56,7 @@ type VedStore = State & {
   addDocuments: (
     formId: string,
     files: { name: string; size: number }[],
-    kind: AttachedDocument["kind"],
+    kind?: AttachedDocument["kind"],
   ) => void | Promise<void>;
   deleteDocument: (formId: string, docId: string) => void | Promise<void>;
   toggleBlocked: (userId: string) => void;
@@ -85,7 +85,7 @@ const initialState: State = {
   refs: initialRefs,
 };
 
-const StoreContext = createContext<Store | null>(null);
+const StoreContext = createContext<VedStore | null>(null);
 
 export function VedStoreProvider({ children }: { children: ReactNode }) {
   const [state, setState] = useState<State>(initialState);

@@ -46,6 +46,7 @@ func main() {
 		Media:            tg,
 		MediaOut:         tg,
 		ChatIDs:          cfg.ChatIDs,
+		OperatorChatIDs:  cfg.OperatorChatIDs,
 		BotUser:          cfg.BotUsername,
 		Log:              log,
 		WithAnalyze:      withAnalyze,

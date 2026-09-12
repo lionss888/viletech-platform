@@ -251,7 +251,11 @@ func TargetStatus(form Form, action Action, orgApproved bool) (Status, error) {
 	case ActionComplete, ActionTreasurerComplete:
 		return StatusCompleted, nil
 	case ActionTreasurerConfirm:
-		return StatusPaymentSentTreasurer, nil
+		if form.PaymentMethod == PaymentMethodPayFromExport {
+			return StatusPaymentSentTreasurer, nil
+		}
+		// Import advance (and empty method MVP): open provider path after RUB coverage.
+		return StatusPaymentProcessing, nil
 	case ActionTreasurerSigning:
 		return StatusSigningOrderTreasurer, nil
 	case ActionTreasurerReturn:

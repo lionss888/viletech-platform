@@ -63,7 +63,6 @@ export function FormDetail() {
   const [editOpen, setEditOpen] = useState(false);
   const [uploadBusy, setUploadBusy] = useState(false);
   const [uploadError, setUploadError] = useState<string | null>(null);
-  const [uploadKind, setUploadKind] = useState<AttachedDocument["kind"]>("invoice");
   const formQuery = useQuery({
     queryKey: ["form", formId],
     queryFn: () => getForm(formId),
@@ -128,7 +127,7 @@ export function FormDetail() {
     try {
       const files = Array.from(fileList);
       for (const file of files) assertFileSize(file);
-      await addDocuments(form.id, files, uploadKind);
+      await addDocuments(form.id, files);
       if (canControlExtraction(role, form.status)) {
         try {
           await startExtraction(form.id);
@@ -300,6 +299,62 @@ export function FormDetail() {
 
       <div className="mt-4 grid gap-4 xl:grid-cols-[1.6fr_1fr]">
         <div className="space-y-4">
+          <div className="panel p-4" data-testid="form-documents">
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <p className="label-caps flex items-center gap-2">
+                <span>{isProvider ? "Документы сделки" : "Документы"}</span>
+                <span className="rounded-full bg-muted px-2 py-0.5 font-mono text-[11px] font-semibold text-muted-foreground">
+                  {visibleDocuments.length}
+                </span>
+              </p>
+              {canUploadDocs && (
+                <label className="flex h-9 cursor-pointer items-center rounded-md bg-primary px-3 text-xs font-semibold text-primary-foreground hover:opacity-90">
+                  {uploadBusy ? "Загрузка…" : "Загрузить документы"}
+                  <input
+                    type="file"
+                    accept=".pdf,application/pdf"
+                    multiple
+                    className="sr-only"
+                    disabled={uploadBusy}
+                    data-testid="form-doc-upload"
+                    onChange={(e) => {
+                      void onUploadDocs(e.target.files);
+                      e.target.value = "";
+                    }}
+                  />
+                </label>
+              )}
+            </div>
+            {visibleDocuments.length === 0 ? (
+              <p className="mt-2 text-sm text-muted-foreground">
+                {isProvider
+                  ? "Документы сделки (без агентского договора). Платёжку можно прикрепить через действие на карточке."
+                  : canUploadDocs
+                    ? String(form.status).includes("correction")
+                      ? "Документы не загружены. Загрузите файлы здесь, затем нажмите «Отправить исправления» справа."
+                      : "Документы пока не загружены — добавьте PDF кнопкой выше."
+                    : "Документы пока не загружены."}
+              </p>
+            ) : (
+              <DocumentList
+                documents={visibleDocuments}
+                formId={formId}
+                canDelete={canDeleteDocs}
+                onDelete={
+                  canDeleteDocs
+                    ? async (doc) => {
+                        const fileId = doc.fileId || doc.id;
+                        if (!fileId) return;
+                        await deleteDocument(form.id, fileId);
+                        await formQuery.refetch();
+                      }
+                    : undefined
+                }
+              />
+            )}
+            {uploadError && <p className="mt-2 text-xs text-destructive">{uploadError}</p>}
+          </div>
+
           <div className="panel p-4" id="form-params" data-testid="form-params">
             <div className="flex flex-wrap items-center justify-between gap-2">
               <p className="label-caps">Параметры заявки</p>
@@ -406,69 +461,42 @@ export function FormDetail() {
             </>
           )}
 
-          <div className="panel p-4" data-testid="form-documents">
-            <div className="flex flex-wrap items-center justify-between gap-2">
-              <p className="label-caps">
-                {isProvider ? "Документы сделки" : "Документы"} ({visibleDocuments.length})
-              </p>
-              {canUploadDocs && (
-                <div className="flex flex-wrap items-center gap-2">
-                  <select
-                    value={uploadKind}
-                    onChange={(e) => setUploadKind(e.target.value as AttachedDocument["kind"])}
-                    className="field py-1 text-xs"
-                    aria-label="Тип документа"
-                  >
-                    <option value="invoice">Инвойс</option>
-                    <option value="contract">Контракт</option>
-                    <option value="other">Прочее</option>
-                  </select>
-                  <label className="cursor-pointer rounded-md bg-primary px-3 py-1.5 text-xs font-semibold text-primary-foreground hover:opacity-90">
-                    {uploadBusy ? "Загрузка…" : "Загрузить документы"}
-                    <input
-                      type="file"
-                      accept=".pdf,application/pdf"
-                      multiple
-                      className="sr-only"
-                      disabled={uploadBusy}
-                      data-testid="form-doc-upload"
-                      onChange={(e) => {
-                        void onUploadDocs(e.target.files);
-                        e.target.value = "";
-                      }}
-                    />
-                  </label>
-                </div>
+          <div className="panel p-4">
+            <p className="label-caps">Хронология</p>
+            <p className="mt-1 text-xs text-muted-foreground">
+              История шагов по заявке: кто что сделал и к какому статусу пришли. Новые события сверху.
+            </p>
+            <ol className="mt-3 space-y-3">
+              {form.timeline.length === 0 && (
+                <li className="text-sm text-muted-foreground">События появятся после действий по заявке.</li>
               )}
-            </div>
-            {visibleDocuments.length === 0 ? (
-              <p className="mt-2 text-sm text-muted-foreground">
-                {isProvider
-                  ? "Документы сделки (без агентского договора). Платёжку можно прикрепить через действие на карточке."
-                  : canUploadDocs
-                    ? String(form.status).includes("correction")
-                      ? "Документы не загружены. Загрузите файлы здесь, затем нажмите «Отправить исправления» справа."
-                      : "Документы пока не загружены — добавьте PDF кнопкой выше."
-                    : "Документы пока не загружены."}
-              </p>
-            ) : (
-              <DocumentList
-                documents={visibleDocuments}
-                formId={formId}
-                canDelete={canDeleteDocs}
-                onDelete={
-                  canDeleteDocs
-                    ? async (doc) => {
-                        const fileId = doc.fileId || doc.id;
-                        if (!fileId) return;
-                        await deleteDocument(form.id, fileId);
-                        await formQuery.refetch();
-                      }
-                    : undefined
-                }
-              />
-            )}
-            {uploadError && <p className="mt-2 text-xs text-destructive">{uploadError}</p>}
+              {form.timeline.map((entry) => (
+                <li key={entry.id} className="flex gap-3">
+                  <span
+                    className={cn(
+                      "mt-1.5 size-2 shrink-0 rounded-full",
+                      entry.done ? "bg-done" : "bg-border",
+                    )}
+                  />
+                  <span className="min-w-0">
+                    <span
+                      className={cn(
+                        "block text-sm",
+                        entry.done ? "font-medium" : "text-muted-foreground",
+                      )}
+                    >
+                      {entry.title}
+                    </span>
+                    <span className="font-mono text-[11px] text-muted-foreground">
+                      {dateTime(entry.at)} ·{" "}
+                      {entry.actorName
+                        ? `${entry.actorName} · ${roleTitle(entry.actorRole)}`
+                        : roleTitle(entry.actorRole)}
+                    </span>
+                  </span>
+                </li>
+              ))}
+            </ol>
           </div>
         </div>
 
@@ -531,43 +559,6 @@ export function FormDetail() {
             </div>
           )}
 
-          <div className="panel p-4">
-            <p className="label-caps">Хронология</p>
-            <p className="mt-1 text-xs text-muted-foreground">
-              История шагов по заявке: кто что сделал и к какому статусу пришли. Новые события сверху.
-            </p>
-            <ol className="mt-3 space-y-3">
-              {form.timeline.length === 0 && (
-                <li className="text-sm text-muted-foreground">События появятся после действий по заявке.</li>
-              )}
-              {form.timeline.map((entry) => (
-                <li key={entry.id} className="flex gap-3">
-                  <span
-                    className={cn(
-                      "mt-1.5 size-2 shrink-0 rounded-full",
-                      entry.done ? "bg-done" : "bg-border",
-                    )}
-                  />
-                  <span className="min-w-0">
-                    <span
-                      className={cn(
-                        "block text-sm",
-                        entry.done ? "font-medium" : "text-muted-foreground",
-                      )}
-                    >
-                      {entry.title}
-                    </span>
-                    <span className="font-mono text-[11px] text-muted-foreground">
-                      {dateTime(entry.at)} ·{" "}
-                      {entry.actorName
-                        ? `${entry.actorName} · ${roleTitle(entry.actorRole)}`
-                        : roleTitle(entry.actorRole)}
-                    </span>
-                  </span>
-                </li>
-              ))}
-            </ol>
-          </div>
         </div>
       </div>
 

@@ -92,18 +92,23 @@ export function DocumentList({ documents, formId: _formId, canDelete = false, on
       )}
       <ul className="mt-3 divide-y divide-border">
         {documents.map((d) => (
-          <li key={d.id} className="flex items-center gap-3 py-2">
-            <span className="rounded bg-muted px-1.5 py-0.5 font-mono text-[11px] font-semibold">{d.ext}</span>
-            <span className="min-w-0 flex-1 truncate text-sm">{d.title}</span>
-            <span className="hidden font-mono text-[11px] text-muted-foreground sm:inline">{d.size}</span>
-            <span className="hidden font-mono text-[11px] text-muted-foreground md:inline">{dateTime(d.uploadedAt)}</span>
+          <li key={d.id} className="flex items-center gap-3 py-3">
+            <span className="grid h-8 w-10 shrink-0 place-items-center rounded-md bg-muted font-mono text-[10px] font-semibold uppercase text-muted-foreground">
+              {d.ext}
+            </span>
+            <span className="min-w-0 flex-1">
+              <span className="block truncate text-sm font-medium">{d.title}</span>
+              <span className="mt-0.5 block truncate font-mono text-[11px] text-muted-foreground">
+                {[KIND_LABEL[d.kind], d.size, dateTime(d.uploadedAt)].filter(Boolean).join(" · ")}
+              </span>
+            </span>
             {mode === "app" && d.fileId ? (
-              <span className="flex shrink-0 gap-1">
+              <span className="flex shrink-0 items-center gap-1.5">
                 <button
                   type="button"
                   disabled={busy || !d.fileId}
                   onClick={() => void handleView(d)}
-                  className="rounded-md bg-muted px-2 py-1 text-[11px] font-semibold hover:bg-border"
+                  className="rounded-md border border-border px-2.5 py-1.5 text-xs font-semibold hover:bg-muted disabled:opacity-50"
                 >
                   Посмотреть
                 </button>
@@ -111,7 +116,7 @@ export function DocumentList({ documents, formId: _formId, canDelete = false, on
                   type="button"
                   disabled={busy || !d.fileId}
                   onClick={() => void handleDownload(d)}
-                  className="rounded-md bg-accent px-2 py-1 text-[11px] font-semibold text-accent-foreground hover:opacity-90"
+                  className="rounded-md border border-border px-2.5 py-1.5 text-xs font-semibold hover:bg-muted disabled:opacity-50"
                 >
                   Скачать
                 </button>
@@ -121,7 +126,7 @@ export function DocumentList({ documents, formId: _formId, canDelete = false, on
                     disabled={busy}
                     data-testid="doc-delete"
                     onClick={() => void onDelete(d)}
-                    className="rounded-md bg-destructive-soft px-2 py-1 text-[11px] font-semibold text-destructive hover:opacity-90"
+                    className="rounded-md border border-transparent bg-destructive-soft px-2.5 py-1.5 text-xs font-semibold text-destructive hover:opacity-90 disabled:opacity-50"
                   >
                     Удалить
                   </button>
@@ -131,7 +136,7 @@ export function DocumentList({ documents, formId: _formId, canDelete = false, on
               <button
                 type="button"
                 onClick={() => setOpen(d)}
-                className="rounded-md bg-muted px-2 py-1 text-[11px] font-semibold hover:bg-border"
+                className="shrink-0 rounded-md border border-border px-2.5 py-1.5 text-xs font-semibold hover:bg-muted"
               >
                 Просмотр
               </button>

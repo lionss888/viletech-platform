@@ -2,7 +2,14 @@ import { useEffect, useState } from "react";
 import { Eye, EyeOff, Inbox, KeyRound, RotateCcw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { getAgentKey, getToken, setAgentKey, setToken } from "@/lib/api/client";
+import {
+  agentKeyPresent,
+  consoleKeyPresent,
+  getAgentKey,
+  getToken,
+  setAgentKey,
+  setToken,
+} from "@/lib/api/client";
 
 type Props = {
   messageCount: number;
@@ -10,6 +17,7 @@ type Props = {
   pendingCards: number;
   signedIn: boolean;
   onOpenCards: () => void;
+  onOpenPlans?: () => void;
   onSignIn: (token: string) => void;
   onRefresh: () => void;
 };
@@ -19,6 +27,7 @@ export function ConsoleHeader({
   pendingCards,
   signedIn,
   onOpenCards,
+  onOpenPlans,
   onSignIn,
   onRefresh,
 }: Props) {
@@ -26,11 +35,15 @@ export function ConsoleHeader({
   const [agentKey, setLocalAgentKey] = useState("");
   const [visible, setVisible] = useState(false);
   const [accessOpen, setAccessOpen] = useState(!signedIn);
+  const [consoleOk, setConsoleOk] = useState(false);
+  const [agentOk, setAgentOk] = useState(false);
 
   useEffect(() => {
     setLocalToken(getToken());
     setLocalAgentKey(getAgentKey());
-  }, []);
+    setConsoleOk(consoleKeyPresent());
+    setAgentOk(agentKeyPresent());
+  }, [signedIn]);
 
   useEffect(() => {
     if (signedIn) setAccessOpen(false);
@@ -43,12 +56,22 @@ export function ConsoleHeader({
           <h1 className="truncate font-mono text-sm font-semibold tracking-tight sm:text-base">
             Консоль чата
           </h1>
-          <p className="mt-0.5 flex items-center gap-2 font-mono text-[11px] text-muted-foreground">
+          <p className="mt-0.5 flex flex-wrap items-center gap-x-2 gap-y-1 font-mono text-[11px] text-muted-foreground">
             <span className="inline-flex items-center gap-1.5">
               <span
                 className={`size-1.5 rounded-full ${signedIn ? "bg-success" : "bg-muted-foreground"}`}
               />
               {signedIn ? "подключено" : "нет подключения"}
+            </span>
+            <span aria-hidden>·</span>
+            <span className="inline-flex items-center gap-1.5" title="INTAKE_CONSOLE_TOKEN">
+              <span className={`size-1.5 rounded-full ${consoleOk ? "bg-success" : "bg-warning"}`} />
+              консоль {consoleOk ? "токен ок" : "нет Bearer"}
+            </span>
+            <span aria-hidden>·</span>
+            <span className="inline-flex items-center gap-1.5" title="CURSOR_API_KEY (key_…)">
+              <span className={`size-1.5 rounded-full ${agentOk ? "bg-success" : "bg-muted-foreground"}`} />
+              агент {agentOk ? "ключ задан" : "без key_…"}
             </span>
             <span aria-hidden>·</span>
             <span>{messageCount} сообщений</span>
@@ -64,6 +87,17 @@ export function ConsoleHeader({
           <KeyRound className="size-3.5" />
           <span className="hidden sm:inline">Доступ</span>
         </Button>
+
+        {onOpenPlans && (
+          <Button
+            variant="ghost"
+            size="sm"
+            className="h-9 font-mono text-[11px] text-muted-foreground"
+            onClick={onOpenPlans}
+          >
+            План
+          </Button>
+        )}
 
         <Button
           variant="outline"
@@ -91,7 +125,7 @@ export function ConsoleHeader({
                   type={visible ? "text" : "password"}
                   value={token}
                   onChange={(e) => setLocalToken(e.target.value)}
-                  placeholder="INTAKE_CONSOLE_TOKEN"
+                  placeholder="INTAKE_CONSOLE_TOKEN (Bearer консоли)"
                   className="h-9 border-border bg-background pl-8 font-mono text-xs"
                 />
               </div>
@@ -112,6 +146,7 @@ export function ConsoleHeader({
                 onClick={() => {
                   setLocalToken("");
                   setToken("");
+                  setConsoleOk(false);
                   onRefresh();
                 }}
               >
@@ -123,6 +158,10 @@ export function ConsoleHeader({
                 onClick={() => {
                   setToken(token);
                   setAgentKey(agentKey);
+                  setConsoleOk(token.trim().length > 0);
+                  setAgentOk(
+                    agentKey.trim().startsWith("key_") || agentKey.trim().startsWith("crsr_"),
+                  );
                   onSignIn(token.trim());
                 }}
               >
@@ -133,7 +172,7 @@ export function ConsoleHeader({
               type="password"
               value={agentKey}
               onChange={(e) => setLocalAgentKey(e.target.value)}
-              placeholder="CURSOR_API_KEY (key_…) — для «Спросить у агента»"
+              placeholder="CURSOR_API_KEY (key_…) — отдельно от Bearer консоли"
               className="h-9 border-border bg-background font-mono text-xs"
             />
           </div>

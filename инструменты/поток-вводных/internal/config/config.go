@@ -14,6 +14,7 @@ import (
 type Config struct {
 	Token            string
 	ChatIDs          map[int64]struct{}
+	OperatorChatIDs  map[int64]struct{}
 	Home             string
 	BotUsername      string
 	HTTPTimeout      time.Duration
@@ -57,6 +58,11 @@ func Load() (Config, error) {
 	if len(chats) == 0 {
 		return Config{}, fmt.Errorf("TELEGRAM_INTAKE_CHAT_IDS required")
 	}
+	opRaw := strings.TrimSpace(os.Getenv("TELEGRAM_OPERATOR_CHAT_IDS"))
+	opChats, err := parseChatIDs(opRaw)
+	if err != nil {
+		return Config{}, fmt.Errorf("TELEGRAM_OPERATOR_CHAT_IDS: %w", err)
+	}
 	bot := strings.TrimPrefix(strings.TrimSpace(os.Getenv("TELEGRAM_INTAKE_BOT_USERNAME")), "@")
 	if bot == "" {
 		bot = "vdp_intake_bot"
@@ -89,6 +95,7 @@ func Load() (Config, error) {
 	return Config{
 		Token:            token,
 		ChatIDs:          chats,
+		OperatorChatIDs:  opChats,
 		Home:             home,
 		BotUsername:      bot,
 		HTTPTimeout:      time.Duration(timeoutMS) * time.Millisecond,

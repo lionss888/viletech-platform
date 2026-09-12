@@ -17,6 +17,7 @@ type ThreadMsg struct {
 	UpdateID    int64        `json:"update_id,omitempty"`
 	MessageID   int64        `json:"message_id"`
 	ChatID      int64        `json:"chat_id"`
+	Channel     string       `json:"channel,omitempty"` // manager|operator
 	FromID      int64        `json:"from_id,omitempty"`
 	FromUser    string       `json:"from_user,omitempty"`
 	Direction   string       `json:"direction"` // in|out|system|agent

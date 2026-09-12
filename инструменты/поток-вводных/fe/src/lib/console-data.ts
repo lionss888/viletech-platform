@@ -5,6 +5,9 @@ export type ConsoleMessage = {
   channel: string;
   event: string;
   direction: "in" | "out" | "agent";
+  messageId?: number;
+  chatId?: number;
+  tgChannel?: "manager" | "operator" | string;
   title?: string;
   summary?: string;
   quotes?: { time: string; author: string; text: string }[];

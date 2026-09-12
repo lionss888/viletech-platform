@@ -230,6 +230,7 @@ var transitionsImportForm = map[Status][]Status{
 		StatusSigningOrderAccepted,
 		StatusAdvanceSigningOrderAccepted,
 	},
+	// Import advance: Manager marks RUB (payment_received); TreasurerConfirm → payment_processing (§10.2).
 	StatusPaymentReceived: {
 		StatusPaymentProcessing,
 		StatusManagerChecking,

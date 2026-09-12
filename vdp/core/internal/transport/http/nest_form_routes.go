@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"net/http"
 	"strings"
+	"time"
 
 	"github.com/viletech/vdp/core/internal/authz"
 	"github.com/viletech/vdp/core/internal/domain"
@@ -206,12 +207,7 @@ func (s *Server) handleNestFormPath(w http.ResponseWriter, r *http.Request, prin
 
 func (s *Server) handleNestFormPUT(w http.ResponseWriter, r *http.Request, principal authz.Principal, nestRole, id, path string) {
 	if path == "confirm-payment" || strings.HasSuffix(path, "confirm-payment") {
-		form, err := s.forms.TransitionByNestPath(r.Context(), principal, id, nestRole, "confirm-payment")
-		if err != nil {
-			writeError(w, err)
-			return
-		}
-		writeJSON(w, http.StatusOK, form)
+		s.handleTreasurerConfirmPayment(w, r, principal, id)
 		return
 	}
 	if _, ok := formpayment.NestPathAction(nestRole, path); ok {
@@ -402,14 +398,35 @@ func (s *Server) handleNestFormSpecialGET(w http.ResponseWriter, r *http.Request
 	}
 }
 
-func (s *Server) handleNestPatch(w http.ResponseWriter, r *http.Request, principal authz.Principal, id, path string) {
-	if path == "confirm-payment" {
-		form, err := s.forms.TransitionByNestPath(r.Context(), principal, id, "treasurer", "confirm-payment")
+func (s *Server) handleTreasurerConfirmPayment(w http.ResponseWriter, r *http.Request, principal authz.Principal, id string) {
+	var body struct {
+		ExecutionDeadline string `json:"execution_deadline"`
+	}
+	_ = json.NewDecoder(r.Body).Decode(&body)
+	var deadline *time.Time
+	raw := strings.TrimSpace(body.ExecutionDeadline)
+	if raw != "" {
+		parsed, err := time.Parse(time.RFC3339, raw)
 		if err != nil {
-			writeError(w, err)
+			parsed, err = time.Parse("2006-01-02", raw)
+		}
+		if err != nil {
+			writeError(w, apperrors.New(apperrors.ErrCodeValidation, "invalid execution_deadline"))
 			return
 		}
-		writeJSON(w, http.StatusOK, form)
+		deadline = &parsed
+	}
+	form, err := s.forms.TreasurerConfirmPayment(r.Context(), principal, id, deadline)
+	if err != nil {
+		writeError(w, err)
+		return
+	}
+	writeJSON(w, http.StatusOK, form)
+}
+
+func (s *Server) handleNestPatch(w http.ResponseWriter, r *http.Request, principal authz.Principal, id, path string) {
+	if path == "confirm-payment" {
+		s.handleTreasurerConfirmPayment(w, r, principal, id)
 		return
 	}
 	if strings.HasPrefix(path, "rate") {

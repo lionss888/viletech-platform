@@ -40,24 +40,24 @@ export function parseExtractionResult(invoiceJson: string | undefined | null): E
   if (!invoiceJson || !invoiceJson.trim()) return null;
   try {
     const raw = JSON.parse(invoiceJson) as Record<string, unknown>;
-    const candidate = (raw.extraction as Record<string, unknown> | undefined) ?? raw;
-    if (candidate.schema_version !== "v1" && !candidate.header && !candidate.line_items) {
+    const candidate = (raw["extraction"] as Record<string, unknown> | undefined) ?? raw;
+    if (candidate["schema_version"] !== "v1" && !candidate["header"] && !candidate["line_items"]) {
       return null;
     }
-    const header = (candidate.header as ExtractionResult["header"]) ?? {};
-    const lineItems = Array.isArray(candidate.line_items)
-      ? (candidate.line_items as ExtractionLineItem[])
+    const header = (candidate["header"] as ExtractionResult["header"]) ?? {};
+    const lineItems = Array.isArray(candidate["line_items"])
+      ? (candidate["line_items"] as ExtractionLineItem[])
       : [];
-    const meta = (candidate.meta as ExtractionResult["meta"]) ?? {};
+    const meta = (candidate["meta"] as ExtractionResult["meta"]) ?? {};
     return {
       schema_version: "v1",
-      doc_type: typeof candidate.doc_type === "string" ? candidate.doc_type : undefined,
-      language: typeof candidate.language === "string" ? candidate.language : undefined,
-      confidence: typeof candidate.confidence === "number" ? candidate.confidence : undefined,
+      doc_type: typeof candidate["doc_type"] === "string" ? candidate["doc_type"] : undefined,
+      language: typeof candidate["language"] === "string" ? candidate["language"] : undefined,
+      confidence: typeof candidate["confidence"] === "number" ? candidate["confidence"] : undefined,
       header,
       line_items: lineItems,
       meta,
-      warnings: Array.isArray(candidate.warnings) ? (candidate.warnings as string[]) : undefined,
+      warnings: Array.isArray(candidate["warnings"]) ? (candidate["warnings"] as string[]) : undefined,
     };
   } catch {
     return null;

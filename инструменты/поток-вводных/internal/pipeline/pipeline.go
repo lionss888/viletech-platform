@@ -8,16 +8,16 @@ import (
 	"strings"
 	"time"
 
+	"github.com/viletech/tools/intake/internal/analytics"
 	"github.com/viletech/tools/intake/internal/analyze"
 	"github.com/viletech/tools/intake/internal/card"
 	"github.com/viletech/tools/intake/internal/comms"
-	"github.com/viletech/tools/intake/internal/conflict"
-	"github.com/viletech/tools/intake/internal/estimate"
 	"github.com/viletech/tools/intake/internal/experience"
 	"github.com/viletech/tools/intake/internal/normalize"
 	"github.com/viletech/tools/intake/internal/planfile"
 	"github.com/viletech/tools/intake/internal/proposal"
 	"github.com/viletech/tools/intake/internal/redact"
+	"github.com/viletech/tools/intake/internal/router"
 	"github.com/viletech/tools/intake/internal/store"
 	"github.com/viletech/tools/intake/internal/telegram"
 )
@@ -49,6 +49,7 @@ type Pipeline struct {
 	Media            MediaFetcher
 	MediaOut         MediaSender
 	ChatIDs          map[int64]struct{}
+	OperatorChatIDs  map[int64]struct{}
 	BotUser          string
 	Log              *slog.Logger
 	WithAnalyze      bool
@@ -60,13 +61,19 @@ type Pipeline struct {
 	now              func() time.Time
 }
 
-const helpText = `Шаблон ввода (отметьте бота или /vvod):
+const helpText = `Шаблон ввода (отметьте бота @… или /vvod):
 1) тег (#баг / #доработка / #вопрос / #тест)
 2) кратко суть
 3) ожидание / результат
 4) роль если важно
 5) номер заявки если есть
-6) срочность (низкая/средняя/высокая)`
+6) срочность (низкая/средняя/высокая)
+
+Что куда попадает:
+• @бот или /vvod (+ текст/вложение) → inbox и HITL (если включён)
+• обычное сообщение или медиа без триггера → только лента консоли, без карточки
+• /help → эта справка
+• стикеры/голосовые — не принимаются`
 
 // ConsoleIngest is an operator message from the local console.
 type ConsoleIngest struct {
@@ -74,6 +81,7 @@ type ConsoleIngest struct {
 	ChatID      int64
 	AsIntake    bool
 	MirrorToTG  bool
+	Target      string // manager|operator (optional; selects chat when ChatID==0)
 	Attachments []store.Attachment
 	FromUser    string
 }
@@ -98,9 +106,10 @@ func (p *Pipeline) HandleUpdate(ctx context.Context, u telegram.Update) (bool, e
 		"message_id", msg.MessageID,
 		"chat_id", msg.Chat.ID,
 	)
-	if _, ok := p.ChatIDs[msg.Chat.ID]; !ok {
+	if !router.Allowed(msg.Chat.ID, p.ChatIDs, p.OperatorChatIDs) {
 		return false, nil
 	}
+	channel := string(router.Classify(msg.Chat.ID, p.ChatIDs, p.OperatorChatIDs))
 	seen, err := p.Store.Seen(u.UpdateID)
 	if err != nil {
 		return false, err
@@ -142,6 +151,7 @@ func (p *Pipeline) HandleUpdate(ctx context.Context, u telegram.Update) (bool, e
 		UpdateID:    u.UpdateID,
 		MessageID:   msg.MessageID,
 		ChatID:      msg.Chat.ID,
+		Channel:     channel,
 		FromID:      fromID,
 		FromUser:    fromUser,
 		Direction:   "in",
@@ -150,12 +160,20 @@ func (p *Pipeline) HandleUpdate(ctx context.Context, u telegram.Update) (bool, e
 		Trigger:     string(trig),
 		Attachments: atts,
 	})
+	// Operator chat: mirror only (manager chat remains the intake surface).
+	if router.Classify(msg.Chat.ID, p.ChatIDs, p.OperatorChatIDs) == router.ChannelOperator {
+		if trig == normalize.TriggerHelp {
+			_, _ = p.sendAndMirror(ctx, msg.Chat.ID, msg.MessageID, "help", comms.SanitizeManager(helpText))
+		}
+		_ = p.Store.MarkSeen(u.UpdateID)
+		return false, nil
+	}
 	if trig == normalize.TriggerNone {
 		_ = p.Store.MarkSeen(u.UpdateID)
 		return false, nil
 	}
 	if trig == normalize.TriggerHelp {
-		_, _ = p.sendAndMirror(ctx, msg.Chat.ID, msg.MessageID, comms.SanitizeManager(helpText))
+		_, _ = p.sendAndMirror(ctx, msg.Chat.ID, msg.MessageID, "help", comms.SanitizeManager(helpText))
 		_ = p.Store.MarkSeen(u.UpdateID)
 		return true, nil
 	}
@@ -185,7 +203,8 @@ func (p *Pipeline) HandleUpdate(ctx context.Context, u telegram.Update) (bool, e
 		Text:         redacted,
 		Attachments:  atts,
 	}
-	analysis := analyze.Analyze(text, p.BotUser)
+	bundle := analytics.Run(text, p.BotUser)
+	analysis := bundle.AnalyzeResult()
 	if p.WithAnalyze || p.WithHITL {
 		rec.Class = analysis.Class
 		rec.Confidence = string(analysis.Confidence)
@@ -204,7 +223,7 @@ func (p *Pipeline) HandleUpdate(ctx context.Context, u telegram.Update) (bool, e
 	ack := "принято"
 	switch {
 	case p.WithHITL:
-		ack, err = p.handleHITLIntake(ctx, msg, fromUser, redacted, analysis)
+		ack, err = p.handleHITLIntake(ctx, msg, fromUser, redacted, bundle)
 		if err != nil {
 			log.Warn("hitl failed", "update_id", u.UpdateID, "err", err)
 			ack = comms.Accepted()
@@ -213,23 +232,32 @@ func (p *Pipeline) HandleUpdate(ctx context.Context, u telegram.Update) (bool, e
 		ack = formatAnalyzeReply(analysis)
 	}
 	ack = comms.SanitizeManager(ack)
-	if _, err := p.sendAndMirror(ctx, msg.Chat.ID, msg.MessageID, ack); err != nil {
+	if _, err := p.sendAndMirror(ctx, msg.Chat.ID, msg.MessageID, "proposal", ack); err != nil {
 		log.Warn("ack failed", "update_id", u.UpdateID, "message_id", msg.MessageID, "err", err)
 	}
 	return true, nil
 }
 
-func (p *Pipeline) sendAndMirror(ctx context.Context, chatID, replyTo int64, text string) (int64, error) {
+func (p *Pipeline) sendAndMirror(ctx context.Context, chatID, replyTo int64, kind, text string) (int64, error) {
 	if p.Messenger == nil {
 		return 0, fmt.Errorf("messenger nil")
 	}
-	id, err := p.Messenger.SendMessage(ctx, chatID, replyTo, text)
+	target, channel := router.TargetForKind(kind, p.ChatIDs, p.OperatorChatIDs, chatID)
+	if target == 0 {
+		target = chatID
+	}
+	reply := replyTo
+	if target != chatID {
+		reply = 0
+	}
+	id, err := p.Messenger.SendMessage(ctx, target, reply, text)
 	if err != nil {
 		return 0, err
 	}
 	_ = p.Store.AppendThread(store.ThreadMsg{
 		MessageID: id,
-		ChatID:    chatID,
+		ChatID:    target,
+		Channel:   string(channel),
 		FromUser:  p.BotUser,
 		Direction: "out",
 		Text:      text,
@@ -242,7 +270,15 @@ func (p *Pipeline) sendAndMirror(ctx context.Context, chatID, replyTo int64, tex
 func (p *Pipeline) IngestConsole(ctx context.Context, in ConsoleIngest) (ConsoleResult, error) {
 	chatID := in.ChatID
 	if chatID == 0 {
-		chatID = p.primaryChatID()
+		switch strings.ToLower(strings.TrimSpace(in.Target)) {
+		case "operator":
+			chatID = router.Primary(p.OperatorChatIDs)
+			if chatID == 0 {
+				chatID = p.primaryChatID()
+			}
+		default:
+			chatID = p.primaryChatID()
+		}
 	}
 	if chatID == 0 {
 		return ConsoleResult{}, fmt.Errorf("no chat_id configured")
@@ -276,7 +312,8 @@ func (p *Pipeline) IngestConsole(ctx context.Context, in ConsoleIngest) (Console
 	if in.AsIntake {
 		rec.Kind = "intake"
 		rec.Trigger = "vvod"
-		analysis := analyze.Analyze(text, p.BotUser)
+		bundle := analytics.Run(text, p.BotUser)
+		analysis := bundle.AnalyzeResult()
 		if p.WithAnalyze || p.WithHITL {
 			rec.Class = analysis.Class
 			rec.Confidence = string(analysis.Confidence)
@@ -294,7 +331,7 @@ func (p *Pipeline) IngestConsole(ctx context.Context, in ConsoleIngest) (Console
 		}
 		if p.WithHITL {
 			var err error
-			ack, err = p.handleHITLIntake(ctx, fake, fromUser, redacted, analysis)
+			ack, err = p.handleHITLIntake(ctx, fake, fromUser, redacted, bundle)
 			if err != nil {
 				ack = comms.Accepted()
 			}
@@ -312,9 +349,11 @@ func (p *Pipeline) IngestConsole(ctx context.Context, in ConsoleIngest) (Console
 		}
 		ack = redacted
 	}
+	ch := string(router.Classify(chatID, p.ChatIDs, p.OperatorChatIDs))
 	_ = p.Store.AppendThread(store.ThreadMsg{
 		MessageID:   msgID,
 		ChatID:      chatID,
+		Channel:     ch,
 		FromUser:    fromUser,
 		Direction:   "out",
 		Text:        redacted,
@@ -327,9 +366,11 @@ func (p *Pipeline) IngestConsole(ctx context.Context, in ConsoleIngest) (Console
 		if !in.AsIntake {
 			body = comms.SanitizeManager(redacted)
 		}
-		// Mirror operator text to TG (not the HITL ack) when not as_intake;
-		// when as_intake, send ack and also ensure proposal reaches chat.
-		id, err := p.sendAndMirror(ctx, chatID, 0, body)
+		kind := "proposal"
+		if ch == string(router.ChannelOperator) {
+			kind = "operator_prompt"
+		}
+		id, err := p.sendAndMirror(ctx, chatID, 0, kind, body)
 		if err != nil {
 			return ConsoleResult{Record: rec, Ack: ack, CardID: cardID}, err
 		}
@@ -374,7 +415,7 @@ func (p *Pipeline) ApplyHITLDecision(ctx context.Context, cardID string, approve
 		return err
 	}
 	if mirror && p.Messenger != nil {
-		_, _ = p.sendAndMirror(ctx, c.ChatID, c.RootMessageID, ack)
+		_, _ = p.sendAndMirror(ctx, c.ChatID, c.RootMessageID, "proposal", ack)
 	}
 	return nil
 }
@@ -469,6 +510,31 @@ func (p *Pipeline) pullMedia(ctx context.Context, msg *telegram.Message) ([]stor
 	return out, nil
 }
 
+// PublishSelection sends sanitized text to manager or operator TG chat.
+func (p *Pipeline) PublishSelection(ctx context.Context, text, target string, chatID int64) (int64, error) {
+	body := comms.SanitizeManager(strings.TrimSpace(text))
+	if body == "" {
+		return 0, fmt.Errorf("text required")
+	}
+	kind := "proposal"
+	if strings.EqualFold(target, "operator") {
+		kind = "operator_prompt"
+	}
+	res, err := p.IngestConsole(ctx, ConsoleIngest{
+		Text:       body,
+		ChatID:     chatID,
+		Target:     target,
+		AsIntake:   false,
+		MirrorToTG: true,
+		FromUser:   "console",
+	})
+	if err != nil {
+		return 0, err
+	}
+	_ = kind
+	return res.TGMessage, nil
+}
+
 func (p *Pipeline) primaryChatID() int64 {
 	for id := range p.ChatIDs {
 		return id
@@ -505,7 +571,7 @@ func (p *Pipeline) tryHITLDecision(ctx context.Context, msg *telegram.Message, f
 		})
 		_ = p.rewritePlan(target)
 		_ = p.Cards.Save(target)
-		_, _ = p.sendAndMirror(ctx, msg.Chat.ID, msg.MessageID, comms.ApprovedAck())
+		_, _ = p.sendAndMirror(ctx, msg.Chat.ID, msg.MessageID, "proposal", comms.ApprovedAck())
 		return true, nil
 	case comms.HitlDecline:
 		target.Status = card.StatusDeclined
@@ -514,16 +580,19 @@ func (p *Pipeline) tryHITLDecision(ctx context.Context, msg *telegram.Message, f
 		})
 		_ = p.rewritePlan(target)
 		_ = p.Cards.Save(target)
-		_, _ = p.sendAndMirror(ctx, msg.Chat.ID, msg.MessageID, comms.DeclinedAck())
+		_, _ = p.sendAndMirror(ctx, msg.Chat.ID, msg.MessageID, "proposal", comms.DeclinedAck())
 		return true, nil
 	default:
 		return false, nil
 	}
 }
 
-func (p *Pipeline) handleHITLIntake(_ context.Context, msg *telegram.Message, fromUser, redacted string, analysis analyze.Result) (string, error) {
+func (p *Pipeline) handleHITLIntake(_ context.Context, msg *telegram.Message, fromUser, redacted string, bundle analytics.Bundle) (string, error) {
 	now := p.clock()
 	id := card.NewID(msg.Chat.ID, msg.MessageID)
+	analysis := bundle.AnalyzeResult()
+	conflictPlains := bundle.ConflictPlains()
+	bcopy := bundle
 	c := &card.Card{
 		ID:            id,
 		ChatID:        msg.Chat.ID,
@@ -532,19 +601,15 @@ func (p *Pipeline) handleHITLIntake(_ context.Context, msg *telegram.Message, fr
 		Status:        card.StatusDraft,
 		Class:         analysis.Class,
 		Summary:       redacted,
+		Conflicts:     conflictPlains,
+		Analytics:     &bcopy,
 		Texts:         []string{redacted},
 		CreatedAt:     now,
 		UpdatedAt:     now,
 		LastAskAt:     now,
 	}
-	findings := conflict.Detect(analysis.Class, analysis.Tags, redacted, nil)
-	var conflictPlains []string
-	for _, f := range findings {
-		conflictPlains = append(conflictPlains, f.Plain)
-	}
-	c.Conflicts = conflictPlains
 	rawText := msg.PrimaryText()
-	if analysis.Confidence == analyze.ConfidenceLow && len(findings) == 0 {
+	if analysis.Confidence == analyze.ConfidenceLow && len(bundle.Conflicts) == 0 {
 		c.Status = card.StatusAwaitingClarify
 		if err := p.Cards.Save(c); err != nil {
 			return "", err
@@ -556,7 +621,7 @@ func (p *Pipeline) handleHITLIntake(_ context.Context, msg *telegram.Message, fr
 		}
 		return comms.Clarify(q), nil
 	}
-	if len(findings) > 0 {
+	if len(bundle.Conflicts) > 0 {
 		c.Status = card.StatusAwaitingClarify
 		if err := p.Cards.Save(c); err != nil {
 			return "", err
@@ -564,13 +629,12 @@ func (p *Pipeline) handleHITLIntake(_ context.Context, msg *telegram.Message, fr
 		_ = experience.Append(p.StoreHome(), experience.Event{
 			CardID: id, Kind: "conflict", Class: analysis.Class, Conflicts: conflictPlains,
 		})
-		f := findings[0]
+		f := bundle.Conflicts[0]
 		return comms.ConflictWarn(f.Plain, f.Question), nil
 	}
 	prop := proposal.Summary(rawText, p.BotUser, analysis.Class)
-	est := estimate.FromSignals(analysis.Class, analysis.Chars, analysis.Words, rawText)
 	c.Proposal = prop
-	c.TimelinePhrase = est.ManagerPhrase
+	c.TimelinePhrase = bundle.Estimate.ManagerPhrase
 	c.Status = card.StatusAwaitingApprove
 	if err := p.Cards.Save(c); err != nil {
 		return "", err
@@ -582,20 +646,20 @@ func (p *Pipeline) handleHITLIntake(_ context.Context, msg *telegram.Message, fr
 			Class:          c.Class,
 			Summary:        c.Summary,
 			Proposal:       prop,
-			TimelinePhrase: est.ManagerPhrase,
+			TimelinePhrase: bundle.Estimate.ManagerPhrase,
 			Conflicts:      conflictPlains,
-			EngineerNote:   est.EngineerNote,
-			Todos:          est.Todos,
-			Hours:          est.Hours,
+			EngineerNote:   bundle.Estimate.EngineerNote,
+			Todos:          bundle.Estimate.Todos,
+			Hours:          bundle.Estimate.Hours,
 		})
 		if err != nil {
 			p.logger().Warn("plan write failed", "card_id", c.ID, "err", err)
 		}
 	}
 	_ = experience.Append(p.StoreHome(), experience.Event{
-		CardID: id, Kind: "proposal", Class: analysis.Class, TimelinePhrase: est.ManagerPhrase,
+		CardID: id, Kind: "proposal", Class: analysis.Class, TimelinePhrase: bundle.Estimate.ManagerPhrase,
 	})
-	return comms.Proposal(prop, est.ManagerPhrase), nil
+	return comms.Proposal(prop, bundle.Estimate.ManagerPhrase), nil
 }
 
 func (p *Pipeline) rewritePlan(c *card.Card) error {
@@ -640,13 +704,13 @@ func (p *Pipeline) ProcessReminders(ctx context.Context) error {
 			_ = experience.Append(p.StoreHome(), experience.Event{
 				CardID: c.ID, Kind: "stale", Class: c.Class, ReminderCount: c.ReminderCount,
 			})
-			_, _ = p.sendAndMirror(ctx, c.ChatID, c.RootMessageID, comms.StaleNotice())
+			_, _ = p.sendAndMirror(ctx, c.ChatID, c.RootMessageID, "stale", comms.StaleNotice())
 			continue
 		}
 		c.ReminderCount++
 		c.LastAskAt = p.clock()
 		_ = p.Cards.Save(c)
-		_, _ = p.sendAndMirror(ctx, c.ChatID, c.RootMessageID, comms.Reminder())
+		_, _ = p.sendAndMirror(ctx, c.ChatID, c.RootMessageID, "reminder", comms.Reminder())
 	}
 	return nil
 }

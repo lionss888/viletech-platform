@@ -78,9 +78,11 @@ export function ProcessRolesPage() {
     const next = index + dir;
     if (next < 0 || next >= rows.length) return;
     const order = rows.map((r) => r.role);
-    const tmp = order[index];
-    order[index] = order[next];
-    order[next] = tmp;
+    const current = order[index];
+    const target = order[next];
+    if (!current || !target) return;
+    order[index] = target;
+    order[next] = current;
     setBusy(true);
     setError(null);
     try {

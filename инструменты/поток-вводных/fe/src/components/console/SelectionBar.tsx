@@ -1,26 +1,37 @@
 import { useState } from "react";
-import { Sparkle, X } from "lucide-react";
+import { SendHorizontal, Sparkle, Trash2, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 
 type Props = {
   count: number;
   busy?: boolean;
+  previewText?: string;
   onClear: () => void;
   onAnalyzeSelected: (prompt: string) => void;
   onAnalyzeChat: () => void;
   onAskAgent: (prompt: string) => void;
+  onPublish?: (text: string, target: "manager" | "operator") => void;
+  onMgmtDone?: (title: string, body: string) => void;
+  onDeleteSelected?: () => void;
 };
 
 export function SelectionBar({
   count,
   busy,
+  previewText = "",
   onClear,
   onAnalyzeSelected,
   onAnalyzeChat,
   onAskAgent,
+  onPublish,
+  onMgmtDone,
+  onDeleteSelected,
 }: Props) {
   const [question, setQuestion] = useState("");
+  const [publishPreview, setPublishPreview] = useState(false);
+  const [edited, setEdited] = useState("");
+  const [target, setTarget] = useState<"manager" | "operator">("manager");
   if (count === 0) return null;
 
   return (
@@ -76,9 +87,84 @@ export function SelectionBar({
           >
             Спросить у агента
           </Button>
+          {onPublish && (
+            <Button
+              size="sm"
+              variant="outline"
+              className="gap-1.5 border-border bg-surface"
+              disabled={busy}
+              onClick={() => {
+                setEdited(previewText || question);
+                setPublishPreview(true);
+              }}
+            >
+              <SendHorizontal className="size-3.5" /> Отправить выбранное
+            </Button>
+          )}
+          {onMgmtDone && (
+            <Button
+              size="sm"
+              variant="outline"
+              className="border-border bg-surface"
+              disabled={busy}
+              onClick={() => onMgmtDone("Обновление", previewText || question)}
+            >
+              Mgmt done
+            </Button>
+          )}
+          {onDeleteSelected && (
+            <Button
+              size="sm"
+              variant="ghost"
+              className="gap-1 text-muted-foreground"
+              disabled={busy}
+              onClick={onDeleteSelected}
+            >
+              <Trash2 className="size-3.5" /> Удалить в TG
+            </Button>
+          )}
         </div>
+
+        {publishPreview && onPublish && (
+          <div className="mt-3 space-y-2 rounded-lg border border-border bg-background/60 p-2">
+            <p className="font-mono text-[11px] text-muted-foreground">Превью перед отправкой в TG</p>
+            <Textarea
+              value={edited}
+              onChange={(e) => setEdited(e.target.value)}
+              className="min-h-24 resize-none border-border text-sm"
+              disabled={busy}
+            />
+            <div className="flex flex-wrap items-center gap-2">
+              <label className="font-mono text-[11px] text-muted-foreground">
+                Куда:{" "}
+                <select
+                  className="ml-1 rounded border border-border bg-background px-2 py-1"
+                  value={target}
+                  onChange={(e) => setTarget(e.target.value as "manager" | "operator")}
+                >
+                  <option value="manager">менеджер</option>
+                  <option value="operator">оператор</option>
+                </select>
+              </label>
+              <Button
+                size="sm"
+                disabled={busy || !edited.trim()}
+                onClick={() => {
+                  onPublish(edited.trim(), target);
+                  setPublishPreview(false);
+                }}
+              >
+                Отправить
+              </Button>
+              <Button size="sm" variant="ghost" disabled={busy} onClick={() => setPublishPreview(false)}>
+                Отмена
+              </Button>
+            </div>
+          </div>
+        )}
+
         <p className="mt-2 font-mono text-[10px] leading-relaxed text-muted-foreground">
-          «Разобрать» — локально. «Спросить у агента» — нужен настроенный доступ к агенту.
+          «Разобрать» — локально. «Спросить у агента» — нужен key_…. Отправка в TG проходит sanitize.
         </p>
       </div>
     </div>
