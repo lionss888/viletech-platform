@@ -253,13 +253,15 @@ func (s *Server) handleSetCommission(w http.ResponseWriter, r *http.Request, pri
 	var body struct {
 		FeeAmount   string `json:"fee_amount"`
 		FeePercent  string `json:"fee_percent"`
+		FeeFix      string `json:"fee_fix"`
 		FeeCurrency string `json:"fee_currency"`
+		RewardMode  string `json:"reward_mode"`
 	}
 	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
 		writeError(w, apperrors.ErrInvalidInput)
 		return
 	}
-	form, err := s.forms.SetCommission(r.Context(), principal, r.PathValue("id"), parseCommission(body.FeeAmount, body.FeePercent, body.FeeCurrency))
+	form, err := s.forms.SetCommission(r.Context(), principal, r.PathValue("id"), parseCommission(body.FeeAmount, body.FeePercent, body.FeeCurrency, body.RewardMode, body.FeeFix))
 	if err != nil {
 		writeError(w, err)
 		return

@@ -31,6 +31,8 @@ func (s *FormPaymentService) buildDocsGeneratePayload(ctx context.Context, form 
 		"rate_currency":     form.Rate.Currency,
 		"fee_amount":        form.Commission.FeeAmount,
 		"fee_percent":       form.Commission.FeePercent,
+		"fee_fix":          form.Commission.FeeFix,
+		"fee_reward_mode":   form.Commission.RewardMode,
 		"fee_currency":      form.Commission.FeeCurrency,
 		"payment_purpose":   resolvePaymentPurpose(form),
 		"document_date":     time.Now().UTC().Format("2006-01-02"),

@@ -95,6 +95,10 @@ func TestDocsGeneratePayloadMatrixKeys(t *testing.T) {
 	form.AgentID = agent.ID
 	form.CounterpartyID = cp.ID
 	form.PaymentPurpose = "Invoice payment under C-B2"
+	form.Commission = formpayment.Commission{
+		RewardMode: formpayment.RewardModePercentPlusFixed,
+		FeePercent: "1.5", FeeFix: "10", FeeAmount: "25.00", FeeCurrency: "USD",
+	}
 	if err := store.SaveForm(ctx, form); err != nil {
 		t.Fatal(err)
 	}
@@ -109,6 +113,7 @@ func TestDocsGeneratePayloadMatrixKeys(t *testing.T) {
 		"organization_signer_name", "organization_signer_position",
 		"agent_name", "agent_signature_file_id", "counterparty_name", "counterparty_banks",
 		"payment_purpose", "document_date", "currency", "invoice_amount",
+		"fee_amount", "fee_percent", "fee_currency", "fee_reward_mode", "fee_fix",
 	})
 	if payload["template_id"] != tpl.ID {
 		t.Fatalf("template_id=%v", payload["template_id"])

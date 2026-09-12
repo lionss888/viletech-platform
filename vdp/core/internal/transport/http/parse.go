@@ -27,8 +27,14 @@ func parseRate(value, currency, source string) formpayment.Rate {
 	return formpayment.Rate{Value: value, Currency: currency, Source: source}
 }
 
-func parseCommission(amount, percent, currency string) formpayment.Commission {
-	return formpayment.Commission{FeeAmount: amount, FeePercent: percent, FeeCurrency: currency}
+func parseCommission(amount, percent, currency, rewardMode, feeFix string) formpayment.Commission {
+	return formpayment.Commission{
+		FeeAmount:   amount,
+		FeePercent:  percent,
+		FeeCurrency: currency,
+		RewardMode:  rewardMode,
+		FeeFix:      feeFix,
+	}
 }
 
 func parseRating(value string) domain.ClientRating {

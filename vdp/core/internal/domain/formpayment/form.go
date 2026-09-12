@@ -102,10 +102,12 @@ type Rate struct {
 	Source   string `json:"source"`
 }
 
-// Commission holds deal fee fields on the form or order.
+// Commission holds IMP3 reward mode fields; NormalizeAndCompute fills FeeAmount.
 type Commission struct {
-	FeeAmount   string `json:"fee_amount"`
+	RewardMode  string `json:"reward_mode,omitempty"` // fixed|percent|percent_plus_fixed (§10.5)
+	FeeAmount   string `json:"fee_amount"`           // computed total (or legacy fixed)
 	FeePercent  string `json:"fee_percent"`
+	FeeFix      string `json:"fee_fix,omitempty"` // fixed component (fixed / percent_plus_fixed)
 	FeeCurrency string `json:"fee_currency"`
 }
 

@@ -132,7 +132,6 @@ export type DraftFormOpts = {
   invoice_amount?: string;
   contract_number?: string;
   contract_date?: string;
-  organization_id?: string;
 };
 
 /** Create draft form and run recognize_complete. Optional fields come from robot fixture pack. */
@@ -147,7 +146,6 @@ export async function createDraftForm(
     no_documents: true,
     contract_number: opts.contract_number ?? `PW-${suffix}`,
     contract_date: opts.contract_date ?? "2026-08-01",
-    ...(opts.organization_id ? { organization_id: opts.organization_id } : {}),
   })) as { id: string };
   await authPost(tokens.user, `/api/v1/forms/${created.id}/actions/recognize_complete`, {});
   return created.id;

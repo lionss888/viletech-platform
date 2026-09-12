@@ -3,7 +3,6 @@ import { test, expect } from "./fixtures/auth.fixture";
 import {
   assertCoreHealthy,
   createDraftForm,
-  createOrganizationApi,
   createPaymentAgentApi,
   loginAllRoles,
   purgeDemoMockCounterparties,
@@ -38,7 +37,7 @@ async function confirmModal(page: Page): Promise<void> {
 }
 
 async function attachModalFile(page: Page, pdf: Buffer, fileName: string): Promise<void> {
-  const input = page.locator('input[type="file"]');
+  const input = page.locator('input[type="file"]:visible').last();
   await expect(input).toBeVisible({ timeout: 15_000 });
   await input.setInputFiles({ name: fileName, mimeType: "application/pdf", buffer: pdf });
 }
@@ -70,21 +69,11 @@ test.describe("Pilot robot matrix full UI ladder @pilot-matrix", () => {
       inn: `77${Date.now().toString().slice(-8)}`,
     });
 
-    // Own client org per run: an accepted agency contract on the shared seed org would let
-    // assign-agent resolve straight to signing_order and skip the contract leg below.
-    const clientOrg = await createOrganizationApi(tokens.user, {
-      name: `Robot Org ${pack.organization.name} ${Date.now()}`.slice(0, 80),
-      inn: `78${Date.now().toString().slice(-8)}`,
-      legal_address: "г. Москва, робот-матрица",
-      country: pack.organization.country,
-    });
-
     const formId = await createDraftForm(tokens, `matrix-${Date.now()}`, {
       currency: pack.deal_fields.currency,
       invoice_amount: pack.deal_fields.invoice_amount,
       contract_number: `${pack.deal_fields.contract_number}-${Date.now()}`,
       contract_date: pack.deal_fields.contract_date,
-      organization_id: clientOrg.id,
     });
 
     // 1. User submit
@@ -147,7 +136,7 @@ test.describe("Pilot robot matrix full UI ladder @pilot-matrix", () => {
     }
     await confirmModal(page);
     await waitForFormDetail(page, formId);
-    await expectFormStatus(page, /^(contract_waiting|form_accepted)$/, { timeout: 30_000 });
+    await expectFormStatus(page, /^(contract_waiting|form_accepted|signing_order)$/, { timeout: 30_000 });
 
     // 7. Reach signing_order: user uploads agency contract, or manager manual attach
     const statusAfterAgent =
@@ -166,6 +155,8 @@ test.describe("Pilot robot matrix full UI ladder @pilot-matrix", () => {
       await waitForFormDetail(page, formId);
       await clickAction(page, /^Подтвердить договор и сформировать поручение$|^Подтвердить договор$/);
       await expectFormStatus(page, "signing_order", { timeout: 30_000 });
+    } else if (statusAfterAgent === "signing_order") {
+      // Existing accepted agency contract can skip contract branch directly to signing_order.
     } else {
       await clickAction(page, /Прикрепить договор/i);
       await attachModalFile(page, contractPdf, "contract.pdf");

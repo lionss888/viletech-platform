@@ -397,7 +397,11 @@ func (s *FormPaymentService) SetCommission(ctx context.Context, principal authz.
 	if err != nil {
 		return formpayment.Form{}, err
 	}
-	form.Commission = commission
+	normalized, err := commission.NormalizeAndCompute(form.InvoiceAmount)
+	if err != nil {
+		return formpayment.Form{}, apperrors.New(apperrors.ErrCodeValidation, err.Error())
+	}
+	form.Commission = normalized
 	if err := s.store.SaveForm(ctx, form); err != nil {
 		return formpayment.Form{}, err
 	}
