@@ -20,7 +20,7 @@ Lovable sync must **not** remove or replace these without re-running `make integ
 
 Demo contour (`/demo/*`, `ved-demo-state-v2`) is isolated from JWT app. Seed logins: app `*@vdp.local`, demo `*@demo.vdp.local`.
 
-Last UI sync from `lovable-vdp` (`lionss888/vdp@dev0` / `d4289683`). Remote fetch may need credentials; local ref is the sync baseline. Guard: `make lovable-seed-check`.
+Last UI sync from `lovable-vdp` (`lionss888/vdp@dev0` / `9f4c9ee5`). Remote fetch may need credentials; local ref is the sync baseline. Guard: `make lovable-seed-check`.
 
 ## Where the live UI lives
 
@@ -31,9 +31,9 @@ ported into the page components, otherwise `/dashboard` and `/forms` keep the pr
 Same for the shell: `VedAppShell.tsx` is live, `AppShell.tsx` is the Lovable reference copy.
 Nav lives in `nav-config.ts` (`Документы` is first under `Справочники`, matching Lovable).
 
-Ported from `d4289683`: responsive dashboard lists and the 3-card summary (sums grouped by
-currency, no FX mix), registry stage filters plus the mobile card list, full-width mobile CTAs,
-persisted `Справочники` group, documents upload/delete (`addDocuments` / `deleteDocument`).
+Ported through `9f4c9ee5`: page components stay live (`forms-new`, `form-detail`, process-roles,
+document upload/extraction, address autocomplete). Root routes remain thin wrappers; `VedAppShell`
+is live, `AppShell` is Lovable reference.
 
 ## Demo vs app capability boundary (not 100% parity)
 

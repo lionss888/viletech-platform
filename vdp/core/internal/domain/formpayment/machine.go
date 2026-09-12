@@ -73,13 +73,13 @@ func isCancelStatus(s Status) bool {
 func guardPaymentMethod(form Form, action Action) error {
 	switch action {
 	case ActionTreasurerConfirm:
-		if form.PaymentMethod != PaymentMethodPayFromExport && form.PlatformPostpayMode == "" {
-			// Nest: treasurer confirm is for PAY_FROM_EXPORT / postpay export path.
-			// Allow when payment method unset in early MVP forms; block only explicit mismatch.
+		// Import advance (§10.2): empty or advance. Export: PAY_FROM_EXPORT.
+		// post_payment / RATE_ON_PP treasurer step is IMP2 — not allowed here.
+		switch form.PaymentMethod {
+		case "", PaymentMethodAdvance, PaymentMethodPayFromExport:
 			return nil
-		}
-		if form.PaymentMethod != "" && form.PaymentMethod != PaymentMethodPayFromExport {
-			return apperrors.New(apperrors.ErrCodeConflict, "treasurer confirm requires PAY_FROM_EXPORT")
+		default:
+			return apperrors.New(apperrors.ErrCodeConflict, "treasurer confirm requires advance or PAY_FROM_EXPORT")
 		}
 	}
 	return nil

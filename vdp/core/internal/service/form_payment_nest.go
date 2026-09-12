@@ -22,6 +22,31 @@ func (s *FormPaymentService) TransitionByNestPath(ctx context.Context, principal
 	return s.Transition(ctx, principal, formID, action)
 }
 
+// TreasurerConfirmPayment confirms client RUB coverage (import advance) or export cover path.
+// Optional deadline is stored before the status transition (§10.2).
+func (s *FormPaymentService) TreasurerConfirmPayment(ctx context.Context, principal authz.Principal, formID string, deadline *time.Time) (formpayment.Form, error) {
+	if err := authz.AuthorizeRoles(principal, domain.RoleTreasurer, domain.RoleRoot); err != nil {
+		return formpayment.Form{}, err
+	}
+	if deadline != nil {
+		form, err := s.store.FormByID(ctx, formID)
+		if err != nil {
+			return formpayment.Form{}, err
+		}
+		if err := authz.CanAccessForm(principal, form); err != nil {
+			return formpayment.Form{}, err
+		}
+		utc := deadline.UTC()
+		form.ExecutionDeadline = &utc
+		form.UpdatedAt = time.Now().UTC()
+		form.PackDocsJSON()
+		if err := s.store.SaveForm(ctx, form); err != nil {
+			return formpayment.Form{}, err
+		}
+	}
+	return s.Transition(ctx, principal, formID, formpayment.ActionTreasurerConfirm)
+}
+
 // ApplyNestMeta handles Nest meta paths (important, generate, diadoc enqueue) without status change when possible.
 func (s *FormPaymentService) ApplyNestMeta(ctx context.Context, principal authz.Principal, formID, rolePrefix, pathSuffix string) (formpayment.Form, error) {
 	kind, ok := formpayment.NestMetaPath(rolePrefix, pathSuffix)

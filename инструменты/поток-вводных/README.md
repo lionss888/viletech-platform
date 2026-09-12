@@ -7,7 +7,8 @@ Standalone tool under `инструменты/поток-вводных` (not th
 ```bash
 # ~/.vdp-intake/env
 TELEGRAM_INTAKE_TOKEN=…
-TELEGRAM_INTAKE_CHAT_IDS=-100…
+TELEGRAM_INTAKE_CHAT_IDS=-100…          # manager / intake chat
+TELEGRAM_OPERATOR_CHAT_IDS=-200…        # optional operator chat/DM
 INTAKE_CONSOLE_TOKEN=long-random
 INTAKE_CONSOLE=1
 INTAKE_CONSOLE_ADDR=127.0.0.1:8787
@@ -39,19 +40,36 @@ Optional demo mocks: `VITE_INTAKE_DEMO=1` (default is live Go API).
 
 ## Console capabilities
 
-- Live thread from `thread/` JSONL (in + out mirrors), not only inbox
+- Live thread from `thread/` JSONL (in + out mirrors), not only inbox; filter manager/operator
 - HITL cards approve/decline; optional agent analyze/ask
 - Send text (as intake and/or mirror to Telegram)
 - Upload image/video/code files
-- Write Cursor artifacts under `.cursor/plans/тгбот/` (plan or prompt)
+- Cursor-grade `.plan.md` under `.cursor/plans/тгбот/` (frontmatter + todos) via API/UI
+- Selective publish of selected text to manager or operator chat (sanitize)
 - Delete a Telegram message by id
 - Manager-safe “done” template (`comms.ManagerDone`) mirrored to the chat
+- Header shows console Bearer vs agent `key_…` separately
+
+## Analytics boundary
+
+In-process package `internal/analytics`: one `Bundle` DTO (class, confidence, summary, conflicts, estimate) on HITL cards and planfile/API. Not a separate docker service; no external LLM HTTP.
 
 ## Tests
 
 `make test` or `go test ./cmd/... ./internal/...`  
 `make fe-test` / `make fe-build` for the SPA layer.  
 `make smoke` — local Nitro + Go on :8791 (avoids Docker :8787): SPA HTML + `/api/thread` 401/200.
+
+## Trigger matrix
+
+| Вход | Лента (thread) | Inbox / HITL |
+|---|---|---|
+| `@бот` или `/vvod` (+ текст и/или медиа) | да | да (HITL при `-hitl`) |
+| Сообщение/медиа без триггера | да | нет |
+| `/help` | да (справка) | нет |
+| Стикеры / голосовые | нет | нет |
+
+Код маршрута: `normalize.RouteOf` / `CreatesHITLCard`.
 
 ## Honesty gaps
 
@@ -60,6 +78,7 @@ Optional demo mocks: `VITE_INTAKE_DEMO=1` (default is live Go API).
 - Stickers/voice are not ingested.
 - Media without intake trigger (`@bot` / `/vvod`) is mirrored into the thread only — it does not create an inbox HITL card.
 - Bot API does not return history from before the poller started; the console is a live mirror from process start.
-- Console is operator-only (bearer token on loopback), not a VED cabinet.
+- Console is operator-only (bearer token on loopback), not a VED cabinet; second TG operator chat is optional (`TELEGRAM_OPERATOR_CHAT_IDS`) — console remains the mirror.
+- Plans are Cursor frontmatter/todos parity, not full CreatePlan MCP / auto-run from TG.
 - Not full parity of all Telegram update types.
 - Do not claim full Lovable-preview ↔ prod parity without smoke: SPA HTML from :8787 and `GET /api/thread` with token.

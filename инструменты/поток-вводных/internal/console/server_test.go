@@ -283,6 +283,28 @@ func TestHITLAndMgmtDoneAndDelete(t *testing.T) {
 		t.Fatalf("missing acceptance: %q", text)
 	}
 
+	body, _ = json.Marshal(map[string]any{"text": "hello org-gate leak", "target": "manager"})
+	req = httptest.NewRequest(http.MethodPost, "/api/publish", bytes.NewReader(body))
+	rr = httptest.NewRecorder()
+	s.auth(s.handlePublish)(rr, req)
+	if rr.Code != 401 {
+		t.Fatalf("publish without bearer want 401 got %d", rr.Code)
+	}
+	req = httptest.NewRequest(http.MethodPost, "/api/publish", bytes.NewReader(body))
+	req.Header.Set("Authorization", "Bearer tok")
+	req.Header.Set("Content-Type", "application/json")
+	rr = httptest.NewRecorder()
+	s.auth(s.handlePublish)(rr, req)
+	if rr.Code != 200 {
+		t.Fatalf("publish %d %s", rr.Code, rr.Body.String())
+	}
+	var pub map[string]any
+	_ = json.Unmarshal(rr.Body.Bytes(), &pub)
+	pubText, _ := pub["text"].(string)
+	if strings.Contains(strings.ToLower(pubText), "org-gate") {
+		t.Fatalf("publish tech leak: %q", pubText)
+	}
+
 	body, _ = json.Marshal(map[string]any{"message_id": 99, "chat_id": int64(-100)})
 	req = httptest.NewRequest(http.MethodPost, "/api/tg/delete", bytes.NewReader(body))
 	req.Header.Set("Authorization", "Bearer tok")

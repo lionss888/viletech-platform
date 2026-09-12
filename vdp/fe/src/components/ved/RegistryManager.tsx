@@ -19,7 +19,7 @@ import { roleTitle } from "@/lib/ved/roles";
 import { cn } from "@/lib/utils";
 
 function banksFromRecord(record: RefRecord): BankDraftRow[] {
-  const raw = record.banks;
+  const raw = record["banks"];
   if (Array.isArray(raw) && raw.length > 0) {
     return raw.map((row) => {
       const r = row as { name?: string; swift?: string; account?: string };

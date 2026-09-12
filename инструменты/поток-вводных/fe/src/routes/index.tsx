@@ -5,6 +5,7 @@ import { Composer } from "@/components/console/Composer";
 import { ConsoleHeader } from "@/components/console/ConsoleHeader";
 import { HitlPanel } from "@/components/console/HitlPanel";
 import { MessageCard } from "@/components/console/MessageCard";
+import { PlanPanel } from "@/components/console/PlanPanel";
 import { SelectionBar } from "@/components/console/SelectionBar";
 import {
   consoleMessages as demoMessages,
@@ -14,11 +15,15 @@ import {
 } from "@/lib/console-data";
 import {
   checkAuth,
+  deleteTgMessage,
   fetchCards,
   fetchThread,
   getToken,
   hitlDecide,
   isDemoMode,
+  mgmtDone,
+  publishSelection,
+  savePlan,
   savePrompt,
   sendMessage,
   setToken,
@@ -53,10 +58,12 @@ function Index() {
   const demo = isDemoMode();
   const [selected, setSelected] = useState<string[]>([]);
   const [cardsOpen, setCardsOpen] = useState(false);
+  const [plansOpen, setPlansOpen] = useState(false);
   const [messages, setMessages] = useState<ConsoleMessage[]>(demo ? demoMessages : []);
   const [cards, setCards] = useState<HitlCard[]>(demo ? demoCards : []);
   const [signedIn, setSignedIn] = useState(demo);
   const [busy, setBusy] = useState(false);
+  const [channelFilter, setChannelFilter] = useState<"all" | "manager" | "operator">("all");
 
   const refresh = useCallback(async () => {
     if (demo) {
@@ -99,9 +106,22 @@ function Index() {
 
   const pending = cards.filter((c) => c.status === "awaiting_approve").length;
 
+  const visibleMessages = useMemo(() => {
+    if (channelFilter === "all") return messages;
+    return messages.filter((m) => (m.tgChannel || "manager") === channelFilter);
+  }, [messages, channelFilter]);
+
+  const selectedPreview = useMemo(() => {
+    return visibleMessages
+      .filter((m) => selected.includes(m.id))
+      .map((m) => m.summary || "")
+      .filter(Boolean)
+      .join("\n\n");
+  }, [visibleMessages, selected]);
+
   const groups = useMemo(
     () =>
-      messages.reduce<{ date: string; items: ConsoleMessage[] }[]>((acc, m) => {
+      visibleMessages.reduce<{ date: string; items: ConsoleMessage[] }[]>((acc, m) => {
         const date = new Date(m.timestamp).toLocaleDateString("ru-RU", {
           day: "numeric",
           month: "long",
@@ -112,7 +132,7 @@ function Index() {
         else acc.push({ date, items: [m] });
         return acc;
       }, []),
-    [messages],
+    [visibleMessages],
   );
 
   async function runAgent(
@@ -133,11 +153,12 @@ function Index() {
   return (
     <div className="flex h-[100dvh] max-h-[100dvh] flex-col overflow-hidden bg-background">
       <ConsoleHeader
-        messageCount={messages.length}
+        messageCount={visibleMessages.length}
         selectedCount={selected.length}
         pendingCards={pending}
         signedIn={signedIn}
         onOpenCards={() => setCardsOpen(true)}
+        onOpenPlans={() => setPlansOpen(true)}
         onRefresh={() => void refresh()}
         onSignIn={async (token) => {
           setToken(token);
@@ -153,12 +174,23 @@ function Index() {
             <p className="text-[12px] text-muted-foreground">
               Здесь видна вся переписка из Telegram — сообщения появляются автоматически
             </p>
-            <div className="flex gap-1">
+            <div className="flex flex-wrap gap-1">
+              {(["all", "manager", "operator"] as const).map((ch) => (
+                <Button
+                  key={ch}
+                  size="sm"
+                  variant={channelFilter === ch ? "default" : "ghost"}
+                  className="h-7 font-mono text-[11px]"
+                  onClick={() => setChannelFilter(ch)}
+                >
+                  {ch === "all" ? "все" : ch === "manager" ? "менеджер" : "оператор"}
+                </Button>
+              ))}
               <Button
                 size="sm"
                 variant="ghost"
                 className="h-7 font-mono text-[11px] text-muted-foreground"
-                onClick={() => setSelected(messages.map((m) => m.id))}
+                onClick={() => setSelected(visibleMessages.map((m) => m.id))}
               >
                 Выбрать всё
               </Button>
@@ -200,15 +232,45 @@ function Index() {
         <SelectionBar
           count={selected.length}
           busy={busy}
+          previewText={selectedPreview}
           onClear={() => setSelected([])}
           onAnalyzeSelected={(p) => void runAgent("analyze_selected", selected, p)}
           onAnalyzeChat={() => void runAgent("analyze_chat", [], "")}
           onAskAgent={(p) => void runAgent("ask_agent", selected, p)}
+          onPublish={(text, target) => {
+            setBusy(true);
+            void publishSelection({ text, messageIds: selected, target })
+              .then(() => refresh())
+              .finally(() => setBusy(false));
+          }}
+          onMgmtDone={(title, body) => {
+            setBusy(true);
+            void mgmtDone({ title, body })
+              .then(() => refresh())
+              .finally(() => setBusy(false));
+          }}
+          onDeleteSelected={() => {
+            const targets = visibleMessages.filter(
+              (m) => selected.includes(m.id) && m.messageId && m.direction !== "agent",
+            );
+            if (targets.length === 0) return;
+            setBusy(true);
+            void (async () => {
+              for (const m of targets) {
+                if (!m.messageId) continue;
+                await deleteTgMessage(m.messageId, m.chatId || 0);
+              }
+              await refresh();
+            })().finally(() => setBusy(false));
+          }}
         />
         <Composer
           busy={busy}
           onSavePrompt={async (text) => {
             await savePrompt(text);
+          }}
+          onSavePlan={async (text) => {
+            await savePlan(text);
           }}
           onSend={async ({ text, asIntake, mirrorToTg, files }) => {
             setBusy(true);
@@ -257,6 +319,7 @@ function Index() {
         }}
         onAskAgent={(_id, text) => void runAgent("ask_agent", [], text)}
       />
+      <PlanPanel open={plansOpen} onOpenChange={setPlansOpen} busy={busy} />
     </div>
   );
 }

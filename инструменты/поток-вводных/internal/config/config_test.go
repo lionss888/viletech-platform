@@ -20,13 +20,14 @@ func TestParseChatIDs(t *testing.T) {
 func TestLoadFromEnvFile(t *testing.T) {
 	dir := t.TempDir()
 	envPath := filepath.Join(dir, "env")
-	content := "TELEGRAM_INTAKE_TOKEN=test-token-123\nTELEGRAM_INTAKE_CHAT_IDS=-1004449173165\n"
+	content := "TELEGRAM_INTAKE_TOKEN=test-token-123\nTELEGRAM_INTAKE_CHAT_IDS=-1004449173165\nTELEGRAM_OPERATOR_CHAT_IDS=-200\n"
 	if err := os.WriteFile(envPath, []byte(content), 0o600); err != nil {
 		t.Fatal(err)
 	}
 	t.Setenv("INTAKE_HOME", dir)
 	t.Setenv("TELEGRAM_INTAKE_TOKEN", "")
 	t.Setenv("TELEGRAM_INTAKE_CHAT_IDS", "")
+	t.Setenv("TELEGRAM_OPERATOR_CHAT_IDS", "")
 	t.Setenv("MGMT_NOTIFY_TOKEN", "")
 	t.Setenv("MGMT_NOTIFY_CHAT_ID", "")
 	cfg, err := Load()
@@ -38,5 +39,8 @@ func TestLoadFromEnvFile(t *testing.T) {
 	}
 	if _, ok := cfg.ChatIDs[-1004449173165]; !ok {
 		t.Fatal("chat missing")
+	}
+	if _, ok := cfg.OperatorChatIDs[-200]; !ok {
+		t.Fatal("operator chat missing")
 	}
 }

@@ -13,9 +13,10 @@ type Props = {
     files: File[];
   }) => Promise<void> | void;
   onSavePrompt: (text: string) => Promise<void> | void;
+  onSavePlan?: (text: string) => Promise<void> | void;
 };
 
-export function Composer({ busy, onSend, onSavePrompt }: Props) {
+export function Composer({ busy, onSend, onSavePrompt, onSavePlan }: Props) {
   const [text, setText] = useState("");
   const [asInput, setAsInput] = useState(false);
   const [toTelegram, setToTelegram] = useState(false);
@@ -97,6 +98,18 @@ export function Composer({ busy, onSend, onSavePrompt }: Props) {
                 <Bookmark className="size-3.5" />
                 <span className="hidden sm:inline">Сохранить запрос</span>
               </Button>
+              {onSavePlan && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="h-8 gap-1.5 text-muted-foreground"
+                  disabled={busy || !text.trim()}
+                  onClick={() => void onSavePlan(text.trim())}
+                >
+                  <span className="hidden sm:inline">Сохранить план</span>
+                  <span className="sm:hidden">План</span>
+                </Button>
+              )}
               <Button
                 size="sm"
                 className="h-8 gap-1.5"

@@ -11,6 +11,7 @@ export type ThreadMsg = {
   id: string;
   message_id?: number;
   chat_id?: number;
+  channel?: string;
   from_user?: string;
   direction: string;
   text: string;
@@ -112,6 +113,9 @@ export function mapThreadMsg(m: ThreadMsg): ConsoleMessage {
     channel: direction === "agent" ? "agent" : "telegram",
     event: m.kind || m.trigger || "message",
     direction,
+    messageId: m.message_id,
+    chatId: m.chat_id,
+    tgChannel: m.channel || "manager",
     title,
     summary,
     note,
@@ -208,6 +212,67 @@ export async function savePrompt(text: string): Promise<{ path: string }> {
     method: "POST",
     body: JSON.stringify({ text, mode: "prompt" }),
   });
+}
+
+export async function savePlan(text: string, cardId = ""): Promise<{ path: string }> {
+  return api("/api/to-cursor", {
+    method: "POST",
+    body: JSON.stringify({ text, card_id: cardId, mode: "plan" }),
+  });
+}
+
+export type PlanTodo = { id: string; content: string; status: string };
+export type PlanDoc = {
+  id?: string;
+  name: string;
+  overview: string;
+  todos: PlanTodo[];
+  isProject?: boolean;
+  body?: string;
+  path?: string;
+  card_id?: string;
+  status?: string;
+};
+
+export async function listPlans(cardId = ""): Promise<PlanDoc[]> {
+  const q = cardId ? `?card_id=${encodeURIComponent(cardId)}` : "";
+  const data = await api<{ items: PlanDoc[] }>(`/api/plans${q}`);
+  return data.items || [];
+}
+
+export async function getPlan(id: string): Promise<PlanDoc> {
+  return api(`/api/plans/${encodeURIComponent(id)}`);
+}
+
+export async function putPlan(id: string, doc: PlanDoc): Promise<PlanDoc> {
+  return api(`/api/plans/${encodeURIComponent(id)}`, {
+    method: "PUT",
+    body: JSON.stringify(doc),
+  });
+}
+
+export async function publishSelection(input: {
+  text?: string;
+  messageIds?: string[];
+  target?: "manager" | "operator";
+}): Promise<{ ok: boolean; text?: string }> {
+  return api("/api/publish", {
+    method: "POST",
+    body: JSON.stringify({
+      text: input.text || "",
+      message_ids: input.messageIds || [],
+      target: input.target || "manager",
+    }),
+  });
+}
+
+export function consoleKeyPresent(): boolean {
+  return getToken().trim().length > 0;
+}
+
+export function agentKeyPresent(): boolean {
+  const k = getAgentKey().trim();
+  return k.startsWith("key_") || k.startsWith("crsr_");
 }
 
 export async function deleteTgMessage(messageId: number, chatId = 0): Promise<void> {

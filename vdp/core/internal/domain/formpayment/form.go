@@ -3,6 +3,8 @@ package formpayment
 import "time"
 
 const (
+	PaymentMethodAdvance       = "advance"
+	PaymentMethodPostPayment   = "post_payment"
 	PaymentMethodPayFromExport = "PAY_FROM_EXPORT"
 	PostpayLegacy              = "LEGACY"
 	PostpayFixedRate           = "POSTPAY_FIXED_RATE"

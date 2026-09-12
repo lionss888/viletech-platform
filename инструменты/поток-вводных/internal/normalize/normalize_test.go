@@ -30,3 +30,25 @@ func TestStripTrigger(t *testing.T) {
 		t.Fatalf("got %q", got)
 	}
 }
+
+func TestRouteOfMatrix(t *testing.T) {
+	t.Parallel()
+	cases := []struct {
+		trig Trigger
+		want Route
+		hitl bool
+	}{
+		{TriggerNone, RouteThreadOnly, false},
+		{TriggerHelp, RouteHelp, false},
+		{TriggerMention, RouteIntake, true},
+		{TriggerVvod, RouteIntake, true},
+	}
+	for _, tc := range cases {
+		if got := RouteOf(tc.trig); got != tc.want {
+			t.Fatalf("RouteOf(%q)=%q want %q", tc.trig, got, tc.want)
+		}
+		if CreatesHITLCard(tc.trig) != tc.hitl {
+			t.Fatalf("CreatesHITLCard(%q)=%v want %v", tc.trig, CreatesHITLCard(tc.trig), tc.hitl)
+		}
+	}
+}

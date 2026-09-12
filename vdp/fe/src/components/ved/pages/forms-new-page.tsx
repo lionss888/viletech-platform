@@ -1,6 +1,7 @@
 import { useNavigate } from "@tanstack/react-router";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
+import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { CounterpartyPickDialog } from "@/components/ved/CounterpartyPickDialog";
 import { OrganizationPickDialog } from "@/components/ved/OrganizationPickDialog";
 import { VedAppShell } from "@/components/ved/VedAppShell";
@@ -28,6 +29,7 @@ import {
   documentsLabel,
   mergeExtractionPrefill,
   WIZARD_STEP,
+  WIZARD_STEP_CAPTIONS,
   WIZARD_STEPS,
   type WizardTouched,
 } from "@/lib/ved/wizard-steps";
@@ -44,6 +46,7 @@ export function NewForm() {
   const [submitting, setSubmitting] = useState(false);
   const [bootstrapping, setBootstrapping] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [invalidFields, setInvalidFields] = useState<string[]>([]);
   const [orgDialogOpen, setOrgDialogOpen] = useState(false);
   const [cpDialogOpen, setCpDialogOpen] = useState(false);
   const [formId, setFormId] = useState<string | null>(null);
@@ -166,6 +169,7 @@ export function NewForm() {
 
   function setField<K extends keyof typeof draft>(key: K, value: (typeof draft)[K]) {
     setDraft((prev) => ({ ...prev, [key]: value }));
+    setInvalidFields((prev) => (prev.includes(key as string) ? prev.filter((k) => k !== key) : prev));
   }
 
   function setTouchedField(key: keyof WizardTouched, value: string) {
@@ -188,37 +192,47 @@ export function NewForm() {
     }
   }
 
-  function validateStep(): string | null {
+  function validateStep(): { message: string; fields: string[] } | null {
+    const fields: string[] = [];
+    const messages: string[] = [];
     if (step === WIZARD_STEP.docs && !draft.noDocuments) {
       if (!draft.invoiceFile && mode === "app") {
-        return "Загрузите инвойс или выберите «У меня нет документов»";
+        fields.push("invoiceFile");
+        messages.push("Загрузите инвойс или выберите «У меня нет документов»");
       }
     }
     if (step === WIZARD_STEP.docs && draft.noDocuments) {
-      if (!draft.contractNumber.trim() || !draft.contractDate.trim()) {
-        return "Без документов укажите номер и дату контракта вручную";
-      }
+      if (!draft.contractNumber.trim()) fields.push("contractNumber");
+      if (!draft.contractDate.trim()) fields.push("contractDate");
+      if (fields.length > 0) messages.push("Без документов укажите номер и дату контракта вручную");
     }
     if (step === WIZARD_STEP.parties) {
       if (!hasClientOrg || !draft.organizationId) {
-        return "Сначала создайте организацию клиента";
+        fields.push("organizationId");
+        messages.push("Сначала создайте организацию клиента");
       }
     }
     if (step === WIZARD_STEP.terms) {
       const amount = Number(String(draft.amount).replace(/\s/g, "").replace(",", "."));
       if (!Number.isFinite(amount) || amount <= 0) {
-        return "Укажите сумму платежа больше нуля";
+        fields.push("amount");
+        messages.push("Укажите сумму платежа больше нуля");
       }
       if (draft.kind === "good" && !draft.hsCode.trim()) {
-        return hsCodes.length === 0
-          ? "Справочник кодов ТН ВЭД пуст — добавьте код в «Коды ТН ВЭД»"
-          : "Для товара выберите код ТН ВЭД из справочника";
+        fields.push("hsCode");
+        messages.push(
+          hsCodes.length === 0
+            ? "Справочник кодов ТН ВЭД пуст — добавьте код в «Коды ТН ВЭД»"
+            : "Для товара выберите код ТН ВЭД из справочника",
+        );
       }
-      if (draft.kind === "good" && draft.condition === "advance" && !draft.shipmentDate.trim()) {
-        return "Для товара с авансом укажите дату отгрузки";
+      if (draft.kind === "good" && draft.condition === "advance" && !draft.shipmentDate.trim() && !draft.contractDate.trim()) {
+        fields.push("shipmentDate");
+        messages.push("Для товара с авансом укажите дату отгрузки");
       }
     }
-    return null;
+    if (messages.length === 0) return null;
+    return { message: messages.join(". "), fields };
   }
 
   async function ensureEarlyForm(): Promise<string> {
@@ -267,10 +281,12 @@ export function NewForm() {
     }
     const err = validateStep();
     if (err) {
-      setError(err);
+      setError(err.message);
+      setInvalidFields(err.fields);
       return;
     }
     setError(null);
+    setInvalidFields([]);
     if (step === WIZARD_STEP.docs && mode === "app" && !formId) {
       setBootstrapping(true);
       try {
@@ -334,11 +350,13 @@ export function NewForm() {
     }
     const err = validateStep();
     if (err) {
-      setError(err);
+      setError(err.message);
+      setInvalidFields(err.fields);
       return;
     }
     setSubmitting(true);
     setError(null);
+    setInvalidFields([]);
     try {
       let id = formId;
       if (!id) {
@@ -406,9 +424,13 @@ export function NewForm() {
             </li>
           ))}
         </ol>
+        <p className="mt-3 text-xs text-muted-foreground" data-testid="wizard-step-caption">
+          <span className="font-semibold text-foreground">{WIZARD_STEPS[step] ?? ""}: </span>
+          {WIZARD_STEP_CAPTIONS[WIZARD_STEPS[step] ?? "Документы"]}
+        </p>
       </div>
 
-      <div className="panel mt-4 max-w-2xl p-5">
+      <div className="panel mt-4 w-full p-5 lg:w-3/4">
         {error && <p className="mb-4 rounded-md bg-destructive-soft px-2 py-1.5 text-xs text-destructive">{error}</p>}
         {ocrPending && !ocrReady && step > WIZARD_STEP.docs && (
           <p className="mb-4 rounded-md bg-wait-soft px-3 py-2 text-sm text-wait" data-testid="wizard-ocr-pending">
@@ -431,35 +453,22 @@ export function NewForm() {
                 — без неё заявку создать нельзя.
               </p>
             )}
-            <button
-              type="button"
-              onClick={() => setField("noDocuments", !draft.noDocuments)}
-              className={cn(
-                "rounded-md px-3 py-2 text-sm font-semibold",
-                draft.noDocuments ? "bg-wait-soft text-wait" : "bg-muted text-muted-foreground",
-              )}
-              data-testid="wizard-no-documents"
-            >
-              {draft.noDocuments ? "✓ У меня нет документов" : "У меня нет документов"}
-            </button>
             {!draft.noDocuments && (
               <>
-                <Field label="Инвойс (PDF, до 15 МБ)">
-                  <input
-                    type="file"
-                    accept=".pdf,application/pdf"
-                    data-testid="wizard-invoice-file"
-                    onChange={(e) => onFilePick("invoiceFile", e.target.files?.[0] ?? null)}
-                    className="text-xs text-muted-foreground"
+                <Field label="Инвойс (PDF, до 15 МБ)" invalid={invalidFields.includes("invoiceFile")}>
+                  <FilePickButton
+                    file={draft.invoiceFile}
+                    testId="wizard-invoice-file"
+                    pickLabel="Выбрать инвойс"
+                    onPick={(file) => onFilePick("invoiceFile", file)}
                   />
                 </Field>
                 <Field label="Контракт (PDF, до 15 МБ) — необязательно">
-                  <input
-                    type="file"
-                    accept=".pdf,application/pdf"
-                    data-testid="wizard-contract-file"
-                    onChange={(e) => onFilePick("contractFile", e.target.files?.[0] ?? null)}
-                    className="text-xs text-muted-foreground"
+                  <FilePickButton
+                    file={draft.contractFile}
+                    testId="wizard-contract-file"
+                    pickLabel="Выбрать контракт"
+                    onPick={(file) => onFilePick("contractFile", file)}
                   />
                 </Field>
                 <p className="text-xs text-muted-foreground">
@@ -468,15 +477,34 @@ export function NewForm() {
               </>
             )}
             {draft.noDocuments && (
+              <div
+                className="flex flex-wrap items-center gap-3 rounded-md border border-wait/40 bg-wait-soft px-3 py-2.5"
+                data-testid="wizard-no-documents-alert"
+              >
+                <p className="min-w-0 flex-1 text-sm text-wait">
+                  Вы отметили, что документов пока нет — это нормально, заявку можно заполнить и так. Если инвойс или
+                  контракт появятся, просто добавьте их: распознавание подставит данные за вас.
+                </p>
+                <button
+                  type="button"
+                  onClick={() => setField("noDocuments", false)}
+                  className="rounded-md bg-primary px-3 py-2 text-sm font-semibold text-primary-foreground hover:opacity-90"
+                >
+                  Добавить документы
+                </button>
+              </div>
+            )}
+            {draft.noDocuments && (
               <div className="grid gap-4 sm:grid-cols-2">
-                <Field label="Номер контракта">
+                <Field label="Номер контракта" invalid={invalidFields.includes("contractNumber")}>
                   <input
                     value={draft.contractNumber}
                     onChange={(e) => setTouchedField("contractNumber", e.target.value)}
+                    placeholder="КТ-2026-0001"
                     className="field font-mono"
                   />
                 </Field>
-                <Field label="Дата контракта">
+                <Field label="Дата контракта" invalid={invalidFields.includes("contractDate")}>
                   <input
                     type="date"
                     value={draft.contractDate}
@@ -624,7 +652,7 @@ export function NewForm() {
 
         {step === WIZARD_STEP.terms && (
           <div className="grid gap-4 sm:grid-cols-2" data-testid="wizard-terms-step">
-            <Field label="Сумма инвойса">
+            <Field label="Сумма инвойса" invalid={invalidFields.includes("amount")}>
               <input
                 value={draft.amount}
                 onChange={(e) => setTouchedField("amount", e.target.value)}
@@ -665,7 +693,7 @@ export function NewForm() {
               </select>
             </Field>
             {draft.kind === "good" && (
-              <Field label="Код ТН ВЭД">
+              <Field label="Код ТН ВЭД" invalid={invalidFields.includes("hsCode")}>
                 <select
                   value={draft.hsCode}
                   onChange={(e) => setTouchedField("hsCode", e.target.value)}
@@ -684,10 +712,16 @@ export function NewForm() {
               </Field>
             )}
             {draft.kind === "good" && draft.condition === "advance" && (
-              <Field label="Дата отгрузки">
+              <Field
+                label="Дата отгрузки"
+                invalid={invalidFields.includes("shipmentDate")}
+                {...(draft.contractDate && !draft.shipmentDate
+                  ? { hint: "Подставлена дата контракта с шага «Документы» — измените, если отгрузка в другой день" }
+                  : {})}
+              >
                 <input
                   type="date"
-                  value={draft.shipmentDate}
+                  value={draft.shipmentDate || draft.contractDate}
                   onChange={(e) => setField("shipmentDate", e.target.value)}
                   className="field"
                 />
@@ -735,21 +769,12 @@ export function NewForm() {
 
         <div className="mt-6 flex flex-col gap-2">
           <div className="flex flex-wrap gap-2">
-            {step > 0 && (
-              <button
-                type="button"
-                onClick={() => setStep(step - 1)}
-                className="rounded-md px-3 py-2 text-sm font-semibold text-muted-foreground hover:bg-muted"
-              >
-                Назад
-              </button>
-            )}
             {step < WIZARD_STEPS.length - 1 ? (
               <button
                 type="button"
                 onClick={() => void nextStep()}
                 disabled={bootstrapping}
-                className="rounded-md bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground disabled:opacity-50"
+                className="flex-1 rounded-md bg-primary px-4 py-2.5 text-sm font-semibold text-primary-foreground disabled:opacity-50"
               >
                 {bootstrapping ? "Создание…" : "Далее"}
               </button>
@@ -757,23 +782,45 @@ export function NewForm() {
               <>
                 <button
                   type="button"
-                  onClick={() => void finalize("draft")}
-                  disabled={submitting}
-                  data-testid="wizard-save-draft"
-                  className="rounded-md bg-muted px-4 py-2 text-sm font-semibold text-foreground disabled:opacity-50"
-                >
-                  {submitting ? "Сохранение…" : "Сохранить черновик"}
-                </button>
-                <button
-                  type="button"
                   onClick={() => void finalize("submit")}
                   disabled={submitting}
                   data-testid="wizard-send-manager"
-                  className="rounded-md bg-accent px-4 py-2 text-sm font-semibold text-accent-foreground disabled:opacity-50"
+                  className="flex-1 rounded-md bg-accent px-4 py-2.5 text-sm font-semibold text-accent-foreground disabled:opacity-50"
                 >
                   {submitting ? "Отправка…" : "Отправить менеджеру"}
                 </button>
+                <button
+                  type="button"
+                  onClick={() => void finalize("draft")}
+                  disabled={submitting}
+                  data-testid="wizard-save-draft"
+                  className="flex-1 rounded-md bg-muted px-4 py-2.5 text-sm font-semibold text-foreground disabled:opacity-50"
+                >
+                  {submitting ? "Сохранение…" : "Сохранить черновик"}
+                </button>
               </>
+            )}
+            {step === WIZARD_STEP.docs && (
+              <button
+                type="button"
+                onClick={() => setField("noDocuments", !draft.noDocuments)}
+                className={cn(
+                  "flex-1 rounded-md px-4 py-2.5 text-sm font-semibold",
+                  draft.noDocuments ? "bg-[#C45D02]/[0.08] text-[#C45D02]" : "bg-muted text-muted-foreground",
+                )}
+                data-testid="wizard-no-documents"
+              >
+                {draft.noDocuments ? "✓ У меня нет документов" : "У меня нет документов"}
+              </button>
+            )}
+            {step > 0 && (
+              <button
+                type="button"
+                onClick={() => setStep(step - 1)}
+                className="flex-1 rounded-md px-4 py-2.5 text-sm font-semibold text-muted-foreground hover:bg-muted"
+              >
+                Назад
+              </button>
             )}
           </div>
           {step === WIZARD_STEP.review && !draft.noDocuments && (
@@ -785,11 +832,156 @@ export function NewForm() {
   );
 }
 
-function Field({ label, children }: { label: string; children: React.ReactNode }) {
+function Field({
+  label,
+  hint,
+  invalid = false,
+  children,
+}: {
+  label: string;
+  hint?: string;
+  invalid?: boolean;
+  children: React.ReactNode;
+}) {
   return (
     <label className="block">
-      <span className="label-caps">{label}</span>
-      <div className="mt-1">{children}</div>
+      <span className={cn("label-caps", invalid && "text-destructive")}>{label}</span>
+      <div
+        className={cn(
+          "mt-1",
+          invalid &&
+            "[&_.field]:border-destructive [&_.field]:ring-1 [&_.field]:ring-destructive/30 [&_button]:border-destructive",
+        )}
+      >
+        {children}
+      </div>
+      {invalid && <span className="mt-1 block text-xs font-semibold text-destructive">Заполните это поле</span>}
+      {hint && !invalid && <span className="mt-1 block text-xs text-muted-foreground">{hint}</span>}
     </label>
+  );
+}
+
+/** Определяет мобильную ширину, чтобы открывать выбор файла боттом-шитом. */
+function useIsMobileViewport(): boolean {
+  const [mobile, setMobile] = useState(false);
+  useEffect(() => {
+    const mq = window.matchMedia("(max-width: 639px)");
+    const update = () => setMobile(mq.matches);
+    update();
+    mq.addEventListener("change", update);
+    return () => mq.removeEventListener("change", update);
+  }, []);
+  return mobile;
+}
+
+/** Вся зона кликабельна; на мобильных действия открываются боттом-шитом. */
+function FilePickButton({
+  file,
+  pickLabel,
+  testId,
+  onPick,
+}: {
+  file: File | null;
+  pickLabel: string;
+  testId: string;
+  onPick: (file: File | null) => void;
+}) {
+  const inputRef = useRef<HTMLInputElement>(null);
+  const isMobile = useIsMobileViewport();
+  const [sheetOpen, setSheetOpen] = useState(false);
+
+  function openPicker() {
+    inputRef.current?.click();
+  }
+
+  function activate(e: React.MouseEvent | React.KeyboardEvent) {
+    e.preventDefault();
+    e.stopPropagation();
+    if (isMobile) setSheetOpen(true);
+    else openPicker();
+  }
+
+  return (
+    <>
+      <div
+        role="button"
+        tabIndex={0}
+        aria-label={file ? `${pickLabel}: ${file.name}` : pickLabel}
+        data-testid={`${testId}-zone`}
+        onClick={activate}
+        onKeyDown={(e) => {
+          if (e.key === "Enter" || e.key === " ") activate(e);
+        }}
+        className={cn(
+          "flex cursor-pointer flex-wrap items-center gap-3 rounded-md border border-dashed px-3 py-3 transition-colors",
+          "hover:border-primary/60 hover:bg-muted/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
+          file ? "border-done/50 bg-done-soft/40" : "border-border bg-muted/30",
+        )}
+      >
+        <input
+          ref={inputRef}
+          type="file"
+          accept=".pdf,application/pdf"
+          data-testid={testId}
+          className="sr-only"
+          onChange={(e) => onPick(e.target.files?.[0] ?? null)}
+        />
+        <span
+          className="pointer-events-none rounded-md bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground"
+          data-testid={`${testId}-button`}
+        >
+          {file ? "Заменить файл" : pickLabel}
+        </span>
+        <span
+          className={cn(
+            "pointer-events-none min-w-0 flex-1 truncate text-xs",
+            file ? "font-medium text-foreground" : "text-muted-foreground",
+          )}
+        >
+          {file ? `✓ ${file.name}` : "PDF, до 15 МБ — нажмите в любом месте блока"}
+        </span>
+      </div>
+
+      <Sheet open={sheetOpen} onOpenChange={setSheetOpen}>
+        <SheetContent side="bottom" className="rounded-t-xl">
+          <SheetHeader className="text-left">
+            <SheetTitle>{pickLabel}</SheetTitle>
+            <SheetDescription>{file ? file.name : "PDF, до 15 МБ"}</SheetDescription>
+          </SheetHeader>
+          <div className="mt-4 grid gap-2 pb-2">
+            <button
+              type="button"
+              data-testid={`${testId}-sheet-pick`}
+              className="w-full rounded-md bg-primary px-4 py-3 text-sm font-semibold text-primary-foreground"
+              onClick={() => {
+                setSheetOpen(false);
+                setTimeout(openPicker, 120);
+              }}
+            >
+              {file ? "Заменить файл" : "Выбрать файл"}
+            </button>
+            {file && (
+              <button
+                type="button"
+                className="w-full rounded-md bg-destructive-soft px-4 py-3 text-sm font-semibold text-destructive"
+                onClick={() => {
+                  onPick(null);
+                  setSheetOpen(false);
+                }}
+              >
+                Убрать файл
+              </button>
+            )}
+            <button
+              type="button"
+              className="w-full rounded-md bg-muted px-4 py-3 text-sm font-semibold text-foreground"
+              onClick={() => setSheetOpen(false)}
+            >
+              Отмена
+            </button>
+          </div>
+        </SheetContent>
+      </Sheet>
+    </>
   );
 }

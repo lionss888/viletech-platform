@@ -50,6 +50,7 @@ import { Route as FormsIndexRouteImport } from './routes/forms.index'
 import { Route as FormsIdRouteImport } from './routes/forms.$id'
 import { Route as FormsNewRouteImport } from './routes/forms.new'
 import { Route as Char91DotmcpChar93InvokeToolToolRouteImport } from './routes/[.mcp]/invoke-tool/$tool'
+import { Route as ApiV1SplatRouteImport } from './routes/api/v1/$'
 import { Route as DemoFormsIndexRouteImport } from './routes/demo/forms.index'
 import { Route as DemoFormsIdRouteImport } from './routes/demo/forms.$id'
 import { Route as DemoFormsNewRouteImport } from './routes/demo/forms.new'
@@ -262,6 +263,11 @@ const Char91DotmcpChar93InvokeToolToolRoute =
     path: '/.mcp/invoke-tool/$tool',
     getParentRoute: () => rootRouteImport,
   } as any)
+const ApiV1SplatRoute = ApiV1SplatRouteImport.update({
+  id: '/api/v1/$',
+  path: '/api/v1/$',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const DemoFormsIndexRoute = DemoFormsIndexRouteImport.update({
   id: '/demo/forms/',
   path: '/demo/forms/',
@@ -320,6 +326,7 @@ export interface FileRoutesByFullPath {
   '/demo/': typeof DemoIndexRoute
   '/forms/': typeof FormsIndexRoute
   '/.mcp/invoke-tool/$tool': typeof Char91DotmcpChar93InvokeToolToolRoute
+  '/api/v1/$': typeof ApiV1SplatRoute
   '/demo/forms/$id': typeof DemoFormsIdRoute
   '/demo/forms/new': typeof DemoFormsNewRoute
   '/demo/forms/': typeof DemoFormsIndexRoute
@@ -366,6 +373,7 @@ export interface FileRoutesByTo {
   '/demo': typeof DemoIndexRoute
   '/forms': typeof FormsIndexRoute
   '/.mcp/invoke-tool/$tool': typeof Char91DotmcpChar93InvokeToolToolRoute
+  '/api/v1/$': typeof ApiV1SplatRoute
   '/demo/forms/$id': typeof DemoFormsIdRoute
   '/demo/forms/new': typeof DemoFormsNewRoute
   '/demo/forms': typeof DemoFormsIndexRoute
@@ -413,6 +421,7 @@ export interface FileRoutesById {
   '/demo/': typeof DemoIndexRoute
   '/forms/': typeof FormsIndexRoute
   '/.mcp/invoke-tool/$tool': typeof Char91DotmcpChar93InvokeToolToolRoute
+  '/api/v1/$': typeof ApiV1SplatRoute
   '/demo/forms/$id': typeof DemoFormsIdRoute
   '/demo/forms/new': typeof DemoFormsNewRoute
   '/demo/forms/': typeof DemoFormsIndexRoute
@@ -461,6 +470,7 @@ export interface FileRouteTypes {
     | '/demo/'
     | '/forms/'
     | '/.mcp/invoke-tool/$tool'
+    | '/api/v1/$'
     | '/demo/forms/$id'
     | '/demo/forms/new'
     | '/demo/forms/'
@@ -507,6 +517,7 @@ export interface FileRouteTypes {
     | '/demo'
     | '/forms'
     | '/.mcp/invoke-tool/$tool'
+    | '/api/v1/$'
     | '/demo/forms/$id'
     | '/demo/forms/new'
     | '/demo/forms'
@@ -553,6 +564,7 @@ export interface FileRouteTypes {
     | '/demo/'
     | '/forms/'
     | '/.mcp/invoke-tool/$tool'
+    | '/api/v1/$'
     | '/demo/forms/$id'
     | '/demo/forms/new'
     | '/demo/forms/'
@@ -600,6 +612,7 @@ export interface RootRouteChildren {
   DemoIndexRoute: typeof DemoIndexRoute
   FormsIndexRoute: typeof FormsIndexRoute
   Char91DotmcpChar93InvokeToolToolRoute: typeof Char91DotmcpChar93InvokeToolToolRoute
+  ApiV1SplatRoute: typeof ApiV1SplatRoute
   DemoFormsIdRoute: typeof DemoFormsIdRoute
   DemoFormsNewRoute: typeof DemoFormsNewRoute
   DemoFormsIndexRoute: typeof DemoFormsIndexRoute
@@ -894,6 +907,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof Char91DotmcpChar93InvokeToolToolRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/v1/$': {
+      id: '/api/v1/$'
+      path: '/api/v1/$'
+      fullPath: '/api/v1/$'
+      preLoaderRoute: typeof ApiV1SplatRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/demo/forms/': {
       id: '/demo/forms/'
       path: '/demo/forms'
@@ -961,6 +981,7 @@ const rootRouteChildren: RootRouteChildren = {
   DemoIndexRoute: DemoIndexRoute,
   FormsIndexRoute: FormsIndexRoute,
   Char91DotmcpChar93InvokeToolToolRoute: Char91DotmcpChar93InvokeToolToolRoute,
+  ApiV1SplatRoute: ApiV1SplatRoute,
   DemoFormsIdRoute: DemoFormsIdRoute,
   DemoFormsNewRoute: DemoFormsNewRoute,
   DemoFormsIndexRoute: DemoFormsIndexRoute,

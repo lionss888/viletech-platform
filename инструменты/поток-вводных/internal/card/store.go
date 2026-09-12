@@ -9,6 +9,8 @@ import (
 	"strings"
 	"sync"
 	"time"
+
+	"github.com/viletech/tools/intake/internal/analytics"
 )
 
 // Status is HITL lifecycle for one intake card.
@@ -34,12 +36,13 @@ type Card struct {
 	Summary         string    `json:"summary"`
 	Proposal        string    `json:"proposal,omitempty"`
 	TimelinePhrase  string    `json:"timeline_phrase,omitempty"`
-	Conflicts       []string  `json:"conflicts,omitempty"`
-	Texts           []string  `json:"texts,omitempty"`
-	ReminderCount   int       `json:"reminder_count"`
-	LastAskAt       time.Time `json:"last_ask_at"`
-	CreatedAt       time.Time `json:"created_at"`
-	UpdatedAt       time.Time `json:"updated_at"`
+	Conflicts       []string          `json:"conflicts,omitempty"`
+	Analytics       *analytics.Bundle `json:"analytics,omitempty"`
+	Texts           []string          `json:"texts,omitempty"`
+	ReminderCount   int               `json:"reminder_count"`
+	LastAskAt       time.Time         `json:"last_ask_at"`
+	CreatedAt       time.Time         `json:"created_at"`
+	UpdatedAt       time.Time         `json:"updated_at"`
 }
 
 // Store persists cards under ~/.vdp-intake/cards.

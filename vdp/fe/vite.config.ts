@@ -7,7 +7,7 @@
 import { defineConfig } from "@lovable.dev/vite-tanstack-config";
 import { mcpPlugin } from "@lovable.dev/mcp-js/stacks/tanstack/vite";
 
-const apiProxyTarget = (process.env.VDP_API_PROXY_TARGET ?? "http://localhost:8080").replace(
+const apiProxyTarget = (process.env["VDP_API_PROXY_TARGET"] ?? "https://alpha.vedy.io").replace(
   /\/$/,
   "",
 );
@@ -19,10 +19,7 @@ export default defineConfig({
     server: { entry: "server" },
   },
   nitro: {
-    preset: process.env.NITRO_PRESET ?? "cloudflare",
-    routeRules: {
-      "/api/**": { proxy: `${apiProxyTarget}/api/**` },
-    },
+    preset: process.env["NITRO_PRESET"] ?? "cloudflare",
   },
   vite: {
     plugins: [mcpPlugin()],

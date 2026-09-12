@@ -1,22 +1,24 @@
 ---
 name: Intake master index
-overview: "Собрать программу «поток вводных» в один мастер-индекс IN0–IN3 (как RD/RH) и четыре дочерних плана. Дубль W0 в двух файлах убрать: исполняется только IN0."
+overview: "SUPERSEDED. Канон прикладного пути — intake_applied_stages_5075cc20 (AP0–AP4). Не исполнять IN0–IN3 из этого файла."
 todos:
   - id: rewrite-master
     content: Переписать tg_intake_pipeline в тонкий мастер-индекс IN0–IN3
-    status: pending
+    status: cancelled
   - id: enrich-in0
     content: Дополнить IN0 деталями W0 из большого плана; ссылка на мастер
-    status: pending
+    status: cancelled
   - id: create-in1-in3
     content: Создать дочерние планы IN1, IN2, IN3 из секций W1–W3
-    status: pending
+    status: cancelled
 isProject: false
 ---
 
-# Поток вводных: мастер + дочерние планы
+# SUPERSEDED — Поток вводных: мастер IN0–IN3
 
-Это **сборка планов**, не код Go. Модуля [`инструменты/поток-вводных/`](инструменты/поток-вводных/) ещё нет. [`delivery_pipeline_console_8545f54c.plan.md`](.cursor/plans/delivery_pipeline_console_8545f54c.plan.md) — другая программа (поставка VDP); в этот индекс не входит.
+**Заменён** программой [`intake_applied_stages_5075cc20.plan.md`](intake_applied_stages_5075cc20.plan.md) и дочерними `ap0_…`–`ap4_…`.
+
+Исторический текст ниже не исполнять. Модуль [`инструменты/поток-вводных/`](инструменты/поток-вводных/) уже существует. [`delivery_pipeline_console_8545f54c.plan.md`](.cursor/plans/delivery_pipeline_console_8545f54c.plan.md) — другая программа (поставка VDP); в этот индекс не входит.
 
 Шаблон как у [`vdp_role_debug_master.plan.md`](.cursor/plans/vdp_role_debug_master.plan.md) / [`rd0_role_debug_gate.plan.md`](.cursor/plans/rd0_role_debug_gate.plan.md): мастер не исполнять целиком; работать дочерним файлом.
 

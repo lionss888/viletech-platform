@@ -150,3 +150,91 @@ func TestParseExternalAlias(t *testing.T) {
 		t.Fatalf("alias failed: %s %v", role, ok)
 	}
 }
+
+func TestTreasurerConfirmImportAdvance(t *testing.T) {
+	t.Parallel()
+	got, err := Apply(Command{
+		Form: Form{
+			Status:        StatusPaymentReceived,
+			Direction:     DirectionImport,
+			PaymentMethod: PaymentMethodAdvance,
+		},
+		Action: ActionTreasurerConfirm,
+		Role:   domain.RoleTreasurer,
+	})
+	if err != nil {
+		t.Fatalf("advance confirm: %v", err)
+	}
+	if got.Status != StatusPaymentProcessing {
+		t.Fatalf("status=%s want payment_processing", got.Status)
+	}
+}
+
+func TestTreasurerConfirmEmptyMethodMVP(t *testing.T) {
+	t.Parallel()
+	got, err := Apply(Command{
+		Form: Form{
+			Status:    StatusPaymentReceived,
+			Direction: DirectionImport,
+		},
+		Action: ActionTreasurerConfirm,
+		Role:   domain.RoleTreasurer,
+	})
+	if err != nil {
+		t.Fatalf("empty method confirm: %v", err)
+	}
+	if got.Status != StatusPaymentProcessing {
+		t.Fatalf("status=%s want payment_processing", got.Status)
+	}
+}
+
+func TestTreasurerConfirmPostPaymentRejected(t *testing.T) {
+	t.Parallel()
+	_, err := Apply(Command{
+		Form: Form{
+			Status:        StatusPaymentReceived,
+			Direction:     DirectionImport,
+			PaymentMethod: PaymentMethodPostPayment,
+		},
+		Action: ActionTreasurerConfirm,
+		Role:   domain.RoleTreasurer,
+	})
+	if err == nil {
+		t.Fatal("expected conflict for post_payment")
+	}
+}
+
+func TestTreasurerConfirmExportPayFromExport(t *testing.T) {
+	t.Parallel()
+	got, err := Apply(Command{
+		Form: Form{
+			Status:        StatusPaymentProcessing,
+			Direction:     DirectionExport,
+			PaymentMethod: PaymentMethodPayFromExport,
+		},
+		Action: ActionTreasurerConfirm,
+		Role:   domain.RoleTreasurer,
+	})
+	if err != nil {
+		t.Fatalf("export confirm: %v", err)
+	}
+	if got.Status != StatusPaymentSentTreasurer {
+		t.Fatalf("status=%s want payment_sent_treasurer", got.Status)
+	}
+}
+
+func TestTreasurerConfirmForbiddenRole(t *testing.T) {
+	t.Parallel()
+	_, err := Apply(Command{
+		Form: Form{
+			Status:        StatusPaymentReceived,
+			Direction:     DirectionImport,
+			PaymentMethod: PaymentMethodAdvance,
+		},
+		Action: ActionTreasurerConfirm,
+		Role:   domain.RoleManager,
+	})
+	if err == nil {
+		t.Fatal("manager must not treasurer_confirm")
+	}
+}

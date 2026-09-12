@@ -74,7 +74,12 @@ func (s *Server) Start() error {
 	mux.HandleFunc("GET /api/agent/", s.auth(s.handleAgentGet))
 	mux.HandleFunc("POST /api/tg/delete", s.auth(s.handleTGDelete))
 	mux.HandleFunc("POST /api/mgmt/done", s.auth(s.handleMgmtDone))
+	mux.HandleFunc("POST /api/publish", s.auth(s.handlePublish))
+	mux.HandleFunc("GET /api/plans", s.auth(s.handlePlansList))
+	mux.HandleFunc("GET /api/plans/", s.auth(s.handlePlanGet))
+	mux.HandleFunc("PUT /api/plans/", s.auth(s.handlePlanPut))
 	mux.HandleFunc("GET /api/media/", s.auth(s.handleMediaGet))
+	mux.HandleFunc("GET /api/status", s.auth(s.handleStatus))
 	if err := s.mountUI(mux); err != nil {
 		return err
 	}
@@ -141,11 +146,25 @@ func (s *Server) handleThread(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
+	channel := strings.ToLower(strings.TrimSpace(r.URL.Query().Get("channel")))
+	if channel == "manager" || channel == "operator" {
+		filtered := make([]store.ThreadMsg, 0, len(recs))
+		for _, m := range recs {
+			ch := m.Channel
+			if ch == "" {
+				ch = "manager"
+			}
+			if ch == channel {
+				filtered = append(filtered, m)
+			}
+		}
+		recs = filtered
+	}
 	writeJSON(w, http.StatusOK, map[string]any{
-		"items":   recs,
-		"live":    true,
-		"hint":    "Зеркало чата с момента запуска poller. Старые сообщения Telegram Bot API не отдаёт.",
-		"count":   len(recs),
+		"items": recs,
+		"live":  true,
+		"hint":  "Зеркало чата с момента запуска poller. Старые сообщения Telegram Bot API не отдаёт.",
+		"count": len(recs),
 	})
 }
 
@@ -452,6 +471,127 @@ func (s *Server) handleMgmtDone(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	writeJSON(w, http.StatusOK, map[string]any{"ok": true, "tg_message_id": res.TGMessage, "text": text})
+}
+
+type publishReq struct {
+	Text       string   `json:"text"`
+	Target     string   `json:"target"` // manager|operator
+	ChatID     int64    `json:"chat_id"`
+	MessageIDs []string `json:"message_ids"`
+}
+
+func (s *Server) handlePublish(w http.ResponseWriter, r *http.Request) {
+	var req publishReq
+	if err := json.NewDecoder(io.LimitReader(r.Body, 1<<20)).Decode(&req); err != nil {
+		http.Error(w, "bad json", http.StatusBadRequest)
+		return
+	}
+	text := strings.TrimSpace(req.Text)
+	if text == "" && len(req.MessageIDs) > 0 && s.Store != nil {
+		all, _ := s.Store.ListThreadRecent(500)
+		byID := map[string]store.ThreadMsg{}
+		for _, m := range all {
+			byID[m.ID] = m
+		}
+		var parts []string
+		for _, id := range req.MessageIDs {
+			if m, ok := byID[id]; ok {
+				parts = append(parts, strings.TrimSpace(m.Text))
+			}
+		}
+		text = strings.Join(parts, "\n\n")
+	}
+	if strings.TrimSpace(text) == "" {
+		http.Error(w, "text or message_ids required", http.StatusBadRequest)
+		return
+	}
+	target := strings.ToLower(strings.TrimSpace(req.Target))
+	if target == "" {
+		target = "manager"
+	}
+	id, err := s.Pipeline.PublishSelection(r.Context(), text, target, req.ChatID)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+	writeJSON(w, http.StatusOK, map[string]any{
+		"ok":            true,
+		"tg_message_id": id,
+		"text":          comms.SanitizeManager(text),
+		"target":        target,
+	})
+}
+
+func (s *Server) handlePlansList(w http.ResponseWriter, r *http.Request) {
+	if s.Workspace == "" {
+		http.Error(w, "workspace not set", http.StatusBadRequest)
+		return
+	}
+	cardID := strings.TrimSpace(r.URL.Query().Get("card_id"))
+	items, err := planfile.ListByCard(s.Workspace, cardID)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	writeJSON(w, http.StatusOK, map[string]any{"items": items})
+}
+
+func (s *Server) handlePlanGet(w http.ResponseWriter, r *http.Request) {
+	if s.Workspace == "" {
+		http.Error(w, "workspace not set", http.StatusBadRequest)
+		return
+	}
+	id := strings.TrimPrefix(r.URL.Path, "/api/plans/")
+	id = strings.Trim(id, "/")
+	if id == "" {
+		http.Error(w, "plan id required", http.StatusBadRequest)
+		return
+	}
+	doc, err := planfile.Read(s.Workspace, id)
+	if err != nil {
+		http.Error(w, "not found", http.StatusNotFound)
+		return
+	}
+	writeJSON(w, http.StatusOK, doc)
+}
+
+func (s *Server) handlePlanPut(w http.ResponseWriter, r *http.Request) {
+	if s.Workspace == "" {
+		http.Error(w, "workspace not set", http.StatusBadRequest)
+		return
+	}
+	id := strings.TrimPrefix(r.URL.Path, "/api/plans/")
+	id = strings.Trim(id, "/")
+	if id == "" {
+		http.Error(w, "plan id required", http.StatusBadRequest)
+		return
+	}
+	var doc planfile.PlanDoc
+	if err := json.NewDecoder(io.LimitReader(r.Body, 2<<20)).Decode(&doc); err != nil {
+		http.Error(w, "bad json", http.StatusBadRequest)
+		return
+	}
+	doc.ID = id
+	path, err := planfile.WritePlan(s.Workspace, doc)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	doc.Path = path
+	writeJSON(w, http.StatusOK, doc)
+}
+
+func (s *Server) handleStatus(w http.ResponseWriter, _ *http.Request) {
+	opConfigured := false
+	if s.Pipeline != nil && len(s.Pipeline.OperatorChatIDs) > 0 {
+		opConfigured = true
+	}
+	writeJSON(w, http.StatusOK, map[string]any{
+		"console_auth":     true,
+		"workspace_set":    s.Workspace != "",
+		"operator_chats":   opConfigured,
+		"agent_configured": s.Agent != nil,
+	})
 }
 
 func (s *Server) handleMediaGet(w http.ResponseWriter, r *http.Request) {

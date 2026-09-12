@@ -23,6 +23,7 @@ import { BANK_ORG_ID } from "@/lib/ved/bank-channel";
 import { money } from "@/lib/ved/format";
 import { usePlatformMode } from "@/lib/ved/platform-mode";
 import { ROLES } from "@/lib/ved/roles";
+import type { VedRole } from "@/lib/ved/types";
 import { statusMeta } from "@/lib/ved/statuses";
 import { usePlatformStore } from "@/lib/ved/platform-store";
 
@@ -475,7 +476,7 @@ export function TestingPage() {
                   <td className="py-2 pr-4 font-mono text-xs">{row.email}</td>
                   <td className="py-2 pr-4 font-mono text-xs">{row.password}</td>
                   <td className="py-2 pr-4 text-right font-mono text-xs">
-                    {forms.filter((f) => actionsFor(row.roleId, f.status).length > 0).length}
+                    {forms.filter((f) => actionsFor(row.roleId as VedRole, f.status).length > 0).length}
                   </td>
                 </tr>
               ))}

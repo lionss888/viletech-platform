@@ -24,7 +24,7 @@ const VERDICT: Record<Verdict, { label: string; title: string; needsMark: boolea
     label: "Заблокировать",
     title: "Заблокировать участника",
     needsMark: true,
-    tone: "bg-destructive-soft text-destructive",
+    tone: "bg-destructive text-destructive-foreground",
   },
 };
 
