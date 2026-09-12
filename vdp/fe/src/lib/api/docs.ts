@@ -2,6 +2,7 @@ import { apiFetch, loadAuthTokens, newRequestId } from "./client";
 
 export type DocGenerateKind = "agency_contract" | "principal_order" | "agent_report" | "payment_order";
 
+/** Core API helper: generateFormDoc. */
 export function generateFormDoc(formId: string, kind: DocGenerateKind): Promise<Record<string, unknown>> {
   return apiFetch<Record<string, unknown>>(`/api/v1/forms/${formId}/docs/generate`, {
     method: "POST",
@@ -38,6 +39,7 @@ export async function fetchPrivateFileBlob(fileId: string): Promise<{ blob: Blob
   return { blob, objectUrl: URL.createObjectURL(blob) };
 }
 
+/** Core API helper: downloadPrivateFile. */
 export async function downloadPrivateFile(fileId: string, fileName: string): Promise<void> {
   const { blob, objectUrl } = await fetchPrivateFileBlob(fileId);
   const anchor = document.createElement("a");

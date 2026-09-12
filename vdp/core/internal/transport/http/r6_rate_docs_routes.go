@@ -12,6 +12,7 @@ import (
 	apperrors "github.com/viletech/vdp/core/pkg/errors"
 )
 
+// registerRateDocsRoutes is the R6 HTTP adapter: rate resolve, commission, docs generate, templates.
 func (s *Server) registerRateDocsRoutes() {
 	s.mux.HandleFunc("POST /api/v1/forms/{id}/rate/resolve", s.withAuth(s.handleResolveRate))
 	s.mux.HandleFunc("POST /api/v1/forms/{id}/commission/calculate", s.withAuth(s.handleCalcCommission))

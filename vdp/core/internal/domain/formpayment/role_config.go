@@ -35,6 +35,7 @@ type ProcessPolicySnapshot struct {
 	UpdatedBy string              `json:"updated_by,omitempty"`
 }
 
+// ConfigFor returns the RoleProcessConfig for role when present in the snapshot.
 func (s ProcessPolicySnapshot) ConfigFor(role domain.Role) (RoleProcessConfig, bool) {
 	for _, cfg := range s.Roles {
 		if cfg.Role == role {
@@ -44,6 +45,7 @@ func (s ProcessPolicySnapshot) ConfigFor(role domain.Role) (RoleProcessConfig, b
 	return RoleProcessConfig{}, false
 }
 
+// SortedByPriority returns roles ordered by Priority ascending (stable, then role name).
 func (s ProcessPolicySnapshot) SortedByPriority() []RoleProcessConfig {
 	out := append([]RoleProcessConfig(nil), s.Roles...)
 	sort.SliceStable(out, func(i, j int) bool {
@@ -55,6 +57,7 @@ func (s ProcessPolicySnapshot) SortedByPriority() []RoleProcessConfig {
 	return out
 }
 
+// HasCapability reports whether the role config grants cap.
 func (c RoleProcessConfig) HasCapability(cap Capability) bool {
 	for _, item := range c.Capabilities {
 		if item == cap {

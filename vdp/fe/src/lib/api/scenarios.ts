@@ -46,14 +46,17 @@ export type ScenarioPolicy = {
   default_mode: string;
 };
 
+/** POST /api/v1/admin/scenario-catalog. */
 export function fetchScenarioCatalog(): Promise<ScenarioCatalogItem[]> {
   return apiFetch<ScenarioCatalogItem[]>("/api/v1/admin/scenario-catalog");
 }
 
+/** POST /api/v1/admin/scenario-policy. */
 export function fetchScenarioPolicy(): Promise<ScenarioPolicy> {
   return apiFetch<ScenarioPolicy>("/api/v1/admin/scenario-policy");
 }
 
+/** POST /api/v1/admin/scenario-runs. */
 export function startScenarioRuns(input: {
   scenario_id?: string;
   scenario_ids?: string[];
@@ -65,11 +68,13 @@ export function startScenarioRuns(input: {
   });
 }
 
+/** POST /api/v1/admin/scenario-runs?limit={…}. */
 export async function listScenarioRuns(limit = 20): Promise<ScenarioRun[]> {
   const rows = await apiFetch<ScenarioRun[] | null>(`/api/v1/admin/scenario-runs?limit=${limit}`);
   return Array.isArray(rows) ? rows : [];
 }
 
+/** POST /api/v1/admin/scenario-runs/{…}. */
 export function getScenarioRun(id: string): Promise<ScenarioRun> {
   return apiFetch<ScenarioRun>(`/api/v1/admin/scenario-runs/${id}`);
 }

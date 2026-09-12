@@ -4,6 +4,7 @@ export type ApiErrorBody = {
   error?: string;
 };
 
+/** Core API failure: HTTP status plus stable error code from JSON body. */
 export class ApiError extends Error {
   readonly status: number;
   readonly code: string;
@@ -26,6 +27,7 @@ export type AuthTokens = {
 
 const STORAGE_KEY = "vdp-auth-v1";
 
+/** Reads JWT session from sessionStorage; null when missing or corrupt. */
 export function loadAuthTokens(): AuthTokens | null {
   try {
     const raw = sessionStorage.getItem(STORAGE_KEY);
@@ -36,10 +38,12 @@ export function loadAuthTokens(): AuthTokens | null {
   }
 }
 
+/** Persists JWT session for subsequent apiFetch Authorization headers. */
 export function saveAuthTokens(tokens: AuthTokens): void {
   sessionStorage.setItem(STORAGE_KEY, JSON.stringify(tokens));
 }
 
+/** Clears sessionStorage auth after logout or failed refresh. */
 export function clearAuthTokens(): void {
   sessionStorage.removeItem(STORAGE_KEY);
 }
@@ -49,6 +53,7 @@ function apiBase(): string {
   return (fromEnv ?? "").replace(/\/$/, "");
 }
 
+/** Correlation id for X-Request-ID (fe-…); not a crypto nonce. */
 export function newRequestId(): string {
   return `fe-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 10)}`;
 }
@@ -91,6 +96,7 @@ async function refreshTokens(): Promise<AuthTokens | null> {
   return refreshInFlight;
 }
 
+/** Authenticated JSON fetch to core; refreshes once on 401; throws ApiError on non-OK. */
 export async function apiFetch<T>(path: string, options: ApiFetchOptions = {}): Promise<T> {
   const headers = new Headers(options.headers);
   if (!headers.has("Content-Type") && options.body) {

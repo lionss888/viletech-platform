@@ -288,6 +288,7 @@ function allowsContinuityUiAction(
   return false;
 }
 
+/** Demo/store actions visible for role+status; app mode uses appActionsFor. */
 export function actionsFor(
   role: VedRole,
   status: FormStatus,

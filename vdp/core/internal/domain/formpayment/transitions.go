@@ -357,6 +357,7 @@ var transitionsExportForm = map[Status][]Status{
 	},
 }
 
+// AllowedTargets lists legal next statuses from from for import/export and rate-on-PP overlay.
 func AllowedTargets(from Status, direction Direction, rateOnProvider bool) []Status {
 	table := clone(transitionsImportForm)
 	if direction == DirectionExport {
@@ -368,6 +369,7 @@ func AllowedTargets(from Status, direction Direction, rateOnProvider bool) []Sta
 	return table[from]
 }
 
+// IsAllowedTransition is true when to is among AllowedTargets for the direction/postpay mode.
 func IsAllowedTransition(from, to Status, direction Direction, rateOnProvider bool) bool {
 	for _, candidate := range AllowedTargets(from, direction, rateOnProvider) {
 		if candidate == to {

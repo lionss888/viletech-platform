@@ -1,5 +1,6 @@
 package domain
 
+// Role is a VDP cabinet / process participant identity on an account.
 type Role string
 
 const (
@@ -17,8 +18,10 @@ const (
 	RoleViewer                    Role = "viewer"
 )
 
+// RoleExternalComplianceOfficer is the Nest alias for RoleComplianceOfficer.
 const RoleExternalComplianceOfficer = RoleComplianceOfficer
 
+// ParseRole accepts canonical role strings and external_compliance_officer alias.
 func ParseRole(value string) (Role, bool) {
 	role := Role(value)
 	switch role {
@@ -33,6 +36,7 @@ func ParseRole(value string) (Role, bool) {
 	}
 }
 
+// IsStaff is true for root/manager/treasurer/ICO/ECO (internal ops roles).
 func (r Role) IsStaff() bool {
 	return r == RoleRoot || r == RoleManager || r == RoleTreasurer ||
 		r == RoleComplianceOfficer || r == RoleInternalComplianceOfficer

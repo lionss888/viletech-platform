@@ -55,14 +55,17 @@ export type ComplianceHistoryEntry = {
   created_at: string;
 };
 
+/** Lists forms visible to the current role (CanSeeForm on core). */
 export function listForms(): Promise<CoreForm[]> {
   return apiFetch<CoreForm[]>("/api/v1/forms");
 }
 
+/** GET one form by id; 403 when outside visibility zone. */
 export function getForm(id: string): Promise<CoreForm> {
   return apiFetch<CoreForm>(`/api/v1/forms/${id}`);
 }
 
+/** POST draft form; org gate may block unapproved organizations. */
 export function createForm(input: CreateFormInput): Promise<CoreForm> {
   return apiFetch<CoreForm>("/api/v1/forms", {
     method: "POST",
@@ -70,6 +73,7 @@ export function createForm(input: CreateFormInput): Promise<CoreForm> {
   });
 }
 
+/** POST /forms/{id}/actions/{action}; mark+comment joined for compliance reject text. */
 export function transitionForm(id: string, action: string, input: TransitionInput = {}): Promise<CoreForm> {
   const comment = [input.mark, input.comment].filter(Boolean).join(" · ");
   return apiFetch<CoreForm>(`/api/v1/forms/${id}/actions/${action}`, {
@@ -78,6 +82,7 @@ export function transitionForm(id: string, action: string, input: TransitionInpu
   });
 }
 
+/** Manager assigns provider; client_agreed defaults true. */
 export function assignProvider(formId: string, providerId: string, clientAgreed = true): Promise<CoreForm> {
   return apiFetch<CoreForm>(`/api/v1/forms/${formId}/provider`, {
     method: "POST",
@@ -88,10 +93,12 @@ export function assignProvider(formId: string, providerId: string, clientAgreed 
 export { attachContract, resolveContractBranch, rejectContract } from "./contract";
 export type { ContractType } from "./contract";
 
+/** Status-change audit trail for a form. */
 export function getComplianceHistory(formId: string): Promise<ComplianceHistoryEntry[]> {
   return apiFetch<ComplianceHistoryEntry[]>(`/api/v1/compliance-history/${formId}`);
 }
 
+/** Human confirms OCR extraction payload onto the form. */
 export function confirmExtraction(formId: string, human: unknown): Promise<CoreForm> {
   return apiFetch<CoreForm>(`/api/v1/forms/${formId}/extraction/confirm`, {
     method: "POST",
@@ -99,6 +106,7 @@ export function confirmExtraction(formId: string, human: unknown): Promise<CoreF
   });
 }
 
+/** Starts async extraction side-path for form documents. */
 export function startExtraction(formId: string): Promise<CoreForm> {
   return apiFetch<CoreForm>(`/api/v1/forms/${formId}/extraction/start`, {
     method: "POST",
@@ -106,6 +114,7 @@ export function startExtraction(formId: string): Promise<CoreForm> {
   });
 }
 
+/** Cancels in-flight extraction without changing form status machine. */
 export function cancelExtraction(formId: string): Promise<CoreForm> {
   return apiFetch<CoreForm>(`/api/v1/forms/${formId}/extraction/cancel`, {
     method: "POST",
@@ -133,6 +142,7 @@ export function patchForm(formId: string, nestPrefix: string, input: PatchFormIn
   });
 }
 
+/** Maps JWT role to Nest path prefix (site|manager|provider|eco|ico|admin). */
 export function nestFormPrefixForRole(role: string | undefined): string {
   switch (role) {
     case "user":

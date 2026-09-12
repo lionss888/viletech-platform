@@ -13,6 +13,7 @@ export const WIZARD_STEP_CAPTIONS: Record<(typeof WIZARD_STEPS)[number], string>
   Проверка: "Сверьте данные перед отправкой. После отправки заявка уйдёт на комплаенс-проверку.",
 };
 
+/** Create-form wizard step ids. */
 export const WIZARD_STEP = {
   docs: 0,
   direction: 1,
@@ -26,6 +27,7 @@ export function conditionToPaymentMethod(condition: FormCondition): string {
   return condition === "postPayment" ? "post_payment" : "advance";
 }
 
+/** Maps payment method to wizard branch condition (advance/postpay/export). */
 export function paymentMethodToCondition(method: string | undefined | null): FormCondition {
   const normalized = (method ?? "").trim().toLowerCase();
   if (normalized === "post_payment" || normalized === "postpayment" || normalized === "postpay") {
@@ -81,6 +83,7 @@ export function mergeExtractionPrefill(
   return next;
 }
 
+/** RU label for document step given direction/kind. */
 export function documentsLabel(noDocuments: boolean, hasInvoice: boolean, hasContract: boolean): string {
   if (noDocuments) return "Без файлов (ручной контракт)";
   if (hasInvoice && hasContract) return "Инвойс + контракт";

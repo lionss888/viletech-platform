@@ -6,11 +6,13 @@ export type CorrectionHint = {
   section: "params" | "documents" | "rate" | "general";
 };
 
+/** True when reject mark/text points at rate/commission fixes. */
 export function isRateCorrection(mark?: string, text?: string): boolean {
   const blob = `${mark ?? ""} ${text ?? ""}`.toLowerCase();
   return /курс|rate|fx|обмен/.test(blob);
 }
 
+/** User-facing correction hints from reject payload. */
 export function correctionHints(mark?: string, text?: string): CorrectionHint[] {
   const hints: CorrectionHint[] = [];
   const markTrim = (mark ?? "").trim();
@@ -46,6 +48,7 @@ export function correctionHints(mark?: string, text?: string): CorrectionHint[] 
   return hints;
 }
 
+/** Wizard section title for a correction hint key. */
 export function sectionLabel(section: CorrectionHint["section"]): string {
   switch (section) {
     case "params":

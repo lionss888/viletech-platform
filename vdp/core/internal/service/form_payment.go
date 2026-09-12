@@ -16,8 +16,10 @@ import (
 	"github.com/viletech/vdp/shared/events"
 )
 
+// IDFunc generates opaque string ids for forms, docs, and related entities.
 type IDFunc func() string
 
+// FormPaymentService orchestrates form-payment create, transition, assign, and side effects.
 type FormPaymentService struct {
 	store           repository.Store
 	box             outbox.Store
@@ -29,6 +31,7 @@ type FormPaymentService struct {
 	managerOps      *ManagerOpsPublisher
 }
 
+// NewFormPaymentService wires store, outbox, and default process-role service.
 func NewFormPaymentService(store repository.Store, box outbox.Store, newID IDFunc) *FormPaymentService {
 	return &FormPaymentService{store: store, box: box, newID: newID, roles: NewProcessRoleService(store)}
 }

@@ -5,12 +5,14 @@ import (
 	"strings"
 )
 
+// DocFileRef is one attached file id with optional kind/label for DocsJSON.
 type DocFileRef struct {
 	FileID string `json:"file_id"`
 	Kind   string `json:"kind,omitempty"`
 	Label  string `json:"label,omitempty"`
 }
 
+// POGState is payment-order generation status packed into DocsJSON.
 type POGState struct {
 	Status   string `json:"status"`
 	FileID   string `json:"file_id,omitempty"`
@@ -18,6 +20,7 @@ type POGState struct {
 	Kind     string `json:"kind,omitempty"`
 }
 
+// DocsBundle is the canonical DocsJSON shape: files, POG, refund, channel, correlation.
 type DocsBundle struct {
 	Files                []DocFileRef `json:"files,omitempty"`
 	POG                  *POGState    `json:"pog,omitempty"`
@@ -107,6 +110,7 @@ func (f *Form) UnpackDocsJSON() {
 	f.DocsJSON = string(raw)
 }
 
+// ParseDocRefs reads file refs from DocsJSON (object bundle or legacy bare array).
 func ParseDocRefs(raw string) []DocFileRef {
 	raw = strings.TrimSpace(raw)
 	if raw == "" {
@@ -126,10 +130,12 @@ func ParseDocRefs(raw string) []DocFileRef {
 	return refs
 }
 
+// EncodeDocRefs serializes file refs and optional POG into DocsJSON object form.
 func EncodeDocRefs(refs []DocFileRef, pog *POGState) string {
 	return EncodeDocsBundle(DocsBundle{Files: refs, POG: pog})
 }
 
+// EncodeDocsBundle marshals a DocsBundle; empty files become [].
 func EncodeDocsBundle(bundle DocsBundle) string {
 	if bundle.Files == nil {
 		bundle.Files = []DocFileRef{}

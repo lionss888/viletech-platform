@@ -54,10 +54,12 @@ const ACTION_CAPABILITY: Record<string, string> = {
   root_cancel_form: "manager.ops",
 };
 
+/** Maps UI action id to process-role capability code. */
 export function capabilityForUiAction(actionId: string): string | undefined {
   return ACTION_CAPABILITY[actionId];
 }
 
+/** Whether process-roles snapshot grants the UI action for this role. */
 export function roleAllowsUiAction(cfg: ProcessRoleRow | undefined, actionId: string): boolean {
   if (!cfg) return true;
   if (!cfg.enabled || cfg.influence === "none" || cfg.influence === "observer") {
@@ -88,6 +90,7 @@ export function effectiveAllowsUiAction(
   return (businessCaps ?? []).includes(cap);
 }
 
+/** Finds role row in process-roles snapshot. */
 export function findProcessRole(rows: ProcessRoleRow[] | undefined, role: string): ProcessRoleRow | undefined {
   return rows?.find((r) => r.role === role);
 }

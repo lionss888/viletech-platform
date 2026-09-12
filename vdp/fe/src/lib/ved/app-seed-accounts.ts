@@ -78,6 +78,7 @@ export const APP_SEED_ACCOUNTS: AppSeedAccount[] = [
   },
 ];
 
+/** VED helper: appSeedByRole. */
 export function appSeedByRole(role: AppSeedRole): AppSeedAccount | undefined {
   return APP_SEED_ACCOUNTS.find((a) => a.role === role);
 }

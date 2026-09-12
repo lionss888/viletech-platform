@@ -1,8 +1,10 @@
+/** Formats value for cabinet display (money). */
 export function money(amountMinor: number, currency: string): string {
   const value = amountMinor / 100;
   return `${value.toLocaleString("ru-RU", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ${currency}`;
 }
 
+/** Formats value for cabinet display (shortMoney). */
 export function shortMoney(amountMinor: number, currency: string): string {
   const value = amountMinor / 100;
   return `${value.toLocaleString("ru-RU", { maximumFractionDigits: 0 })} ${currency}`;
@@ -10,6 +12,7 @@ export function shortMoney(amountMinor: number, currency: string): string {
 
 const TZ = "Europe/Moscow";
 
+/** Formats value for cabinet display (dateTime). */
 export function dateTime(iso: string): string {
   const d = new Date(iso);
   return d.toLocaleString("ru-RU", {
@@ -22,6 +25,7 @@ export function dateTime(iso: string): string {
   });
 }
 
+/** Formats value for cabinet display (dateOnly). */
 export function dateOnly(iso: string): string {
   return new Date(iso).toLocaleDateString("ru-RU", {
     day: "2-digit",
@@ -31,6 +35,7 @@ export function dateOnly(iso: string): string {
   });
 }
 
+/** Formats value for cabinet display (relative). */
 export function relative(iso: string): string {
   const diff = Date.now() - new Date(iso).getTime();
   const days = Math.floor(diff / 86_400_000);

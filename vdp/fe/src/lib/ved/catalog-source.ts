@@ -47,6 +47,7 @@ export function resolveCatalogBundle(
   };
 }
 
+/** VED helper: staticCatalogSeed. */
 export function staticCatalogSeed(): CatalogBundle {
   return STATIC_SEED;
 }

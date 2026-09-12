@@ -21,6 +21,7 @@ import (
 	"github.com/viletech/vdp/core/pkg/logger"
 )
 
+// Server is the core HTTP mux with JWT auth, rate limit, and service dependencies.
 type Server struct {
 	cfg          *config.Config
 	auth         *service.AuthService

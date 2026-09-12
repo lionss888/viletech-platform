@@ -3,6 +3,7 @@ import { apiFetch } from "./client";
 
 export type ContractType = "agency" | "subagency" | "services";
 
+/** POST /api/v1/forms/{…}/contract/attach. */
 export function attachContract(
   formId: string,
   fileId: string,
@@ -21,6 +22,7 @@ export function attachContract(
   });
 }
 
+/** POST /api/v1/forms/{…}/contract/resolve. */
 export function resolveContractBranch(formId: string): Promise<CoreForm> {
   return apiFetch<CoreForm>(`/api/v1/forms/${formId}/contract/resolve`, {
     method: "POST",
@@ -28,6 +30,7 @@ export function resolveContractBranch(formId: string): Promise<CoreForm> {
   });
 }
 
+/** PUT /api/v1/admin/contract/{…}/accept. */
 export function acceptContract(contractId: string): Promise<Record<string, unknown>> {
   return apiFetch(`/api/v1/admin/contract/${contractId}/accept`, {
     method: "PUT",
@@ -35,6 +38,7 @@ export function acceptContract(contractId: string): Promise<Record<string, unkno
   });
 }
 
+/** PUT /api/v1/admin/contract/{…}/reject. */
 export function rejectContract(contractId: string, text: string): Promise<Record<string, unknown>> {
   return apiFetch(`/api/v1/admin/contract/${contractId}/reject`, {
     method: "PUT",
@@ -53,6 +57,7 @@ export function listOrgContracts(orgId: string): Promise<OrgContractRow[]> {
   return apiFetch<OrgContractRow[]>(`/api/v1/organizations/${orgId}/contracts`);
 }
 
+/** Core API helper: orgHasAcceptedAgencyContract. */
 export function orgHasAcceptedAgencyContract(rows: OrgContractRow[]): boolean {
   return rows.some((row) => {
     const st = (row.status ?? "").toLowerCase();

@@ -30,6 +30,7 @@ func AllCapabilities() []Capability {
 	}
 }
 
+// IsKnownCapability is true when c is in the fixed AllCapabilities catalog.
 func IsKnownCapability(c Capability) bool {
 	for _, known := range AllCapabilities() {
 		if known == c {

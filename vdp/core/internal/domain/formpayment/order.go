@@ -38,6 +38,7 @@ type ActiveOrderSnapshot struct {
 	FileIDs       []string   `json:"file_ids,omitempty"`
 }
 
+// Snapshot returns the provider-safe ActiveOrderSnapshot (no client personal data).
 func (o Order) Snapshot() ActiveOrderSnapshot {
 	return ActiveOrderSnapshot{
 		ID: o.ID, Kind: o.Kind, Status: o.Status,

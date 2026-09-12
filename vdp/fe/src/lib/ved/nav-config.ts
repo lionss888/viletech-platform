@@ -2,6 +2,7 @@ import type { VedRole } from "./types";
 
 export type NavItem = { segment: string; label: string; roles: VedRole[] | "all"; matchExact?: boolean };
 
+/** Exported constant: MAIN_NAV. */
 export const MAIN_NAV: NavItem[] = [
   { segment: "/dashboard", label: "Рабочий стол", roles: "all" },
   { segment: "/forms", label: "Реестр заявок", roles: ["user", "manager", "provider", "root"] },
@@ -11,6 +12,7 @@ export const MAIN_NAV: NavItem[] = [
   { segment: "/chats", label: "Рабочие чаты", roles: "all" },
 ];
 
+/** Exported constant: REFERENCE_NAV. */
 export const REFERENCE_NAV: NavItem[] = [
   { segment: "/documents", label: "Документы", roles: ["user", "manager", "provider", "root"] },
   { segment: "/counterparties", label: "Контрагенты", roles: ["user", "manager", "root"] },
@@ -25,6 +27,7 @@ export const REFERENCE_NAV: NavItem[] = [
   { segment: "/testing", label: "Проверка сценариев", roles: ["root"] },
 ];
 
+/** Filters nav by role/context. */
 export function filterNav(items: NavItem[], role: VedRole | undefined): NavItem[] {
   return items.filter((item) => item.roles === "all" || (role && item.roles.includes(role)));
 }

@@ -141,6 +141,7 @@ export function displayStageId(status: FormStatus, roles: ProcessRoleRow[] | und
   return stage;
 }
 
+/** VED helper: stageIndexForProcess. */
 export function stageIndexForProcess(status: FormStatus, roles: ProcessRoleRow[] | undefined): number {
   const stages = stagesForProcess(roles);
   return stages.findIndex((stage) => stage.id === displayStageId(status, roles));

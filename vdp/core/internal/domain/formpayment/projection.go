@@ -5,6 +5,7 @@ import (
 	"strings"
 )
 
+// ProviderView is the provider-safe card: payment fields and scrubbed docs, no client PII.
 type ProviderView struct {
 	ID                 string               `json:"id"`
 	Status             Status               `json:"status"`
@@ -28,6 +29,7 @@ type ProviderView struct {
 	UpdatedAt          string               `json:"updated_at,omitempty"`
 }
 
+// ProjectForProvider builds a ProviderView from form fields with scrubbed DocsJSON.
 func ProjectForProvider(form Form) ProviderView {
 	view := ProviderView{
 		ID:                 form.ID,
@@ -60,6 +62,7 @@ func ProjectForProvider(form Form) ProviderView {
 	return view
 }
 
+// ProjectForProviderWithOrder overlays active-order amount/rate/commission on the provider view.
 func ProjectForProviderWithOrder(form Form, order *Order) ProviderView {
 	view := ProjectForProvider(form)
 	if order != nil {

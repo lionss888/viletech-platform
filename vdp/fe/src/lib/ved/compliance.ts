@@ -3,8 +3,10 @@
 import type { ComplianceToolRecord } from "./reference";
 import type { Counterparty, Organization, PaymentForm, VedRole } from "./types";
 
+/** ICO and ECO roles that run compliance review queues. */
 export const COMPLIANCE_ROLES: VedRole[] = ["internal_compliance_officer", "compliance_officer"];
 
+/** True for internal/external compliance officer roles. */
 export function isComplianceRole(role: VedRole | undefined): boolean {
   return !!role && COMPLIANCE_ROLES.includes(role);
 }
@@ -34,6 +36,7 @@ const SUBJECT_STATE: Record<string, { text: string; cls: string; ok: boolean }> 
   blocked: { text: "Заблокирован", cls: "bg-destructive-soft text-destructive", ok: false },
 };
 
+/** Subject (org vs form) compliance state for queue filters. */
 export function subjectState(status: string) {
   return SUBJECT_STATE[status] ?? SUBJECT_STATE["not_approved"]!;
 }

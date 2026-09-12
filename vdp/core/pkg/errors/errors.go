@@ -5,6 +5,7 @@ import (
 	"net/http"
 )
 
+// ErrorCode is a stable API error code returned in JSON bodies.
 type ErrorCode string
 
 const (
@@ -18,6 +19,7 @@ const (
 	ErrCodeExternal     ErrorCode = "EXTERNAL_SERVICE_ERROR"
 )
 
+// AppError is the core error type: Code for clients, StatusCode for HTTP adapters.
 type AppError struct {
 	Code       ErrorCode `json:"code"`
 	Message    string    `json:"message"`
@@ -26,6 +28,7 @@ type AppError struct {
 	Err        error     `json:"-"`
 }
 
+// Error implements the error interface.
 func (e *AppError) Error() string {
 	if e.Err != nil {
 		return fmt.Sprintf("%s: %s (%v)", e.Code, e.Message, e.Err)
@@ -33,14 +36,17 @@ func (e *AppError) Error() string {
 	return fmt.Sprintf("%s: %s", e.Code, e.Message)
 }
 
+// Unwrap returns the wrapped cause when present.
 func (e *AppError) Unwrap() error {
 	return e.Err
 }
 
+// New builds an AppError with HTTP status derived from code.
 func New(code ErrorCode, message string) *AppError {
 	return &AppError{Code: code, Message: message, StatusCode: statusFor(code)}
 }
 
+// Wrap attaches a cause while preserving code → HTTP mapping.
 func Wrap(err error, code ErrorCode, message string) *AppError {
 	return &AppError{Code: code, Message: message, Err: err, StatusCode: statusFor(code)}
 }

@@ -6,6 +6,7 @@ export type FormsSearch = {
   q?: string | undefined;
 };
 
+/** Parses formssearch. */
 export function parseFormsSearch(search: Record<string, unknown>): FormsSearch {
   return {
     filter: typeof search["filter"] === "string" ? search["filter"] : undefined,

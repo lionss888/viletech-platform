@@ -14,6 +14,7 @@ export type BankSettingsInput = {
   bank_webhook_secret?: string;
 };
 
+/** PUT /api/v1/admin/organizations/{…}/bank-settings. */
 export function setBankSettings(orgId: string, input: BankSettingsInput): Promise<CoreOrganization> {
   return apiFetch<CoreOrganization>(`/api/v1/admin/organizations/${orgId}/bank-settings`, {
     method: "PUT",
@@ -45,6 +46,7 @@ export type BankFormResponse = {
   updated_at?: string;
 };
 
+/** POST /api/v1/bank/forms. */
 export function createBankForm(input: BankCreateFormInput, idempotencyKey?: string): Promise<BankFormResponse> {
   return apiFetch<BankFormResponse>("/api/v1/bank/forms", {
     method: "POST",
@@ -103,6 +105,7 @@ export function createBankFormAsSession(input: BankCreateFormInput, idempotencyK
   return createBankFormWithToken(tokens.token, input, idempotencyKey);
 }
 
+/** GET /api/v1/bank/forms. */
 export function listBankForms(): Promise<CoreForm[]> {
   return apiFetch<CoreForm[]>("/api/v1/bank/forms");
 }

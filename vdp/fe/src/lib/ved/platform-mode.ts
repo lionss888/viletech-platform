@@ -8,6 +8,7 @@ export function usePlatformMode(): PlatformMode {
   return pathname.startsWith("/demo") ? "demo" : "app";
 }
 
+/** Base path for app vs /demo routes. */
 export function usePlatformBasePath(): string {
   return usePlatformMode() === "demo" ? "/demo" : "";
 }

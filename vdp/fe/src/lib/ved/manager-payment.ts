@@ -9,5 +9,6 @@ export function blocksPaymentStartWithoutProvider(
   return !providerId;
 }
 
+/** Copy when payment start is blocked until provider is assigned. */
 export const PAYMENT_START_PROVIDER_LOCK =
   "Назначьте провайдера исполнения — без этого платёж провайдеру не передать.";

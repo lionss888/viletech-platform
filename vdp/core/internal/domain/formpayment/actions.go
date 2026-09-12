@@ -7,6 +7,7 @@ import (
 	apperrors "github.com/viletech/vdp/core/pkg/errors"
 )
 
+// Action is a domain lifecycle command (Nest path suffix maps via NestPathAction).
 type Action string
 
 const (
@@ -87,6 +88,8 @@ const (
 	ActionInternalCallback  Action = "internal_callback"
 )
 
+// RolesForAction returns the legacy hard-coded role set for an action (parity baseline).
+// Prefer RoleMayPerformWithConfig when a ProcessPolicySnapshot is available.
 func RolesForAction(action Action) []domain.Role {
 	switch action {
 	case ActionRecognizeComplete:
@@ -121,10 +124,13 @@ func RolesForAction(action Action) []domain.Role {
 	}
 }
 
+// RoleMayPerform uses the legacy role matrix (no process-policy overlay).
 func RoleMayPerform(role domain.Role, action Action) bool {
 	return RoleMayPerformLegacy(role, action)
 }
 
+// TargetStatus maps action + form context to the next status without applying the transition.
+// orgApproved selects organization vs form waiting verification on submit.
 func TargetStatus(form Form, action Action, orgApproved bool) (Status, error) {
 	switch action {
 	case ActionRecognizeComplete:
@@ -295,6 +301,8 @@ func cancelStatusFor(from, target Status) (Status, error) {
 	}
 }
 
+// CanSeeForm enforces list/get visibility: user/bank own forms, provider assigned only,
+// manager skips client drafts, compliance/root see all.
 func CanSeeForm(role domain.Role, accountID string, form Form) bool {
 	switch role {
 	case domain.RoleUser:

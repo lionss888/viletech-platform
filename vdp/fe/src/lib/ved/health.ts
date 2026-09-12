@@ -2,12 +2,15 @@ import type { PaymentForm } from "./types";
 
 const DAY = 86_400_000;
 
+/** Exported constant: STUCK_DAYS. */
 export const STUCK_DAYS = 4;
 
+/** Predicate: isActive. */
 export function isActive(form: PaymentForm): boolean {
   return !form.status.startsWith("canceled") && form.status !== "completed";
 }
 
+/** VED helper: daysIdle. */
 export function daysIdle(form: PaymentForm): number {
   return Math.floor((Date.now() - new Date(form.updatedAt).getTime()) / DAY);
 }
@@ -32,6 +35,7 @@ function rank(forms: PaymentForm[], key: (f: PaymentForm) => string | undefined)
   return [...map.values()];
 }
 
+/** VED helper: systemStats. */
 export function systemStats(
   forms: PaymentForm[],
   resolveManagerName?: (managerId: string) => string | undefined,

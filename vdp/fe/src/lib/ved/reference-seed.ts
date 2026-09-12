@@ -193,6 +193,7 @@ const COMPLIANCE_TEMPLATES: Array<[string, string, ComplianceToolRecord["scope"]
   ["OTHER-MISC", "Прочее замечание комплаенс", "both"],
 ];
 
+/** Builds ProviderSeed seed/data for reference or demo. */
 export function buildProviderSeed(): ProviderRecord[] {
   const countries = ["Гонконг", "Турция", "ОАЭ", "Казахстан", "Китай", "Сингапур", "Великобритания", "Германия"];
   const corridors = ["USD", "CNY", "EUR", "AED", "TRY", "KZT", "GBP", "JPY"];
@@ -207,10 +208,12 @@ export function buildProviderSeed(): ProviderRecord[] {
   }));
 }
 
+/** Builds CountrySeed seed/data for reference or demo. */
 export function buildCountrySeed(): CountryRecord[] {
   return COUNTRY_DATA.map(([code, title, risk]) => ({ code, title, risk }));
 }
 
+/** Builds CurrencySeed seed/data for reference or demo. */
 export function buildCurrencySeed(): CurrencyRecord[] {
   return CURRENCY_CODES.map(([code, title, rate, status]) => ({
     code,
@@ -220,6 +223,7 @@ export function buildCurrencySeed(): CurrencyRecord[] {
   }));
 }
 
+/** Builds HsCodeSeed seed/data for reference or demo. */
 export function buildHsCodeSeed(): HsCodeRecord[] {
   return HS_TITLES.map((title, i) => ({
     code: `${8471000000 + i * 111111}`.slice(0, 10),
@@ -229,6 +233,7 @@ export function buildHsCodeSeed(): HsCodeRecord[] {
   }));
 }
 
+/** Builds ComplianceToolSeed seed/data for reference or demo. */
 export function buildComplianceToolSeed(): ComplianceToolRecord[] {
   return COMPLIANCE_TEMPLATES.map(([code, title, scope], i) => ({
     id: `ct-${i + 1}`,

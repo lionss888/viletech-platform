@@ -728,11 +728,13 @@ export function usePlatformStore(): VedStore {
   return mode === "demo" ? demo : api;
 }
 
+/** Lookup organization by id in store collections. */
 export function orgByIdFrom(organizations: VedStore["organizations"], id: string | undefined) {
   if (!id) return undefined;
   return organizations.find((o) => o.id === id);
 }
 
+/** Lookup counterparty by id in store collections. */
 export function cpByIdFrom(counterparties: VedStore["counterparties"], id: string | undefined) {
   if (!id) return undefined;
   return counterparties.find((c) => c.id === id);

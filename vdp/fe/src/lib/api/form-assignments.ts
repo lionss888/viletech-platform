@@ -1,6 +1,7 @@
 import type { CoreForm } from "./forms";
 import { apiFetch } from "./client";
 
+/** POST /api/v1/forms/{…}/agent. */
 export function assignAgent(formId: string, agentId: string): Promise<CoreForm> {
   return apiFetch<CoreForm>(`/api/v1/forms/${formId}/agent`, {
     method: "POST",
@@ -8,6 +9,7 @@ export function assignAgent(formId: string, agentId: string): Promise<CoreForm> 
   });
 }
 
+/** POST /api/v1/forms/{…}/deadline. */
 export function assignDeadline(formId: string, deadlineIso: string): Promise<CoreForm> {
   return apiFetch<CoreForm>(`/api/v1/forms/${formId}/deadline`, {
     method: "POST",
@@ -15,6 +17,7 @@ export function assignDeadline(formId: string, deadlineIso: string): Promise<Cor
   });
 }
 
+/** POST /api/v1/forms/{…}/confirmation. */
 export function setConfirmation(formId: string, input: { content?: string; file_id?: string }): Promise<CoreForm> {
   return apiFetch<CoreForm>(`/api/v1/forms/${formId}/confirmation`, {
     method: "POST",

@@ -7,6 +7,7 @@ import (
 	apperrors "github.com/viletech/vdp/core/pkg/errors"
 )
 
+// Command is one lifecycle attempt: role/action AuthZ, optional explicit target, policy overlay.
 type Command struct {
 	Form        Form
 	Action      Action
@@ -16,6 +17,9 @@ type Command struct {
 	Policy      *ProcessPolicySnapshot
 }
 
+// Apply runs one lifecycle command: AuthZ by role/action (with optional ProcessPolicySnapshot),
+// resolves target status, enforces payment-method and refund §4 guards, then transitions.
+// Idempotent when the form is already at the target status.
 func Apply(cmd Command) (Form, error) {
 	if !RoleMayPerformWithConfig(cmd.Role, cmd.Action, cmd.Policy) {
 		return Form{}, apperrors.New(apperrors.ErrCodeForbidden, "role is not allowed to perform this action")
