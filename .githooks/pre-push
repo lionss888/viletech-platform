@@ -1,0 +1,50 @@
+#!/usr/bin/env bash
+# Pre-push: notify management about push to remote.
+set -euo pipefail
+
+ROOT="$(cd "$(dirname "$0")/.." && pwd)"
+NOTIFY="$ROOT/vdp/scripts/notify-mgmt.sh"
+
+# Skip if notify not executable
+if [ ! -x "$NOTIFY" ]; then
+  exit 0
+fi
+
+# Load local secrets if available
+if [ -f ~/.vdp-intake/env ]; then
+  set +u
+  source ~/.vdp-intake/env
+  set -u
+fi
+
+# Skip if no token
+if [ -z "${MGMT_NOTIFY_TOKEN:-}${TELEGRAM_INTAKE_TOKEN:-}" ]; then
+  exit 0
+fi
+
+# Read stdin for push info (remote, url, local_ref, local_sha, remote_ref, remote_sha)
+while read local_ref local_sha remote_ref remote_sha; do
+  BRANCH="${remote_ref#refs/heads/}"
+  REVISION="$(git -C "$ROOT" rev-parse --short "$local_sha" 2>/dev/null || echo "$local_sha")"
+  
+  # Get commits being pushed
+  if [ "$remote_sha" = "0000000000000000000000000000000000000000" ]; then
+    # New branch
+    COMMITS_COUNT="$(git -C "$ROOT" rev-list --count "$local_sha" 2>/dev/null || echo 0)"
+    BODY="🚀 Новая ветка: $BRANCH ($COMMITS_COUNT коммитов)"
+  else
+    COMMITS_COUNT="$(git -C "$ROOT" rev-list --count "$remote_sha..$local_sha" 2>/dev/null || echo 0)"
+    BODY="🚀 Push в $BRANCH: $COMMITS_COUNT коммит(ов)"
+  fi
+  
+  # Notify management about push
+  "$NOTIFY" \
+    --kind push \
+    --title "push на удалённый сервер" \
+    --status success \
+    --revision "$REVISION" \
+    --body "$BODY" \
+    || true
+done
+
+exit 0

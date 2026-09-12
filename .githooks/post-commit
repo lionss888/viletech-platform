@@ -1,0 +1,37 @@
+#!/usr/bin/env bash
+# Post-commit: notify management about successful local commits.
+set -euo pipefail
+
+ROOT="$(cd "$(dirname "$0")/.." && pwd)"
+NOTIFY="$ROOT/vdp/scripts/notify-mgmt.sh"
+
+# Skip if notify not executable or tokens missing
+if [ ! -x "$NOTIFY" ]; then
+  exit 0
+fi
+
+# Load local secrets if available
+if [ -f ~/.vdp-intake/env ]; then
+  set +u
+  source ~/.vdp-intake/env
+  set -u
+fi
+
+# Skip if no token
+if [ -z "${MGMT_NOTIFY_TOKEN:-}${TELEGRAM_INTAKE_TOKEN:-}" ]; then
+  exit 0
+fi
+
+REVISION="$(git -C "$ROOT" rev-parse --short HEAD 2>/dev/null || echo local)"
+COMMIT_MSG="$(git -C "$ROOT" log -1 --pretty=%B 2>/dev/null | head -1)"
+
+# Notify management about successful commit
+"$NOTIFY" \
+  --kind progress \
+  --title "коммит создан локально" \
+  --status success \
+  --revision "$REVISION" \
+  --body "📝 $COMMIT_MSG" \
+  || true
+
+exit 0
