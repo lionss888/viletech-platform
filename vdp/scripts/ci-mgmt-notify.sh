@@ -34,6 +34,7 @@ map_step() {
     docs) printf '%s' "документация" ;;
     integration) printf '%s' "интеграция" ;;
     playwright|e2e|scenarios) printf '%s' "сценарии" ;;
+    pilot-matrix|pilot_matrix) printf '%s' "лестница ролей" ;;
     release-gate|release_gate) printf '%s' "полный контур" ;;
     promote*|write-release-pin|deploy) printf '%s' "выкат" ;;
     wait-for-ci|images) printf '%s' "перед сборкой образов" ;;
@@ -141,7 +142,7 @@ collect_failed() {
     printf '%s' "$FAILED_STEPS"
     return 0
   fi
-  for name in fast docs integration playwright release-gate; do
+  for name in fast docs integration playwright pilot-matrix release-gate; do
     eval "result=\${NEED_${name//-/_}_RESULT:-}"
     case "$result" in
       failure|failed|cancelled) failed="${failed:+$failed,}$name" ;;
@@ -149,7 +150,7 @@ collect_failed() {
   done
   if [ -z "$failed" ] && [ -n "${CI_JOB_STATUS:-}" ] && [ "${CI_JOB_STATUS}" != "success" ]; then
     case "${CI_JOB_NAME:-}" in
-      fast|docs|integration|playwright|release-gate) failed="$CI_JOB_NAME" ;;
+      fast|docs|integration|playwright|pilot-matrix|release-gate) failed="$CI_JOB_NAME" ;;
       *) failed="unknown" ;;
     esac
   fi
@@ -158,7 +159,7 @@ collect_failed() {
 
 collect_seen_steps() {
   local out="" name result
-  for name in fast docs integration playwright release-gate; do
+  for name in fast docs integration playwright pilot-matrix release-gate; do
     eval "result=\${NEED_${name//-/_}_RESULT:-}"
     [ -n "$result" ] || continue
     case "$result" in

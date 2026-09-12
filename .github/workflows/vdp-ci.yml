@@ -152,6 +152,68 @@ jobs:
         working-directory: vdp
         run: make compose-down
 
+  # PR-only: catch full-ladder / status-branch regressions that narrow Playwright misses.
+  detect-pilot-matrix:
+    name: detect pilot-matrix paths
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    outputs:
+      run: ${{ steps.filter.outputs.run }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Filter relevant paths
+        id: filter
+        run: |
+          set -euo pipefail
+          base="${{ github.event.pull_request.base.sha }}"
+          head="${{ github.event.pull_request.head.sha }}"
+          changed="$(git diff --name-only "$base"..."$head" || true)"
+          echo "Changed files (sample):"
+          printf '%s\n' "$changed" | head -40
+          if printf '%s\n' "$changed" | grep -E \
+            '^(vdp/fe/e2e/|vdp/fe/src/lib/ved/actions\.ts|vdp/fe/src/components/ved/ActionPanel\.tsx|vdp/core/internal/domain/formpayment/|vdp/core/internal/service/(contract|form_payment_assign)\.go)'; then
+            echo "run=true" >> "$GITHUB_OUTPUT"
+            echo "pilot-matrix required for this PR"
+          else
+            echo "run=false" >> "$GITHUB_OUTPUT"
+            echo "pilot-matrix skipped (paths outside ladder risk surface)"
+          fi
+
+  playwright-pilot-matrix:
+    name: playwright (pilot-matrix)
+    if: >-
+      github.event_name == 'pull_request' &&
+      needs.detect-pilot-matrix.outputs.run == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    needs: [fast, detect-pilot-matrix]
+    steps:
+      - uses: actions/checkout@v4
+      - name: Compose up + pilot-matrix journeys
+        working-directory: vdp
+        env:
+          CI: "true"
+          GATEWAY_RATE_LIMIT: "2000"
+          PLAYWRIGHT_ARGS: "--grep @pilot-matrix"
+        run: |
+          make compose-up
+          make playwright-e2e
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: playwright-pilot-matrix-traces
+          path: |
+            vdp/fe/test-results
+            vdp/fe/playwright-report
+          if-no-files-found: ignore
+      - name: Compose down
+        if: always()
+        working-directory: vdp
+        run: make compose-down
+
   mgmt-notify:
     name: management notify
     if: >-
@@ -159,7 +221,7 @@ jobs:
       github.actor != 'vdp-mirror-bot' &&
       (github.event_name == 'push' || github.event_name == 'pull_request') &&
       (github.event_name != 'push' || !contains(github.event.head_commit.message, '[skip mirror-loop]'))
-    needs: [fast, docs, integration, playwright]
+    needs: [fast, docs, integration, playwright, detect-pilot-matrix, playwright-pilot-matrix]
     runs-on: ubuntu-latest
     timeout-minutes: 3
     steps:
@@ -172,6 +234,7 @@ jobs:
           NEED_docs_RESULT: ${{ needs.docs.result }}
           NEED_integration_RESULT: ${{ needs.integration.result }}
           NEED_playwright_RESULT: ${{ needs.playwright.result }}
+          NEED_pilot_matrix_RESULT: ${{ needs.playwright-pilot-matrix.result }}
         run: |
           chmod +x vdp/scripts/ci-mgmt-notify.sh vdp/scripts/notify-mgmt.sh
           ./vdp/scripts/ci-mgmt-notify.sh auto

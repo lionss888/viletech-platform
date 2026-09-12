@@ -68,6 +68,18 @@ GATE_FAIL="$(
 echo "$GATE_FAIL" | grep -qi 'kind=pipeline' || fail "failed gate-summary dry-run should emit kind=pipeline"
 echo "$GATE_FAIL" | grep -qi playwright && fail "fail summary must not say playwright"
 
+echo "== ci-mgmt-notify pilot-matrix fail label =="
+GATE_PILOT="$(
+  NEED_fast_RESULT=success NEED_docs_RESULT=success \
+  NEED_integration_RESULT=success NEED_playwright_RESULT=success \
+  NEED_pilot_matrix_RESULT=failure \
+  MGMT_CI_REVISION=abc1234deadbeef MGMT_CI_BRANCH=feature/x \
+  bash scripts/ci-mgmt-notify.sh dry-run gate-summary 2>&1
+)"
+echo "$GATE_PILOT" | grep -qi 'kind=pipeline' || fail "pilot-matrix failure should emit kind=pipeline"
+echo "$GATE_PILOT" | grep -qi 'лестница' || fail "pilot-matrix failure should map to product label"
+echo "$GATE_PILOT" | grep -qiE 'playwright|pilot-matrix' && fail "notify must not leak job id tokens"
+
 echo "== ci-mgmt-notify deploy-ok / deploy-fail dry-run =="
 DEPLOY_OK="$(
   MGMT_CI_ENV=alpha MGMT_CI_REVISION=abc1234deadbeef \
@@ -343,8 +355,16 @@ grep -q 'vdp888/vdp' "$WF_MIRROR" \
 if grep -q 'not set — skip mirror' "$WF_MIRROR"; then
   fail "vdp-mirror-gitlab must not silently skip when secrets missing"
 fi
-grep -q '::error::' "$WF_MIRROR" \
+grep -Eq '::error(::| title=)' "$WF_MIRROR" \
   || fail "vdp-mirror-gitlab must error when secrets missing"
+grep -q 'preflight (mirror config)' "$WF_MIRROR" \
+  || fail "vdp-mirror-gitlab must have dedicated preflight job"
+grep -q 'reason=missing_secrets' "$WF_MIRROR" \
+  || fail "mirror preflight must categorize missing_secrets"
+grep -q 'reason=wrong_target' "$WF_MIRROR" \
+  || fail "mirror preflight must categorize wrong_target"
+grep -q 'reason=invalid_url' "$WF_MIRROR" \
+  || fail "mirror preflight must categorize invalid_url"
 [ -f scripts/configure-gitlab-mirror.sh ] \
   || fail "missing scripts/configure-gitlab-mirror.sh"
 GL_DOC="$ROOT/docs/development/gitlab-setup.md"
@@ -366,6 +386,11 @@ grep -q 'playwright-pilot-matrix' Makefile || fail "Makefile missing playwright-
 grep -q 'robot-matrix-check' Makefile || fail "Makefile missing robot-matrix-check"
 grep -q '^ci-pr:' Makefile || fail "Makefile missing ci-pr target"
 grep -q '^ci-pr-fast:' Makefile || fail "Makefile missing ci-pr-fast target"
+grep -q '^ci-pr-pilot:' Makefile || fail "Makefile missing ci-pr-pilot target"
+grep -q 'detect-pilot-matrix' ../.github/workflows/vdp-ci.yml \
+  || fail "vdp-ci.yml must detect pilot-matrix paths on PR"
+grep -q 'playwright-pilot-matrix:' ../.github/workflows/vdp-ci.yml \
+  || fail "vdp-ci.yml must define playwright-pilot-matrix job"
 grep -q 'VDP_ROBOT_FIXTURES_ROOT' scripts/compose-playwright.sh \
   || fail "compose-playwright must mount robot fixtures root"
 ./scripts/robot-matrix-check.sh

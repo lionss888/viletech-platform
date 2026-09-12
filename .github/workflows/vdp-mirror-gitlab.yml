@@ -31,19 +31,20 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
-  mirror:
-    name: push to GitLab (vdp888)
+  # Early infra signal: missing/invalid secrets are NOT a product regression.
+  preflight:
+    name: preflight (mirror config)
     runs-on: ubuntu-latest
     if: >-
       github.actor != 'vdp-mirror-bot' &&
       (github.event_name != 'push' || !contains(github.event.head_commit.message, '[skip mirror-loop]'))
-    timeout-minutes: 15
+    timeout-minutes: 3
+    outputs:
+      skip: ${{ steps.meta.outputs.skip }}
+      mirror_host: ${{ steps.meta.outputs.mirror_host }}
+      mirror_path: ${{ steps.meta.outputs.mirror_path }}
+      reason: ${{ steps.meta.outputs.reason }}
     steps:
-      - uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-          ref: ${{ github.event_name == 'workflow_dispatch' && inputs.branch || github.ref }}
-
       - name: Require and normalize GitLab mirror secrets
         id: meta
         env:
@@ -53,7 +54,8 @@ jobs:
         run: |
           set -euo pipefail
           if [ -z "${GITLAB_MIRROR_URL:-}" ] || [ -z "${GITLAB_MIRROR_TOKEN:-}" ]; then
-            echo "::error::GITLAB_MIRROR_URL and GITLAB_MIRROR_TOKEN must be set (GitHub → Settings → Secrets)."
+            echo "reason=missing_secrets" >> "$GITHUB_OUTPUT"
+            echo "::error title=mirror-preflight::reason=missing_secrets GITLAB_MIRROR_URL and GITLAB_MIRROR_TOKEN must be set (GitHub → Settings → Secrets)."
             echo "Expected URL: https://gitlab.com/vdp888/viletech-platform (not vdp888/vdp)"
             if [ "${ALLOW_SKIP}" = "true" ]; then
               echo "allow_skip=true — exiting without push"
@@ -68,24 +70,40 @@ jobs:
           host=$(printf '%s' "$raw" | sed -E 's#https?://##; s#/.*##')
           path=$(printf '%s' "$raw" | sed -E 's#https?://[^/]+/##')
           if [ -z "$host" ] || [ -z "$path" ] || [[ "$path" == *" "* ]]; then
-            echo "::error::Invalid GITLAB_MIRROR_URL=$GITLAB_MIRROR_URL"
+            echo "reason=invalid_url" >> "$GITHUB_OUTPUT"
+            echo "::error title=mirror-preflight::reason=invalid_url Invalid GITLAB_MIRROR_URL (redacted)."
             exit 1
           fi
           if [[ "$path" == "vdp888/vdp" ]]; then
-            echo "::error::GITLAB_MIRROR_URL points at Lovable repo vdp888/vdp. Use vdp888/viletech-platform for monorepo mirror."
+            echo "reason=wrong_target" >> "$GITHUB_OUTPUT"
+            echo "::error title=mirror-preflight::reason=wrong_target GITLAB_MIRROR_URL points at Lovable repo vdp888/vdp. Use vdp888/viletech-platform for monorepo mirror."
             exit 1
           fi
+          echo "reason=ok" >> "$GITHUB_OUTPUT"
           echo "mirror_host=$host" >> "$GITHUB_OUTPUT"
           echo "mirror_path=$path" >> "$GITHUB_OUTPUT"
           echo "skip=false" >> "$GITHUB_OUTPUT"
           echo "Mirror target: https://${host}/${path}"
 
+  mirror:
+    name: push to GitLab (vdp888)
+    needs: [preflight]
+    runs-on: ubuntu-latest
+    if: >-
+      needs.preflight.result == 'success' &&
+      needs.preflight.outputs.skip != 'true'
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          ref: ${{ github.event_name == 'workflow_dispatch' && inputs.branch || github.ref }}
+
       - name: Configure GitLab remote
-        if: steps.meta.outputs.skip != 'true'
         env:
           GITLAB_MIRROR_TOKEN: ${{ secrets.GITLAB_MIRROR_TOKEN }}
-          MIRROR_HOST: ${{ steps.meta.outputs.mirror_host }}
-          MIRROR_PATH: ${{ steps.meta.outputs.mirror_path }}
+          MIRROR_HOST: ${{ needs.preflight.outputs.mirror_host }}
+          MIRROR_PATH: ${{ needs.preflight.outputs.mirror_path }}
         run: |
           set -euo pipefail
           git remote remove gitlab 2>/dev/null || true
@@ -94,7 +112,6 @@ jobs:
           git remote get-url gitlab >/dev/null
 
       - name: Push branches and tags to GitLab
-        if: steps.meta.outputs.skip != 'true'
         run: |
           set -euo pipefail
           git config user.name "vdp-mirror-bot"
