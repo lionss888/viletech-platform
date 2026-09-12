@@ -254,6 +254,10 @@ func TargetStatus(form Form, action Action, orgApproved bool) (Status, error) {
 		if form.PaymentMethod == PaymentMethodPayFromExport {
 			return StatusPaymentSentTreasurer, nil
 		}
+		if form.PaymentMethod == PaymentMethodPostPayment && EffectiveRateOnProvider(form) {
+			// Provider already paid; client RUB confirmed → closing docs.
+			return StatusReportWaiting, nil
+		}
 		// Import advance (and empty method MVP): open provider path after RUB coverage.
 		return StatusPaymentProcessing, nil
 	case ActionTreasurerSigning:

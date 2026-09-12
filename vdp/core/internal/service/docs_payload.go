@@ -38,6 +38,10 @@ func (s *FormPaymentService) buildDocsGeneratePayload(ctx context.Context, form 
 		"actual_payment_date":   form.ActualPaymentDate,
 		"rub_equivalent":        computeRUBEquivalent(form),
 	}
+	// Primary order under RATE_ON_PP may omit FX rate (filled on advance order after PP).
+	if formpayment.EffectiveRateOnProvider(form) && (form.Rate.Value == "" || form.Rate.Value == "0") {
+		out["rate_required"] = false
+	}
 	s.mergeOrganizationPayload(ctx, out, form.OrganizationID)
 	s.mergeAgentPayload(ctx, out, form.AgentID)
 	s.mergeCounterpartyPayload(ctx, out, form.CounterpartyID)

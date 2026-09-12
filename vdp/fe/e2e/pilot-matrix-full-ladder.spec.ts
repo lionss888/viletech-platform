@@ -3,6 +3,7 @@ import { test, expect } from "./fixtures/auth.fixture";
 import {
   assertCoreHealthy,
   createDraftForm,
+  createOrganizationApi,
   createPaymentAgentApi,
   loginAllRoles,
   purgeDemoMockCounterparties,
@@ -69,11 +70,21 @@ test.describe("Pilot robot matrix full UI ladder @pilot-matrix", () => {
       inn: `77${Date.now().toString().slice(-8)}`,
     });
 
+    // Own client org per run: an accepted agency contract on the shared seed org would let
+    // assign-agent resolve straight to signing_order and skip the contract leg below.
+    const clientOrg = await createOrganizationApi(tokens.user, {
+      name: `Robot Org ${pack.organization.name} ${Date.now()}`.slice(0, 80),
+      inn: `78${Date.now().toString().slice(-8)}`,
+      legal_address: "г. Москва, робот-матрица",
+      country: pack.organization.country,
+    });
+
     const formId = await createDraftForm(tokens, `matrix-${Date.now()}`, {
       currency: pack.deal_fields.currency,
       invoice_amount: pack.deal_fields.invoice_amount,
       contract_number: `${pack.deal_fields.contract_number}-${Date.now()}`,
       contract_date: pack.deal_fields.contract_date,
+      organization_id: clientOrg.id,
     });
 
     // 1. User submit

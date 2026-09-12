@@ -66,6 +66,7 @@ type CreateInput struct {
 	ContractDate   string
 	OrganizationID string
 	CounterpartyID string
+	PaymentMethod  string
 }
 
 func (s *FormPaymentService) Create(ctx context.Context, principal authz.Principal, input CreateInput) (formpayment.Form, error) {
@@ -103,12 +104,14 @@ func (s *FormPaymentService) Create(ctx context.Context, principal authz.Princip
 		NoDocuments:          input.NoDocuments,
 		ContractNumber:       input.ContractNumber,
 		ContractDate:         input.ContractDate,
+		PaymentMethod:        input.PaymentMethod,
 		ProcessPolicyVersion: policyVersion,
 		CreatedAt:            now,
 		UpdatedAt:            now,
 		Rate:                 formpayment.Rate{Value: "0", Currency: input.Currency, Source: "manual"},
 		Commission:           formpayment.Commission{FeeAmount: "0", FeePercent: "0", FeeCurrency: input.Currency},
 	}
+	formpayment.ApplyImportPostpayDefaults(&form)
 	if err := s.store.SaveForm(ctx, form); err != nil {
 		return formpayment.Form{}, err
 	}
@@ -395,6 +398,7 @@ func (s *FormPaymentService) SetCommission(ctx context.Context, principal authz.
 	if err := s.store.SaveForm(ctx, form); err != nil {
 		return formpayment.Form{}, err
 	}
+	s.maybeAutoEnqueuePOG(ctx, principal, form)
 	return form, nil
 }
 

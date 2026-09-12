@@ -114,6 +114,7 @@ func (s *Server) handleCreateForm(w http.ResponseWriter, r *http.Request, princi
 		ContractDate   string `json:"contract_date"`
 		OrganizationID string `json:"organization_id"`
 		CounterpartyID string `json:"counterparty_id"`
+		PaymentMethod  string `json:"payment_method"`
 	}
 	_ = json.NewDecoder(r.Body).Decode(&body)
 	form, err := s.forms.Create(r.Context(), principal, service.CreateInput{
@@ -126,6 +127,7 @@ func (s *Server) handleCreateForm(w http.ResponseWriter, r *http.Request, princi
 		ContractDate:   body.ContractDate,
 		OrganizationID: body.OrganizationID,
 		CounterpartyID: body.CounterpartyID,
+		PaymentMethod:  body.PaymentMethod,
 	})
 	if err != nil {
 		writeError(w, err)

@@ -11,6 +11,25 @@ const (
 	PostpayRateOnProvider      = "POSTPAY_RATE_ON_PP"
 )
 
+// ApplyImportPostpayDefaults sets POSTPAY_RATE_ON_PP when import + post_payment and mode is empty.
+// Does not overwrite an explicit PlatformPostpayMode.
+func ApplyImportPostpayDefaults(form *Form) {
+	if form == nil {
+		return
+	}
+	if form.Direction != DirectionImport {
+		return
+	}
+	if form.PaymentMethod != PaymentMethodPostPayment {
+		return
+	}
+	if form.PlatformPostpayMode != "" {
+		return
+	}
+	form.PlatformPostpayMode = PostpayRateOnProvider
+	form.RateOnProvider = true
+}
+
 type Form struct {
 	ID                     string     `json:"id"`
 	AccountID              string     `json:"account_id"`

@@ -4,16 +4,16 @@ overview: "Домен и API импортной постоплаты POSTPAY_RAT
 todos:
   - id: imp2-auto-mode
     content: Auto-set POSTPAY_RATE_ON_PP on import post_payment (Create/Patch)
-    status: pending
+    status: completed
   - id: imp2-treasurer
     content: guard + TargetStatus TreasurerConfirm for RATE_ON_PP → report_waiting
-    status: pending
+    status: completed
   - id: imp2-pog
     content: maybeAutoEnqueuePOG after rate/commission on payment_sent/advance path
-    status: pending
+    status: completed
   - id: imp2-tests
     content: docs payload primary without rate + domain/HTTP tests
-    status: pending
+    status: completed
 isProject: false
 ---
 

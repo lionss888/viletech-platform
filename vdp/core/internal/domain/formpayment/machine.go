@@ -74,12 +74,17 @@ func guardPaymentMethod(form Form, action Action) error {
 	switch action {
 	case ActionTreasurerConfirm:
 		// Import advance (§10.2): empty or advance. Export: PAY_FROM_EXPORT.
-		// post_payment / RATE_ON_PP treasurer step is IMP2 — not allowed here.
+		// Import postpay RATE_ON_PP (§10.3): post_payment only when EffectiveRateOnProvider.
 		switch form.PaymentMethod {
 		case "", PaymentMethodAdvance, PaymentMethodPayFromExport:
 			return nil
+		case PaymentMethodPostPayment:
+			if EffectiveRateOnProvider(form) {
+				return nil
+			}
+			return apperrors.New(apperrors.ErrCodeConflict, "treasurer confirm for post_payment requires POSTPAY_RATE_ON_PP")
 		default:
-			return apperrors.New(apperrors.ErrCodeConflict, "treasurer confirm requires advance or PAY_FROM_EXPORT")
+			return apperrors.New(apperrors.ErrCodeConflict, "treasurer confirm requires advance, post_payment+RATE_ON_PP, or PAY_FROM_EXPORT")
 		}
 	}
 	return nil
