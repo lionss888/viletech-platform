@@ -11,6 +11,7 @@ export type AccountView = {
   sms_notify_enabled?: boolean;
 };
 
+/** POST /api/v1/auth/login (skipAuth); stores tokens on success. */
 export async function login(email: string, password: string): Promise<AuthTokens> {
   const session = await apiFetch<AuthTokens>("/api/v1/auth/login", {
     method: "POST",
@@ -21,6 +22,7 @@ export async function login(email: string, password: string): Promise<AuthTokens
   return session;
 }
 
+/** POST logout then always clear local tokens. */
 export async function logout(): Promise<void> {
   try {
     await apiFetch<void>("/api/v1/auth/logout", { method: "POST" });
@@ -29,6 +31,7 @@ export async function logout(): Promise<void> {
   }
 }
 
+/** GET current account profile for the JWT principal. */
 export async function getAccount(): Promise<AccountView> {
   return apiFetch<AccountView>("/api/v1/account");
 }

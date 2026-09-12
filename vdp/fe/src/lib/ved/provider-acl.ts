@@ -84,6 +84,7 @@ export function providerVisibleDocuments(form: PaymentForm): PaymentForm["docume
   return form.documents.filter((doc) => !isAgencyContractDocument(doc));
 }
 
+/** True when doc kind/label is agency contract — hidden from provider UI. */
 export function isAgencyContractDocument(doc: {
   kind?: string;
   title?: string;
@@ -96,6 +97,7 @@ export function isAgencyContractDocument(doc: {
   return title.includes("агентск") || title.includes("agency");
 }
 
+/** Fields that must not render in provider cabinet (PII / agency). */
 export function isProviderHiddenField(field: string): boolean {
   return (PROVIDER_HIDDEN_FIELDS as readonly string[]).includes(field);
 }

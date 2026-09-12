@@ -195,12 +195,59 @@ func TestTreasurerConfirmPostPaymentRejected(t *testing.T) {
 			Status:        StatusPaymentReceived,
 			Direction:     DirectionImport,
 			PaymentMethod: PaymentMethodPostPayment,
+			// no RATE_ON_PP
 		},
 		Action: ActionTreasurerConfirm,
 		Role:   domain.RoleTreasurer,
 	})
 	if err == nil {
-		t.Fatal("expected conflict for post_payment")
+		t.Fatal("expected conflict for post_payment without RATE_ON_PP")
+	}
+}
+
+func TestTreasurerConfirmPostPaymentRateOnPP(t *testing.T) {
+	t.Parallel()
+	got, err := Apply(Command{
+		Form: Form{
+			Status:              StatusPaymentReceived,
+			Direction:           DirectionImport,
+			PaymentMethod:       PaymentMethodPostPayment,
+			PlatformPostpayMode: PostpayRateOnProvider,
+			RateOnProvider:      true,
+		},
+		Action: ActionTreasurerConfirm,
+		Role:   domain.RoleTreasurer,
+	})
+	if err != nil {
+		t.Fatalf("RATE_ON_PP confirm: %v", err)
+	}
+	if got.Status != StatusReportWaiting {
+		t.Fatalf("status=%s want report_waiting", got.Status)
+	}
+}
+
+func TestApplyImportPostpayDefaults(t *testing.T) {
+	t.Parallel()
+	form := Form{Direction: DirectionImport, PaymentMethod: PaymentMethodPostPayment}
+	ApplyImportPostpayDefaults(&form)
+	if form.PlatformPostpayMode != PostpayRateOnProvider || !form.RateOnProvider {
+		t.Fatalf("defaults not applied: mode=%s rateOn=%v", form.PlatformPostpayMode, form.RateOnProvider)
+	}
+	form.PlatformPostpayMode = PostpayFixedRate
+	form.RateOnProvider = false
+	ApplyImportPostpayDefaults(&form)
+	if form.PlatformPostpayMode != PostpayFixedRate {
+		t.Fatal("must not overwrite explicit mode")
+	}
+}
+
+func TestRateOnPPProviderFirstAndAdvanceOverlay(t *testing.T) {
+	t.Parallel()
+	if !IsAllowedTransition(StatusSigningOrderAccepted, StatusPaymentProcessing, DirectionImport, true) {
+		t.Fatal("provider-first signing_order_accepted -> payment_processing")
+	}
+	if !IsAllowedTransition(StatusPaymentSent, StatusAdvanceSigningOrder, DirectionImport, true) {
+		t.Fatal("payment_sent -> advance_signing_order with RATE_ON_PP")
 	}
 }
 

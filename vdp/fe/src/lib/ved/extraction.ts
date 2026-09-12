@@ -36,6 +36,7 @@ export type ExtractionResult = {
   warnings?: string[];
 };
 
+/** Parses OCR/extraction JSON into typed fields for review UI. */
 export function parseExtractionResult(invoiceJson: string | undefined | null): ExtractionResult | null {
   if (!invoiceJson || !invoiceJson.trim()) return null;
   try {
@@ -64,6 +65,7 @@ export function parseExtractionResult(invoiceJson: string | undefined | null): E
   }
 }
 
+/** True when extraction confidence is below review threshold. */
 export function isLowConfidence(item: ExtractionLineItem | ExtractionResult): boolean {
   const c = "confidence" in item ? item.confidence : undefined;
   return typeof c === "number" && c < 0.55;
@@ -87,6 +89,7 @@ export function extractionPanelMode(input: {
   return "idle";
 }
 
+/** Whether role may start/cancel/confirm extraction controls. */
 export function canControlExtraction(role: string, status?: string): boolean {
   if (role !== "user" && role !== "manager" && role !== "root") return false;
   const st = status ?? "";

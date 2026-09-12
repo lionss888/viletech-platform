@@ -11,6 +11,26 @@ const (
 	PostpayRateOnProvider      = "POSTPAY_RATE_ON_PP"
 )
 
+// ApplyImportPostpayDefaults sets POSTPAY_RATE_ON_PP when import + post_payment and mode is empty.
+// Does not overwrite an explicit PlatformPostpayMode.
+func ApplyImportPostpayDefaults(form *Form) {
+	if form == nil {
+		return
+	}
+	if form.Direction != DirectionImport {
+		return
+	}
+	if form.PaymentMethod != PaymentMethodPostPayment {
+		return
+	}
+	if form.PlatformPostpayMode != "" {
+		return
+	}
+	form.PlatformPostpayMode = PostpayRateOnProvider
+	form.RateOnProvider = true
+}
+
+// Form is the aggregate root for a VED payment application (status, parties, rate, docs).
 type Form struct {
 	ID                     string     `json:"id"`
 	AccountID              string     `json:"account_id"`
@@ -75,18 +95,23 @@ const (
 	ChannelBank = "bank"
 )
 
+// Rate is the deal FX snapshot stored on the form or order.
 type Rate struct {
 	Value    string `json:"value"`
 	Currency string `json:"currency"`
 	Source   string `json:"source"`
 }
 
+// Commission holds IMP3 reward mode fields; NormalizeAndCompute fills FeeAmount.
 type Commission struct {
-	FeeAmount   string `json:"fee_amount"`
+	RewardMode  string `json:"reward_mode,omitempty"` // fixed|percent|percent_plus_fixed (§10.5)
+	FeeAmount   string `json:"fee_amount"`           // computed total (or legacy fixed)
 	FeePercent  string `json:"fee_percent"`
+	FeeFix      string `json:"fee_fix,omitempty"` // fixed component (fixed / percent_plus_fixed)
 	FeeCurrency string `json:"fee_currency"`
 }
 
+// Document is a persisted file attachment metadata row for a form-payment.
 type Document struct {
 	ID            string `json:"id"`
 	FormPaymentID string `json:"form_payment_id"`
@@ -95,6 +120,7 @@ type Document struct {
 	ContentHash   string `json:"content_hash,omitempty"`
 }
 
+// ComplianceHistoryEntry records one status change attributed to an actor.
 type ComplianceHistoryEntry struct {
 	ID            string    `json:"id"`
 	FormPaymentID string    `json:"form_payment_id"`

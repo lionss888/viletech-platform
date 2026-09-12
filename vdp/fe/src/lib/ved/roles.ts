@@ -61,11 +61,13 @@ export const ROLES: RoleMeta[] = [
   },
 ];
 
+/** Exported constant: ROLE_MAP. */
 export const ROLE_MAP: Record<VedRole, RoleMeta> = ROLES.reduce(
   (acc, role) => ({ ...acc, [role.id]: role }),
   {} as Record<VedRole, RoleMeta>,
 );
 
+/** VED helper: roleTitle. */
 export function roleTitle(role: VedRole): string {
   return ROLE_MAP[role]?.title ?? role;
 }

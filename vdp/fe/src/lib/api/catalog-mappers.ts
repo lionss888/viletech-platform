@@ -22,6 +22,7 @@ export function mapOrgStatus(raw: string | undefined, blocked?: boolean): Organi
   return "waiting_verification";
 }
 
+/** Maps core DTO to cabinet coreorganization shape. */
 export function mapCoreOrganization(org: CoreOrganization): Organization {
   return {
     id: org.id,
@@ -45,6 +46,7 @@ export function mapCoreOrganization(org: CoreOrganization): Organization {
   };
 }
 
+/** Parses counterpartybanks from core/API payload. */
 export function parseCounterpartyBanks(
   raw: string | CounterpartyBankCore[] | undefined | null,
 ): CounterpartyBank[] {
@@ -78,6 +80,7 @@ export function parseCounterpartyBanks(
     .filter((b): b is CounterpartyBank => b != null);
 }
 
+/** Maps core DTO to cabinet corecounterparty shape. */
 export function mapCoreCounterparty(cp: CoreCounterparty): Counterparty {
   const country = cp.country_code?.trim() || cp.country?.trim() || "—";
   const approved =
@@ -97,6 +100,7 @@ export function mapCoreCounterparty(cp: CoreCounterparty): Counterparty {
   };
 }
 
+/** Maps core DTO to cabinet coreagent shape. */
 export function mapCoreAgent(agent: CoreAgent): ProviderRecord {
   const paused = agent.status === "paused" || agent.active === false;
   const sla = agent.sla_hours && agent.sla_hours > 0 ? agent.sla_hours : 24;
@@ -111,6 +115,7 @@ export function mapCoreAgent(agent: CoreAgent): ProviderRecord {
   };
 }
 
+/** Maps core DTO to cabinet corecurrency shape. */
 export function mapCoreCurrency(c: CoreCurrency): CurrencyRecord {
   return {
     code: c.code,
@@ -120,6 +125,7 @@ export function mapCoreCurrency(c: CoreCurrency): CurrencyRecord {
   };
 }
 
+/** Maps core DTO to cabinet corehs shape. */
 export function mapCoreHs(h: CoreHsCode): HsCodeRecord {
   return {
     code: h.code,
@@ -129,6 +135,7 @@ export function mapCoreHs(h: CoreHsCode): HsCodeRecord {
   };
 }
 
+/** Maps core DTO to cabinet coreadminaccount shape. */
 export function mapCoreAdminAccount(a: CoreAdminAccount): PlatformUser {
   const role = (a.role ?? "user") as VedRole;
   const fullName = a.full_name?.trim() ?? "";

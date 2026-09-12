@@ -54,14 +54,19 @@ import {
   buildProviderSeed,
 } from "./reference-seed";
 
+/** Exported constant: PROVIDERS. */
 export const PROVIDERS: ProviderRecord[] = buildProviderSeed();
 
+/** Exported constant: CURRENCIES. */
 export const CURRENCIES: CurrencyRecord[] = buildCurrencySeed();
 
+/** Exported constant: HS_CODES. */
 export const HS_CODES: HsCodeRecord[] = buildHsCodeSeed();
 
+/** Exported constant: COUNTRIES. */
 export const COUNTRIES: CountryRecord[] = buildCountrySeed();
 
+/** Exported constant: SYSTEM_SERVICES. */
 export const SYSTEM_SERVICES: SystemService[] = [
   { id: "svc-api", name: "Ядро платформы", state: "up", latencyMs: 118, uptime: "99,98 %" },
   { id: "svc-docs", name: "Распознавание документов", state: "degraded", latencyMs: 940, uptime: "98,70 %" },
@@ -69,6 +74,7 @@ export const SYSTEM_SERVICES: SystemService[] = [
   { id: "svc-mail", name: "Уведомления", state: "down", latencyMs: 0, uptime: "94,20 %" },
 ];
 
+/** Exported constant: SYSTEM_INCIDENTS. */
 export const SYSTEM_INCIDENTS: SystemIncident[] = [
   { id: "inc-1", title: "Ошибка входа: заблокированный аккаунт повторяет попытки", severity: "critical", account: "salimov@technosnab.ru", at: "сегодня, 12:40" },
   { id: "inc-2", title: "Не доставлены уведомления по 6 заявкам", severity: "critical", account: "manager2@demo.vdp.local", at: "сегодня, 11:02" },

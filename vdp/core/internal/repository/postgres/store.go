@@ -321,19 +321,21 @@ func (s *Store) SaveForm(ctx context.Context, f formpayment.Form) error {
 		INSERT INTO form_payments (
 			id, account_id, organization_id, provider_id, agent_id, manager_id, status, prev_status, direction, kind,
 			rate_on_provider, execution_deadline, rate_value, rate_currency, rate_source, fee_amount, fee_percent, fee_currency,
+			fee_reward_mode, fee_fix,
 			invoice_amount, currency, counterparty_id, contract_id, payment_method, platform_postpay_mode, sign_method,
 			no_documents, important, client_agreed_provider, confirmation_hash, confirmation_file_id, contract_number, contract_date,
 			payment_purpose, actual_payment_amount, actual_payment_date,
 			invoice_json, docs_json, on_behalf_organization_id, active_order_id, updated_at
 		) VALUES (
-			$1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22,$23,$24,$25,$26,$27,$28,$29,$30,$31,$32,$33,$34,$35,$36,$37,$38,$39,NOW()
+			$1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22,$23,$24,$25,$26,$27,$28,$29,$30,$31,$32,$33,$34,$35,$36,$37,$38,$39,$40,$41,NOW()
 		) ON CONFLICT (id) DO UPDATE SET
 			organization_id=EXCLUDED.organization_id,
 			provider_id=EXCLUDED.provider_id, agent_id=EXCLUDED.agent_id, manager_id=EXCLUDED.manager_id,
 			status=EXCLUDED.status, prev_status=EXCLUDED.prev_status, rate_on_provider=EXCLUDED.rate_on_provider,
 			execution_deadline=EXCLUDED.execution_deadline, rate_value=EXCLUDED.rate_value, rate_currency=EXCLUDED.rate_currency,
 			rate_source=EXCLUDED.rate_source, fee_amount=EXCLUDED.fee_amount, fee_percent=EXCLUDED.fee_percent,
-			fee_currency=EXCLUDED.fee_currency, invoice_amount=EXCLUDED.invoice_amount, currency=EXCLUDED.currency,
+			fee_currency=EXCLUDED.fee_currency, fee_reward_mode=EXCLUDED.fee_reward_mode, fee_fix=EXCLUDED.fee_fix,
+			invoice_amount=EXCLUDED.invoice_amount, currency=EXCLUDED.currency,
 			counterparty_id=EXCLUDED.counterparty_id, contract_id=EXCLUDED.contract_id, payment_method=EXCLUDED.payment_method,
 			platform_postpay_mode=EXCLUDED.platform_postpay_mode, sign_method=EXCLUDED.sign_method, no_documents=EXCLUDED.no_documents,
 			important=EXCLUDED.important, client_agreed_provider=EXCLUDED.client_agreed_provider,
@@ -346,6 +348,7 @@ func (s *Store) SaveForm(ctx context.Context, f formpayment.Form) error {
 		f.ID, f.AccountID, f.OrganizationID, nullStr(f.ProviderID), nullStr(f.AgentID), nullStr(f.ManagerID),
 		string(f.Status), string(f.PrevStatus), string(f.Direction), string(f.Kind), f.RateOnProvider, f.ExecutionDeadline,
 		f.Rate.Value, f.Rate.Currency, f.Rate.Source, f.Commission.FeeAmount, f.Commission.FeePercent, f.Commission.FeeCurrency,
+		f.Commission.RewardMode, f.Commission.FeeFix,
 		f.InvoiceAmount, f.Currency, nullStr(f.CounterpartyID), nullStr(f.ContractID), f.PaymentMethod, f.PlatformPostpayMode, f.SignMethod,
 		f.NoDocuments, f.Important, f.ClientAgreedProvider, f.ConfirmationHash, f.ConfirmationFileID, f.ContractNumber, f.ContractDate,
 		f.PaymentPurpose, f.ActualPaymentAmount, f.ActualPaymentDate,
@@ -395,7 +398,9 @@ func (s *Store) FormByID(ctx context.Context, id string) (formpayment.Form, erro
 	err := s.db.QueryRowContext(ctx, `
 		SELECT id, account_id, organization_id, provider_id, agent_id, manager_id, status, prev_status, direction, kind,
 			rate_on_provider, execution_deadline, COALESCE(rate_value,''), COALESCE(rate_currency,''), COALESCE(rate_source,''),
-			COALESCE(fee_amount,''), COALESCE(fee_percent,''), COALESCE(fee_currency,''), COALESCE(invoice_amount,''), COALESCE(currency,''),
+			COALESCE(fee_amount,''), COALESCE(fee_percent,''), COALESCE(fee_currency,''),
+			COALESCE(fee_reward_mode,''), COALESCE(fee_fix,''),
+			COALESCE(invoice_amount,''), COALESCE(currency,''),
 			counterparty_id, contract_id, COALESCE(payment_method,''), COALESCE(platform_postpay_mode,''), COALESCE(sign_method,''),
 			no_documents, important, client_agreed_provider, COALESCE(confirmation_hash,''), COALESCE(confirmation_file_id,''),
 			COALESCE(contract_number,''), COALESCE(contract_date,''),
@@ -405,7 +410,9 @@ func (s *Store) FormByID(ctx context.Context, id string) (formpayment.Form, erro
 		FROM form_payments WHERE id=$1`, id).Scan(
 		&f.ID, &f.AccountID, &f.OrganizationID, &provider, &agent, &manager, &status, &prev, &dir, &kind,
 		&f.RateOnProvider, &deadline, &f.Rate.Value, &f.Rate.Currency, &f.Rate.Source,
-		&f.Commission.FeeAmount, &f.Commission.FeePercent, &f.Commission.FeeCurrency, &f.InvoiceAmount, &f.Currency,
+		&f.Commission.FeeAmount, &f.Commission.FeePercent, &f.Commission.FeeCurrency,
+		&f.Commission.RewardMode, &f.Commission.FeeFix,
+		&f.InvoiceAmount, &f.Currency,
 		&cp, &contract, &f.PaymentMethod, &f.PlatformPostpayMode, &f.SignMethod,
 		&f.NoDocuments, &f.Important, &f.ClientAgreedProvider, &f.ConfirmationHash, &f.ConfirmationFileID,
 		&f.ContractNumber, &f.ContractDate, &f.PaymentPurpose, &f.ActualPaymentAmount, &f.ActualPaymentDate,
@@ -1299,17 +1306,35 @@ func (s *Store) SaveOrder(ctx context.Context, o formpayment.Order) error {
 	_, err := s.db.ExecContext(ctx, `
 		INSERT INTO form_orders (
 			id, form_payment_id, kind, status, file_ids, rate_value, rate_currency, rate_source,
-			fee_amount, fee_percent, fee_currency, invoice_amount, currency, created_at, updated_at
-		) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15)
+			fee_amount, fee_percent, fee_currency, fee_reward_mode, fee_fix, invoice_amount, currency, created_at, updated_at
+		) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17)
 		ON CONFLICT (id) DO UPDATE SET
 			kind=EXCLUDED.kind, status=EXCLUDED.status, file_ids=EXCLUDED.file_ids,
 			rate_value=EXCLUDED.rate_value, rate_currency=EXCLUDED.rate_currency, rate_source=EXCLUDED.rate_source,
 			fee_amount=EXCLUDED.fee_amount, fee_percent=EXCLUDED.fee_percent, fee_currency=EXCLUDED.fee_currency,
+			fee_reward_mode=EXCLUDED.fee_reward_mode, fee_fix=EXCLUDED.fee_fix,
 			invoice_amount=EXCLUDED.invoice_amount, currency=EXCLUDED.currency, updated_at=EXCLUDED.updated_at`,
 		o.ID, o.FormPaymentID, string(o.Kind), string(o.Status), string(ids),
 		o.Rate.Value, o.Rate.Currency, o.Rate.Source,
 		o.Commission.FeeAmount, o.Commission.FeePercent, o.Commission.FeeCurrency,
+		o.Commission.RewardMode, o.Commission.FeeFix,
 		o.InvoiceAmount, o.Currency, o.CreatedAt, o.UpdatedAt)
+	if err != nil {
+		_, err = s.db.ExecContext(ctx, `
+			INSERT INTO form_orders (
+				id, form_payment_id, kind, status, file_ids, rate_value, rate_currency, rate_source,
+				fee_amount, fee_percent, fee_currency, invoice_amount, currency, created_at, updated_at
+			) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15)
+			ON CONFLICT (id) DO UPDATE SET
+				kind=EXCLUDED.kind, status=EXCLUDED.status, file_ids=EXCLUDED.file_ids,
+				rate_value=EXCLUDED.rate_value, rate_currency=EXCLUDED.rate_currency, rate_source=EXCLUDED.rate_source,
+				fee_amount=EXCLUDED.fee_amount, fee_percent=EXCLUDED.fee_percent, fee_currency=EXCLUDED.fee_currency,
+				invoice_amount=EXCLUDED.invoice_amount, currency=EXCLUDED.currency, updated_at=EXCLUDED.updated_at`,
+			o.ID, o.FormPaymentID, string(o.Kind), string(o.Status), string(ids),
+			o.Rate.Value, o.Rate.Currency, o.Rate.Source,
+			o.Commission.FeeAmount, o.Commission.FeePercent, o.Commission.FeeCurrency,
+			o.InvoiceAmount, o.Currency, o.CreatedAt, o.UpdatedAt)
+	}
 	return err
 }
 
@@ -1321,12 +1346,26 @@ func (s *Store) OrderByID(ctx context.Context, id string) (formpayment.Order, er
 		SELECT id, form_payment_id, kind, status, file_ids,
 			COALESCE(rate_value,''), COALESCE(rate_currency,''), COALESCE(rate_source,''),
 			COALESCE(fee_amount,''), COALESCE(fee_percent,''), COALESCE(fee_currency,''),
+			COALESCE(fee_reward_mode,''), COALESCE(fee_fix,''),
 			COALESCE(invoice_amount,''), COALESCE(currency,''), created_at, updated_at
 		FROM form_orders WHERE id=$1`, id).Scan(
 		&o.ID, &o.FormPaymentID, &kind, &status, &ids,
 		&o.Rate.Value, &o.Rate.Currency, &o.Rate.Source,
 		&o.Commission.FeeAmount, &o.Commission.FeePercent, &o.Commission.FeeCurrency,
+		&o.Commission.RewardMode, &o.Commission.FeeFix,
 		&o.InvoiceAmount, &o.Currency, &o.CreatedAt, &o.UpdatedAt)
+	if err != nil && err != sql.ErrNoRows {
+		err = s.db.QueryRowContext(ctx, `
+			SELECT id, form_payment_id, kind, status, file_ids,
+				COALESCE(rate_value,''), COALESCE(rate_currency,''), COALESCE(rate_source,''),
+				COALESCE(fee_amount,''), COALESCE(fee_percent,''), COALESCE(fee_currency,''),
+				COALESCE(invoice_amount,''), COALESCE(currency,''), created_at, updated_at
+			FROM form_orders WHERE id=$1`, id).Scan(
+			&o.ID, &o.FormPaymentID, &kind, &status, &ids,
+			&o.Rate.Value, &o.Rate.Currency, &o.Rate.Source,
+			&o.Commission.FeeAmount, &o.Commission.FeePercent, &o.Commission.FeeCurrency,
+			&o.InvoiceAmount, &o.Currency, &o.CreatedAt, &o.UpdatedAt)
+	}
 	if err == sql.ErrNoRows {
 		return formpayment.Order{}, apperrors.ErrResourceNotFound
 	}

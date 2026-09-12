@@ -6,6 +6,7 @@ import (
 	"strings"
 )
 
+// RatePrecision is the FX rounding scale (4 decimal places).
 const RatePrecision = 10000.0
 
 // ValueSource mirrors Nest RateValueSource.
@@ -35,17 +36,20 @@ type Settings struct {
 	Reward        RewardCfg `json:"reward"`
 }
 
+// RewardCfg selects flat same_for_all or amount-tiered commission.
 type RewardCfg struct {
 	Mode       RewardMode  `json:"mode"`
 	SameForAll *RewardFlat `json:"same_for_all,omitempty"`
 	Tiers      []TierBlock `json:"tiers,omitempty"`
 }
 
+// RewardFlat is percent bps plus optional fixed minor units.
 type RewardFlat struct {
 	FeePercentBps int `json:"fee_percent_bps"`
 	FeeFixMinor   int `json:"fee_fix_minor"`
 }
 
+// TierBlock is one amount threshold and the reward applied above it.
 type TierBlock struct {
 	ThresholdMinor int         `json:"threshold_minor"`
 	Above          *RewardFlat `json:"above,omitempty"`
@@ -182,6 +186,7 @@ func defaultCommission(amountMinor int, currency string) CommissionResult {
 	}
 }
 
+// CalcCoverAmount is invoice × frontend rate (major units, 2 dp); zero when rate ≤ 0.
 func CalcCoverAmount(amountMajor, frontendRate float64) float64 {
 	if frontendRate <= 0 {
 		return 0
@@ -189,6 +194,7 @@ func CalcCoverAmount(amountMajor, frontendRate float64) float64 {
 	return math.Round(amountMajor*frontendRate*100) / 100
 }
 
+// RoundRate rounds FX to RatePrecision (4 decimal places).
 func RoundRate(v float64) float64 {
 	return math.Round(v*RatePrecision) / RatePrecision
 }

@@ -31,10 +31,12 @@ export type ProcessRolesResponse = {
   note?: string;
 };
 
+/** GET process-roles snapshot for CTA continuity in app mode. */
 export function getProcessRoles(): Promise<ProcessRolesResponse> {
   return apiFetch<ProcessRolesResponse>("/api/v1/process-roles");
 }
 
+/** Root PUT one role participation (enabled/mandatory/caps). */
 export function updateProcessRole(
   role: string,
   body: {
@@ -50,6 +52,7 @@ export function updateProcessRole(
   });
 }
 
+/** Root reorders process role priorities. */
 export function updateProcessRolePriorities(order: string[]): Promise<{ version: number }> {
   return apiFetch("/api/v1/admin/process-roles/priorities", {
     method: "PUT",
@@ -57,6 +60,7 @@ export function updateProcessRolePriorities(order: string[]): Promise<{ version:
   });
 }
 
+/** Root PATCH system capability template for admin accounts. */
 export function updateSystemRole(role: string, systemCapabilities: string[]): Promise<{ status: string }> {
   return apiFetch(`/api/v1/admin/system-roles/${encodeURIComponent(role)}`, {
     method: "PUT",

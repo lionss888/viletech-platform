@@ -10,6 +10,7 @@ import (
 	apperrors "github.com/viletech/vdp/core/pkg/errors"
 )
 
+// Principal is the authenticated actor: account, role, org, and effective Caps.
 type Principal struct {
 	AccountID      string
 	Role           domain.Role
@@ -22,10 +23,12 @@ type ctxKey string
 
 const principalKey ctxKey = "principal"
 
+// WithPrincipal attaches Principal to ctx for handlers and services.
 func WithPrincipal(ctx context.Context, principal Principal) context.Context {
 	return context.WithValue(ctx, principalKey, principal)
 }
 
+// FromContext returns Principal or ErrUnauthorized when missing.
 func FromContext(ctx context.Context) (Principal, error) {
 	principal, ok := ctx.Value(principalKey).(Principal)
 	if !ok || principal.AccountID == "" {
@@ -70,6 +73,7 @@ func RequireAnySystemCapability(principal Principal, caps ...systemcap.Capabilit
 	return apperrors.ErrForbidden
 }
 
+// CanAccessForm requires CanSeeForm for the role/account or forms.admin system cap.
 func CanAccessForm(principal Principal, form formpayment.Form) error {
 	if formpayment.CanSeeForm(principal.Role, principal.AccountID, form) {
 		return nil

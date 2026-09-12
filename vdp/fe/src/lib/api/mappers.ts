@@ -97,6 +97,7 @@ export function parseDocsJson(raw: string | undefined, formId: string): Attached
 
 /** Maps compliance history API rows to timeline entries with human-readable status labels.
  * Newest events first (future / latest on top) for all roles. */
+/** Maps core compliance-history rows to cabinet timeline items. */
 export function mapComplianceHistory(
   entries: ComplianceHistoryEntry[],
   users: PlatformUser[] = [],
@@ -247,6 +248,7 @@ export function mapCoreFormToPaymentForm(
   };
 }
 
+/** Guided next-step copy from status + role matrix (not AuthZ). */
 export function nextStepHint(status: string, role?: VedRole, processRoles?: ProcessRoleRow[]): string {
   const formStatus = status as FormStatus;
   const myActions = role ? actionsFor(role, formStatus, processRoles) : [];

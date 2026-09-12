@@ -35,6 +35,7 @@ export type PlatformHealthSnapshot = {
   signals: PlatformHealthSignal[];
 };
 
+/** Aggregated health of core and side services for root dashboard. */
 export function fetchPlatformHealth(): Promise<PlatformHealthSnapshot> {
   return apiFetch<PlatformHealthSnapshot>("/api/v1/admin/platform-health");
 }

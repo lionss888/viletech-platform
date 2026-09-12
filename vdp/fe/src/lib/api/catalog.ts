@@ -82,6 +82,7 @@ export type CoreAdminAccount = {
   };
 };
 
+/** GET /api/v1/organizations. */
 export function listOrganizations(): Promise<CoreOrganization[]> {
   return apiFetch<CoreOrganization[]>("/api/v1/organizations");
 }
@@ -95,18 +96,22 @@ export async function listCounterparties(): Promise<CoreCounterparty[]> {
   return body.items ?? [];
 }
 
+/** GET /api/v1/agents. */
 export function listAgents(): Promise<CoreAgent[]> {
   return apiFetch<CoreAgent[]>("/api/v1/agents");
 }
 
+/** GET /api/v1/currencies. */
 export function listCurrencies(): Promise<CoreCurrency[]> {
   return apiFetch<CoreCurrency[]>("/api/v1/currencies");
 }
 
+/** GET /api/v1/hs-codes. */
 export function listHsCodes(): Promise<CoreHsCode[]> {
   return apiFetch<CoreHsCode[]>("/api/v1/hs-codes");
 }
 
+/** GET /api/v1/admin/account. */
 export function listAdminAccounts(): Promise<CoreAdminAccount[]> {
   return apiFetch<CoreAdminAccount[]>("/api/v1/admin/account");
 }

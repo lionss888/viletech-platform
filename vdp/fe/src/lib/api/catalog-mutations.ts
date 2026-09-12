@@ -84,6 +84,7 @@ export type PatchAdminInput = {
   clear_system_overrides?: boolean;
 };
 
+/** POST /api/v1/organization. */
 export function createOrganization(input: CreateOrganizationInput): Promise<CoreOrganization> {
   const body: Record<string, string> = {
     name: input.name,
@@ -102,6 +103,7 @@ export function createOrganization(input: CreateOrganizationInput): Promise<Core
   });
 }
 
+/** PATCH /api/v1/organization/{…}. */
 export function updateOrganization(id: string, input: Partial<CreateOrganizationInput>): Promise<CoreOrganization> {
   return apiFetch<CoreOrganization>(`/api/v1/organization/${id}`, {
     method: "PATCH",
@@ -109,6 +111,7 @@ export function updateOrganization(id: string, input: Partial<CreateOrganization
   });
 }
 
+/** PATCH /api/v1/organization/{…}. */
 export function patchOrganizationProfile(
   id: string,
   input: PatchOrganizationProfileInput,
@@ -119,10 +122,12 @@ export function patchOrganizationProfile(
   });
 }
 
+/** DELETE /api/v1/organization/{…}. */
 export function deleteOrganization(id: string): Promise<void> {
   return apiFetch<void>(`/api/v1/organization/${id}`, { method: "DELETE" });
 }
 
+/** PUT /api/v1/admin/internal-compliance-officer/organization/{…}/approve. */
 export function approveOrganization(id: string): Promise<CoreOrganization> {
   return apiFetch<CoreOrganization>(`/api/v1/admin/internal-compliance-officer/organization/${id}/approve`, {
     method: "PUT",
@@ -130,6 +135,7 @@ export function approveOrganization(id: string): Promise<CoreOrganization> {
   });
 }
 
+/** PUT /api/v1/admin/internal-compliance-officer/organization/{…}/block. */
 export function blockOrganization(id: string): Promise<CoreOrganization> {
   return apiFetch<CoreOrganization>(`/api/v1/admin/internal-compliance-officer/organization/${id}/block`, {
     method: "PUT",
@@ -137,6 +143,7 @@ export function blockOrganization(id: string): Promise<CoreOrganization> {
   });
 }
 
+/** PUT /api/v1/admin/internal-compliance-officer/organization/{…}/un-approve. */
 export function unApproveOrganization(id: string): Promise<CoreOrganization> {
   return apiFetch<CoreOrganization>(`/api/v1/admin/internal-compliance-officer/organization/${id}/un-approve`, {
     method: "PUT",
@@ -144,6 +151,7 @@ export function unApproveOrganization(id: string): Promise<CoreOrganization> {
   });
 }
 
+/** POST /api/v1/counterparty/create. */
 export function createCounterparty(input: CreateCounterpartyInput): Promise<CoreCounterparty> {
   return apiFetch<CoreCounterparty>("/api/v1/counterparty/create", {
     method: "POST",
@@ -156,6 +164,7 @@ export function createCounterparty(input: CreateCounterpartyInput): Promise<Core
   });
 }
 
+/** PATCH /api/v1/counterparty/{…}. */
 export function updateCounterparty(id: string, input: CreateCounterpartyInput): Promise<CoreCounterparty> {
   return apiFetch<CoreCounterparty>(`/api/v1/counterparty/${id}`, {
     method: "PATCH",
@@ -168,10 +177,12 @@ export function updateCounterparty(id: string, input: CreateCounterpartyInput): 
   });
 }
 
+/** DELETE /api/v1/counterparty/{…}. */
 export function deleteCounterparty(id: string): Promise<void> {
   return apiFetch<void>(`/api/v1/counterparty/${id}`, { method: "DELETE" });
 }
 
+/** PUT /api/v1/counterparty/{…}/approval. */
 export function setCounterpartyApproval(id: string, status: string, comment?: string): Promise<CoreCounterparty> {
   return apiFetch<CoreCounterparty>(`/api/v1/counterparty/${id}/approval`, {
     method: "PUT",
@@ -179,6 +190,7 @@ export function setCounterpartyApproval(id: string, status: string, comment?: st
   });
 }
 
+/** POST /api/v1/agents. */
 export function createAgent(input: CreateAgentInput): Promise<CoreAgent> {
   return apiFetch<CoreAgent>("/api/v1/agents", {
     method: "POST",
@@ -204,6 +216,7 @@ export function updateAgent(id: string, input: PatchAgentInput): Promise<CoreAge
   });
 }
 
+/** POST /api/v1/currencies. */
 export function createCurrency(input: CreateCurrencyInput): Promise<CoreCurrency> {
   return apiFetch<CoreCurrency>("/api/v1/currencies", {
     method: "POST",
@@ -211,6 +224,7 @@ export function createCurrency(input: CreateCurrencyInput): Promise<CoreCurrency
   });
 }
 
+/** POST /api/v1/hs-codes. */
 export function createHsCode(input: CreateHsInput): Promise<CoreHsCode> {
   return apiFetch<CoreHsCode>("/api/v1/hs-codes", {
     method: "POST",
@@ -218,6 +232,7 @@ export function createHsCode(input: CreateHsInput): Promise<CoreHsCode> {
   });
 }
 
+/** POST /api/v1/admin/account. */
 export function createAdminAccount(input: CreateAdminInput): Promise<CoreAdminAccount> {
   return apiFetch<CoreAdminAccount>("/api/v1/admin/account", {
     method: "POST",
@@ -225,6 +240,7 @@ export function createAdminAccount(input: CreateAdminInput): Promise<CoreAdminAc
   });
 }
 
+/** PATCH /api/v1/admin/account/{…}. */
 export function patchAdminAccount(id: string, input: PatchAdminInput): Promise<CoreAdminAccount> {
   return apiFetch<CoreAdminAccount>(`/api/v1/admin/account/${id}`, {
     method: "PATCH",

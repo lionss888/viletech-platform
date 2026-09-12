@@ -229,6 +229,7 @@ func CalculateCommission(amount, percent, currency string) (formpayment.Commissi
 	}
 	fee := a * p / 100
 	return formpayment.Commission{
+		RewardMode:  formpayment.RewardModePercent,
 		FeeAmount:   strconv.FormatFloat(fee, 'f', 2, 64),
 		FeePercent:  percent,
 		FeeCurrency: currency,

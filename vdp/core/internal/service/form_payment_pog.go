@@ -140,6 +140,15 @@ func (s *FormPaymentService) maybeAutoEnqueuePOG(ctx context.Context, principal 
 	switch form.Status {
 	case formpayment.StatusFormAccepted, formpayment.StatusSigningOrder, formpayment.StatusSigningOrderAccepted:
 		_ = s.RequestPaymentOrderGeneration(ctx, principal, form.ID, pogKindForDirection(form.Direction))
+	case formpayment.StatusPaymentSent,
+		formpayment.StatusAdvanceSigningOrder,
+		formpayment.StatusAdvanceSigningOrderWaitingVerification,
+		formpayment.StatusAdvanceSigningOrderVerification,
+		formpayment.StatusAdvanceSigningOrderWaitingCorrections,
+		formpayment.StatusAdvanceSigningOrderAccepted:
+		if formpayment.EffectiveRateOnProvider(form) {
+			_ = s.RequestPaymentOrderGeneration(ctx, principal, form.ID, pogKindForDirection(form.Direction))
+		}
 	}
 }
 

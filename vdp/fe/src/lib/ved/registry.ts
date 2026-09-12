@@ -43,6 +43,7 @@ const STATUS_APPROVAL = [
   { value: "approved", label: "Одобрен" },
 ];
 
+/** Exported constant: REGISTRIES. */
 export const REGISTRIES: Record<RegistryKey, RegistryDef> = {
   organizations: {
     key: "organizations",
@@ -221,6 +222,7 @@ export const USER_IMPORT_FIELDS: RegistryField[] = [
   { key: "organization", label: "Организация", type: "text", placeholder: 'ООО "Северный Импорт"' },
 ];
 
+/** VED helper: emptyRecord. */
 export function emptyRecord(def: Pick<RegistryDef, "fields">): RefRecord {
   const draft: RefRecord = {};
   for (const field of def.fields) {
@@ -233,6 +235,7 @@ export function emptyRecord(def: Pick<RegistryDef, "fields">): RefRecord {
   return draft;
 }
 
+/** VED helper: labelFor. */
 export function labelFor(field: RegistryField, value: unknown): string {
   if (field.type === "boolean") return value ? "Да" : "Нет";
   if (field.type === "select") return field.options?.find((o) => o.value === value)?.label ?? String(value ?? "—");
@@ -250,6 +253,7 @@ export function labelFor(field: RegistryField, value: unknown): string {
   return text;
 }
 
+/** VED helper: validate. */
 export function validate(def: Pick<RegistryDef, "fields">, draft: RefRecord): string | null {
   for (const field of def.fields) {
     if (!field.required) continue;
@@ -330,6 +334,7 @@ export function parseRecords(def: Pick<RegistryDef, "fields">, text: string): { 
   return { records, error: null };
 }
 
+/** VED helper: toCsv. */
 export function toCsv(def: Pick<RegistryDef, "fields">, records: RefRecord[]): string {
   const escape = (value: string) => (/[",;\n]/.test(value) ? `"${value.replace(/"/g, '""')}"` : value);
   const header = def.fields.map((f) => escape(f.label)).join(";");
@@ -345,6 +350,7 @@ export function toCsv(def: Pick<RegistryDef, "fields">, records: RefRecord[]): s
   return [header, ...rows].join("\n");
 }
 
+/** VED helper: templateCsv. */
 export function templateCsv(def: Pick<RegistryDef, "fields">): string {
   return toCsv(def, [emptyRecord(def)]);
 }

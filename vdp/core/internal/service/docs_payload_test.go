@@ -95,6 +95,10 @@ func TestDocsGeneratePayloadMatrixKeys(t *testing.T) {
 	form.AgentID = agent.ID
 	form.CounterpartyID = cp.ID
 	form.PaymentPurpose = "Invoice payment under C-B2"
+	form.Commission = formpayment.Commission{
+		RewardMode: formpayment.RewardModePercentPlusFixed,
+		FeePercent: "1.5", FeeFix: "10", FeeAmount: "25.00", FeeCurrency: "USD",
+	}
 	if err := store.SaveForm(ctx, form); err != nil {
 		t.Fatal(err)
 	}
@@ -109,6 +113,7 @@ func TestDocsGeneratePayloadMatrixKeys(t *testing.T) {
 		"organization_signer_name", "organization_signer_position",
 		"agent_name", "agent_signature_file_id", "counterparty_name", "counterparty_banks",
 		"payment_purpose", "document_date", "currency", "invoice_amount",
+		"fee_amount", "fee_percent", "fee_currency", "fee_reward_mode", "fee_fix",
 	})
 	if payload["template_id"] != tpl.ID {
 		t.Fatalf("template_id=%v", payload["template_id"])
@@ -125,6 +130,53 @@ func TestDocsGeneratePayloadMatrixKeys(t *testing.T) {
 	assertPayloadKeys(t, payload, []string{
 		"contract_number", "rate_value", "document_date", "organization_name",
 	})
+}
+
+func TestDocsPayloadRateOnPPPrimaryWithoutRate(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+	store := repository.NewMemoryStore()
+	seed.MustDev(t, store)
+	box := outbox.NewMemoryStore()
+	forms := service.NewFormPaymentService(store, box, seqID())
+	manager := authz.Principal{AccountID: seed.ManagerID, Role: domain.RoleManager}
+	user := authz.Principal{AccountID: seed.UserID, Role: domain.RoleUser, OrganizationID: seed.OrgID}
+
+	form, err := forms.Create(ctx, user, service.CreateInput{
+		InvoiceAmount: "500", Currency: "USD", Direction: formpayment.DirectionImport,
+		PaymentMethod: formpayment.PaymentMethodPostPayment,
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if form.PlatformPostpayMode != formpayment.PostpayRateOnProvider {
+		t.Fatalf("mode=%s", form.PlatformPostpayMode)
+	}
+	form, err = forms.Transition(ctx, user, form.ID, formpayment.ActionRecognizeComplete)
+	if err != nil {
+		t.Fatal(err)
+	}
+	form, err = forms.Transition(ctx, user, form.ID, formpayment.ActionSubmit)
+	if err != nil {
+		t.Fatal(err)
+	}
+	form.Rate = formpayment.Rate{Value: "0", Currency: "USD", Source: "manual"}
+	form.PlatformPostpayMode = formpayment.PostpayRateOnProvider
+	form.RateOnProvider = true
+	form.PaymentMethod = formpayment.PaymentMethodPostPayment
+	if err := store.SaveForm(ctx, form); err != nil {
+		t.Fatal(err)
+	}
+	if err := forms.RequestPaymentOrderGeneration(ctx, manager, form.ID, "import_order"); err != nil {
+		t.Fatal(err)
+	}
+	payload := extractDocsPayload(t, box)
+	if payload["platform_postpay"] != formpayment.PostpayRateOnProvider {
+		t.Fatalf("platform_postpay=%v", payload["platform_postpay"])
+	}
+	if payload["rate_required"] != false {
+		t.Fatalf("rate_required=%v want false", payload["rate_required"])
+	}
 }
 
 func extractDocsPayload(t *testing.T, box *outbox.MemoryStore) map[string]any {

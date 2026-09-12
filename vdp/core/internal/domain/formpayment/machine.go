@@ -7,6 +7,7 @@ import (
 	apperrors "github.com/viletech/vdp/core/pkg/errors"
 )
 
+// Command is one lifecycle attempt: role/action AuthZ, optional explicit target, policy overlay.
 type Command struct {
 	Form        Form
 	Action      Action
@@ -16,6 +17,9 @@ type Command struct {
 	Policy      *ProcessPolicySnapshot
 }
 
+// Apply runs one lifecycle command: AuthZ by role/action (with optional ProcessPolicySnapshot),
+// resolves target status, enforces payment-method and refund §4 guards, then transitions.
+// Idempotent when the form is already at the target status.
 func Apply(cmd Command) (Form, error) {
 	if !RoleMayPerformWithConfig(cmd.Role, cmd.Action, cmd.Policy) {
 		return Form{}, apperrors.New(apperrors.ErrCodeForbidden, "role is not allowed to perform this action")
@@ -74,12 +78,17 @@ func guardPaymentMethod(form Form, action Action) error {
 	switch action {
 	case ActionTreasurerConfirm:
 		// Import advance (§10.2): empty or advance. Export: PAY_FROM_EXPORT.
-		// post_payment / RATE_ON_PP treasurer step is IMP2 — not allowed here.
+		// Import postpay RATE_ON_PP (§10.3): post_payment only when EffectiveRateOnProvider.
 		switch form.PaymentMethod {
 		case "", PaymentMethodAdvance, PaymentMethodPayFromExport:
 			return nil
+		case PaymentMethodPostPayment:
+			if EffectiveRateOnProvider(form) {
+				return nil
+			}
+			return apperrors.New(apperrors.ErrCodeConflict, "treasurer confirm for post_payment requires POSTPAY_RATE_ON_PP")
 		default:
-			return apperrors.New(apperrors.ErrCodeConflict, "treasurer confirm requires advance or PAY_FROM_EXPORT")
+			return apperrors.New(apperrors.ErrCodeConflict, "treasurer confirm requires advance, post_payment+RATE_ON_PP, or PAY_FROM_EXPORT")
 		}
 	}
 	return nil

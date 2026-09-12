@@ -7,6 +7,7 @@ import (
 	"strings"
 )
 
+// Config holds runtime settings for core (DB, JWT, Hub, health probes, blobs).
 type Config struct {
 	Port               string
 	Host               string
@@ -29,6 +30,7 @@ type Config struct {
 	ManagerOpsURL       string
 }
 
+// Load reads environment variables with local-dev defaults.
 func Load() *Config {
 	return &Config{
 		Port:               getEnv("PORT", "8080"),

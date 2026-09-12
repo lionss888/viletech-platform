@@ -93,6 +93,11 @@ func (s *FormPaymentService) CalculateAndApplyCommission(ctx context.Context, pr
 		FeeAmount:   strconv.FormatFloat(result.FeeAmount, 'f', 2, 64),
 		FeePercent:  result.FeePercent,
 		FeeCurrency: result.FeeCurrency,
+		RewardMode:  formpayment.RewardModePercent,
+	}
+	if result.FeeFixMinor > 0 {
+		commission.RewardMode = formpayment.RewardModePercentPlusFixed
+		commission.FeeFix = strconv.FormatFloat(float64(result.FeeFixMinor)/100.0, 'f', 2, 64)
 	}
 	form, err = s.SetCommission(ctx, principal, formID, commission)
 	return form, result, err

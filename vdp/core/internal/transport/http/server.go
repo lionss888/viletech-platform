@@ -21,6 +21,7 @@ import (
 	"github.com/viletech/vdp/core/pkg/logger"
 )
 
+// Server is the core HTTP mux with JWT auth, rate limit, and service dependencies.
 type Server struct {
 	cfg          *config.Config
 	auth         *service.AuthService
@@ -114,6 +115,7 @@ func (s *Server) handleCreateForm(w http.ResponseWriter, r *http.Request, princi
 		ContractDate   string `json:"contract_date"`
 		OrganizationID string `json:"organization_id"`
 		CounterpartyID string `json:"counterparty_id"`
+		PaymentMethod  string `json:"payment_method"`
 	}
 	_ = json.NewDecoder(r.Body).Decode(&body)
 	form, err := s.forms.Create(r.Context(), principal, service.CreateInput{
@@ -126,6 +128,7 @@ func (s *Server) handleCreateForm(w http.ResponseWriter, r *http.Request, princi
 		ContractDate:   body.ContractDate,
 		OrganizationID: body.OrganizationID,
 		CounterpartyID: body.CounterpartyID,
+		PaymentMethod:  body.PaymentMethod,
 	})
 	if err != nil {
 		writeError(w, err)
@@ -250,13 +253,15 @@ func (s *Server) handleSetCommission(w http.ResponseWriter, r *http.Request, pri
 	var body struct {
 		FeeAmount   string `json:"fee_amount"`
 		FeePercent  string `json:"fee_percent"`
+		FeeFix      string `json:"fee_fix"`
 		FeeCurrency string `json:"fee_currency"`
+		RewardMode  string `json:"reward_mode"`
 	}
 	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
 		writeError(w, apperrors.ErrInvalidInput)
 		return
 	}
-	form, err := s.forms.SetCommission(r.Context(), principal, r.PathValue("id"), parseCommission(body.FeeAmount, body.FeePercent, body.FeeCurrency))
+	form, err := s.forms.SetCommission(r.Context(), principal, r.PathValue("id"), parseCommission(body.FeeAmount, body.FeePercent, body.FeeCurrency, body.RewardMode, body.FeeFix))
 	if err != nil {
 		writeError(w, err)
 		return

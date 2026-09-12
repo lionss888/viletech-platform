@@ -190,6 +190,7 @@ func (s *FormPaymentService) PatchForm(ctx context.Context, principal authz.Prin
 			form.Rate.Currency = form.Currency
 		}
 	}
+	formpayment.ApplyImportPostpayDefaults(&form)
 	form.UpdatedAt = time.Now().UTC()
 	if err := s.store.SaveForm(ctx, form); err != nil {
 		return formpayment.Form{}, err

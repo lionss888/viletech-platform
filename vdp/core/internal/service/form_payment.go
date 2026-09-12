@@ -16,8 +16,10 @@ import (
 	"github.com/viletech/vdp/shared/events"
 )
 
+// IDFunc generates opaque string ids for forms, docs, and related entities.
 type IDFunc func() string
 
+// FormPaymentService orchestrates form-payment create, transition, assign, and side effects.
 type FormPaymentService struct {
 	store           repository.Store
 	box             outbox.Store
@@ -29,6 +31,7 @@ type FormPaymentService struct {
 	managerOps      *ManagerOpsPublisher
 }
 
+// NewFormPaymentService wires store, outbox, and default process-role service.
 func NewFormPaymentService(store repository.Store, box outbox.Store, newID IDFunc) *FormPaymentService {
 	return &FormPaymentService{store: store, box: box, newID: newID, roles: NewProcessRoleService(store)}
 }
@@ -66,6 +69,7 @@ type CreateInput struct {
 	ContractDate   string
 	OrganizationID string
 	CounterpartyID string
+	PaymentMethod  string
 }
 
 func (s *FormPaymentService) Create(ctx context.Context, principal authz.Principal, input CreateInput) (formpayment.Form, error) {
@@ -103,12 +107,14 @@ func (s *FormPaymentService) Create(ctx context.Context, principal authz.Princip
 		NoDocuments:          input.NoDocuments,
 		ContractNumber:       input.ContractNumber,
 		ContractDate:         input.ContractDate,
+		PaymentMethod:        input.PaymentMethod,
 		ProcessPolicyVersion: policyVersion,
 		CreatedAt:            now,
 		UpdatedAt:            now,
 		Rate:                 formpayment.Rate{Value: "0", Currency: input.Currency, Source: "manual"},
 		Commission:           formpayment.Commission{FeeAmount: "0", FeePercent: "0", FeeCurrency: input.Currency},
 	}
+	formpayment.ApplyImportPostpayDefaults(&form)
 	if err := s.store.SaveForm(ctx, form); err != nil {
 		return formpayment.Form{}, err
 	}
@@ -391,10 +397,15 @@ func (s *FormPaymentService) SetCommission(ctx context.Context, principal authz.
 	if err != nil {
 		return formpayment.Form{}, err
 	}
-	form.Commission = commission
+	normalized, err := commission.NormalizeAndCompute(form.InvoiceAmount)
+	if err != nil {
+		return formpayment.Form{}, apperrors.New(apperrors.ErrCodeValidation, err.Error())
+	}
+	form.Commission = normalized
 	if err := s.store.SaveForm(ctx, form); err != nil {
 		return formpayment.Form{}, err
 	}
+	s.maybeAutoEnqueuePOG(ctx, principal, form)
 	return form, nil
 }
 

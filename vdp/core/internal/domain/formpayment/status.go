@@ -1,5 +1,6 @@
 package formpayment
 
+// Status is a form-payment lifecycle state; transitions live in transitions.go tables.
 type Status string
 
 const (
@@ -55,6 +56,7 @@ const (
 	StatusCanceledByInternalComplianceOfficer  Status = "canceled_by_internal_compliance_officer"
 )
 
+// Direction selects import vs export transition overlays.
 type Direction string
 
 const (
@@ -62,6 +64,7 @@ const (
 	DirectionExport Direction = "export"
 )
 
+// Kind is goods vs services deal classification on the form.
 type Kind string
 
 const (

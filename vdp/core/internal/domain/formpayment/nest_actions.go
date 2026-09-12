@@ -14,6 +14,7 @@ func NestMetaPath(rolePrefix, pathSuffix string) (MetaKind, bool) {
 	return kind, ok
 }
 
+// MetaKind is a Nest path that mutates fields or side-effects without an SM transition.
 type MetaKind string
 
 const (

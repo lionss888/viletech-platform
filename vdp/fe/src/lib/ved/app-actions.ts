@@ -127,6 +127,7 @@ const MATRIX: Partial<Record<VedRole, Partial<Record<string, AppFormAction[]>>>>
   root: {},
 };
 
+/** App-mode CTAs for role+status from core action matrix (not demo store). */
 export function appActionsFor(role: VedRole, status: FormStatus): AppFormAction[] {
   return MATRIX[role]?.[status] ?? [];
 }
@@ -141,6 +142,7 @@ export function coveredStatusCount(): { covered: number; totalKnown: number } {
   return { covered: covered.size, totalKnown: 40 };
 }
 
+/** Resolves cabinet action id to core Action string for transitionForm. */
 export function coreActionById(actionId: string): string | undefined {
   for (const byStatus of Object.values(MATRIX)) {
     if (!byStatus) continue;

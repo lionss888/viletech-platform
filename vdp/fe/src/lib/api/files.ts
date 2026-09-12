@@ -10,6 +10,7 @@ export type UploadedFileMeta = {
 /** 15 MB — matches core upload limit (B.2). */
 export const MAX_UPLOAD_BYTES = 15 * 1024 * 1024;
 
+/** Upload failure with HTTP status for cabinet copy. */
 export class UploadError extends Error {
   readonly status: number;
 
@@ -20,12 +21,14 @@ export class UploadError extends Error {
   }
 }
 
+/** User-facing upload error text from status code. */
 export function formatUploadError(status: number, fallback?: string): string {
   if (status === 413) return "Файл слишком большой (максимум 15 МБ)";
   if (status === 415) return "Недопустимый тип файла — загрузите PDF";
   return fallback ?? "Не удалось загрузить файл";
 }
 
+/** Throws UploadError when file exceeds platform size limit. */
 export function assertFileSize(file: File): void {
   if (file.size > MAX_UPLOAD_BYTES) {
     throw new UploadError(413, formatUploadError(413));
@@ -58,6 +61,7 @@ export async function uploadFile(formId: string, file: File): Promise<UploadedFi
   return (await response.json()) as UploadedFileMeta;
 }
 
+/** Links an uploaded file_id to the form DocsJSON via nest prefix. */
 export function attachDocToForm(
   formId: string,
   fileId: string,

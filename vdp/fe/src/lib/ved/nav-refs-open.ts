@@ -1,3 +1,4 @@
+/** Exported constant: REFS_OPEN_KEY. */
 export const REFS_OPEN_KEY = "ved-nav-refs-open";
 
 /** Reads the persisted "Справочники" group state; falls back to the current route. */

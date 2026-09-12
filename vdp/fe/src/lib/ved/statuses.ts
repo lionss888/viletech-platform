@@ -164,10 +164,12 @@ export const STATUS_META: Record<string, StatusMeta> = {
   },
 };
 
+/** Display label/color/stage for a form status code. */
 export function statusMeta(status: FormStatus): StatusMeta {
   return STATUS_META[status] ?? { label: status, short: status, tone: "neutral", stage: "new" };
 }
 
+/** Ordered process stages for progress UI (Goal-Gradient). */
 export const STAGES: { id: StageId; label: string }[] = [
   { id: "new", label: "Новая" },
   { id: "organization_verification", label: "Организация" },
@@ -218,6 +220,7 @@ export const STATUS_FILTERS: { value: string; label: string; statuses: string[] 
   },
 ];
 
+/** Index of status within STAGES; -1 when unknown. */
 export function stageIndex(stage: StageId): number {
   return STAGES.findIndex((item) => item.id === stage);
 }

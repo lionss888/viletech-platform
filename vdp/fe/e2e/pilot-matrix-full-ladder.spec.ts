@@ -37,7 +37,7 @@ async function confirmModal(page: Page): Promise<void> {
 }
 
 async function attachModalFile(page: Page, pdf: Buffer, fileName: string): Promise<void> {
-  const input = page.locator('input[type="file"]');
+  const input = page.locator('input[type="file"]:visible').last();
   await expect(input).toBeVisible({ timeout: 15_000 });
   await input.setInputFiles({ name: fileName, mimeType: "application/pdf", buffer: pdf });
 }
@@ -136,7 +136,7 @@ test.describe("Pilot robot matrix full UI ladder @pilot-matrix", () => {
     }
     await confirmModal(page);
     await waitForFormDetail(page, formId);
-    await expectFormStatus(page, /^(contract_waiting|form_accepted)$/, { timeout: 30_000 });
+    await expectFormStatus(page, /^(contract_waiting|form_accepted|signing_order)$/, { timeout: 30_000 });
 
     // 7. Reach signing_order: user uploads agency contract, or manager manual attach
     const statusAfterAgent =
@@ -155,6 +155,8 @@ test.describe("Pilot robot matrix full UI ladder @pilot-matrix", () => {
       await waitForFormDetail(page, formId);
       await clickAction(page, /^Подтвердить договор и сформировать поручение$|^Подтвердить договор$/);
       await expectFormStatus(page, "signing_order", { timeout: 30_000 });
+    } else if (statusAfterAgent === "signing_order") {
+      // Existing accepted agency contract can skip contract branch directly to signing_order.
     } else {
       await clickAction(page, /Прикрепить договор/i);
       await attachModalFile(page, contractPdf, "contract.pdf");

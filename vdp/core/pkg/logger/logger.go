@@ -13,6 +13,7 @@ const (
 	keyFormPaymentID ctxKey = "form_payment_id"
 )
 
+// New returns a JSON slog.Logger at the given level (debug|info|warn|error).
 func New(level string) *slog.Logger {
 	var lvl slog.Level
 	switch level {
@@ -28,14 +29,17 @@ func New(level string) *slog.Logger {
 	return slog.New(slog.NewJSONHandler(os.Stdout, &slog.HandlerOptions{Level: lvl}))
 }
 
+// WithRequestID stores a correlation request id on ctx for FromContext.
 func WithRequestID(ctx context.Context, requestID string) context.Context {
 	return context.WithValue(ctx, keyRequestID, requestID)
 }
 
+// WithFormPaymentID stores the form-payment id on ctx for structured logs.
 func WithFormPaymentID(ctx context.Context, formPaymentID string) context.Context {
 	return context.WithValue(ctx, keyFormPaymentID, formPaymentID)
 }
 
+// FromContext returns base with request_id / form_payment_id attrs when present.
 func FromContext(ctx context.Context, base *slog.Logger) *slog.Logger {
 	if base == nil {
 		base = slog.Default()

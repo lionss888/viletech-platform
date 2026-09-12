@@ -31,12 +31,18 @@ func (s *FormPaymentService) buildDocsGeneratePayload(ctx context.Context, form 
 		"rate_currency":     form.Rate.Currency,
 		"fee_amount":        form.Commission.FeeAmount,
 		"fee_percent":       form.Commission.FeePercent,
+		"fee_fix":          form.Commission.FeeFix,
+		"fee_reward_mode":   form.Commission.RewardMode,
 		"fee_currency":      form.Commission.FeeCurrency,
 		"payment_purpose":   resolvePaymentPurpose(form),
 		"document_date":     time.Now().UTC().Format("2006-01-02"),
 		"actual_payment_amount": form.ActualPaymentAmount,
 		"actual_payment_date":   form.ActualPaymentDate,
 		"rub_equivalent":        computeRUBEquivalent(form),
+	}
+	// Primary order under RATE_ON_PP may omit FX rate (filled on advance order after PP).
+	if formpayment.EffectiveRateOnProvider(form) && (form.Rate.Value == "" || form.Rate.Value == "0") {
+		out["rate_required"] = false
 	}
 	s.mergeOrganizationPayload(ctx, out, form.OrganizationID)
 	s.mergeAgentPayload(ctx, out, form.AgentID)
