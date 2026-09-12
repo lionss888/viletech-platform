@@ -427,6 +427,7 @@ export function ActionPanel({
             <span className="label-caps">Документ</span>
             <input
               type="file"
+              data-testid="action-modal-file"
               accept=".pdf,application/pdf,image/*"
               onChange={(e) => {
                 const picked = e.target.files?.[0] ?? null;

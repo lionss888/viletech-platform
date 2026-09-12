@@ -37,8 +37,8 @@ async function confirmModal(page: Page): Promise<void> {
 }
 
 async function attachModalFile(page: Page, pdf: Buffer, fileName: string): Promise<void> {
-  const input = page.locator('input[type="file"]:visible').last();
-  await expect(input).toBeVisible({ timeout: 15_000 });
+  const input = page.getByTestId("action-modal-file");
+  await expect(input).toBeAttached({ timeout: 15_000 });
   await input.setInputFiles({ name: fileName, mimeType: "application/pdf", buffer: pdf });
 }
 
@@ -122,7 +122,8 @@ test.describe("Pilot robot matrix full UI ladder @pilot-matrix", () => {
     }
     await expectFormStatus(page, "form_accepted", { timeout: 30_000 });
 
-    // 6. Assign payment agent → contract_waiting (awaits signed agency contract)
+    // 6. Assign payment agent — domain may land on contract_waiting, stay form_accepted,
+    // or jump to signing_order when an accepted agency contract already exists for the org.
     await clickAction(page, /^Назначить платёжного агента$/);
     const agentSelect = page.locator("label").filter({ hasText: /Платёжный агент/i }).locator("select");
     await expect(agentSelect).toBeVisible({ timeout: 10_000 });
@@ -138,7 +139,7 @@ test.describe("Pilot robot matrix full UI ladder @pilot-matrix", () => {
     await waitForFormDetail(page, formId);
     await expectFormStatus(page, /^(contract_waiting|form_accepted|signing_order)$/, { timeout: 30_000 });
 
-    // 7. Reach signing_order: user uploads agency contract, or manager manual attach
+    // 7. Reach signing_order via the branch that matches the status after assign_agent.
     const statusAfterAgent =
       (await page.getByTestId("status-badge").first().getAttribute("data-status")) ?? "";
     if (statusAfterAgent === "contract_waiting") {
@@ -156,12 +157,14 @@ test.describe("Pilot robot matrix full UI ladder @pilot-matrix", () => {
       await clickAction(page, /^Подтвердить договор и сформировать поручение$|^Подтвердить договор$/);
       await expectFormStatus(page, "signing_order", { timeout: 30_000 });
     } else if (statusAfterAgent === "signing_order") {
-      // Existing accepted agency contract can skip contract branch directly to signing_order.
-    } else {
+      // Accepted agency contract reused — contract upload/confirm steps are skipped.
+    } else if (statusAfterAgent === "form_accepted") {
       await clickAction(page, /Прикрепить договор/i);
       await attachModalFile(page, contractPdf, "contract.pdf");
       await confirmModal(page);
       await expectFormStatus(page, "signing_order", { timeout: 30_000 });
+    } else {
+      throw new Error(`unexpected status after assign_agent: ${statusAfterAgent}`);
     }
 
     // 8. User upload signed order

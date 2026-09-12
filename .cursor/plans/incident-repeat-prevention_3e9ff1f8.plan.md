@@ -4,19 +4,19 @@ overview: Устранить причины инцидента в E2E и доб�
 todos:
   - id: stabilize-file-locators
     content: Добавить и использовать testid для модального file input, убрать хрупкие CSS-селекторы в e2e.
-    status: pending
+    status: completed
   - id: harden-pilot-matrix
     content: Закрепить ветвление по допустимым статусам после assign_agent и покрыть happy path matrix-спеком.
-    status: pending
+    status: completed
   - id: ci-pilot-gate
     content: Добавить PR-guardrail для pilot-matrix при релевантных изменениях в FE/E2E/domain status logic.
-    status: pending
+    status: completed
   - id: mirror-preflight
     content: Выделить preflight проверку mirror secrets/target с явной категоризацией причин падения.
-    status: pending
+    status: completed
   - id: verify-local-gates
     content: Прогнать ci-pr и целевой playwright matrix before claiming merge readiness.
-    status: pending
+    status: completed
 isProject: false
 ---
 

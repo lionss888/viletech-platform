@@ -1,4 +1,4 @@
-.PHONY: deps test test-integration test-adapters build db-setup db-migrate compose-db-migrate run-hub run-core run smoke stop compose-up compose-up-prod compose-down compose-ps compose-e2e compose-fe-smoke compose-fe-refresh compose-fe-prod-smoke compose-playwright lovable-seed-check integration-gate playwright-e2e playwright-pilot playwright-pilot-matrix robot-matrix-check docs-format-check release-gate image-build image-push image-build-push compose-release-config-check compose-release-up deploy-alpha deploy-beta deploy-gamma rollback-alpha rollback-beta rollback-gamma test-cd-scripts notify-mgmt core-seed-reset install-git-hooks precommit-gate ci-pr-fast ci-pr
+.PHONY: deps test test-integration test-adapters build db-setup db-migrate compose-db-migrate run-hub run-core run smoke stop compose-up compose-up-prod compose-down compose-ps compose-e2e compose-fe-smoke compose-fe-refresh compose-fe-prod-smoke compose-playwright lovable-seed-check integration-gate playwright-e2e playwright-pilot playwright-pilot-matrix robot-matrix-check docs-format-check release-gate image-build image-push image-build-push compose-release-config-check compose-release-up deploy-alpha deploy-beta deploy-gamma rollback-alpha rollback-beta rollback-gamma test-cd-scripts notify-mgmt core-seed-reset install-git-hooks precommit-gate ci-pr-fast ci-pr ci-pr-pilot
 
 CORE_DIR := core
 HUB_DIR := hub
@@ -209,6 +209,13 @@ ci-pr: ci-pr-fast
 	PLAYWRIGHT_ARGS='e2e/login-form.spec.ts e2e/user-submit.spec.ts e2e/provider-acl.spec.ts e2e/reject-path.spec.ts' \
 		$(MAKE) playwright-e2e
 	@echo "ci-pr green (local insurance for VDP CI on pull_request)"
+
+# After e2e / status-matrix / ActionPanel changes: ci-pr + @pilot-matrix (parity with PR pilot-matrix job).
+ci-pr-pilot: ci-pr
+	@echo "ci-pr-pilot: pause 65s then @pilot-matrix"
+	@sleep 65
+	$(MAKE) playwright-pilot-matrix
+	@echo "ci-pr-pilot green"
 
 # Keep fe/src/lib/ved/mock.ts byte-identical to lovable-vdp/dev0; demo patches → demo-seed-overlay.ts.
 lovable-seed-check:
