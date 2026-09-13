@@ -5,7 +5,7 @@ export type NavItem = { segment: string; label: string; roles: VedRole[] | "all"
 /** Exported constant: MAIN_NAV. */
 export const MAIN_NAV: NavItem[] = [
   { segment: "/dashboard", label: "Рабочий стол", roles: "all" },
-  { segment: "/forms", label: "Реестр заявок", roles: ["user", "manager", "provider", "root"] },
+  { segment: "/forms", label: "Реестр заявок", roles: ["user", "manager", "treasurer", "provider", "root"] },
   { segment: "/forms", label: "Входящие заявки", roles: ["internal_compliance_officer", "compliance_officer"] },
   { segment: "/organizations", label: "Проверка организаций", roles: ["internal_compliance_officer", "compliance_officer"] },
   { segment: "/forms/new", label: "Новая заявка", roles: ["user", "manager", "root"] },

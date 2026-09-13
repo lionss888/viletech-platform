@@ -1,5 +1,6 @@
 import type { ComplianceHistoryEntry, CoreForm } from "./forms";
 import { actionsFor } from "@/lib/ved/actions";
+import { IMPORT_ADVANCE_AWAITS_TREASURER, isImportAdvanceCoverageGate } from "@/lib/ved/manager-payment";
 import { roleTitle } from "@/lib/ved/roles";
 import { statusMetaForProcess } from "@/lib/ved/process-stage-filters";
 import { paymentMethodToCondition } from "@/lib/ved/wizard-steps";
@@ -171,6 +172,7 @@ export function waitingActorRoles(status: FormStatus, processRoles?: ProcessRole
     "internal_compliance_officer",
     "compliance_officer",
     "manager",
+    "treasurer",
     "provider",
   ];
   return roles.filter((role) => actionsFor(role, status, processRoles).length > 0);
@@ -241,6 +243,25 @@ export function mapCoreFormToPaymentForm(
     contractId: form.contract_id || undefined,
     noDocuments: form.no_documents || undefined,
     invoiceJson: form.invoice_json || undefined,
+    paymentMethod: form.payment_method || undefined,
+    platformPostpayMode: form.platform_postpay_mode || undefined,
+    rateOnProvider: form.rate_on_provider || undefined,
+    rate: form.rate
+      ? {
+          value: form.rate.value || undefined,
+          currency: form.rate.currency || undefined,
+          source: form.rate.source || undefined,
+        }
+      : undefined,
+    commission: form.commission
+      ? {
+          rewardMode: form.commission.reward_mode || undefined,
+          feeAmount: form.commission.fee_amount || undefined,
+          feePercent: form.commission.fee_percent || undefined,
+          feeFix: form.commission.fee_fix || undefined,
+          feeCurrency: form.commission.fee_currency || undefined,
+        }
+      : undefined,
     createdAt: form.created_at,
     updatedAt: form.updated_at,
     documents: parseDocsJson(form.docs_json, id),
@@ -249,8 +270,23 @@ export function mapCoreFormToPaymentForm(
 }
 
 /** Guided next-step copy from status + role matrix (not AuthZ). */
-export function nextStepHint(status: string, role?: VedRole, processRoles?: ProcessRoleRow[]): string {
+export function nextStepHint(
+  status: string,
+  role?: VedRole,
+  processRoles?: ProcessRoleRow[],
+  formCtx?: { condition?: string; direction?: string },
+): string {
   const formStatus = status as FormStatus;
+  if (
+    status === "payment_received" &&
+    (role === "manager" || role === "root") &&
+    isImportAdvanceCoverageGate({
+      condition: formCtx?.condition,
+      direction: formCtx?.direction,
+    })
+  ) {
+    return `Следующий шаг: казначей подтверждает покрытие. ${IMPORT_ADVANCE_AWAITS_TREASURER}`;
+  }
   const myActions = role ? actionsFor(role, formStatus, processRoles) : [];
   if (myActions.length > 0) {
     return `Следующий шаг: ${myActions[0]!.label}.`;

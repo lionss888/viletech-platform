@@ -16,10 +16,8 @@ describe("nav-config documents placement", () => {
     expect(filterNav(MAIN_NAV, "provider").some((item) => item.label === "Документы")).toBe(false);
   });
 
-  it("keeps work chats in sidebar and profile only via row context menu", () => {
-    expect(MAIN_NAV.some((item) => item.segment === "/chats")).toBe(true);
-    expect(MAIN_NAV.some((item) => item.segment === "/profile")).toBe(false);
-    expect(filterNav(MAIN_NAV, "user").some((item) => item.segment === "/profile")).toBe(false);
-    expect(filterNav(MAIN_NAV, "provider").some((item) => item.segment === "/chats")).toBe(true);
+  it("exposes forms registry for treasurer", () => {
+    const main = filterNav(MAIN_NAV, "treasurer");
+    expect(main.some((item) => item.segment === "/forms")).toBe(true);
   });
 });

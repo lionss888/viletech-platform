@@ -17,6 +17,7 @@ import { OrganizationPickDialog } from "@/components/ved/OrganizationPickDialog"
 import { FormParamsEditDialog } from "@/components/ved/FormParamsEditDialog";
 import { ActionPanel } from "@/components/ved/ActionPanel";
 import { DocumentList } from "@/components/ved/DocumentViewer";
+import { RateCommissionPanel } from "@/components/ved/RateCommissionPanel";
 import { RefundPanel } from "@/components/ved/RefundPanel";
 import { DirectionTag, StatusBadge } from "@/components/ved/StatusBadge";
 import { ChannelBadge } from "@/components/ved/ChannelBadge";
@@ -37,6 +38,7 @@ import {
 import { canControlExtraction } from "@/lib/ved/extraction";
 import { canProviderDeleteDocuments, canUploadDocuments } from "@/lib/ved/doc-upload-policy";
 import { dateTime, money } from "@/lib/ved/format";
+import { isPostpayRateOnPP } from "@/lib/ved/manager-payment";
 import { usePlatformMode } from "@/lib/ved/platform-mode";
 import { cpByIdFrom, orgByIdFrom, usePlatformStore } from "@/lib/ved/platform-store";
 import {
@@ -223,6 +225,14 @@ export function FormDetail() {
       ];
   const paymentRequisites = isProvider ? providerPaymentRequisites(form, org, cp) : [];
   const visibleDocuments = isProvider ? providerVisibleDocuments(form) : form.documents;
+  const showRateCommission =
+    form.status === "payment_sent" &&
+    isPostpayRateOnPP({
+      platformPostpayMode: form.platformPostpayMode,
+      rateOnProvider: form.rateOnProvider,
+    }) &&
+    (role === "manager" || role === "root");
+  const canEditRateCommission = showRateCommission;
 
   return (
     <VedAppShell title={form.number} subtitle={`${meta.label} · роль: ${roleTitle(role)}`}>
@@ -503,7 +513,12 @@ export function FormDetail() {
         <div className="space-y-4">
           <div className="panel p-4">
             <p className="label-caps">Следующий шаг</p>
-            <p className="mt-2 text-sm">{nextStepHint(form.status, role, processRoles)}</p>
+            <p className="mt-2 text-sm">
+              {nextStepHint(form.status, role, processRoles, {
+                condition: form.condition,
+                direction: form.direction,
+              })}
+            </p>
           </div>
 
           {compliance ? (
@@ -522,6 +537,18 @@ export function FormDetail() {
                 form={form}
                 onEditForm={canEditParams ? () => setEditOpen(true) : undefined}
               />
+              {showRateCommission && (
+                <RateCommissionPanel
+                  formId={form.id}
+                  canEdit={canEditRateCommission}
+                  rate={form.rate}
+                  commission={form.commission}
+                  invoiceAmount={
+                    form.amountMinor ? String(form.amountMinor / 100) : undefined
+                  }
+                  currency={form.currency}
+                />
+              )}
               {!isProvider && <RefundPanel form={form} />}
             </>
           )}

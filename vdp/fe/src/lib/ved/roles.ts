@@ -44,6 +44,14 @@ export const ROLES: RoleMeta[] = [
     personName: "П. Иванов",
   },
   {
+    id: "treasurer",
+    group: "Операции",
+    title: "Казначей",
+    seedEmail: "treasurer@demo.vdp.local",
+    seedPassword: "DemoLifecycle2024!",
+    personName: "К. Орлова",
+  },
+  {
     id: "provider",
     group: "Сервис",
     title: "Провайдер",

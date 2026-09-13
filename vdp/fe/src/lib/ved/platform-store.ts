@@ -58,6 +58,7 @@ import {
 import {
   assignProvider,
   attachFormHsCodes,
+  confirmTreasurerPayment,
   createForm,
   getForm,
   listForms,
@@ -299,6 +300,12 @@ function useApiPlatformStore(): VedStore {
           }
           if (!payload.content && !payload.file_id) throw new Error("Прикрепите файл или укажите хеш");
           await setConfirmation(formId, payload);
+          break;
+        }
+        case "nest_confirm_payment": {
+          await confirmTreasurerPayment(formId, {
+            execution_deadline: extra.deadline,
+          });
           break;
         }
         case "file_then_transition": {

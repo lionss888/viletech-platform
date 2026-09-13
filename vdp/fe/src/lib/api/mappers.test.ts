@@ -62,6 +62,38 @@ describe("mapCoreFormToPaymentForm", () => {
     expect(mapped.counterpartyId).toBe("cp-1");
     expect(mapped.hsCode).toBe("8542 31 90");
   });
+
+  it("maps rate, commission and postpay mode for IMP5", () => {
+    const form = {
+      id: "ca3dcfcd-dd3d-e79d-1910-9c885e5f397b",
+      account_id: "a1",
+      organization_id: "o1",
+      status: "payment_sent",
+      direction: "import",
+      kind: "good",
+      payment_method: "post_payment",
+      platform_postpay_mode: "POSTPAY_RATE_ON_PP",
+      rate_on_provider: true,
+      rate: { value: "95.5", currency: "USD", source: "manual" },
+      commission: {
+        reward_mode: "percent",
+        fee_percent: "1.5",
+        fee_amount: "15",
+        fee_currency: "USD",
+      },
+      invoice_amount: "1000",
+      currency: "USD",
+      created_at: "2026-01-01T00:00:00Z",
+      updated_at: "2026-01-01T00:00:00Z",
+    } as CoreForm;
+    const mapped = mapCoreFormToPaymentForm(form, "User");
+    expect(mapped.paymentMethod).toBe("post_payment");
+    expect(mapped.platformPostpayMode).toBe("POSTPAY_RATE_ON_PP");
+    expect(mapped.rateOnProvider).toBe(true);
+    expect(mapped.rate?.value).toBe("95.5");
+    expect(mapped.commission?.rewardMode).toBe("percent");
+    expect(mapped.commission?.feePercent).toBe("1.5");
+  });
 });
 
 describe("parseDocsJson", () => {
@@ -226,6 +258,14 @@ describe("nextStepHint", () => {
   it("gives ICO their primary action on organization_waiting_verification", () => {
     const hint = nextStepHint("organization_waiting_verification", "internal_compliance_officer");
     expect(hint).toContain("Взять в проверку");
+  });
+
+  it("points manager to treasurer on import advance payment_received", () => {
+    const hint = nextStepHint("payment_received", "manager", undefined, {
+      condition: "advance",
+      direction: "import",
+    });
+    expect(hint.toLowerCase()).toMatch(/казнач/);
   });
 });
 

@@ -21,7 +21,7 @@ type NavItem = { to: string; label: string; roles: VedRole[] | "all" };
 
 const NAV: NavItem[] = [
   { to: "/dashboard", label: "Рабочий стол", roles: "all" },
-  { to: "/forms", label: "Реестр заявок", roles: ["user", "manager", "provider", "root"] },
+  { to: "/forms", label: "Реестр заявок", roles: ["user", "manager", "treasurer", "provider", "root"] },
   { to: "/forms", label: "Входящие заявки", roles: ["internal_compliance_officer", "compliance_officer"] },
   { to: "/organizations", label: "Проверка организаций", roles: ["internal_compliance_officer", "compliance_officer"] },
 ];
