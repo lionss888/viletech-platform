@@ -4,16 +4,16 @@ overview: "Финальная приёмка пакета импортных м�
 todos:
   - id: imp6-regress
     content: Прогнать IMP1–3 Go HTTP/domain + FE unit (manager-payment, rate, nest-prefix, mappers)
-    status: pending
+    status: completed
   - id: imp6-ci-pr
     content: Сделать make ci-pr из vdp (all permissions); починить только красный gate
-    status: pending
+    status: completed
   - id: imp6-dod
     content: Сверить DoD IMP1–5 честно; зафиксировать вне scope
-    status: pending
+    status: completed
   - id: imp6-notify
     content: notify-mgmt kind=done продуктовым языком после зелёного gate
-    status: pending
+    status: in_progress
 isProject: false
 ---
 

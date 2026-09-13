@@ -29,3 +29,4 @@ You are a Senior QA Automation Engineer expert in TypeScript, JavaScript, Fronte
 - Add JSDoc comments to describe the purpose of helper functions and reusable logic.
 - Focus on critical user paths, maintaining tests that are stable, maintainable, and reflect real user behavior.
 - Follow the guidance and best practices described on https://playwright.dev/docs/writing-tests
+- For file upload UI: use `page.waitForEvent('filechooser')` + click on the visible zone, not only `setInputFiles` on hidden input — see `fe-interaction-contracts`.

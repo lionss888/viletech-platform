@@ -395,5 +395,28 @@ grep -q 'VDP_ROBOT_FIXTURES_ROOT' scripts/compose-playwright.sh \
   || fail "compose-playwright must mount robot fixtures root"
 ./scripts/robot-matrix-check.sh
 
+echo "== FE interaction contracts =="
+FE_FILE_PICK="$ROOT/fe/src/components/ved/file-pick-button.tsx"
+[ -f "$FE_FILE_PICK" ] || fail "missing shared FilePickButton: $FE_FILE_PICK"
+grep -q 'data-testid={\`\${testId}-zone\`}' "$FE_FILE_PICK" \
+  || fail "FilePickButton must expose testId-zone"
+grep -q 'type="file"' "$FE_FILE_PICK" \
+  || fail "FilePickButton must have file input"
+# Structural invariant: input must come BEFORE zone in the file (sibling, not nested)
+INPUT_LINE=$(grep -n 'type="file"' "$FE_FILE_PICK" | head -1 | cut -d: -f1)
+ZONE_LINE=$(grep -n 'data-testid={\`\${testId}-zone\`}' "$FE_FILE_PICK" | head -1 | cut -d: -f1)
+[ "$INPUT_LINE" -lt "$ZONE_LINE" ] \
+  || fail "FilePickButton: input[type=file] must appear BEFORE zone div (sibling invariant)"
+# Ensure wizard imports shared component, not local copy
+WIZARD_PAGE="$ROOT/fe/src/components/ved/pages/forms-new-page.tsx"
+grep -q 'from.*file-pick-button' "$WIZARD_PAGE" \
+  || fail "forms-new-page must import shared FilePickButton"
+! grep -q 'function FilePickButton' "$WIZARD_PAGE" \
+  || fail "forms-new-page must NOT have local FilePickButton (use shared)"
+# E2E must test gesture via filechooser, not just setInputFiles
+WAVE2_SPEC="$ROOT/fe/e2e/wave2-wizard.spec.ts"
+grep -Eq "waitForEvent\(['\"]filechooser['\"]" "$WAVE2_SPEC" \
+  || fail "wave2-wizard.spec must use waitForEvent('filechooser') for gesture test"
+
 make compose-release-config-check
 echo "test-cd-scripts passed"
