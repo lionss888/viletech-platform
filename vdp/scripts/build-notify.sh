@@ -11,8 +11,12 @@ NOTIFY="$ROOT/scripts/notify-mgmt.sh"
 OPERATION="${1:-build}"
 shift
 
-# Load local secrets if available
-if [ -f ~/.vdp-intake/env ]; then
+# Load local secrets if available (try ~/.vedy_bot first, then ~/.vdp-intake)
+if [ -f ~/.vedy_bot/env ]; then
+  set +u
+  source ~/.vedy_bot/env
+  set -u
+elif [ -f ~/.vdp-intake/env ]; then
   set +u
   source ~/.vdp-intake/env
   set -u

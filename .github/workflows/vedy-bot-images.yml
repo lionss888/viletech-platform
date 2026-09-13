@@ -1,0 +1,139 @@
+name: vedy_bot Images
+
+on:
+  push:
+    branches: [main, master]
+    paths:
+      - "инструменты/vedy_bot/**"
+      - ".github/workflows/vedy-bot-images.yml"
+  workflow_dispatch:
+    inputs:
+      ref:
+        description: Branch, tag, or SHA to build (empty = this workflow revision)
+        required: false
+        default: ""
+
+concurrency:
+  group: vedy-bot-images-${{ github.event.inputs.ref || github.ref }}
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+  packages: write
+
+env:
+  IMAGE_REGISTRY: ghcr.io
+  IMAGE_NAMESPACE: ${{ github.repository_owner }}
+  IMAGE_NAME: vedy_bot
+
+jobs:
+  prepare:
+    name: resolve build ref
+    runs-on: ubuntu-latest
+    outputs:
+      build_ref: ${{ steps.meta.outputs.build_ref }}
+      image_tag: ${{ steps.meta.outputs.image_tag }}
+      revision: ${{ steps.meta.outputs.revision }}
+    steps:
+      - name: Resolve ref
+        id: pick
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ] && [ -n "${{ github.event.inputs.ref }}" ]; then
+            echo "build_ref=${{ github.event.inputs.ref }}" >> "$GITHUB_OUTPUT"
+          else
+            echo "build_ref=${{ github.sha }}" >> "$GITHUB_OUTPUT"
+          fi
+
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ steps.pick.outputs.build_ref }}
+          fetch-depth: 0
+
+      - name: Resolve image tag
+        id: meta
+        run: |
+          echo "build_ref=${{ steps.pick.outputs.build_ref }}" >> "$GITHUB_OUTPUT"
+          rev=$(git rev-parse HEAD)
+          echo "revision=${rev}" >> "$GITHUB_OUTPUT"
+          echo "image_tag=sha-${rev:0:7}" >> "$GITHUB_OUTPUT"
+
+  wait-for-ci:
+    name: wait for vedy_bot CI
+    needs: [prepare]
+    if: >-
+      github.event_name == 'push' &&
+      (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master')
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Await vedy_bot CI
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_REPOSITORY: ${{ github.repository }}
+          SHA: ${{ needs.prepare.outputs.revision }}
+        run: |
+          echo "Waiting for vedy_bot CI on $SHA..."
+          for i in $(seq 1 60); do
+            status=$(gh api \
+              repos/$GITHUB_REPOSITORY/commits/$SHA/check-runs \
+              --jq '.check_runs | map(select(.name | test("test|smoke"; "i"))) | .[0].conclusion // "pending"' \
+              2>/dev/null || echo "error")
+            echo "Attempt $i: CI status = $status"
+            if [ "$status" = "success" ]; then
+              echo "CI passed"
+              exit 0
+            elif [ "$status" = "failure" ] || [ "$status" = "cancelled" ]; then
+              echo "CI failed or cancelled"
+              exit 1
+            fi
+            sleep 30
+          done
+          echo "Timeout waiting for CI"
+          exit 1
+
+  build-push:
+    name: build and push
+    needs: [prepare, wait-for-ci]
+    if: >-
+      always() &&
+      needs.prepare.result == 'success' &&
+      (needs.wait-for-ci.result == 'success' || needs.wait-for-ci.result == 'skipped')
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ needs.prepare.outputs.build_ref }}
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: инструменты/vedy_bot/fe/package-lock.json
+
+      - name: Build FE (host Nitro)
+        working-directory: инструменты/vedy_bot
+        run: make fe-build
+
+      - name: Log in to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.IMAGE_REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build and push Docker image
+        working-directory: инструменты/vedy_bot
+        env:
+          IMAGE_TAG: ${{ needs.prepare.outputs.image_tag }}
+          REVISION: ${{ needs.prepare.outputs.revision }}
+        run: |
+          IMAGE="${IMAGE_REGISTRY}/${IMAGE_NAMESPACE}/${IMAGE_NAME}"
+          docker build \
+            --label "org.opencontainers.image.revision=${REVISION}" \
+            --label "org.opencontainers.image.source=https://github.com/${GITHUB_REPOSITORY}" \
+            -t "${IMAGE}:${IMAGE_TAG}" \
+            .
+          docker push "${IMAGE}:${IMAGE_TAG}"
+          echo "Pushed ${IMAGE}:${IMAGE_TAG}"
+          echo "Digest: $(docker inspect --format='{{index .RepoDigests 0}}' "${IMAGE}:${IMAGE_TAG}" || echo 'N/A')"
