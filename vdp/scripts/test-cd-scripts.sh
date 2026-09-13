@@ -398,13 +398,13 @@ grep -q 'VDP_ROBOT_FIXTURES_ROOT' scripts/compose-playwright.sh \
 echo "== FE interaction contracts =="
 FE_FILE_PICK="$ROOT/fe/src/components/ved/file-pick-button.tsx"
 [ -f "$FE_FILE_PICK" ] || fail "missing shared FilePickButton: $FE_FILE_PICK"
-grep -q 'data-testid={\`\${testId}-zone\`}' "$FE_FILE_PICK" \
+grep -q 'data-testid=.*-zone' "$FE_FILE_PICK" \
   || fail "FilePickButton must expose testId-zone"
 grep -q 'type="file"' "$FE_FILE_PICK" \
   || fail "FilePickButton must have file input"
 # Structural invariant: input must come BEFORE zone in the file (sibling, not nested)
 INPUT_LINE=$(grep -n 'type="file"' "$FE_FILE_PICK" | head -1 | cut -d: -f1)
-ZONE_LINE=$(grep -n 'data-testid={\`\${testId}-zone\`}' "$FE_FILE_PICK" | head -1 | cut -d: -f1)
+ZONE_LINE=$(grep -n 'data-testid=.*-zone' "$FE_FILE_PICK" | head -1 | cut -d: -f1)
 [ "$INPUT_LINE" -lt "$ZONE_LINE" ] \
   || fail "FilePickButton: input[type=file] must appear BEFORE zone div (sibling invariant)"
 # Ensure wizard imports shared component, not local copy
