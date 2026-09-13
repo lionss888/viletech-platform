@@ -143,11 +143,22 @@ jobs:
           chmod +x vdp/scripts/deploy-compose-release.sh vdp/scripts/notify-mgmt.sh
           ./vdp/scripts/deploy-compose-release.sh
 
-      - name: Notify management — deploy success
-        if: success()
+      - name: Verify management notify secrets
+        if: always()
         env:
           MGMT_NOTIFY_TOKEN: ${{ secrets.MGMT_NOTIFY_TOKEN || secrets.TELEGRAM_INTAKE_TOKEN }}
-          MGMT_NOTIFY_CHAT_ID: ${{ secrets.MGMT_NOTIFY_CHAT_ID || secrets.TELEGRAM_INTAKE_CHAT_IDS }}
+          MGMT_NOTIFY_CHAT_ID: ${{ secrets.MGMT_NOTIFY_CHAT_ID || secrets.MGMT_NOTIFY_CHAT_IDS || secrets.TELEGRAM_INTAKE_CHAT_IDS }}
+        run: |
+          if [ -z "${MGMT_NOTIFY_TOKEN:-}" ] || [ -z "${MGMT_NOTIFY_CHAT_ID:-}" ]; then
+            echo "::error::Management notify secrets are required for deploy (set MGMT_NOTIFY_TOKEN+MGMT_NOTIFY_CHAT_ID or TELEGRAM_INTAKE_TOKEN+TELEGRAM_INTAKE_CHAT_IDS)."
+            exit 1
+          fi
+
+      - name: Notify management — deploy success
+        if: success() && steps.promote.outcome == 'success'
+        env:
+          MGMT_NOTIFY_TOKEN: ${{ secrets.MGMT_NOTIFY_TOKEN || secrets.TELEGRAM_INTAKE_TOKEN }}
+          MGMT_NOTIFY_CHAT_ID: ${{ secrets.MGMT_NOTIFY_CHAT_ID || secrets.MGMT_NOTIFY_CHAT_IDS || secrets.TELEGRAM_INTAKE_CHAT_IDS }}
           MGMT_NOTIFY_REQUIRE: "1"
           MGMT_CI_ENV: ${{ needs.resolve-pin.outputs.target_env }}
           MGMT_CI_REVISION: ${{ needs.resolve-pin.outputs.revision }}
@@ -156,10 +167,10 @@ jobs:
           ./vdp/scripts/ci-mgmt-notify.sh deploy-ok
 
       - name: Notify management — deploy failure
-        if: failure()
+        if: failure() && steps.promote.outcome == 'failure'
         env:
           MGMT_NOTIFY_TOKEN: ${{ secrets.MGMT_NOTIFY_TOKEN || secrets.TELEGRAM_INTAKE_TOKEN }}
-          MGMT_NOTIFY_CHAT_ID: ${{ secrets.MGMT_NOTIFY_CHAT_ID || secrets.TELEGRAM_INTAKE_CHAT_IDS }}
+          MGMT_NOTIFY_CHAT_ID: ${{ secrets.MGMT_NOTIFY_CHAT_ID || secrets.MGMT_NOTIFY_CHAT_IDS || secrets.TELEGRAM_INTAKE_CHAT_IDS }}
           MGMT_NOTIFY_REQUIRE: "1"
           MGMT_CI_ENV: ${{ needs.resolve-pin.outputs.target_env }}
           MGMT_CI_REVISION: ${{ needs.resolve-pin.outputs.revision }}
@@ -177,7 +188,7 @@ jobs:
       - name: Notify management — could not start deploy
         env:
           MGMT_NOTIFY_TOKEN: ${{ secrets.MGMT_NOTIFY_TOKEN || secrets.TELEGRAM_INTAKE_TOKEN }}
-          MGMT_NOTIFY_CHAT_ID: ${{ secrets.MGMT_NOTIFY_CHAT_ID || secrets.TELEGRAM_INTAKE_CHAT_IDS }}
+          MGMT_NOTIFY_CHAT_ID: ${{ secrets.MGMT_NOTIFY_CHAT_ID || secrets.MGMT_NOTIFY_CHAT_IDS || secrets.TELEGRAM_INTAKE_CHAT_IDS }}
           MGMT_NOTIFY_REQUIRE: "1"
           MGMT_CI_ENV: ${{ needs.resolve-pin.outputs.target_env || 'alpha' }}
           MGMT_CI_REVISION: ${{ github.sha }}

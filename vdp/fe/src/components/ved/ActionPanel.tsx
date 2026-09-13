@@ -12,7 +12,16 @@ import {
 import { assertFileSize, UploadError } from "@/lib/api/files";
 import { marksFor } from "@/lib/ved/compliance";
 import { filterAgencyContractActions } from "@/lib/ved/agency-contract-ux";
-import { blocksPaymentStartWithoutProvider, PAYMENT_START_PROVIDER_LOCK } from "@/lib/ved/manager-payment";
+import {
+  ADVANCE_SIGNING_NEEDS_RATE,
+  blocksAdvanceSigningWithoutRate,
+  blocksPaymentStartWithoutProvider,
+  hidesPaymentStartForImportAdvance,
+  IMPORT_ADVANCE_AWAITS_TREASURER,
+  isImportAdvanceCoverageGate,
+  isPostpayRateOnPP,
+  PAYMENT_START_PROVIDER_LOCK,
+} from "@/lib/ved/manager-payment";
 import { usePlatformStore } from "@/lib/ved/platform-store";
 import { useProcessRolesRows } from "@/lib/ved/use-process-roles-snapshot";
 import type { ActionTone, FormAction, PaymentForm } from "@/lib/ved/types";
@@ -100,11 +109,41 @@ export function ActionPanel({
       : providers;
 
   const role = session?.role ?? "user";
-  const actions = filterAgencyContractActions(actionsFor(role, form.status, processRoles), {
+  const rawActions = filterAgencyContractActions(actionsFor(role, form.status, processRoles), {
     status: form.status,
     contractId: form.contractId,
     orgHasAcceptedAgency,
   });
+  const actions = useMemo(
+    () =>
+      rawActions.filter(
+        (action) =>
+          !hidesPaymentStartForImportAdvance({
+            status: form.status,
+            actionId: action.id,
+            condition: form.condition,
+            direction: form.direction,
+          }),
+      ),
+    [rawActions, form.status, form.condition, form.direction],
+  );
+  const awaitsTreasurer =
+    form.status === "payment_received" &&
+    isImportAdvanceCoverageGate({ condition: form.condition, direction: form.direction }) &&
+    (role === "manager" || role === "root");
+  const needsRateForAdvance =
+    form.status === "payment_sent" &&
+    isPostpayRateOnPP({
+      platformPostpayMode: form.platformPostpayMode,
+      rateOnProvider: form.rateOnProvider,
+    }) &&
+    blocksAdvanceSigningWithoutRate({
+      status: form.status,
+      actionId: "mgr_advance_signing",
+      platformPostpayMode: form.platformPostpayMode,
+      rateOnProvider: form.rateOnProvider,
+      rate: form.rate,
+    });
   const { operationalActions, rootCancelAction } = useMemo(() => {
     if (role !== "root") {
       return { operationalActions: actions, rootCancelAction: null as FormAction | null };
@@ -156,6 +195,7 @@ export function ActionPanel({
       action.id === "mgr_assign_provider" ||
       action.id === "mgr_assign_agent" ||
       action.id === "mgr_assign_deadline" ||
+      action.id === "treas_confirm_payment" ||
       action.id === "mgr_contract_attach" ||
       action.id === "mgr_refund_init" ||
       action.id === "prov_attach_proof"
@@ -232,14 +272,23 @@ export function ActionPanel({
     const hardDisabled = !!lockNote && isApproval(action);
     const softDisabled = !lockNote && !!lockAcceptNote && isAcceptOnly(action);
     const providerGate = blocksPaymentStartWithoutProvider(form.status, action.id, form.providerId);
-    const disabled = hardDisabled || softDisabled || providerGate || busy;
+    const rateGate = blocksAdvanceSigningWithoutRate({
+      status: form.status,
+      actionId: action.id,
+      platformPostpayMode: form.platformPostpayMode,
+      rateOnProvider: form.rateOnProvider,
+      rate: form.rate,
+    });
+    const disabled = hardDisabled || softDisabled || providerGate || rateGate || busy;
     const tip = hardDisabled
       ? lockNote
       : softDisabled
         ? lockAcceptNote
         : providerGate
           ? PAYMENT_START_PROVIDER_LOCK
-          : action.label;
+          : rateGate
+            ? ADVANCE_SIGNING_NEEDS_RATE
+            : action.label;
     return (
       <button
         key={action.id}
@@ -269,6 +318,16 @@ export function ActionPanel({
       )}
       {!lockNote && !lockAcceptNote && note && (
         <p className="mt-2 rounded-md bg-wait-soft px-2 py-1.5 text-xs text-wait">{note}</p>
+      )}
+      {awaitsTreasurer && (
+        <p className="mt-2 rounded-md bg-wait-soft px-2 py-1.5 text-xs text-wait" data-testid="awaits-treasurer">
+          {IMPORT_ADVANCE_AWAITS_TREASURER}
+        </p>
+      )}
+      {needsRateForAdvance && (
+        <p className="mt-2 rounded-md bg-wait-soft px-2 py-1.5 text-xs text-wait" data-testid="needs-rate-advance">
+          {ADVANCE_SIGNING_NEEDS_RATE}
+        </p>
       )}
       {form.status === "payment_received" && !form.providerId && (
         <p className="mt-2 rounded-md bg-wait-soft px-2 py-1.5 text-xs text-wait">{PAYMENT_START_PROVIDER_LOCK}</p>
@@ -346,6 +405,12 @@ export function ActionPanel({
         {pending?.id === "mgr_assign_deadline" && (
           <label className="block">
             <span className="label-caps">Срок исполнения</span>
+            <input type="datetime-local" value={deadline} onChange={(e) => setDeadline(e.target.value)} className="field mt-1" />
+          </label>
+        )}
+        {pending?.id === "treas_confirm_payment" && (
+          <label className="block">
+            <span className="label-caps">Срок исполнения (необязательно)</span>
             <input type="datetime-local" value={deadline} onChange={(e) => setDeadline(e.target.value)} className="field mt-1" />
           </label>
         )}

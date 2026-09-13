@@ -1,0 +1,37 @@
+---
+alwaysApply: true
+---
+
+# FE: контракты взаимодействия
+
+Жест пользователя обязан работать в браузере; тест, который обходит жест (`setInputFiles` на hidden input), не доказывает готовность UI.
+
+## MUST — загрузка файла
+
+1. **Канон:** `<label htmlFor>` + `<input id type="file" className="sr-only">` **или** input **вне** click-зоны + `ref.click()`.
+2. **Запрет:** `input[type=file]` внутри элемента с `onClick`/`role="button"`, который на том же жесте делает `preventDefault` и `input.click()` — `preventDefault` отменит OS-диалог.
+3. **Mouse-путь:** при открытии picker **не** делай `preventDefault`; keyboard Space — ok (иначе скроллит).
+4. **stopPropagation на input:** страховка от всплытия клика обратно в зону.
+
+## MUST — shared компонент
+
+- Один `FilePickButton` (или аналог) для кабинетных PDF-зон в `vdp/fe/src/components/ved/file-pick-button.tsx`.
+- Ad-hoc `div + sr-only input` в фичах — **запрещён** для новых мест; используй shared.
+- testid-контракт: `${testId}`, `${testId}-zone`, `${testId}-button`.
+
+## MUST — DoD upload UI
+
+- Хотя бы один E2E-тест на поверхность upload идёт через **клик по зоне → `page.waitForEvent('filechooser')`**, не только `setInputFiles` на hidden input.
+- `setInputFiles` допустим для ускорения длинных сценариев **после** отдельного gesture-теста.
+
+## Антипаттерны
+
+- `<div onClick={...preventDefault...}><input type="file" /></div>` — диалог не откроется.
+- E2E зелёный при мёртвой кнопке, потому что `setInputFiles` обходит клик.
+- Локальный `function FilePickButton` в фиче вместо shared.
+
+## Связанные rules
+
+- `ui-web-практики` — загрузка документов, паттерны
+- `playwright-e2e` — real user behavior, filechooser
+- `честность-готовности` — bypass-тест ≠ готовность

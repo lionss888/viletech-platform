@@ -35,6 +35,7 @@ const ACTION_CAPABILITY: Record<string, string> = {
   mgr_order_stop: "manager.ops",
   mgr_payment_received: "manager.payment",
   mgr_payment_start: "manager.payment",
+  treas_confirm_payment: "treasurer.ops",
   mgr_assign_provider: "manager.ops",
   mgr_cancel: "manager.ops",
   mgr_report_signing: "manager.ops",

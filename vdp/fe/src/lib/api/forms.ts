@@ -1,5 +1,19 @@
 import { apiFetch } from "./client";
 
+export type CoreRate = {
+  value?: string;
+  currency?: string;
+  source?: string;
+};
+
+export type CoreCommission = {
+  reward_mode?: string;
+  fee_amount?: string;
+  fee_percent?: string;
+  fee_fix?: string;
+  fee_currency?: string;
+};
+
 export type CoreForm = {
   id: string;
   account_id: string;
@@ -17,6 +31,8 @@ export type CoreForm = {
   invoice_amount?: string;
   currency?: string;
   payment_method?: string;
+  platform_postpay_mode?: string;
+  rate_on_provider?: boolean;
   contract_number?: string;
   contract_date?: string;
   no_documents?: boolean;
@@ -24,6 +40,8 @@ export type CoreForm = {
   invoice_json?: string;
   confirmation_hash?: string;
   confirmation_file_id?: string;
+  rate?: CoreRate;
+  commission?: CoreCommission;
   created_at: string;
   updated_at: string;
 };
@@ -142,14 +160,15 @@ export function patchForm(formId: string, nestPrefix: string, input: PatchFormIn
   });
 }
 
-/** Maps JWT role to Nest path prefix (site|manager|provider|eco|ico|admin). */
+/** Maps JWT role to Nest path prefix (site|manager|provider|eco|ico|treasurer|admin). */
 export function nestFormPrefixForRole(role: string | undefined): string {
   switch (role) {
     case "user":
       return "site";
     case "manager":
-    case "treasurer":
       return "manager";
+    case "treasurer":
+      return "treasurer";
     case "provider":
     case "senior_provider":
       return "provider";
@@ -164,10 +183,65 @@ export function nestFormPrefixForRole(role: string | undefined): string {
   }
 }
 
+/** Treasurer confirms client RUB coverage (import advance §10.2). */
+export function confirmTreasurerPayment(
+  formId: string,
+  input: { execution_deadline?: string } = {},
+): Promise<CoreForm> {
+  const body =
+    input.execution_deadline && input.execution_deadline.trim()
+      ? { execution_deadline: input.execution_deadline.trim() }
+      : {};
+  return apiFetch<CoreForm>(`/api/v1/treasurer/form-payment/${formId}/confirm-payment`, {
+    method: "PATCH",
+    body: JSON.stringify(body),
+  });
+}
+
 /** Attach TN VED codes onto form invoice_json.hs_codes. */
 export function attachFormHsCodes(formId: string, codes: string[]): Promise<CoreForm> {
   return apiFetch<CoreForm>(`/api/v1/forms/${formId}/hs-codes`, {
     method: "PATCH",
     body: JSON.stringify({ codes }),
+  });
+}
+
+export type SetRateInput = {
+  value: string;
+  currency: string;
+  source?: string;
+};
+
+/** Manager sets deal FX rate (IMP5 / POSTPAY_RATE_ON_PP). */
+export function setRate(formId: string, input: SetRateInput): Promise<CoreForm> {
+  return apiFetch<CoreForm>(`/api/v1/forms/${formId}/rate`, {
+    method: "POST",
+    body: JSON.stringify({
+      value: input.value,
+      currency: input.currency,
+      source: input.source ?? "manual",
+    }),
+  });
+}
+
+export type SetCommissionInput = {
+  reward_mode: "fixed" | "percent" | "percent_plus_fixed";
+  fee_percent?: string;
+  fee_fix?: string;
+  fee_amount?: string;
+  fee_currency?: string;
+};
+
+/** Manager sets deal commission with IMP3 reward mode. */
+export function setCommission(formId: string, input: SetCommissionInput): Promise<CoreForm> {
+  return apiFetch<CoreForm>(`/api/v1/forms/${formId}/commission`, {
+    method: "POST",
+    body: JSON.stringify({
+      reward_mode: input.reward_mode,
+      fee_percent: input.fee_percent ?? "",
+      fee_fix: input.fee_fix ?? "",
+      fee_amount: input.fee_amount ?? "",
+      fee_currency: input.fee_currency ?? "USD",
+    }),
   });
 }

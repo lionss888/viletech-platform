@@ -6,6 +6,7 @@ describe("nestFormPrefixForRole", () => {
   it("maps cabinet roles to nest form-payment prefixes", () => {
     expect(nestFormPrefixForRole("user")).toBe("site");
     expect(nestFormPrefixForRole("manager")).toBe("manager");
+    expect(nestFormPrefixForRole("treasurer")).toBe("treasurer");
     expect(nestFormPrefixForRole("root")).toBe("admin");
     expect(nestFormPrefixForRole("internal_compliance_officer")).toBe("ico");
   });

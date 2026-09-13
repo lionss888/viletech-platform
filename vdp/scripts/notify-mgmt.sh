@@ -3,7 +3,7 @@
 #
 # Secrets (first match wins for token / chat):
 #   MGMT_NOTIFY_TOKEN | TELEGRAM_INTAKE_TOKEN | UPTIME_BOT_TOKEN
-#   MGMT_NOTIFY_CHAT_ID | TELEGRAM_INTAKE_CHAT_IDS | ~/.vdp-intake/remind_chat_id | UPTIME_CHAT_ID
+#   MGMT_NOTIFY_CHAT_ID | MGMT_NOTIFY_CHAT_IDS | TELEGRAM_INTAKE_CHAT_IDS | ~/.vdp-intake/remind_chat_id | UPTIME_CHAT_ID
 # Optional env file: MGMT_NOTIFY_ENV_FILE (default ~/.vdp-intake/env)
 #
 # Usage:
@@ -195,7 +195,7 @@ if [ -f "$ENV_FILE" ]; then
 fi
 
 TOKEN="${MGMT_NOTIFY_TOKEN:-${TELEGRAM_INTAKE_TOKEN:-${UPTIME_BOT_TOKEN:-}}}"
-CHAT="${MGMT_NOTIFY_CHAT_ID:-${TELEGRAM_INTAKE_CHAT_IDS:-}}"
+CHAT="${MGMT_NOTIFY_CHAT_ID:-${MGMT_NOTIFY_CHAT_IDS:-${TELEGRAM_INTAKE_CHAT_IDS:-}}}"
 if [ -z "$CHAT" ] && [ -f "${HOME}/.vdp-intake/remind_chat_id" ]; then
   CHAT="$(tr -d '[:space:]' <"${HOME}/.vdp-intake/remind_chat_id")"
 fi

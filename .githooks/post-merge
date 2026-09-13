@@ -1,0 +1,45 @@
+#!/usr/bin/env bash
+# Post-merge: notify management about git pull / merge.
+set -euo pipefail
+
+ROOT="$(cd "$(dirname "$0")/.." && pwd)"
+NOTIFY="$ROOT/vdp/scripts/notify-mgmt.sh"
+
+# Skip if notify not executable
+if [ ! -x "$NOTIFY" ]; then
+  exit 0
+fi
+
+# Load local secrets if available
+if [ -f ~/.vdp-intake/env ]; then
+  set +u
+  source ~/.vdp-intake/env
+  set -u
+fi
+
+# Skip if no token
+if [ -z "${MGMT_NOTIFY_TOKEN:-}${TELEGRAM_INTAKE_TOKEN:-}" ]; then
+  exit 0
+fi
+
+REVISION="$(git -C "$ROOT" rev-parse --short HEAD 2>/dev/null || echo local)"
+BRANCH="$(git -C "$ROOT" branch --show-current 2>/dev/null || echo unknown)"
+
+# Check if it was a squash merge (argument passed to hook)
+SQUASH="${1:-0}"
+if [ "$SQUASH" = "1" ]; then
+  ACTION="squash merge"
+else
+  ACTION="merge/pull"
+fi
+
+# Notify management about merge
+"$NOTIFY" \
+  --kind progress \
+  --title "обновление локальной ветки" \
+  --status success \
+  --revision "$REVISION" \
+  --body "🔄 $ACTION в $BRANCH" \
+  || true
+
+exit 0

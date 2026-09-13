@@ -36,6 +36,14 @@ export const APP_SEED_ACCOUNTS: AppSeedAccount[] = [
     accountId: "22222222-2222-2222-2222-222222222222",
   },
   {
+    role: "treasurer",
+    title: "Казначей",
+    email: "treasurer@vdp.local",
+    password: "treasurer",
+    personName: "Treasurer Seed",
+    accountId: "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa",
+  },
+  {
     role: "internal_compliance_officer",
     title: "Внутренний комплаенс",
     email: "ico@vdp.local",

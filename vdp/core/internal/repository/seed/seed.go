@@ -13,15 +13,16 @@ import (
 )
 
 const (
-	UserID     = "11111111-1111-1111-1111-111111111111"
-	ManagerID  = "22222222-2222-2222-2222-222222222222"
-	ICOID      = "33333333-3333-3333-3333-333333333333"
-	ECOID      = "44444444-4444-4444-4444-444444444444"
-	ProviderID = "55555555-5555-5555-5555-555555555555"
-	OrgID      = "66666666-6666-6666-6666-666666666666"
-	BankID     = "77777777-7777-7777-7777-777777777777"
-	BankOrgID  = "88888888-8888-8888-8888-888888888888"
-	RootID     = "99999999-9999-9999-9999-999999999999"
+	UserID      = "11111111-1111-1111-1111-111111111111"
+	ManagerID   = "22222222-2222-2222-2222-222222222222"
+	ICOID       = "33333333-3333-3333-3333-333333333333"
+	ECOID       = "44444444-4444-4444-4444-444444444444"
+	ProviderID  = "55555555-5555-5555-5555-555555555555"
+	OrgID       = "66666666-6666-6666-6666-666666666666"
+	BankID      = "77777777-7777-7777-7777-777777777777"
+	BankOrgID   = "88888888-8888-8888-8888-888888888888"
+	RootID      = "99999999-9999-9999-9999-999999999999"
+	TreasurerID = "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa"
 )
 
 // Dev upserts demo accounts/orgs only (no sample forms, counterparties, or work chats).
@@ -31,6 +32,7 @@ func Dev(store repository.Store) error {
 	accounts := []domain.Account{
 		{ID: UserID, Email: "user@vdp.local", PasswordHash: service.HashPassword("user"), Role: domain.RoleUser, AccountKind: domain.AccountKindUser, OrganizationID: OrgID, FullName: "Ivan Petrov", Phone: "+79990000000", Passport: "4510 123456", Active: true, TelegramNotifyEnabled: true},
 		{ID: ManagerID, Email: "manager@vdp.local", PasswordHash: service.HashPassword("manager"), Role: domain.RoleManager, AccountKind: domain.AccountKindUser, FullName: "Manager Seed", Active: true},
+		{ID: TreasurerID, Email: "treasurer@vdp.local", PasswordHash: service.HashPassword("treasurer"), Role: domain.RoleTreasurer, AccountKind: domain.AccountKindUser, FullName: "Treasurer Seed", Active: true},
 		{ID: ICOID, Email: "ico@vdp.local", PasswordHash: service.HashPassword("ico"), Role: domain.RoleInternalComplianceOfficer, AccountKind: domain.AccountKindUser, FullName: "ICO Seed", Active: true},
 		{ID: ECOID, Email: "eco@vdp.local", PasswordHash: service.HashPassword("eco"), Role: domain.RoleComplianceOfficer, AccountKind: domain.AccountKindUser, FullName: "ECO Seed", Active: true},
 		{ID: ProviderID, Email: "provider@vdp.local", PasswordHash: service.HashPassword("provider"), Role: domain.RoleProvider, AccountKind: domain.AccountKindUser, FullName: "Provider Seed", Active: true},

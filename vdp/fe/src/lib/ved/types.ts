@@ -5,12 +5,30 @@ export type VedRole =
   | "internal_compliance_officer"
   | "compliance_officer"
   | "manager"
+  | "treasurer"
   | "provider"
   | "root";
 
 export type FormDirection = "import" | "export";
 export type FormKind = "good" | "service";
 export type FormCondition = "advance" | "postPayment";
+
+/** Deal reward modes (§10.5 / IMP3). */
+export type RewardMode = "fixed" | "percent" | "percent_plus_fixed";
+
+export type FormRate = {
+  value?: string;
+  currency?: string;
+  source?: string;
+};
+
+export type FormCommission = {
+  rewardMode?: RewardMode | string;
+  feeAmount?: string;
+  feePercent?: string;
+  feeFix?: string;
+  feeCurrency?: string;
+};
 
 export type StatusTone = "wait" | "work" | "return" | "done" | "neutral";
 
@@ -126,6 +144,11 @@ export type PaymentForm = {
   noDocuments?: boolean | undefined;
   /** Raw extraction schema v1 from core invoice_json. */
   invoiceJson?: string | undefined;
+  paymentMethod?: string | undefined;
+  platformPostpayMode?: string | undefined;
+  rateOnProvider?: boolean | undefined;
+  rate?: FormRate | undefined;
+  commission?: FormCommission | undefined;
   rejectText?: string | undefined;
   /** Код отметки комплаенс при возврате на доработку. */
   rejectMark?: string | undefined;

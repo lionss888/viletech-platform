@@ -188,13 +188,32 @@ const MATRIX: Record<VedRole, Record<string, FormAction[]>> = {
     payment_received: [{ id: "prov_payment_start", label: "Начать исполнение", tone: "accent", nextStatus: "payment_processing" }],
   },
 
+  treasurer: {
+    payment_received: [
+      {
+        id: "treas_confirm_payment",
+        label: "Подтвердить покрытие",
+        tone: "accent",
+        confirm: "Подтвердить заход рублёвого покрытия и передать в исполнение?",
+        nextStatus: "payment_processing",
+      },
+    ],
+  },
+
   root: {},
 };
 
 /** Root видит cancel на любой активной заявке (bulk и row-level CTA). */
 const ROOT_CANCELABLE = (status: FormStatus) => !status.startsWith("canceled") && status !== "completed";
 
-const OPERATIONAL_ROLES: VedRole[] = ["user", "internal_compliance_officer", "compliance_officer", "manager", "provider"];
+const OPERATIONAL_ROLES: VedRole[] = [
+  "user",
+  "internal_compliance_officer",
+  "compliance_officer",
+  "manager",
+  "treasurer",
+  "provider",
+];
 
 /** Суперадмин управляет любой заявкой: доступны действия всех ролей на текущем статусе. */
 function rootActions(status: FormStatus): FormAction[] {

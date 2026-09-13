@@ -80,6 +80,7 @@ export type ActionSideEffect =
   | { kind: "refund_cancel" }
   | { kind: "refund_file" }
   | { kind: "set_confirmation" }
+  | { kind: "nest_confirm_payment" }
   | { kind: "file_then_transition"; coreAction: string; docKind: string }
   | { kind: "file_attach"; docKind: string };
 
@@ -112,6 +113,7 @@ const SIDE_EFFECT_ONLY = new Set([
   "mgr_refund_cancel",
   "prov_attach_proof",
   "prov_set_confirmation",
+  "treas_confirm_payment",
 ]);
 
 /** Resolves demo UI action to core transition id. */
@@ -148,6 +150,8 @@ export function resolveDemoAction(actionId: string): ActionSideEffect | undefine
       case "prov_set_confirmation":
       case "prov_attach_proof":
         return { kind: "set_confirmation" };
+      case "treas_confirm_payment":
+        return { kind: "nest_confirm_payment" };
       default:
         return undefined;
     }
@@ -210,6 +214,7 @@ export const ALL_DEMO_ACTION_IDS = [
   "mgr_assign_provider",
   "mgr_assign_deadline",
   "mgr_payment_start",
+  "treas_confirm_payment",
   "mgr_refund_init",
   "mgr_refund_start",
   "mgr_refund_stop",

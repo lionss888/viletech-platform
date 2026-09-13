@@ -187,7 +187,7 @@ test.describe("Pilot robot matrix full UI ladder @pilot-matrix", () => {
     await clickAction(page, /^Подтвердить получение средств$/);
     await expectFormStatus(page, "payment_received", { timeout: 30_000 });
 
-    // 12–13. Assign provider + start payment
+    // 12–13. Assign provider; import advance → treasurer confirms coverage (not mgr payment_start)
     await clickAction(page, /^Назначить платёжного провайдера$/);
     const providerSelect = page.locator("label").filter({ hasText: /Провайдер исполнения/i }).locator("select");
     await expect(providerSelect).toBeVisible({ timeout: 10_000 });
@@ -195,24 +195,25 @@ test.describe("Pilot robot matrix full UI ladder @pilot-matrix", () => {
     expect(provCount).toBeGreaterThan(1);
     await providerSelect.selectOption({ index: 1 });
     await confirmModal(page);
-    await expect(page.getByRole("button", { name: /^Запустить исполнение платежа$/ })).toBeEnabled({
-      timeout: 30_000,
-    });
-    await clickAction(page, /^Запустить исполнение платежа$/);
-    await expectFormStatus(page, /^(payment_processing|payment_received)$/, { timeout: 30_000 });
+    await expectFormStatus(page, "payment_received", { timeout: 30_000 });
+    await expect(page.getByRole("button", { name: /^Запустить исполнение платежа$/ })).toHaveCount(0);
+    await expect(page.getByTestId("awaits-treasurer")).toBeVisible({ timeout: 15_000 });
 
-    // 14–15. Provider execute
+    await logout();
+    await loginAs("treasurer");
+    await waitForFormDetail(page, formId);
+    await clickAction(page, /^Подтвердить покрытие$/);
+    await confirmModal(page);
+    await expectFormStatus(page, "payment_processing", { timeout: 30_000 });
+
+    // 14–15. Provider execute (already in payment_processing after treasurer)
     await logout();
     await loginAs("provider");
     await waitForFormDetail(page, formId);
     const bodyText = await page.locator("body").innerText();
     expect(bodyText).not.toMatch(/\b\d{4}\s?\d{6}\b/); // crude passport-ish
     expect(bodyText).not.toMatch(/паспорт/i);
-    const startPay = page.getByRole("button", { name: /^Начать исполнение$/ });
-    if (await startPay.isVisible().catch(() => false)) {
-      await startPay.click();
-      await expectFormStatus(page, "payment_processing", { timeout: 30_000 });
-    }
+    await expectFormStatus(page, "payment_processing", { timeout: 15_000 });
     await clickAction(page, /^Платёж отправлен$/);
     await expectFormStatus(page, "payment_sent", { timeout: 30_000 });
 

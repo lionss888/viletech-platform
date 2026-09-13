@@ -109,6 +109,17 @@ const MATRIX: Partial<Record<VedRole, Partial<Record<string, AppFormAction[]>>>>
       { id: "complete", label: "Закрыть заявку", tone: "accent", coreAction: "complete" },
     ],
   },
+  treasurer: {
+    payment_received: [
+      {
+        id: "treas_confirm_payment",
+        label: "Подтвердить покрытие",
+        tone: "accent",
+        coreAction: "treasurer_confirm",
+        confirm: "Подтвердить заход рублёвого покрытия и передать в исполнение?",
+      },
+    ],
+  },
   provider: {
     payment_processing: [
       { id: "provider_sent", label: "Платёж отправлен", tone: "accent", coreAction: "provider_sent" },

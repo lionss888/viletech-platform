@@ -37,6 +37,7 @@ function asVedRole(role: string | undefined): VedRole | undefined {
     "internal_compliance_officer",
     "compliance_officer",
     "manager",
+    "treasurer",
     "provider",
     "root",
   ];

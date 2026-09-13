@@ -229,7 +229,7 @@ jobs:
       - name: Notify management channel
         env:
           MGMT_NOTIFY_TOKEN: ${{ secrets.MGMT_NOTIFY_TOKEN || secrets.TELEGRAM_INTAKE_TOKEN }}
-          MGMT_NOTIFY_CHAT_ID: ${{ secrets.MGMT_NOTIFY_CHAT_ID || secrets.TELEGRAM_INTAKE_CHAT_IDS }}
+          MGMT_NOTIFY_CHAT_ID: ${{ secrets.MGMT_NOTIFY_CHAT_ID || secrets.MGMT_NOTIFY_CHAT_IDS || secrets.TELEGRAM_INTAKE_CHAT_IDS }}
           NEED_fast_RESULT: ${{ needs.fast.result }}
           NEED_docs_RESULT: ${{ needs.docs.result }}
           NEED_integration_RESULT: ${{ needs.integration.result }}
