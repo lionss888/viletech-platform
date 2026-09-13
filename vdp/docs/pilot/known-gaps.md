@@ -1,6 +1,6 @@
 # Известные пробелы
 
-Честный список ограничений MVP. Не блокеры для пилот demo при принятии оговорок readiness-and-limits.md.
+Честный список ограничений MVP. Не блокеры для пилот demo при принятии оговорок readiness-and-limits.md. Дата сверки 2026-09-13 после пакета импортных маршрутов IMP0–IMP6 и волн UX 0–4.
 
 ## Nest parity semantics
 
@@ -12,7 +12,11 @@ Docs and mail HTTP contract verified in CI via make test-adapters with httptest.
 
 ## XLSX and templates
 
-Nest form-payment XLSX and compliance export use real OOXML (export.MinimalXLSX). PDF generation payload includes agent template_id per PA (docs_payload.go); prod fidelity still depends on external docs service behind DOCS_URL.
+Nest form-payment XLSX and compliance export use real OOXML (export.MinimalXLSX). PDF generation payload includes agent template_id per PA (docs_payload.go); prod fidelity still depends on external docs service behind DOCS_URL. Primary поручение без курса на POSTPAY_RATE_ON_PP поддержано в payload; pixel fidelity PDF и legal sign-off шаблонов по ПА — открыты.
+
+## Import routes IMP package
+
+Пакет IMP0–IMP6 закрыт на уровне домена API и кабинетов Manager или Treasurer. Аванс: казначей confirm-payment → payment_processing. Постоплата POSTPAY_RATE_ON_PP: provider-first, курс и три режима вознаграждения после ПП, доп. поручение, казначей → report_waiting. Verify: unit HTTP FE unit и make ci-pr. Не заявлено: полный browser journey аванса и постоплаты, расширение pilot-matrix под treasurer, make release-gate как обязательный gate пакета. Вне scope: POSTPAY_FIXED_RATE, экспортный overpay-treasurer redesign, PDF primary без курса как отдельный UX-воркшоп.
 
 ## B.2 Documents (2026-08 pilot)
 
@@ -20,15 +24,17 @@ Nest form-payment XLSX and compliance export use real OOXML (export.MinimalXLSX)
 
 ## FE app contour (post-Lovable)
 
-2026-08-31: Lovable sync had regressed FE to demo-only mock; RI re-exec restored JWT app (lib/api, auth session, platform-store, /demo/* isolation). Browser UAT on compose seed ~70–75% (not all B.2 journeys in Playwright). Do not mark W0–W6 closed without files on disk + green gates.
+JWT app contour restored after Lovable sync regression. Волны UX 0–4 и клиентские правки parties wizard docs provider report close закрыты в коде. Shared FilePickButton и rule fe-interaction-contracts закрепляют жест загрузки через filechooser. Browser UAT на compose seed выборочный: PR smoke узкий; pilot-matrix на template fixture; полный матричный browser all roles × all statuses не покрыт. Customer robot fixture pack awaiting_import.
+
+FE ops caveat: default VDP_API_PROXY_TARGET в fe vite и server proxy указывает на alpha host если env не задан; для локального compose задавайте localhost:8080 явно. exactOptionalPropertyTypes в fe tsconfig выключен после sync.
 
 ## CI CD in vdp repo
 
-GitHub Actions: vdp-ci.yml (fast/docs/integration/playwright required User journeys), vdp-release.yml (make release-gate), vdp-images.yml (GHCR digest from branch or tag, GitHub Release catalog, GitLab registry copy), vdp-deploy.yml (alpha/beta/gamma/demo/test compose by digest), vdp-deploy-schedule.yml, vdp-preview.yml, vdp-lovable-sync.yml, vdp-mirror-gitlab.yml. Promote policy API and console live under vdp/release-gate and vdp/release-gate-console; that is not the same as the Makefile target make release-gate. GitLab CI: root .gitlab-ci.yml — parallel regression plus promote jobs without rebuild when Environment secrets exist. Partial CD: six named VMs are not all bootstrapped until ops runs bootstrap-host.sh. Green pipeline ≠ prod product ready.
+GitHub Actions: vdp-ci.yml (fast/docs/integration/playwright; на PR path-filter может включить playwright-pilot-matrix при касании ladder surface), vdp-release.yml (make release-gate), vdp-images.yml (GHCR digest from branch or tag, GitHub Release catalog, GitLab registry copy), vdp-deploy.yml (alpha/beta/gamma/demo/test compose by digest), vdp-deploy-schedule.yml, vdp-preview.yml, vdp-lovable-sync.yml, vdp-mirror-gitlab.yml. Promote policy API and console live under vdp/release-gate and vdp/release-gate-console; that is not the same as the Makefile target make release-gate. GitLab CI: root .gitlab-ci.yml — parallel regression plus promote jobs without rebuild when Environment secrets exist. Partial CD: six named VMs are not all bootstrapped until ops runs bootstrap-host.sh. Green pipeline ≠ prod product ready. Git hooks post-commit post-merge pre-push могут слать TG notify для eng (sanitize).
 
 ## Playwright UI coverage
 
-Playwright: login-form, user-submit, happy-path, completed-journey, reject-path, ico-org, provider-acl, bank-badge, manager-payment, manager-hides-drafts. Full browser matrix all roles × all statuses not covered. Shared catalog scenarioverify; Root /testing runs API scenarios on demand (catalog size ≠ footer form count). Backend compose-e2e covers API journeys including RH2 ICO reject refund full P5 advance shipment. PR smoke includes reject-path + provider-acl.
+Playwright: login-form, user-submit, happy-path, completed-journey, reject-path, ico-org, provider-acl, bank-badge, manager-payment, manager-hides-drafts, wave и pilot-form-flow и pilot-matrix specs. Full browser matrix all roles × all statuses not covered. Shared catalog scenarioverify; Root /testing runs API scenarios on demand (catalog size ≠ footer form count). Backend compose-e2e covers API journeys including RH2 ICO reject refund full P5 advance shipment. PR smoke includes reject-path + provider-acl. Import treasurer и RATE_ON_PP UI journeys не входят в обязательный PR smoke.
 
 ## CTA / process-roles touchpoints
 
@@ -48,7 +54,7 @@ Data migration legacy Nest monolith not in vdp scope. Greenfield seed data only.
 
 ## Out of scope roadmap
 
-Logistics module analytics assistant full BDUI schema engine.
+Logistics module. Product modules analytics and assistant under vdp/analytics and vdp/assistant remain placeholders (.gitkeep). Full BDUI schema engine. Client feedback items waiting Dasha forms: provider return-funds UI and Word cycle for order or report templates.
 
 ## Gap analysis reference
 
@@ -64,7 +70,7 @@ RW1–RW9 copy layer and glossariy synced per RW9 gate. Root wording unchanged b
 
 ## Security prod sign-off
 
-Role ACL tested in unit e2e. Checklist security-signoff-checklist.md; prod config guard rejects dev JWT/S2S secrets. Formal customer sign-off pending.
+Role ACL tested in unit e2e including treasurer AuthZ on confirm. Checklist security-signoff-checklist.md; prod config guard rejects dev JWT/S2S secrets. Formal customer sign-off pending.
 
 ## OCR / document extraction
 

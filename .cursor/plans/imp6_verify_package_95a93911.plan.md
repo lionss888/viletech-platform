@@ -13,7 +13,7 @@ todos:
     status: completed
   - id: imp6-notify
     content: notify-mgmt kind=done продуктовым языком после зелёного gate
-    status: in_progress
+    status: completed
 isProject: false
 ---
 

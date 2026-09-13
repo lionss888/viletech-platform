@@ -8,7 +8,7 @@
 
 Основные задачи: создать заявку, отправить на проверку, загрузить документы, отслеживать статус, подтвердить получение платежа.
 
-Доступные действия: подтверждение заявки, загрузка контрактов и заказов, загрузка документов об оплате, отчётов и отгрузке.
+Доступные действия: подтверждение заявки, загрузка контрактов и заказов, загрузка документов об оплате, отчётов и отгрузке. Документы можно догружать вне terminal-статусов completed и cancel. После submit организация и контрагент на карточке не редактируются клиентом.
 
 ## Internal compliance ICO
 
@@ -28,17 +28,25 @@ Top tasks. Review сделки, accept, reject, corrections loop с User.
 
 ## Manager
 
-Зона. Все заявки, очередь назначения, провайдер, contract, order, payment, refund, close.
+Зона. Все заявки, очередь назначения, провайдер, contract, order, payment, refund, close. Черновики creating и draft клиенту видны, менеджеру в очереди скрыты.
 
-Top tasks. Назначить агента и провайдера, контроль зависаний, закрыть сделку.
+Top tasks. Назначить агента и платёжного провайдера, контроль зависаний, закрыть сделку. На импортной постоплате RATE_ON_PP после payment_sent — зафиксировать курс и режим вознаграждения до доп. поручения.
 
-Действия. mgr_assign_agent, mgr_contract_*, mgr_order_*, mgr_assign_provider, mgr_payment_*, mgr_refund_*, mgr_report_*, mgr_shipment_*, mgr_completed.
+Действия. mgr_assign_agent, mgr_contract_*, mgr_order_*, mgr_assign_provider, mgr_payment_*, mgr_refund_*, mgr_report_*, mgr_shipment_*, mgr_completed. Continuity approve reject когда ICO или ECO выключены в process-roles. На заявке на рассмотрении менеджер не меняет организацию и контрагента клиента.
+
+## Treasurer
+
+Зона. Подтверждение рублёвого покрытия клиента на импорте. Не подменяет менеджера в курсе и поручении.
+
+Top tasks. На авансе: подтвердить поступление рублей на payment_received и передать в payment_processing со сроком исполнения. На POSTPAY_RATE_ON_PP: подтвердить рубли после доп. поручения и перевести к отчёту.
+
+Действия. treasurer confirm-payment (Nest path treasurer), смежные treasurer nesting actions для export PAY_FROM_EXPORT без изменения семантики импорта. AuthZ RoleTreasurer или Root на use case.
 
 ## Provider
 
-Зона. Только назначенные заявки. Без ПДн клиента.
+Зона. Только назначенные заявки. Без ПДн клиента и без агентского договора.
 
-Top tasks. Принять в работу, исполнить платёж, подтвердить платёжку или хеш.
+Top tasks. Принять в работу, исполнить платёж, подтвердить платёжку или хеш. Видит deal documents (инвойс и связанные), может удалить свои файлы до отправки на следующий шаг.
 
 Действия. prov_payment_start, prov_attach_proof, prov_payment_sent, prov_payment_return.
 
@@ -58,6 +66,6 @@ Root bypass. Role root проходит RequireRoles для любой роли 
 
 ## Матрица доступа к заявке
 
-CanAccessForm проверяет CanSeeForm по роли, account id и полям формы. Provider видит только assigned. User видит own org forms. Manager и root видят широкую очередь.
+CanAccessForm проверяет CanSeeForm по роли, account id и полям формы. Provider видит только assigned. User видит own org forms. Manager, treasurer и root видят очередь по своим зонам.
 
 Подробнее lifecycle: [form-lifecycle.md](form-lifecycle.md).
