@@ -49,7 +49,7 @@ flowchart LR
   p1 --> p2 --> p3 --> p4 --> p5 --> p6 --> p7 --> gate
 ```
 
-При старте исполнения: материализовать семь файлов `.cursor/plans/imp7_*.plan.md` … `cicd_import_ops_*.plan.md` из секций ниже (по одному файлу на пакет), затем выполнять по порядку.
+Семь дочерних планов уже материализованы: `.cursor/plans/imp7_*.plan.md` … `cicd_import_ops_*.plan.md` (todo materialize-plans completed). Выполнять по порядку P1→P7.
 
 ---
 
@@ -77,6 +77,8 @@ flowchart LR
 
 **Факты.** HTTP: [`imp2_postpay_rate_on_pp_test.go`](vdp/core/internal/transport/http/imp2_postpay_rate_on_pp_test.go). FE: [`RateCommissionPanel.tsx`](vdp/fe/src/components/ved/RateCommissionPanel.tsx), gating в [`manager-payment.ts`](vdp/fe/src/lib/ved/manager-payment.ts). Browser journey отсутствует. В [`actions.ts`](vdp/fe/src/lib/ved/actions.ts) у `treas_confirm_payment` зашит `nextStatus: "payment_processing"` — для postpay домен ведёт в `report_waiting` (проекция UI врёт).
 
+**Prerequisite:** Старый `pilot-matrix-postpay-rate.spec.ts` стал stale (TEST_STALE: ожидает несуществующую кнопку "Создать черновик" на wizard-terms-step) — удалить или переименовать перед началом P2.
+
 **Работы.**
 - Новый `@pilot-matrix` spec (или ветка в full-ladder): import + `post_payment` → auto mode → provider до рублей → panel rate+один reward_mode → `mgr_advance_signing` (блок без rate) → user upload advance order → treasurer confirm → статус `report_waiting`.
 - Исправить UI projection `treas_confirm_payment`: nextStatus зависит от маршрута (advance → `payment_processing`, RATE_ON_PP → `report_waiting`) согласованно с доменом; unit в `manager-payment.test.ts` / actions test.
@@ -93,7 +95,7 @@ flowchart LR
 **Цель.** Один spine + явные ветки без расхождения CTA/AuthZ/docs.
 
 **Работы.**
-- Матрица сверки (таблица в ответе/plan progress, не новый ops-doc без нужды): advance / RATE_ON_PP / continuity без ICO·ECO / corrections / refund / provider return — статус × роль × действие vs [`actions.ts`](vdp/fe/src/lib/ved/actions.ts) + domain `RoleMayPerform` + bridge.
+- Построить таблицу сверки в прогрессе плана P3 (не ops-doc): advance / RATE_ON_PP / continuity без ICO·ECO / corrections / refund / provider return — статус × роль × действие vs [`actions.ts`](vdp/fe/src/lib/ved/actions.ts) + domain `RoleMayPerform` + bridge.
 - Починить найденные расхождения проекции (по образцу treasurer nextStatus); не добавлять продуктовые фичи.
 - Зафиксировать в [`form-lifecycle.md`](vdp/docs/domain/form-lifecycle.md): pilot happy path = report→completed; shipment — ветка, не обязательный ladder.
 - Точечные unit/continuity contract, если CTA менялись.
@@ -155,8 +157,8 @@ flowchart LR
 **Цель.** Path-filter ловит postpay/IMP surface; local proxy не молчит в gaps.
 
 **Работы.**
-- Расширить regex в [`vdp-ci.yml`](../.github/workflows/vdp-ci.yml) `detect-pilot-matrix`: добавить `RateCommissionPanel.tsx`, `manager-payment.ts`, `forms-rate-commission` / nest treasurer paths по факту файлов P2.
-- [`known-gaps.md`](vdp/docs/pilot/known-gaps.md): явный local `VDP_API_PROXY_TARGET=http://localhost:8080`; partial CD VM без изменения bootstrap.
+- Расширить regex в [`vdp-ci.yml`](../.github/workflows/vdp-ci.yml) `detect-pilot-matrix`: добавить `RateCommissionPanel.tsx`, `manager-payment.ts`, `forms-rate-commission` / nest treasurer paths по факту файлов P2. Path-filter для pilot runs (ci-pr-pilot) и ревью; PR Playwright остаётся узким (4 required specs без полной postpay ladder).
+- [`known-gaps.md`](vdp/docs/pilot/known-gaps.md): добавить явное упоминание — для локальной работы нужен `export VDP_API_PROXY_TARGET=http://localhost:8080` (или через .env), без этого proxy молчит; partial CD VM без изменения bootstrap.
 - Не делать `release-gate` обязательным на PR; не расширять PR Playwright до полной матрицы.
 
 **DoD.** Path-filter покрывает IMP FE+domain; docs caveat proxy; workflow валиден.
@@ -170,7 +172,7 @@ flowchart LR
 1. Целевые: `go test ./core/internal/transport/http/ -run 'IMP1|IMP2|IMP3'` + FE unit rate/commission/manager-payment.
 2. **`make ci-pr-pilot`** (PR-паритет + `@pilot-matrix` с advance deadline и postpay ladder).
 3. Синхрон [`readiness-and-limits.md`](vdp/docs/pilot/readiness-and-limits.md) датой/формулировками browser coverage.
-4. `notify-mgmt` kind=`done` продуктовым языком после зелёного gate (`mgmt-tg-notify`).
+4. `notify-mgmt` kind=`done` продуктовым языком ТОЛЬКО после зелёного ci-pr-pilot (один на всю серию P1-P7, не на каждый пакет; согласованно с `mgmt-tg-notify` rule).
 
 `make release-gate` — вне этой серии (handover отдельно).
 

@@ -4,10 +4,10 @@ overview: "Доказать импорт аванс §10.2 в браузере: 
 todos:
   - id: imp7-deadline-e2e
     content: Расширить pilot-matrix: deadline modal казначея + assert payment_processing
-    status: pending
+    status: completed
   - id: imp7-playwright
     content: Прогнать make playwright-pilot-matrix
-    status: pending
+    status: in_progress
   - id: imp7-docs-sync
     content: Обновить known-gaps + form-lifecycle по advance treasurer
     status: pending

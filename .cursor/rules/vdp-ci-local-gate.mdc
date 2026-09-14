@@ -5,7 +5,7 @@ alwaysApply: true
 
 # VDP: локальная страховка CI (Cursor process)
 
-Источник: паритет с `.github/workflows/vdp-ci.yml`. Команды — из каталога `vdp`. Связано: `тесты-архитектуры`, `честность-готовности`, `vdp-fe-docker-пересборка`, `mgmt-tg-notify`, `docs/conventions/format.md`.
+Источник: паритет с `.github/workflows/vdp-ci.yml`. Команды — из каталога `vdp`. Связано: `тесты-архитектуры`, `честность-готовности`, `vdp-fe-docker-пересборка`, `mgmt-tg-notify`, `docs/conventions/format.md`, `планирование-сверка-с-rules` (имя gate в DoD плана с первой версии).
 
 ## Лестница gate (не путать)
 
