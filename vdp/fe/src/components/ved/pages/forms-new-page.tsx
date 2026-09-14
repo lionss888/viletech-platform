@@ -766,61 +766,63 @@ export function NewForm() {
         )}
 
         <div className="mt-6 flex flex-col gap-2">
-          <div className="flex flex-wrap gap-2">
-            {step < WIZARD_STEPS.length - 1 ? (
-              <button
-                type="button"
-                onClick={() => void nextStep()}
-                disabled={bootstrapping}
-                className="flex-1 rounded-md bg-primary px-4 py-2.5 text-sm font-semibold text-primary-foreground disabled:opacity-50"
-              >
-                {bootstrapping ? "Создание…" : "Далее"}
-              </button>
-            ) : (
-              <>
-                <button
-                  type="button"
-                  onClick={() => void finalize("submit")}
-                  disabled={submitting}
-                  data-testid="wizard-send-manager"
-                  className="flex-1 rounded-md bg-accent px-4 py-2.5 text-sm font-semibold text-accent-foreground disabled:opacity-50"
-                >
-                  {submitting ? "Отправка…" : "Отправить менеджеру"}
-                </button>
-                <button
-                  type="button"
-                  onClick={() => void finalize("draft")}
-                  disabled={submitting}
-                  data-testid="wizard-save-draft"
-                  className="flex-1 rounded-md bg-muted px-4 py-2.5 text-sm font-semibold text-foreground disabled:opacity-50"
-                >
-                  {submitting ? "Сохранение…" : "Сохранить черновик"}
-                </button>
-              </>
-            )}
-            {step === WIZARD_STEP.docs && (
-              <button
-                type="button"
-                onClick={() => setField("noDocuments", !draft.noDocuments)}
-                className={cn(
-                  "flex-1 rounded-md px-4 py-2.5 text-sm font-semibold",
-                  draft.noDocuments ? "bg-[#C45D02]/[0.08] text-[#C45D02]" : "bg-muted text-muted-foreground",
-                )}
-                data-testid="wizard-no-documents"
-              >
-                {draft.noDocuments ? "✓ У меня нет документов" : "У меня нет документов"}
-              </button>
-            )}
+          <div className="flex items-center gap-2">
             {step > 0 && (
               <button
                 type="button"
                 onClick={() => setStep(step - 1)}
-                className="flex-1 rounded-md px-4 py-2.5 text-sm font-semibold text-muted-foreground hover:bg-muted"
+                className="shrink-0 rounded-md px-3 py-2.5 text-sm font-semibold bg-primary/[0.08] text-primary sm:bg-transparent sm:text-muted-foreground sm:hover:bg-muted"
               >
-                Назад
+                ← Назад
               </button>
             )}
+            <div className="flex flex-1 flex-wrap gap-2">
+              {step < WIZARD_STEPS.length - 1 ? (
+                <button
+                  type="button"
+                  onClick={() => void nextStep()}
+                  disabled={bootstrapping}
+                  className="flex-1 rounded-md bg-primary px-4 py-2.5 text-sm font-semibold text-primary-foreground disabled:opacity-50"
+                >
+                  {bootstrapping ? "Создание…" : "Далее"}
+                </button>
+              ) : (
+                <>
+                  <button
+                    type="button"
+                    onClick={() => void finalize("submit")}
+                    disabled={submitting}
+                    data-testid="wizard-send-manager"
+                    className="flex-1 rounded-md bg-accent px-4 py-2.5 text-sm font-semibold text-accent-foreground disabled:opacity-50"
+                  >
+                    {submitting ? "Отправка…" : "Отправить менеджеру"}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => void finalize("draft")}
+                    disabled={submitting}
+                    data-testid="wizard-save-draft"
+                    className="flex-1 rounded-md bg-muted px-4 py-2.5 text-sm font-semibold text-foreground disabled:opacity-50"
+                  >
+                    {submitting ? "Сохранение…" : "Сохранить черновик"}
+                  </button>
+                </>
+              )}
+            </div>
           </div>
+          {step === WIZARD_STEP.docs && (
+            <button
+              type="button"
+              onClick={() => setField("noDocuments", !draft.noDocuments)}
+              className={cn(
+                "w-full rounded-md px-4 py-2.5 text-sm font-semibold",
+                draft.noDocuments ? "bg-[#C45D02]/[0.08] text-[#C45D02]" : "bg-muted text-muted-foreground",
+              )}
+              data-testid="wizard-no-documents"
+            >
+              {draft.noDocuments ? "✓ У меня нет документов" : "У меня нет документов"}
+            </button>
+          )}
           {step === WIZARD_STEP.review && !draft.noDocuments && (
             <p className="text-xs text-muted-foreground">{CREATE_REVIEW_OCR_CAPTION}</p>
           )}
