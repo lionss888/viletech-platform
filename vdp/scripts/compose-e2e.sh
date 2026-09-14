@@ -62,6 +62,7 @@ USER_T=$(login user@vdp.local user)
 ICO_T=$(login ico@vdp.local ico)
 ECO_T=$(login eco@vdp.local eco)
 MGR_T=$(login manager@vdp.local manager)
+TREAS_T=$(login treasurer@vdp.local treasurer)
 PROV_T=$(login provider@vdp.local provider)
 
 echo "== create form =="
@@ -358,5 +359,69 @@ if [[ -z "$RATE_VAL" ]]; then
 fi
 echo "manager_sets_deal_rate ok form=$ID10 rate=$RATE_VAL"
 
+echo "== IMP1_import_advance_treasurer (P5) =="
+FORM11=$(auth_post "$USER_T" /api/v1/site/form-payment \
+  '{"direction":"import","payment_method":"advance","currency":"USD","invoice_amount":"1000","no_documents":true,"contract_number":"IMP1-ADV"}')
+ID11=$(echo "$FORM11" | python3 -c 'import sys,json; print(json.load(sys.stdin)["id"])')
+auth_post "$USER_T" "/api/v1/forms/$ID11/actions/recognize_complete" '{}' >/dev/null
+auth_put "$USER_T" "/api/v1/site/form-payment/$ID11/form/accept"
+advance_compliance "$ID11"
+auth_put "$MGR_T" "/api/v1/manager/form-payment/$ID11/order/signing"
+auth_put "$USER_T" "/api/v1/site/form-payment/$ID11/order"
+auth_put "$MGR_T" "/api/v1/manager/form-payment/$ID11/order/start"
+auth_put "$MGR_T" "/api/v1/manager/form-payment/$ID11/order/accept"
+auth_put "$MGR_T" "/api/v1/manager/form-payment/$ID11/payment/received"
+auth_post "$MGR_T" "/api/v1/forms/$ID11/provider" \
+  '{"provider_id":"55555555-5555-5555-5555-555555555555","client_agreed":true}' >/dev/null
+# Import advance: treasurer confirms RUB coverage → payment_processing (not mgr payment_start)
+curl -sf -X PATCH "$BASE/api/v1/treasurer/form-payment/$ID11/confirm-payment" \
+  -H "Authorization: Bearer $TREAS_T" -H 'Content-Type: application/json' -d '{}' >/dev/null
+ST11=$(form_status "$MGR_T" "/api/v1/manager/form-payment/$ID11")
+if [[ "$ST11" != "payment_processing" ]]; then
+  echo "FAIL IMP1 treas confirm status=$ST11 want payment_processing form=$ID11" >&2
+  exit 1
+fi
+echo "IMP1_import_advance_treasurer ok form=$ID11"
+
+echo "== IMP2_import_postpay_RATE_ON_PP (P5) =="
+FORM12=$(auth_post "$USER_T" /api/v1/site/form-payment \
+  '{"direction":"import","payment_method":"post_payment","currency":"USD","invoice_amount":"800","no_documents":true,"contract_number":"IMP2-PP"}')
+ID12=$(echo "$FORM12" | python3 -c 'import sys,json; print(json.load(sys.stdin)["id"])')
+auth_post "$USER_T" "/api/v1/forms/$ID12/actions/recognize_complete" '{}' >/dev/null
+auth_put "$USER_T" "/api/v1/site/form-payment/$ID12/form/accept"
+advance_compliance "$ID12"
+auth_put "$MGR_T" "/api/v1/manager/form-payment/$ID12/order/signing"
+auth_put "$USER_T" "/api/v1/site/form-payment/$ID12/order"
+auth_put "$MGR_T" "/api/v1/manager/form-payment/$ID12/order/start"
+auth_put "$MGR_T" "/api/v1/manager/form-payment/$ID12/order/accept"
+auth_post "$MGR_T" "/api/v1/forms/$ID12/provider" \
+  '{"provider_id":"55555555-5555-5555-5555-555555555555","client_agreed":true}' >/dev/null
+# Postpay: mgr starts, provider executes first (no RUB yet)
+auth_put "$MGR_T" "/api/v1/manager/form-payment/$ID12/payment/start"
+auth_put "$PROV_T" "/api/v1/provider/form-payment/$ID12/payment/start"
+auth_put "$PROV_T" "/api/v1/provider/form-payment/$ID12/payment/sent"
+ST12A=$(form_status "$MGR_T" "/api/v1/manager/form-payment/$ID12")
+if [[ "$ST12A" != "payment_sent" ]]; then
+  echo "FAIL IMP2 provider sent status=$ST12A want payment_sent form=$ID12" >&2
+  exit 1
+fi
+# Manager: rate + commission → advance order
+auth_post "$MGR_T" "/api/v1/forms/$ID12/rate" '{"value":"95","currency":"USD","source":"manual"}' >/dev/null
+auth_post "$MGR_T" "/api/v1/forms/$ID12/commission" '{"reward_mode":"percent","fee_percent":"1.5","fee_currency":"USD"}' >/dev/null
+auth_put "$MGR_T" "/api/v1/manager/form-payment/$ID12/order-advance/signing"
+auth_put "$USER_T" "/api/v1/site/form-payment/$ID12/order-advance"
+auth_put "$MGR_T" "/api/v1/manager/form-payment/$ID12/order-advance/start"
+auth_put "$MGR_T" "/api/v1/manager/form-payment/$ID12/order-advance/accept"
+auth_put "$MGR_T" "/api/v1/manager/form-payment/$ID12/payment/received"
+# Treasurer confirm for RATE_ON_PP → report_waiting (not payment_processing)
+curl -sf -X PATCH "$BASE/api/v1/treasurer/form-payment/$ID12/confirm-payment" \
+  -H "Authorization: Bearer $TREAS_T" -H 'Content-Type: application/json' -d '{}' >/dev/null
+ST12B=$(form_status "$MGR_T" "/api/v1/manager/form-payment/$ID12")
+if [[ "$ST12B" != "report_waiting" ]]; then
+  echo "FAIL IMP2 treas confirm postpay status=$ST12B want report_waiting form=$ID12" >&2
+  exit 1
+fi
+echo "IMP2_import_postpay_RATE_ON_PP ok form=$ID12"
+
 curl -sf -X POST "$BASE/api/v1/internal/outbox/flush" -H "X-VDP-S2S: $S2S" >/dev/null
-echo "RH10 compose E2E green (main=$ID RD7=$ID3 RD8=$ID4 RH2=$ID6 P5=$ID8 ret=$ID9 rate=$ID10)"
+echo "RH10 compose E2E green (main=$ID RD7=$ID3 RD8=$ID4 RH2=$ID6 P5=$ID8 ret=$ID9 rate=$ID10 IMP1=$ID11 IMP2=$ID12)"

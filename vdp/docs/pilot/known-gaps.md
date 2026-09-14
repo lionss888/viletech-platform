@@ -16,7 +16,7 @@ Nest form-payment XLSX and compliance export use real OOXML (export.MinimalXLSX)
 
 ## Import routes IMP package
 
-Пакет IMP0–IMP6 закрыт на уровне домена API и кабинетов Manager или Treasurer. Аванс: казначей confirm-payment → payment_processing. Постоплата POSTPAY_RATE_ON_PP: provider-first, курс и три режима вознаграждения после ПП, доп. поручение, казначей → report_waiting. Verify: unit HTTP FE unit и make ci-pr. Не заявлено: полный browser journey аванса и постоплаты, расширение pilot-matrix под treasurer, make release-gate как обязательный gate пакета. Вне scope: POSTPAY_FIXED_RATE, экспортный overpay-treasurer redesign, PDF primary без курса как отдельный UX-воркшоп.
+Пакет IMP0–IMP7 закрыт на уровне домена API и кабинетов Manager или Treasurer. Аванс: казначей confirm-payment с опциональным execution_deadline → payment_processing (IMP7 @pilot-matrix); API rate/commission доступен до signing_order для §10.2 п.1 primary-фиксации (r12_verification_test.go), UI workshop отдельно. Постоплата POSTPAY_RATE_ON_PP: provider-first, курс и три режима вознаграждения после ПП, доп. поручение, казначей → report_waiting. Verify: unit HTTP FE unit и make ci-pr. Не заявлено: полный browser journey постоплаты, полный wizard payment_method:advance end-to-end, make release-gate как обязательный gate пакета. Вне scope: POSTPAY_FIXED_RATE, экспортный overpay-treasurer redesign, PDF primary без курса как отдельный UX-воркшоп.
 
 ## B.2 Documents (2026-08 pilot)
 
@@ -26,7 +26,7 @@ Nest form-payment XLSX and compliance export use real OOXML (export.MinimalXLSX)
 
 JWT app contour restored after Lovable sync regression. Волны UX 0–4 и клиентские правки parties wizard docs provider report close закрыты в коде. Shared FilePickButton и rule fe-interaction-contracts закрепляют жест загрузки через filechooser. Browser UAT на compose seed выборочный: PR smoke узкий; pilot-matrix на template fixture; полный матричный browser all roles × all statuses не покрыт. Customer robot fixture pack awaiting_import.
 
-FE ops caveat: default VDP_API_PROXY_TARGET в fe vite и server proxy указывает на alpha host если env не задан; для локального compose задавайте localhost:8080 явно. exactOptionalPropertyTypes в fe tsconfig выключен после sync.
+FE ops caveat: default VDP_API_PROXY_TARGET в fe vite и server proxy указывает на alpha host если env не задан; для локального compose задавайте `VDP_API_PROXY_TARGET=http://localhost:8080` явно перед запуском dev-сервера. exactOptionalPropertyTypes в fe tsconfig выключен после sync.
 
 ## CI CD in vdp repo
 

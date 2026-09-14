@@ -24,7 +24,7 @@ completed — закрытие сделки.
 
 Метод оплаты advance (или пустой method в MVP). После подписанного поручения клиент платит рубли агенту. Менеджер фиксирует поступление в payment_received. Казначей (роль treasurer) подтверждает покрытие через confirm-payment с опциональным сроком исполнения. Переход: payment_received → payment_processing. Далее провайдер исполняет валютный платёж. Менеджерский payment_start на авансе после казначея скрыт в UI.
 
-Покрытие: unit и HTTP (IMP1), кабинет казначея (IMP4). Полный browser journey аванса в Playwright не заявлен.
+Покрытие: unit и HTTP (IMP1), кабинет казначея (IMP4), @pilot-matrix deadline E2E (IMP7). Полный wizard payment_method:advance end-to-end не заявлен.
 
 ## Импорт: постоплата RATE_ON_PP
 
@@ -55,6 +55,8 @@ report/accept может перевести напрямую в completed в com
 ## Compose E2E reference path
 
 Один form id проходит User submit, ICO, ECO, assign agent, contract, order, payment_received, assign provider, payment_start, provider_sent, report upload и accept, completed. Детали в development/testing.md. Импортные ветки аванс и RATE_ON_PP покрыты целевыми Go HTTP и FE unit тестами пакета IMP, не полным compose browser ladder.
+
+Pilot happy path: report → completed. Shipment — отдельная ветка, не обязательный ladder после report accept. Manager может вести заявку в completed сразу после подтверждённого отчёта без обязательной лестницы отгрузки.
 
 ## UI projection
 

@@ -195,7 +195,7 @@ const MATRIX: Record<VedRole, Record<string, FormAction[]>> = {
         label: "Подтвердить покрытие",
         tone: "accent",
         confirm: "Подтвердить заход рублёвого покрытия и передать в исполнение?",
-        nextStatus: "payment_processing",
+        // nextStatus depends on payment route: advance → payment_processing, RATE_ON_PP → report_waiting (§10.2/10.3)
       },
     ],
   },

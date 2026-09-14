@@ -203,7 +203,7 @@ jobs:
           echo "Changed files (sample):"
           printf '%s\n' "$changed" | head -40
           if printf '%s\n' "$changed" | grep -E \
-            '^(vdp/fe/e2e/|vdp/fe/src/lib/ved/actions\.ts|vdp/fe/src/components/ved/ActionPanel\.tsx|vdp/core/internal/domain/formpayment/|vdp/core/internal/service/(contract|form_payment_assign)\.go)'; then
+            '^(vdp/fe/e2e/|vdp/fe/src/lib/ved/actions\.ts|vdp/fe/src/lib/ved/manager-payment\.ts|vdp/fe/src/lib/api/forms-rate-commission|vdp/fe/src/components/ved/(ActionPanel|RateCommissionPanel)\.tsx|vdp/core/internal/domain/formpayment/|vdp/core/internal/service/(contract|form_payment_assign|form_payment_nest)\.go|vdp/core/internal/transport/http/nest_form_routes\.go)'; then
             echo "run=true" >> "$GITHUB_OUTPUT"
             echo "pilot-matrix required for this PR"
           else

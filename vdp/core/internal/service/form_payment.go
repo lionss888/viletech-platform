@@ -389,6 +389,8 @@ func (s *FormPaymentService) SetRate(ctx context.Context, principal authz.Princi
 	return form, nil
 }
 
+// SetCommission fixes deal commission with reward mode (fixed / percent / percent_plus_fixed).
+// Validates and normalizes input (§10.5). Role: Manager/Treasurer/User or Root. No status change; stored for order generation.
 func (s *FormPaymentService) SetCommission(ctx context.Context, principal authz.Principal, formID string, commission formpayment.Commission) (formpayment.Form, error) {
 	if err := authz.AuthorizeRoles(principal, domain.RoleManager, domain.RoleTreasurer, domain.RoleRoot, domain.RoleUser); err != nil {
 		return formpayment.Form{}, err

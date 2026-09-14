@@ -24,6 +24,9 @@ func (s *FormPaymentService) TransitionByNestPath(ctx context.Context, principal
 
 // TreasurerConfirmPayment confirms client RUB coverage (import advance) or export cover path.
 // Optional deadline is stored before the status transition (§10.2).
+// TreasurerConfirmPayment confirms RUB coverage for import advance (§10.2) or postpay RATE_ON_PP after advance order (§10.3).
+// For import advance: transition payment_received → payment_processing. For RATE_ON_PP: → report_waiting.
+// Optional deadline sets ExecutionDeadline before transition. Role: Treasurer or Root.
 func (s *FormPaymentService) TreasurerConfirmPayment(ctx context.Context, principal authz.Principal, formID string, deadline *time.Time) (formpayment.Form, error) {
 	if err := authz.AuthorizeRoles(principal, domain.RoleTreasurer, domain.RoleRoot); err != nil {
 		return formpayment.Form{}, err
