@@ -21,6 +21,8 @@ jobs:
     name: test (go + fe)
     runs-on: ubuntu-latest
     timeout-minutes: 15
+    env:
+      CI: "true"
     steps:
       - uses: actions/checkout@v4
 
@@ -29,11 +31,12 @@ jobs:
           go-version: "1.22"
           cache-dependency-path: инструменты/vedy_bot/go.sum
 
+      # No npm cache. FE install wipes node_modules + package-lock.json then
+      # npm install fresh so rolldown platform/WASI bindings resolve on Linux
+      # (npm optional-deps bug: https://github.com/npm/cli/issues/4828).
       - uses: actions/setup-node@v4
         with:
-          node-version: "22"
-          cache: npm
-          cache-dependency-path: инструменты/vedy_bot/fe/package-lock.json
+          node-version-file: инструменты/vedy_bot/fe/.nvmrc
 
       - name: Go unit tests
         working-directory: инструменты/vedy_bot
@@ -43,11 +46,22 @@ jobs:
         working-directory: инструменты/vedy_bot
         run: make fe-test
 
+      - name: Verify rolldown native binding
+        working-directory: инструменты/vedy_bot/fe
+        run: |
+          node --input-type=module -e "await import('rolldown'); console.log('rolldown native binding ok')"
+          test -d node_modules/@rolldown/binding-linux-x64-gnu \
+            -o -d node_modules/@rolldown/binding-linux-x64-musl \
+            -o -d node_modules/@rolldown/binding-wasm32-wasi \
+            || { echo "missing rolldown platform binding"; ls -la node_modules/@rolldown/ || true; exit 1; }
+
   smoke:
     name: smoke (console without TG)
     runs-on: ubuntu-latest
     timeout-minutes: 10
     needs: [test]
+    env:
+      CI: "true"
     steps:
       - uses: actions/checkout@v4
 
@@ -58,9 +72,7 @@ jobs:
 
       - uses: actions/setup-node@v4
         with:
-          node-version: "22"
-          cache: npm
-          cache-dependency-path: инструменты/vedy_bot/fe/package-lock.json
+          node-version-file: инструменты/vedy_bot/fe/.nvmrc
 
       - name: Build FE
         working-directory: инструменты/vedy_bot

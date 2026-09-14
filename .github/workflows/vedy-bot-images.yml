@@ -100,16 +100,17 @@ jobs:
       (needs.wait-for-ci.result == 'success' || needs.wait-for-ci.result == 'skipped')
     runs-on: ubuntu-latest
     timeout-minutes: 20
+    env:
+      CI: "true"
     steps:
       - uses: actions/checkout@v4
         with:
           ref: ${{ needs.prepare.outputs.build_ref }}
 
+      # No npm cache — rolldown optional native bindings (npm/cli#4828)
       - uses: actions/setup-node@v4
         with:
-          node-version: "22"
-          cache: npm
-          cache-dependency-path: инструменты/vedy_bot/fe/package-lock.json
+          node-version-file: инструменты/vedy_bot/fe/.nvmrc
 
       - name: Build FE (host Nitro)
         working-directory: инструменты/vedy_bot
