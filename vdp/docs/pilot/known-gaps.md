@@ -1,6 +1,6 @@
 # Известные пробелы
 
-Честный список ограничений MVP. Не блокеры для пилот demo при принятии оговорок readiness-and-limits.md. Дата сверки 2026-09-13 после пакета импортных маршрутов IMP0–IMP6 и волн UX 0–4.
+Честный список ограничений MVP. Не блокеры для пилот demo при принятии оговорок readiness-and-limits.md. Дата сверки 2026-09-14 после пакета импортных маршрутов IMP0–IMP7, P1–P7, pilot-matrix browser IMP8 postpay и волн UX 0–4.
 
 ## Nest parity semantics
 
@@ -16,7 +16,7 @@ Nest form-payment XLSX and compliance export use real OOXML (export.MinimalXLSX)
 
 ## Import routes IMP package
 
-Пакет IMP0–IMP7 закрыт на уровне домена API и кабинетов Manager или Treasurer. Аванс: казначей confirm-payment с опциональным execution_deadline → payment_processing (IMP7 @pilot-matrix); API rate/commission доступен до signing_order для §10.2 п.1 primary-фиксации (r12_verification_test.go), UI workshop отдельно. Постоплата POSTPAY_RATE_ON_PP: provider-first, курс и три режима вознаграждения после ПП, доп. поручение, казначей → report_waiting. Verify: unit HTTP FE unit и make ci-pr. Не заявлено: полный browser journey постоплаты, полный wizard payment_method:advance end-to-end, make release-gate как обязательный gate пакета. Вне scope: POSTPAY_FIXED_RATE, экспортный overpay-treasurer redesign, PDF primary без курса как отдельный UX-воркшоп.
+Пакет IMP0–IMP7 закрыт на уровне домена API и кабинетов Manager или Treasurer. Аванс: казначей confirm-payment с опциональным execution_deadline → payment_processing (IMP7 @pilot-matrix); API rate/commission доступен до signing_order для §10.2 п.1 primary-фиксации (r12_verification_test.go), UI workshop отдельно. Постоплата POSTPAY_RATE_ON_PP: provider-first, курс и три режима вознаграждения после ПП, доп. поручение, казначей → report_waiting; полный browser ladder до completed в pilot-matrix-postpay-rate (IMP8 @pilot-matrix). Verify: unit HTTP FE unit make ci-pr и make playwright-pilot-matrix. Не заявлено: полный wizard payment_method:advance end-to-end, make release-gate как обязательный gate пакета. Вне scope: POSTPAY_FIXED_RATE, экспортный overpay-treasurer redesign, PDF primary без курса как отдельный UX-воркшоп.
 
 ## B.2 Documents (2026-08 pilot)
 
@@ -34,7 +34,7 @@ GitHub Actions: vdp-ci.yml (fast/docs/integration/playwright; на PR path-filte
 
 ## Playwright UI coverage
 
-Playwright: login-form, user-submit, happy-path, completed-journey, reject-path, ico-org, provider-acl, bank-badge, manager-payment, manager-hides-drafts, wave и pilot-form-flow и pilot-matrix specs. Full browser matrix all roles × all statuses not covered. Shared catalog scenarioverify; Root /testing runs API scenarios on demand (catalog size ≠ footer form count). Backend compose-e2e covers API journeys including RH2 ICO reject refund full P5 advance shipment. PR smoke includes reject-path + provider-acl. Import treasurer и RATE_ON_PP UI journeys не входят в обязательный PR smoke.
+Playwright: login-form, user-submit, happy-path, completed-journey, reject-path, ico-org, provider-acl, bank-badge, manager-payment, manager-hides-drafts, wave и pilot-form-flow и pilot-matrix specs включая pilot-matrix-full-ladder (advance treasurer deadline) и pilot-matrix-postpay-rate (POSTPAY_RATE_ON_PP). Full browser matrix all roles × all statuses not covered. Shared catalog scenarioverify; Root /testing runs API scenarios on demand (catalog size ≠ footer form count). Backend compose-e2e covers API journeys including RH2 ICO reject refund full P5 advance shipment. PR smoke includes reject-path + provider-acl. Import treasurer и RATE_ON_PP UI journeys не входят в обязательный PR smoke; gate make playwright-pilot-matrix или path-filter на ladder surface.
 
 ## CTA / process-roles touchpoints
 

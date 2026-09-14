@@ -12,7 +12,7 @@ import {
 } from "@/lib/ved/extraction";
 import { cn } from "@/lib/utils";
 
-type Props = {
+export type ExtractionReviewPanelProps = {
   formId: string;
   invoiceJson?: string;
   role: string;
@@ -20,8 +20,16 @@ type Props = {
   noDocuments?: boolean;
   hasDocuments?: boolean;
   canConfirm?: boolean;
+  /** Omit panel chrome when rendered inside a dialog/sheet. */
+  embedded?: boolean;
+  /** Called after successful confirm (e.g. close dialog). */
+  onConfirmed?: () => void;
 };
 
+/**
+ * OCR extraction review: start/cancel/confirm and editable header/line items.
+ * Use `embedded` inside Modal/Sheet; default is a card panel on the form page.
+ */
 export function ExtractionReviewPanel({
   formId,
   invoiceJson,
@@ -30,7 +38,9 @@ export function ExtractionReviewPanel({
   noDocuments = false,
   hasDocuments = false,
   canConfirm = true,
-}: Props) {
+  embedded = false,
+  onConfirmed,
+}: ExtractionReviewPanelProps) {
   const qc = useQueryClient();
   const parsed = parseExtractionResult(invoiceJson);
   const [draft, setDraft] = useState<ExtractionResult | null>(parsed);
@@ -53,6 +63,7 @@ export function ExtractionReviewPanel({
       );
       void qc.invalidateQueries({ queryKey: ["form", formId] });
       void qc.invalidateQueries({ queryKey: ["forms"] });
+      onConfirmed?.();
       requestAnimationFrame(() => {
         document.getElementById("form-params")?.scrollIntoView({ behavior: "smooth", block: "start" });
         document.getElementById("form-params")?.classList.add("ring-2", "ring-accent");
@@ -94,6 +105,9 @@ export function ExtractionReviewPanel({
   const showControls = canControlExtraction(role, status);
   if (mode === "hide") return null;
 
+  const shellClass = embedded ? "space-y-3" : "panel space-y-3 p-4";
+  const idleShellClass = embedded ? "space-y-2" : "panel space-y-2 p-4";
+
   const controlBar =
     showControls ? (
       <div className="flex flex-wrap gap-2" data-testid="extraction-controls">
@@ -120,16 +134,16 @@ export function ExtractionReviewPanel({
 
   if (mode === "idle" || mode === "pending") {
     return (
-      <section className="panel space-y-2 p-4" data-testid={mode === "pending" ? "extraction-pending" : "extraction-idle"}>
-        <h2 className="text-sm font-semibold text-foreground">Распознавание</h2>
+      <div className={idleShellClass} data-testid={mode === "pending" ? "extraction-pending" : "extraction-idle"}>
+        {!embedded ? <h2 className="text-sm font-semibold text-foreground">Распознавание</h2> : null}
         <p className="text-sm text-muted-foreground">
           {mode === "pending"
             ? "Документы распознаются в фоне. Когда появятся данные — проверьте их здесь."
-            : "Загрузите документы ниже, затем запустите распознавание — или заполните параметры вручную."}
+            : "Загрузите документы, затем запустите распознавание — или заполните параметры вручную."}
         </p>
         {controlBar}
         {controlError ? <p className="text-xs text-destructive">{controlError}</p> : null}
-      </section>
+      </div>
     );
   }
   if (!draft) return null;
@@ -145,9 +159,9 @@ export function ExtractionReviewPanel({
   };
 
   return (
-    <section className="panel space-y-3 p-4" data-testid="extraction-review">
+    <div className={shellClass} data-testid="extraction-review">
       <div className="flex flex-wrap items-baseline justify-between gap-2">
-        <h2 className="text-sm font-semibold text-foreground">Распознанные данные</h2>
+        {!embedded ? <h2 className="text-sm font-semibold text-foreground">Распознанные данные</h2> : null}
         <p className="text-xs text-muted-foreground">
           {draft.meta.engine_id ?? "engine"} · проверьте позиции перед подтверждением
         </p>
@@ -277,6 +291,6 @@ export function ExtractionReviewPanel({
       {mutation.isError ? (
         <p className="text-xs text-destructive">Не удалось сохранить. Повторите или заполните вручную.</p>
       ) : null}
-    </section>
+    </div>
   );
 }

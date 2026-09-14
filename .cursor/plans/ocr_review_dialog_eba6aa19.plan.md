@@ -4,19 +4,19 @@ overview: Переместить блок распознанных данных 
 todos:
   - id: extraction-dialog-component
     content: Создать ExtractionReviewDialog.tsx с modal/sheet паттерном
-    status: in_progress
+    status: completed
   - id: form-detail-integration
     content: Убрать инлайн-панель, добавить CTA + dialog в form-detail-page
-    status: pending
+    status: completed
   - id: unit-tests
     content: Написать unit-тесты для ExtractionReviewDialog
-    status: pending
+    status: completed
   - id: e2e-update
     content: "Обновить E2E specs: клик trigger → ждать диалог"
-    status: pending
+    status: completed
   - id: local-repro
     content: "Проверить на localhost: desktop modal + mobile sheet"
-    status: pending
+    status: in_progress
   - id: ci-pr-gate
     content: Прогнать make ci-pr перед готовностью
     status: pending

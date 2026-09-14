@@ -30,7 +30,7 @@ completed — закрытие сделки.
 
 При direction import и payment_method post_payment платформа автоматически выставляет platform_postpay_mode POSTPAY_RATE_ON_PP. Primary-поручение допускается без курса (процент вознаграждения возможен). После подписи менеджер передаёт провайдеру без ожидания рублёвого покрытия клиента. Провайдер исполняет и прикладывает ПП (payment_sent). Менеджер фиксирует курс и режим вознаграждения (fixed, percent или percent_plus_fixed), затем формируется дополнительное поручение (контур ADVANCE_*). Клиент подписывает доп. поручение и платит рубли. Казначей подтверждает покрытие: переход к report_waiting. Этот порядок переопределяет общее правило «клиент платит до провайдера» только для POSTPAY_RATE_ON_PP.
 
-Покрытие: домен и API (IMP2), режимы вознаграждения (IMP3), FE панель курса и комиссии плюс gating advance signing без rate (IMP5). Полный browser E2E постоплаты не заявлен. Режим POSTPAY_FIXED_RATE вне scope пакета.
+Покрытие: домен и API (IMP2), режимы вознаграждения (IMP3), FE панель курса и комиссии плюс gating advance signing без rate (IMP5), полный browser ladder @pilot-matrix (IMP8, spec pilot-matrix-postpay-rate). Режим POSTPAY_FIXED_RATE вне scope пакета.
 
 ## Ветка corrections
 
@@ -54,7 +54,7 @@ report/accept может перевести напрямую в completed в com
 
 ## Compose E2E reference path
 
-Один form id проходит User submit, ICO, ECO, assign agent, contract, order, payment_received, assign provider, payment_start, provider_sent, report upload и accept, completed. Детали в development/testing.md. Импортные ветки аванс и RATE_ON_PP покрыты целевыми Go HTTP и FE unit тестами пакета IMP, не полным compose browser ladder.
+Один form id проходит User submit, ICO, ECO, assign agent, contract, order, payment_received, assign provider, payment_start, provider_sent, report upload и accept, completed. Детали в development/testing.md. Импортные ветки аванс и RATE_ON_PP покрыты Go HTTP, FE unit, compose-e2e API journeys и Playwright @pilot-matrix (advance treasurer deadline, postpay RATE_ON_PP). Это не полный export-style compose browser ladder и не обязательный PR smoke.
 
 Pilot happy path: report → completed. Shipment — отдельная ветка, не обязательный ladder после report accept. Manager может вести заявку в completed сразу после подтверждённого отчёта без обязательной лестницы отгрузки.
 

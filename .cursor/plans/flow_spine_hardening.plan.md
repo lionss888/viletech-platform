@@ -4,16 +4,16 @@ overview: "Один spine + явные ветки без расхождения 
 todos:
   - id: flow-matrix-check
     content: Матрица сверки advance/RATE_ON_PP/continuity/corrections/refund/provider return
-    status: pending
+    status: completed
   - id: flow-fix-projections
     content: Починить найденные расхождения проекции UI/domain
-    status: pending
+    status: completed
   - id: flow-lifecycle-sync
     content: Зафиксировать в form-lifecycle pilot happy path
-    status: pending
+    status: completed
   - id: flow-unit-tests
     content: Точечные unit/continuity contract если CTA менялись
-    status: pending
+    status: completed
 isProject: false
 ---
 

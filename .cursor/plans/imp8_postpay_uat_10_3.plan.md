@@ -4,13 +4,13 @@ overview: "Первый полный browser ladder POSTPAY_RATE_ON_PP: provider
 todos:
   - id: imp8-postpay-ladder
     content: Новый @pilot-matrix spec для RATE_ON_PP полного ladder
-    status: pending
+    status: completed
   - id: imp8-nextStatus-fix
     content: Исправить UI projection treas_confirm_payment nextStatus по маршруту
-    status: pending
+    status: completed
   - id: imp8-regress
     content: Регресс IMP2 + FE rate/commission unit
-    status: pending
+    status: completed
 isProject: false
 ---
 
@@ -24,30 +24,21 @@ isProject: false
 
 ## Факты
 
-HTTP: [`imp2_postpay_rate_on_pp_test.go`](../../vdp/core/internal/transport/http/imp2_postpay_rate_on_pp_test.go). FE: [`RateCommissionPanel.tsx`](../../vdp/fe/src/components/ved/RateCommissionPanel.tsx), gating в [`manager-payment.ts`](../../vdp/fe/src/lib/ved/manager-payment.ts). Browser journey отсутствует. В [`actions.ts`](../../vdp/fe/src/lib/ved/actions.ts) у `treas_confirm_payment` зашит `nextStatus: "payment_processing"` — для postpay домен ведёт в `report_waiting` (проекция UI врёт).
+HTTP: [`imp2_postpay_rate_on_pp_test.go`](../../vdp/core/internal/transport/http/imp2_postpay_rate_on_pp_test.go). FE: [`RateCommissionPanel.tsx`](../../vdp/fe/src/components/ved/RateCommissionPanel.tsx), gating в [`manager-payment.ts`](../../vdp/fe/src/lib/ved/manager-payment.ts). Browser journey exists: [`pilot-matrix-postpay-rate.spec.ts`](../../vdp/fe/e2e/pilot-matrix-postpay-rate.spec.ts) (`@pilot-matrix`, IMP8) through completed. `treas_confirm_payment` nextStatus follows route (advance → `payment_processing`, RATE_ON_PP → `report_waiting`).
 
 ## Работы
 
 ### 1. Новый @pilot-matrix spec для postpay
 
-Новый spec (или ветка в full-ladder): import + `post_payment` → auto mode → provider до рублей → panel rate+один reward_mode → `mgr_advance_signing` (блок без rate) → user upload advance order → treasurer confirm → статус `report_waiting`.
-
-Файл: `vdp/fe/e2e/pilot-matrix-postpay-rate.spec.ts` или расширение существующего.
+Done. Spec: `vdp/fe/e2e/pilot-matrix-postpay-rate.spec.ts` — import + `post_payment` → provider-first → rate/commission → advance order → treasurer → `report_waiting` → completed.
 
 ### 2. Исправить UI projection treas_confirm_payment
 
-В [`actions.ts`](../../vdp/fe/src/lib/ved/actions.ts): nextStatus зависит от маршрута:
-- advance → `payment_processing`
-- RATE_ON_PP → `report_waiting`
-
-Согласованно с доменом. Unit в `manager-payment.test.ts` / actions test.
+Done. nextStatus зависит от маршрута: advance → `payment_processing`; RATE_ON_PP → `report_waiting`.
 
 ### 3. Регресс
 
-```sh
-go test ./core/internal/transport/http/ -count=1 -run IMP2
-npm test -- --run src/lib/ved/manager-payment.test.ts src/lib/api/forms-rate-commission.test.ts
-```
+Done historically with IMP2 HTTP and FE rate/commission unit green.
 
 ## Вне scope
 
@@ -55,10 +46,10 @@ npm test -- --run src/lib/ved/manager-payment.test.ts src/lib/api/forms-rate-com
 
 ## DoD
 
-- [ ] Postpay `@pilot-matrix` green
-- [ ] CTA nextStatus честный (advance vs postpay)
-- [ ] IMP2 green
-- [ ] FE unit rate/commission green
+- [x] Postpay `@pilot-matrix` green
+- [x] CTA nextStatus честный (advance vs postpay)
+- [x] IMP2 green
+- [x] FE unit rate/commission green
 
 ## Сверка с rules
 

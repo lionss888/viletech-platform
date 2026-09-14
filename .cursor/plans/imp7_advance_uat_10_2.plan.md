@@ -7,13 +7,13 @@ todos:
     status: completed
   - id: imp7-playwright
     content: Прогнать make playwright-pilot-matrix
-    status: in_progress
+    status: completed
   - id: imp7-docs-sync
     content: Обновить known-gaps + form-lifecycle по advance treasurer
-    status: pending
+    status: completed
   - id: imp7-regress
     content: Регресс go test -run IMP1
-    status: pending
+    status: completed
 isProject: false
 ---
 

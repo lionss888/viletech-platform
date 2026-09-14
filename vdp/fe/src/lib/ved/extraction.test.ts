@@ -1,5 +1,13 @@
 import { describe, expect, it } from "vitest";
-import { canControlExtraction, extractionPanelMode, isLowConfidence, parseExtractionResult } from "./extraction";
+import {
+  canControlExtraction,
+  extractionDialogTitle,
+  extractionPanelMode,
+  extractionShellVariant,
+  extractionTriggerLabel,
+  isLowConfidence,
+  parseExtractionResult,
+} from "./extraction";
 
 describe("parseExtractionResult", () => {
   it("parses schema v1 invoice_json", () => {
@@ -68,5 +76,25 @@ describe("canControlExtraction", () => {
     expect(canControlExtraction("manager", "form_waiting_corrections")).toBe(true);
     expect(canControlExtraction("provider", "draft")).toBe(false);
     expect(canControlExtraction("user", "form_accepted")).toBe(false);
+  });
+});
+
+describe("extraction dialog copy", () => {
+  it("maps trigger labels by mode", () => {
+    expect(extractionTriggerLabel("idle")).toBe("Статус распознавания");
+    expect(extractionTriggerLabel("pending")).toBe("Распознавание…");
+    expect(extractionTriggerLabel("review")).toBe("Просмотр данных");
+    expect(extractionTriggerLabel("hide")).toBe("");
+  });
+
+  it("maps dialog titles by mode", () => {
+    expect(extractionDialogTitle("review")).toBe("Распознанные данные");
+    expect(extractionDialogTitle("idle")).toBe("Распознавание");
+    expect(extractionDialogTitle("pending")).toBe("Распознавание");
+  });
+
+  it("picks modal on desktop and sheet on mobile", () => {
+    expect(extractionShellVariant(false)).toBe("modal");
+    expect(extractionShellVariant(true)).toBe("sheet");
   });
 });
