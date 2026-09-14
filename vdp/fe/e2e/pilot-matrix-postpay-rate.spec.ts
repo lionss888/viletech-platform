@@ -53,22 +53,26 @@ test.describe("Pilot matrix POSTPAY_RATE_ON_PP @pilot-matrix", () => {
     const orderPdf = readRobotPdf(packDir, pack.docs.order_pdf);
     const advanceOrderPdf = readRobotPdf(packDir, pack.docs.order_pdf); // reuse for advance
 
-    // 1. User: create import post_payment
+    // 1. User: create import post_payment via wizard (aligned with wave2-wizard pattern)
     await loginAs("user");
     await page.goto("/forms/new");
     await page.waitForLoadState("networkidle");
-    const direction = page.locator("label").filter({ hasText: /Направление/i }).locator("select");
-    await expect(direction).toBeVisible({ timeout: 10_000 });
-    await direction.selectOption("import");
-    const condition = page.locator("label").filter({ hasText: /Условие оплаты/i }).locator("select");
-    await expect(condition).toBeVisible({ timeout: 10_000 });
-    await condition.selectOption("postPayment");
-    const goodName = page.locator("label").filter({ hasText: /Наименование товара/i }).locator("input");
-    await expect(goodName).toBeVisible({ timeout: 10_000 });
-    await goodName.fill("Import RATE_ON_PP goods");
-    const amount = page.locator("label").filter({ hasText: /Сумма сделки/i }).locator("input");
-    await expect(amount).toBeVisible({ timeout: 10_000 });
-    await amount.fill("5000");
+    // Docs step
+    await expect(page.getByTestId("wizard-docs-step")).toBeVisible();
+    await page.getByTestId("wizard-no-documents").click();
+    await page.getByLabel(/Номер контракта/i).fill(`POSTPAY-${Date.now()}`);
+    await page.locator('input[type="date"]').first().fill("2026-09-10");
+    await page.getByRole("button", { name: "Далее" }).click();
+    // Direction step: postPayment
+    await expect(page.getByTestId("wizard-direction-step")).toBeVisible();
+    await page.getByTestId("wizard-payment-condition").selectOption("postPayment");
+    await page.getByRole("button", { name: "Далее" }).click();
+    // Parties step
+    await expect(page.getByTestId("wizard-parties-step")).toBeVisible();
+    await page.getByRole("button", { name: "Далее" }).click();
+    // Terms step
+    await expect(page.getByTestId("wizard-terms-step")).toBeVisible();
+    await page.getByTestId("wizard-amount").fill("5000");
     await page.getByRole("button", { name: /Создать черновик/ }).click();
     await expect(page.getByTestId("form-card")).toBeVisible({ timeout: 30_000 });
     const url = page.url();

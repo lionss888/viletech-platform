@@ -1,6 +1,6 @@
 # Готовность и ограничения MVP
 
-Дата оценки 2026-09-13. Правило честности: done в матрице Nest to vdp означает маршрут замаплен и проходит gate test. Не полный продуктовый паритет Nest. Не боевые интеграции без staging config. Пакет импортных маршрутов IMP0–IMP6 закрыт на unit HTTP FE unit и make ci-pr; полный browser E2E аванса и POSTPAY_RATE_ON_PP не утверждается.
+Дата оценки 2026-09-14. Правило честности: done в матрице Nest to vdp означает маршрут замаплен и проходит gate test. Не полный продуктовый паритет Nest. Не боевые интеграции без staging config. Пакет импортных маршрутов IMP0–IMP7 закрыт на уровне domain API unit HTTP и pilot-matrix browser coverage для аванса treasurer с execution_deadline. Полный wizard payment_method:advance и postpay full browser journey не заявлены в этом пакете.
 
 Post-Lovable FE app-контур восстановлен. Волны UX 0–4 (parties wizard docs provider report close) и FE gesture contracts (FilePickButton filechooser) в коде. B.2 FE org/docs upload ~90% (см. b2-fe-handoff.md). Staging deploy — workflows и rollback docs ready; VM Environments still ops-side.
 
@@ -52,7 +52,7 @@ JWT_SECRET vdp-core-dev-secret. HUB_SHARED_SECRET vdp-s2s-dev-secret. Only for l
 
 ## Gate metrics reference
 
-R1 form-payment 148/148 done. R12 matrix 331/331 in-scope done. IMP package: HTTP IMP1 IMP2 IMP3 plus FE unit treasurer rate commission; make ci-pr green at package close. go test pass core hub. make integration-gate pass on stack. make release-gate recommended before handover.
+R1 form-payment 148/148 done. R12 matrix 331/331 in-scope done. IMP series P1-P7 закрыт: HTTP IMP1 IMP2 IMP3 green; FE unit treasurer rate commission all reward modes; compose-e2e API journeys IMP1 advance_treasurer IMP2 postpay_RATE_ON_PP; pilot-matrix browser coverage advance treasurer с execution_deadline. go test pass core hub. make integration-gate pass on stack. make release-gate recommended before handover.
 
 ## Следующие шаги prod
 

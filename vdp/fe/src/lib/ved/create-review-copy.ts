@@ -9,3 +9,6 @@ export const CREATE_REVIEW_OCR_CAPTION =
 /** Exported constant: CREATE_REVIEW_OCR_PENDING. */
 export const CREATE_REVIEW_OCR_PENDING =
   "Идёт распознавание документов… Можно продолжать заполнение формы.";
+
+/** Exported constant: CREATE_REVIEW_OCR_DONE (shown briefly when recognition finished). */
+export const CREATE_REVIEW_OCR_DONE = "Готово — поля предзаполнены из распознавания.";

@@ -26,7 +26,7 @@ Nest form-payment XLSX and compliance export use real OOXML (export.MinimalXLSX)
 
 JWT app contour restored after Lovable sync regression. Волны UX 0–4 и клиентские правки parties wizard docs provider report close закрыты в коде. Shared FilePickButton и rule fe-interaction-contracts закрепляют жест загрузки через filechooser. Browser UAT на compose seed выборочный: PR smoke узкий; pilot-matrix на template fixture; полный матричный browser all roles × all statuses не покрыт. Customer robot fixture pack awaiting_import.
 
-FE ops caveat: default VDP_API_PROXY_TARGET в fe vite и server proxy указывает на alpha host если env не задан; для локального compose задавайте `VDP_API_PROXY_TARGET=http://localhost:8080` явно перед запуском dev-сервера. exactOptionalPropertyTypes в fe tsconfig выключен после sync.
+FE ops caveat: default VDP_API_PROXY_TARGET в fe vite и server proxy указывает на alpha host если env не задан; для локального compose задавайте VDP_API_PROXY_TARGET=http://localhost:8080 явно перед запуском dev-сервера. exactOptionalPropertyTypes в fe tsconfig выключен после sync.
 
 ## CI CD in vdp repo
 

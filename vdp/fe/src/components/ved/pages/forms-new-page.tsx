@@ -4,6 +4,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { CounterpartyPickDialog } from "@/components/ved/CounterpartyPickDialog";
 import { FilePickButton } from "@/components/ved/file-pick-button";
+import { OcrProgress } from "@/components/ved/ocr-progress";
 import { OrganizationPickDialog } from "@/components/ved/OrganizationPickDialog";
 import { VedAppShell } from "@/components/ved/VedAppShell";
 import {
@@ -14,11 +15,7 @@ import {
   transitionForm,
 } from "@/lib/api/forms";
 import { assertFileSize, UploadError } from "@/lib/api/files";
-import {
-  CREATE_REVIEW_OCR_BANNER,
-  CREATE_REVIEW_OCR_CAPTION,
-  CREATE_REVIEW_OCR_PENDING,
-} from "@/lib/ved/create-review-copy";
+import { CREATE_REVIEW_OCR_BANNER, CREATE_REVIEW_OCR_CAPTION } from "@/lib/ved/create-review-copy";
 import { parseExtractionResult } from "@/lib/ved/extraction";
 import { usePlatformBasePath, usePlatformMode } from "@/lib/ved/platform-mode";
 import { usePlatformStore } from "@/lib/ved/platform-store";
@@ -53,6 +50,7 @@ export function NewForm() {
   const [formId, setFormId] = useState<string | null>(null);
   const [ocrPending, setOcrPending] = useState(false);
   const [ocrReady, setOcrReady] = useState(false);
+  const [ocrProgressVisible, setOcrProgressVisible] = useState(false);
   const touchedRef = useRef<WizardTouched>({});
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const [draft, setDraft] = useState({
@@ -144,6 +142,7 @@ export function NewForm() {
   useEffect(() => {
     if (!formId || mode !== "app" || draft.noDocuments || ocrReady) return;
     setOcrPending(true);
+    setOcrProgressVisible(true);
     const tick = async () => {
       try {
         const form = await getForm(formId);
@@ -433,10 +432,8 @@ export function NewForm() {
 
       <div className="panel mt-4 w-full p-5 lg:w-3/4">
         {error && <p className="mb-4 rounded-md bg-destructive-soft px-2 py-1.5 text-xs text-destructive">{error}</p>}
-        {ocrPending && !ocrReady && step > WIZARD_STEP.docs && (
-          <p className="mb-4 rounded-md bg-wait-soft px-3 py-2 text-sm text-wait" data-testid="wizard-ocr-pending">
-            {CREATE_REVIEW_OCR_PENDING}
-          </p>
+        {ocrProgressVisible && step > WIZARD_STEP.docs && (
+          <OcrProgress done={ocrReady} onHide={() => setOcrProgressVisible(false)} />
         )}
 
         {step === WIZARD_STEP.docs && (
@@ -845,11 +842,11 @@ function Field({
   children: React.ReactNode;
 }) {
   return (
-    <label className="block">
+    <label className="flex h-full flex-col">
       <span className={cn("label-caps", invalid && "text-destructive")}>{label}</span>
       <div
         className={cn(
-          "mt-1",
+          "mt-auto pt-1",
           invalid &&
             "[&_.field]:border-destructive [&_.field]:ring-1 [&_.field]:ring-destructive/30 [&_button]:border-destructive",
         )}
