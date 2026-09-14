@@ -247,6 +247,10 @@ check-deploy-secrets:
 	@chmod +x scripts/check-deploy-secrets.sh
 	@./scripts/check-deploy-secrets.sh
 
+check-env-parity:
+	@chmod +x scripts/check-env-parity.sh
+	@./scripts/check-env-parity.sh
+
 # RH4: pre-handover — all reliability gates (requires compose for e2e/playwright).
 release-gate:
 	$(MAKE) robot-matrix-check

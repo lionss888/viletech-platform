@@ -11,7 +11,8 @@ alwaysApply: true
 
 | Уровень | Команда | Когда |
 |---|---|---|
-| Pre-commit (быстро) | `make precommit-gate` / хук `.githooks` | каждый коммит: `docs-format-check` + `make test` + TG gate |
+| Environment parity | `make check-env-parity` | **первый** gate; проверка версий Node.js/Go vs CI; в pre-commit |
+| Pre-commit (быстро) | `make precommit-gate` / хук `.githooks` | каждый коммит: env-parity + `docs-format-check` + `make test` + TG gate |
 | PR-паритет без browser | `make ci-pr-fast` | итерации backend/API, пока UI E2E не нужен |
 | PR-паритет (required checks) | `make ci-pr` | перед push / PR / «готово к CI» |
 | Main / handover | `make release-gate` | только по явной просьбе или перед тегом/`vdp-v*` (долго) |
@@ -29,14 +30,33 @@ alwaysApply: true
 
 Фаза 2 (compose/browser): запускается только если фаза 1 зелёная. Один Docker compose stack + sleep 65 + Playwright. Последовательно (не параллельно на одном хосте).
 
+## Environment parity (MUST FIRST)
+
+**До любых тестов** проверь, что локальная среда соответствует CI:
+
+```bash
+cd vdp && make check-env-parity
+```
+
+Проверяет:
+- Node.js версия совпадает с `vdp/fe/.nvmrc`
+- `package-lock.json` существует и не содержит `file://` зависимостей
+
+**Fail-fast**: Если environment parity check красный, **останови работу** и предложи пользователю исправить:
+- `nvm use` (или `mise use`) для переключения Node.js версии
+- `npm install` для регенерации `package-lock.json`
+
+**CI guarantee**: `env-parity` job в GitHub Actions гарантирует, что .nvmrc существует и используется workflow. Без локальной проверки — расхождение версий гарантировано через N коммитов.
+
 ## MUST для агента
 
 Триггеры (сработал любой):
 
+0. **Всегда первым**: `make check-env-parity` перед любыми тестами/билдами.
 1. Пользователь просит **push**, **PR**, «готово к CI», «застраховать CI», «проверь как в CI», merge-ready по `vdp/**`.
 2. Агент собирается утверждать, что **CI будет зелёным** / PR можно мержить после правок в `vdp/`.
 3. После фикса **красного** VDP CI — перед новым «готово» снова прогон.
-4. Агент **создал или существенно правил** файлы под `vdp/docs/**` или `vdp/README.md` (особенно вне `docs/development/`) — **до** «готово» / коммита / следующего шага прогнать из `vdp/`:
+4. Агент **создал или существенно правил** файлы под `vdp/docs/**` или `vdp/README.md` (особенно вне `docs/development/`) — **до** «готово** / коммита / следующего шага прогнать из `vdp/`:
    - минимум **`make docs-format-check`**;
    - не ждать только pre-commit хука (history чата не ослабляет).
 5. Кнопка **Run** в Local QG canvas (`local-qg.canvas.tsx`) или промпт `Local QG RUN` — это **запуск**, не обсуждение: выполнить указанную команду сразу.
@@ -97,6 +117,7 @@ export MGMT_NOTIFY_CHAT_ID="your_chat_id"
 
 ## MUST NOT
 
+- **Пропускать `make check-env-parity`** перед любыми тестами/билдами — это первый gate всегда.
 - Заявлять «CI ок» / «паритет PR» без локального `ci-pr` или `ci-pr-fast` (с оговоркой) на затронутом изменении.
 - Подменять `ci-pr` одним `make test` или только unit FE.
 - Класть полный `release-gate` в pre-commit или гонять его без запроса (дорого, не PR-паритет).
@@ -104,6 +125,7 @@ export MGMT_NOTIFY_CHAT_ID="your_chat_id"
 - Закрывать волну/PR после правок `vdp/docs/**` без локального `docs-format-check`.
 - Трактовать кнопку Run / `Local QG RUN` как «спроси, стоит ли гонять» — это команда на выполнение.
 - Пропускать `check-deploy-secrets` перед push в main или PR, который может вызвать deploy.
+- **Утверждать «готово» без зелёного `make ci-pr`** — расхождение версий и прочие локальные особенности ломают CI.
 
 ## Что делать человеку (коротко)
 
