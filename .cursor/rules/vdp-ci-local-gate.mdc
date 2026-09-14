@@ -15,9 +15,19 @@ alwaysApply: true
 | PR-паритет без browser | `make ci-pr-fast` | итерации backend/API, пока UI E2E не нужен |
 | PR-паритет (required checks) | `make ci-pr` | перед push / PR / «готово к CI» |
 | Main / handover | `make release-gate` | только по явной просьбе или перед тегом/`vdp-v*` (долго) |
+| Deploy secrets check | `make check-deploy-secrets` | проверка MGMT_NOTIFY_TOKEN/CHAT_ID перед деплоем |
 
-`ci-pr` ≈ jobs: docs + fast(adapters) + integration + пауза 65s (rate-limit) + **узкий** Playwright как на `pull_request`.  
+`ci-pr-fast` ≈ static checks (docs/CD/adapters/secrets/lovable/fe-unit/go-units) параллельно через `ci-pr-static.sh` → `compose-e2e` (один стек).  
+`ci-pr` ≈ `ci-pr-fast` + пауза 65s (rate-limit) + **узкий** Playwright как на `pull_request`.  
 `release-gate` ≈ полный browser + pilot-matrix + postgres integration — **не** гонять молча на каждый фикс.
+
+## Схема ci-pr-fast (run-all без ранних блокеров)
+
+Фаза 1 (static/unit): все независимые проверки запускаются параллельно через `scripts/ci-pr-static.sh`. Агрегирует exit коды всех шагов. Fail одного шага не блокирует остальные — все выполняются до конца и печатаются в таблице результатов.
+
+Проверки фазы 1: `docs-format-check`, `test-cd-scripts`, `check-deploy-secrets`, `test-adapters`, `lovable-seed-check`, `fe npm test`, 8 модулей `go test` (core/hub/shared/extraction/mail-gateway/sms-gateway/manager-ops/release-gate).
+
+Фаза 2 (compose/browser): запускается только если фаза 1 зелёная. Один Docker compose stack + sleep 65 + Playwright. Последовательно (не параллельно на одном хосте).
 
 ## MUST для агента
 
@@ -41,7 +51,7 @@ alwaysApply: true
 2. Красный gate → **не** утверждать готовность CI; починить или явно перечислить пробел.
 3. `make release-gate` — только если пользователь просит полный контур / handover / тег.
 4. FE Docker deps: по-прежнему **спросить** перед `compose-fe-refresh` (`vdp-fe-docker-пересборка`).
-5. Ops/product docs вне `docs/development/`: без таблиц, списков, bold, backticks, fence — см. `docs/conventions/format.md`. How-to с командами/таблицами — в `docs/development/`.
+5. Ops/product docs вне `docs/development/`: без таблиц, списков, bold, backticks, fence — см. `docs/conventions/format.md`. How-to с командами (fenced) — в `docs/development/`; таблицы/списки/bold запрещены и там.
 
 ## Shell / sandbox (MUST)
 
@@ -52,6 +62,39 @@ alwaysApply: true
 3. **Не** спрашивать пользователя «можно ли без sandbox» для этих команд: это часть Local QG / precommit / ci-pr.
 4. Один прогон: не «сначала sandbox, потом retry».
 
+## Deploy secrets check (MUST)
+
+Начиная с этого момента, `ci-pr` и `release-gate` включают проверку **management notify secrets** (`MGMT_NOTIFY_TOKEN` + `MGMT_NOTIFY_CHAT_ID`). Без этих секретов deploy workflows (GitHub Actions / GitLab CI) **упадут** на runtime-проверке перед отправкой уведомления о выкате.
+
+**Как настроить локально:**
+
+```bash
+# Вариант 1: ~/.vedy_bot/env (приоритет)
+echo "MGMT_NOTIFY_TOKEN=your_bot_token" >> ~/.vedy_bot/env
+echo "MGMT_NOTIFY_CHAT_ID=your_chat_id" >> ~/.vedy_bot/env
+
+# Вариант 2: ~/.vdp-intake/env (fallback)
+echo "TELEGRAM_INTAKE_TOKEN=your_bot_token" >> ~/.vdp-intake/env
+echo "TELEGRAM_INTAKE_CHAT_IDS=your_chat_id" >> ~/.vdp-intake/env
+
+# Вариант 3: shell session
+export MGMT_NOTIFY_TOKEN="your_bot_token"
+export MGMT_NOTIFY_CHAT_ID="your_chat_id"
+```
+
+**Как настроить в CI:**
+
+- **GitHub:** Repository Settings → Secrets → Actions → New secret: `MGMT_NOTIFY_TOKEN`, `MGMT_NOTIFY_CHAT_ID`
+- **GitLab:** Project Settings → CI/CD → Variables → Add variable: `MGMT_NOTIFY_TOKEN`, `MGMT_NOTIFY_CHAT_ID` (Protected: yes)
+
+**Получить токен и chat_id:**
+
+1. Создать бота: https://t.me/BotFather → `/newbot` → скопировать токен
+2. Отправить сообщение боту (любое)
+3. Получить chat_id: `curl https://api.telegram.org/bot<TOKEN>/getUpdates`
+
+Проверка встроена в `ci-pr` и `release-gate`; можно запустить отдельно: `make check-deploy-secrets`.
+
 ## MUST NOT
 
 - Заявлять «CI ок» / «паритет PR» без локального `ci-pr` или `ci-pr-fast` (с оговоркой) на затронутом изменении.
@@ -60,6 +103,7 @@ alwaysApply: true
 - Обходить Docker Playwright на macOS host `npx playwright install`, если команда — Makefile `playwright-e2e`.
 - Закрывать волну/PR после правок `vdp/docs/**` без локального `docs-format-check`.
 - Трактовать кнопку Run / `Local QG RUN` как «спроси, стоит ли гонять» — это команда на выполнение.
+- Пропускать `check-deploy-secrets` перед push в main или PR, который может вызвать deploy.
 
 ## Что делать человеку (коротко)
 
@@ -74,3 +118,4 @@ alwaysApply: true
 - Путать `precommit-gate` (docs + unit) с `ci-pr` (полный CI PR).
 - Писать rich markdown в `docs/operations/` и чинить только после красного GitHub docs job.
 - Пробный `make` в sandbox агента → ложный fail / `No rule to make target`; потом «сориентировался» на all.
+- Пушить в main/PR без проверки deploy secrets → fail на CI deploy step с ошибкой «Management notify secrets are required».
