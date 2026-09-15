@@ -1,6 +1,6 @@
 import type { ProcessRoleRow } from "@/lib/api/process-roles";
 import { isProcessSlotDisabled } from "@/lib/ved/process-role-filter";
-import { STAGES, STATUS_FILTERS, statusMeta, type StatusMeta } from "@/lib/ved/statuses";
+import { SHIPMENT_STAGE, STAGES, STATUS_FILTERS, statusMeta, type StatusMeta } from "@/lib/ved/statuses";
 import type { FormStatus, StageId } from "@/lib/ved/types";
 
 const COMPLIANCE_ROLES = ["internal_compliance_officer", "compliance_officer"] as const;
@@ -110,22 +110,39 @@ export function statusMetaForProcess(
   return meta;
 }
 
-/** Lifecycle rail for the current process config (hide disabled ICO stage; rename ECO). */
+/**
+ * Lifecycle rail for the current process config.
+ * Hides disabled ICO stage; renames ECO → «Проверка».
+ * Omits «Отгрузка» unless status is already in shipment_* (optional Nest branch).
+ */
 export function stagesForProcess(
   roles: ProcessRoleRow[] | undefined,
+  status?: FormStatus,
 ): { id: StageId; label: string }[] {
-  if (!roles?.length) return STAGES;
+  const includeShipment = status !== undefined && statusMeta(status).stage === "shipment";
+  const base = includeShipment ? insertShipmentStage(STAGES) : STAGES;
+  if (!roles?.length) return base;
   const icoOff = isProcessSlotDisabled(roles, "internal_compliance_officer");
   const ecoOff = isProcessSlotDisabled(roles, "compliance_officer");
-  return STAGES.filter((stage) => {
-    if (stage.id === "organization_verification" && icoOff) return false;
-    return true;
-  }).map((stage) => {
-    if (stage.id === "form_verification" && ecoOff) {
-      return { ...stage, label: "Проверка" };
-    }
-    return stage;
-  });
+  return base
+    .filter((stage) => {
+      if (stage.id === "organization_verification" && icoOff) return false;
+      return true;
+    })
+    .map((stage) => {
+      if (stage.id === "form_verification" && ecoOff) {
+        return { ...stage, label: "Проверка" };
+      }
+      return stage;
+    });
+}
+
+function insertShipmentStage(
+  stages: { id: StageId; label: string }[],
+): { id: StageId; label: string }[] {
+  const completedIdx = stages.findIndex((stage) => stage.id === "completed");
+  if (completedIdx < 0) return [...stages, SHIPMENT_STAGE];
+  return [...stages.slice(0, completedIdx), SHIPMENT_STAGE, ...stages.slice(completedIdx)];
 }
 
 /** Stage id used by the stepper after collapsing disabled ICO into «Проверка». */
@@ -143,6 +160,6 @@ export function displayStageId(status: FormStatus, roles: ProcessRoleRow[] | und
 
 /** VED helper: stageIndexForProcess. */
 export function stageIndexForProcess(status: FormStatus, roles: ProcessRoleRow[] | undefined): number {
-  const stages = stagesForProcess(roles);
+  const stages = stagesForProcess(roles, status);
   return stages.findIndex((stage) => stage.id === displayStageId(status, roles));
 }

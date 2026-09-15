@@ -1,6 +1,7 @@
 import type {
   AttachedDocument,
   Counterparty,
+  FormStatus,
   Organization,
   PaymentForm,
   PlatformUser,
@@ -8,11 +9,12 @@ import type {
   VedRole,
 } from "./types";
 import { ROLES } from "./roles";
-import { statusMeta, STAGES, stageIndex } from "./statuses";
+import { stagesForProcess } from "./process-stage-filters";
+import { statusMeta } from "./statuses";
 
 /** ------------------------------------------------------------------
  * Тестовые данные для ручного прогона интерфейса.
- * Покрывают все 6 ролей и все 9 стадий жизненного цикла заявки.
+ * Покрывают все 6 ролей и стадии happy-path (отчёт → завершено; отгрузка — опционально).
  * ------------------------------------------------------------------ */
 
 export const ORGANIZATIONS: Organization[] = [
@@ -633,7 +635,8 @@ function iso(daysAgo: number, hourShift = 0): string {
 
 /** Хронология собирается по стадиям: всё, что до текущей стадии, — выполнено. */
 function buildTimeline(status: string, seed: Seed): TimelineEntry[] {
-  const current = stageIndex(statusMeta(status).stage);
+  const rail = stagesForProcess(undefined, status as FormStatus);
+  const current = rail.findIndex((stage) => stage.id === statusMeta(status).stage);
   const actorByStage: Record<string, VedRole> = {
     new: "user",
     organization_verification: "internal_compliance_officer",
@@ -645,7 +648,7 @@ function buildTimeline(status: string, seed: Seed): TimelineEntry[] {
     shipment: "manager",
     completed: "manager",
   };
-  return STAGES.map((stage, i) =>
+  return rail.map((stage, i) =>
     line(
       `${seed.number}-tl-${stage.id}`,
       stage.label,

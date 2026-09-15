@@ -1,6 +1,7 @@
 import { FORMS, USERS } from "./mock";
-import { STAGES, statusMeta } from "./statuses";
-import type { AttachedDocument, PaymentForm, PlatformUser, TimelineEntry, VedRole } from "./types";
+import { stagesForProcess } from "./process-stage-filters";
+import { statusMeta } from "./statuses";
+import type { AttachedDocument, FormStatus, PaymentForm, PlatformUser, TimelineEntry, VedRole } from "./types";
 
 const DEMO_EMAIL_REMAP: Record<string, string> = {
   "manager2@bdui.local": "manager2@demo.vdp.local",
@@ -95,7 +96,8 @@ function buildExtraForm(index: number): PaymentForm {
 export const DEMO_OVERLAY_EXTRA_FORM_NUMBER = EXTRA_FORM_NUMBER;
 
 function buildTimeline(status: string, days: number, number: string): TimelineEntry[] {
-  const current = STAGES.findIndex((stage) => stage.id === statusMeta(status).stage);
+  const rail = stagesForProcess(undefined, status as FormStatus);
+  const current = rail.findIndex((stage) => stage.id === statusMeta(status).stage);
   const actorByStage: Partial<Record<string, VedRole>> = {
     new: "user",
     organization_verification: "internal_compliance_officer",
@@ -107,7 +109,7 @@ function buildTimeline(status: string, days: number, number: string): TimelineEn
     shipment: "manager",
     completed: "manager",
   };
-  return STAGES.map((stage, i) => ({
+  return rail.map((stage, i) => ({
     id: `${number}-tl-${stage.id}`,
     title: stage.label,
     at: iso(days - i * 0.4),

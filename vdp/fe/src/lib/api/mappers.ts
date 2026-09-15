@@ -304,7 +304,8 @@ export function nextStepHint(
   }
   if (status.startsWith("payment")) return "Контролируйте исполнение платежа.";
   if (status === "report_verification") return "Подтвердите отчет и завершите сделку.";
-  if (status.startsWith("report") || status.startsWith("shipment")) return "Закройте документы и отгрузку.";
+  if (status.startsWith("report")) return "Подпишите и подтвердите отчёт агента — после этого сделка завершена.";
+  if (status.startsWith("shipment")) return "Закройте документы отгрузки (опциональная ветка).";
   if (status === "completed") return "Заявка закрыта.";
   if (status.startsWith("canceled")) return "Заявка отменена.";
   return "Смотрите доступные действия справа.";

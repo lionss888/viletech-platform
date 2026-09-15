@@ -14,7 +14,7 @@ contract_waiting, contract_verification, signing_order, signing_order_accepted �
 
 payment_received, payment_processing, payment_sent — платёж через provider. Детали денежного порядка зависят от маршрута импорта (см. ниже).
 
-report_waiting, report_waiting_verification — отчёт агента. Подтверждение отчёта менеджером переводит в completed (happy path без обязательной лестницы отгрузки после accept).
+report_waiting, report_waiting_verification — отчёт агента. Подтверждение отчёта менеджером переводит в completed (happy path без обязательной лестницы отгрузки после accept). Шкала Жизненный цикл в UI не показывает Отгрузку между Отчётом и Завершено; этап Отгрузка появляется на полоске только если заявка уже в shipment_*.
 
 shipment_waiting и связанные shipment verification stages остаются в state machine для Nest и отдельных веток (в том числе advance), но не обязательны после report accept в пилотном UI-пути.
 
