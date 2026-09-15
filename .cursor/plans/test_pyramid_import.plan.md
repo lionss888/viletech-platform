@@ -4,13 +4,13 @@ overview: "Поднять импорт с unit/HTTP на service + browser бе�
 todos:
   - id: test-compose-e2e-imp
     content: Два API journey в compose-e2e.sh — advance + postpay
-    status: pending
+    status: completed
   - id: test-playwright-ref
     content: Playwright опереться на P1/P2 specs; не добавлять в PR smoke
-    status: pending
+    status: completed
   - id: test-docs-pyramid
     content: Документировать пирамиду в known-gaps / development testing
-    status: pending
+    status: completed
 isProject: false
 ---
 

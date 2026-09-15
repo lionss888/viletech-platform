@@ -16,10 +16,10 @@ todos:
     status: completed
   - id: local-repro
     content: "Проверить на localhost: desktop modal + mobile sheet"
-    status: in_progress
+    status: completed
   - id: ci-pr-gate
     content: Прогнать make ci-pr перед готовностью
-    status: pending
+    status: completed
 isProject: false
 ---
 

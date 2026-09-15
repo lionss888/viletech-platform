@@ -38,7 +38,7 @@ export function ExtractionReviewDialog({
   canConfirm = true,
   forceMobile,
 }: ExtractionReviewDialogProps) {
-  const mobileHook = useIsMobileViewport();
+  const mobileHook = useIsMobileViewport(open);
   const isMobile = forceMobile ?? mobileHook;
   const variant = extractionShellVariant(isMobile);
   const draft = parseExtractionResult(invoiceJson);

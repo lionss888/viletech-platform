@@ -4,16 +4,16 @@ overview: "Три режима вознаграждения в обеих точ
 todos:
   - id: imp9-fe-unit-3modes
     content: FE unit все три режима в панели save payload
-    status: pending
+    status: completed
   - id: imp9-advance-primary
     content: Проверить/дожать фиксацию комиссии на primary-поручении аванса
-    status: pending
+    status: completed
   - id: imp9-edge-validation
     content: Edge validation пустой percent/fix → явная ошибка HTTP negative cases
-    status: pending
+    status: completed
   - id: imp9-vvodnye-sync
     content: Синхронизировать галочки §9 вводных под факт кода
-    status: pending
+    status: completed
 isProject: false
 ---
 

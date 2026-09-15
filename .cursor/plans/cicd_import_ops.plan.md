@@ -4,10 +4,10 @@ overview: "Path-filter ловит postpay/IMP surface; local proxy не молч
 todos:
   - id: cicd-path-filter
     content: Расширить regex detect-pilot-matrix под IMP FE+domain files
-    status: pending
+    status: completed
   - id: cicd-docs-gaps
     content: known-gaps явный local VDP_API_PROXY_TARGET + partial CD VM
-    status: pending
+    status: completed
 isProject: false
 ---
 

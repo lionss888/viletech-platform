@@ -4,10 +4,10 @@ overview: "Контракт money-path в GoDoc/JSDoc, не % комментар
 todos:
   - id: comments-godoc-money
     content: GoDoc TreasurerConfirmPayment, SetCommission, rate handlers
-    status: pending
+    status: completed
   - id: comments-jsdoc-api
     content: JSDoc публичные confirmTreasurerPayment, setRate, setCommission в forms.ts
-    status: pending
+    status: completed
 isProject: false
 ---
 
