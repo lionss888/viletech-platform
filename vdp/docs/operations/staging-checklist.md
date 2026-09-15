@@ -2,11 +2,19 @@
 
 Перед UAT или staging go-live с реальными интеграциями проверьте env и контракты. MVP compose работает со stubs без этих URL.
 
-Шаблон env: [staging-env.example](staging-env.example). Smoke: scripts/staging-smoke.sh из каталога vdp.
+Шаблон env: [staging-env.example](staging-env.example). Smoke: make staging-smoke или scripts/staging-smoke.sh из каталога vdp с DOCS_URL и MAIL_URL.
+
+## Phase 3 status (2026-09-15)
+
+Local compose path. DOCS_URL http://127.0.0.1:8090/generate and MAIL_URL http://127.0.0.1:8091/notify and SMS_URL http://127.0.0.1:8092/notify are live gateway services, not empty hub stubs. Command make staging-smoke green on 2026-09-15 (core health, hub health, seed login, docs generate storage_key, mail and sms probe).
+
+Alpha edge. Public https://alpha.vedy.io/api/v1/health returns 200 and seed login returns token. Hub docs and mail listen on VM loopback only by design. Full staging-smoke against alpha requires SSH on-host curl to 127.0.0.1:8081 and 8090 and 8091. Deploy SSH key on this workstation was denied publickey on 2026-09-15; ops must refresh DEPLOY_SSH_KEY before remote smoke and rollback on alpha.
+
+Diadoc ONEC bank OCR. Still fixture or manual unless URL and credentials are set in secret store. Do not claim 100 percent vendor ready.
 
 ## Hub documents DOCS_URL
 
-CI verified. Test docs_http_test.go in make test-adapters asserts POST payload and retry on 503. Staging: export DOCS_URL and run staging-smoke. Dev stub docs/{id}/stub.pdf when URL empty. Payload includes template_id per payment agent.
+CI verified. Test docs_http_test.go in make test-adapters asserts POST payload and retry on 503. Staging: export DOCS_URL and run staging-smoke. Dev stub docs/{id}/stub.pdf when URL empty. Payload includes template_id per payment agent. Phase 3 local compose uses docs-service generate endpoint with real PDF storage_key response.
 
 ## Diadoc
 

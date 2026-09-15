@@ -76,6 +76,10 @@ func (s *OrganizationService) Create(ctx context.Context, principal authz.Princi
 			return domain.Organization{}, err
 		}
 	} else {
+		// Client org creation: User, Manager, Root only (not Treasurer) - AuthZ audit Phase 2
+		if principal.Role != domain.RoleUser && principal.Role != domain.RoleManager && principal.Role != domain.RoleRoot {
+			return domain.Organization{}, apperrors.ErrForbidden
+		}
 		if err := authz.AuthorizeRoles(principal, domain.RoleUser, domain.RoleManager, domain.RoleRoot); err != nil {
 			return domain.Organization{}, err
 		}

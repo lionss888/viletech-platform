@@ -1,4 +1,4 @@
-.PHONY: deps test test-integration test-adapters build db-setup db-migrate compose-db-migrate run-hub run-core run smoke stop compose-up compose-up-prod compose-down compose-ps compose-e2e compose-fe-smoke compose-fe-refresh compose-fe-prod-smoke compose-playwright lovable-seed-check integration-gate playwright-e2e playwright-pilot playwright-pilot-matrix robot-matrix-check docs-format-check check-deploy-secrets release-gate image-build image-push image-build-push compose-release-config-check compose-release-up deploy-alpha deploy-beta deploy-gamma rollback-alpha rollback-beta rollback-gamma test-cd-scripts notify-mgmt core-seed-reset install-git-hooks precommit-gate ci-pr-fast ci-pr ci-pr-pilot
+.PHONY: deps test test-integration test-adapters build db-setup db-migrate compose-db-migrate run-hub run-core run smoke staging-smoke stop compose-up compose-up-prod compose-down compose-ps compose-e2e compose-fe-smoke compose-fe-refresh compose-fe-prod-smoke compose-playwright lovable-seed-check integration-gate playwright-e2e playwright-pilot playwright-pilot-matrix robot-matrix-check docs-format-check check-deploy-secrets release-gate image-build image-push image-build-push compose-release-config-check compose-release-up deploy-alpha deploy-beta deploy-gamma rollback-alpha rollback-beta rollback-gamma rollback-rehearsal-local test-cd-scripts notify-mgmt core-seed-reset install-git-hooks precommit-gate ci-pr-fast ci-pr ci-pr-pilot
 
 CORE_DIR := core
 HUB_DIR := hub
@@ -181,6 +181,16 @@ smoke:
 		-H 'Content-Type: application/json' \
 		-d '{"email":"user@vdp.local","password":"user"}' | grep -q token && echo "login ok"
 
+# Staging smoke with live vendor URLs (compose defaults). Override CORE_URL/HUB_URL/DOCS_URL/MAIL_URL for remote.
+staging-smoke:
+	@chmod +x scripts/staging-smoke.sh
+	CORE_URL="$${CORE_URL:-http://127.0.0.1:8080}" \
+	HUB_URL="$${HUB_URL:-http://127.0.0.1:8081}" \
+	DOCS_URL="$${DOCS_URL:-http://127.0.0.1:8090/generate}" \
+	MAIL_URL="$${MAIL_URL:-http://127.0.0.1:8091/notify}" \
+	SMS_URL="$${SMS_URL:-http://127.0.0.1:8092/notify}" \
+	./scripts/staging-smoke.sh
+
 compose-e2e: compose-up
 	@chmod +x scripts/compose-e2e.sh
 	@./scripts/compose-e2e.sh
@@ -320,6 +330,11 @@ rollback-beta:
 rollback-gamma:
 	@chmod +x scripts/rollback-compose-release.sh
 	ENVIRONMENT=gamma ./scripts/rollback-compose-release.sh
+
+# Local pin-swap rehearsal (no SSH). Remote alpha rollback still needs DEPLOY_HOST + SSH key.
+rollback-rehearsal-local:
+	@chmod +x scripts/rollback-rehearsal-local.sh
+	./scripts/rollback-rehearsal-local.sh
 
 test-cd-scripts:
 	@chmod +x scripts/test-cd-scripts.sh

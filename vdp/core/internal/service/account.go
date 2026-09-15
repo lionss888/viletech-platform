@@ -7,7 +7,6 @@ import (
 
 	"github.com/viletech/vdp/core/internal/authz"
 	"github.com/viletech/vdp/core/internal/domain"
-	"github.com/viletech/vdp/core/internal/domain/formpayment"
 	"github.com/viletech/vdp/core/internal/domain/systemcap"
 	"github.com/viletech/vdp/core/internal/repository"
 	apperrors "github.com/viletech/vdp/core/pkg/errors"
@@ -152,10 +151,9 @@ func (s *AccountService) UpdateByAdmin(ctx context.Context, principal authz.Prin
 }
 
 func (s *AccountService) List(ctx context.Context, principal authz.Principal) ([]map[string]any, error) {
-	if err := authz.RequireAnySystemCapability(principal, systemcap.CapAccountsManage, systemcap.CapFormsAdmin); err != nil {
-		if err2 := authz.RequireBusinessCapability(principal, formpayment.CapManagerOps); err2 != nil {
-			return nil, err2
-		}
+	// Only Root/admin with accounts.manage can list all accounts (AuthZ audit Phase 2)
+	if err := authz.RequireAnySystemCapability(principal, systemcap.CapAccountsManage, systemcap.CapSystemAdmin); err != nil {
+		return nil, err
 	}
 	items, err := s.store.ListAccounts(ctx)
 	if err != nil {

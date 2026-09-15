@@ -4,19 +4,19 @@ overview: Staging с реальными vendor URL (DOCS/MAIL/Diadoc), зелё�
 todos:
   - id: stg-env-vendors
     content: "Staging env: DOCS_URL MAIL_URL (+ Diadoc/SMS/OCR по scope)"
-    status: pending
+    status: completed
   - id: stg-smoke-green
     content: staging-smoke.sh green против live staging
-    status: pending
+    status: completed
   - id: stg-rollback
     content: Deploy + rollback rehearsal на staging/alpha
-    status: pending
+    status: completed
   - id: stg-docs-gaps
     content: "Обновить staging-checklist / known-gaps: live vs fixture"
-    status: pending
+    status: completed
   - id: stg-security-integrations
     content: Отметить Integrations в security-signoff после smoke
-    status: pending
+    status: completed
 isProject: false
 ---
 

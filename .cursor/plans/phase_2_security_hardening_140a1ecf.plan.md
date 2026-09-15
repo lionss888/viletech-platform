@@ -4,34 +4,34 @@ overview: "Критический блокер для production: AuthZ matrix a
 todos:
   - id: authz-audit
     content: "AuthZ matrix audit: все endpoints User/Manager/Provider/Treasurer/Root"
-    status: pending
+    status: completed
   - id: authz-tests
     content: "Unit/HTTP тесты AuthZ: 403 на чужую роль, не 500"
-    status: pending
+    status: completed
   - id: prod-secrets
     content: "Prod secrets: JWT_SECRET, HUB_SHARED_SECRET rotation + env guards"
-    status: pending
+    status: completed
   - id: file-acl-audit
     content: "File ACL audit: User только свои формы, чужой file_id → 403"
-    status: pending
+    status: completed
   - id: file-acl-tests
     content: "Unit/E2E file ACL: TestFileACLUserCannotPreviewForeignFormFile"
-    status: pending
+    status: completed
   - id: provider-dto-audit
     content: "Provider DTO audit: нет ПДн клиента (паспорт, личные контакты)"
-    status: pending
+    status: completed
   - id: hub-events-audit
     content: "Hub events audit: документы с ПДн не попадают в Provider events"
-    status: pending
+    status: completed
   - id: s2s-rotation-doc
     content: "S2S HUB_SHARED_SECRET: ротация задокументирована"
-    status: pending
+    status: completed
   - id: backup-encryption
     content: "Бэкапы БД и file store: encryption at rest checklist"
-    status: pending
+    status: completed
   - id: security-checklist
     content: "Закрыть security-signoff-checklist.md: все пункты выполнено"
-    status: pending
+    status: completed
 isProject: false
 ---
 

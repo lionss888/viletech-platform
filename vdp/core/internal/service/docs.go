@@ -66,13 +66,21 @@ func (s *CatalogService) GetCounterparty(ctx context.Context, principal authz.Pr
 }
 
 func (s *CatalogService) ListCounterpartiesFor(ctx context.Context, principal authz.Principal) ([]domain.Counterparty, error) {
+	// Only User, Manager, and Root can list counterparties (not Treasurer) - AuthZ audit Phase 2
+	if principal.Role != domain.RoleUser && principal.Role != domain.RoleManager && principal.Role != domain.RoleRoot {
+		return nil, apperrors.ErrForbidden
+	}
+	if err := authz.AuthorizeRoles(principal, domain.RoleUser, domain.RoleManager, domain.RoleRoot); err != nil {
+		return nil, err
+	}
 	all, err := s.store.ListCounterparties(ctx)
 	if err != nil {
 		return nil, err
 	}
-	if s.isComplianceOrRoot(principal) {
+	if principal.Role == domain.RoleRoot || principal.Role == domain.RoleManager {
 		return all, nil
 	}
+	// User sees only own counterparties
 	out := make([]domain.Counterparty, 0)
 	for _, c := range all {
 		if c.CreatedBy == principal.AccountID {

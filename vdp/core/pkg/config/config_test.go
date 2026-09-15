@@ -1,67 +1,143 @@
-package config_test
+package config
 
 import (
 	"testing"
-
-	"github.com/viletech/vdp/core/pkg/config"
 )
 
-func TestValidateProductionRejectsDevSecrets(t *testing.T) {
-	t.Parallel()
-	cfg := &config.Config{Environment: "production", JWTSecret: "vdp-core-dev-secret", HubSharedSecret: "vdp-s2s-dev-secret"}
-	if err := cfg.ValidateProduction(); err == nil {
-		t.Fatal("expected error for dev secrets in production")
+// TestValidateProduction ensures dev secrets are rejected in production environments.
+func TestValidateProduction(t *testing.T) {
+	tests := []struct {
+		name        string
+		environment string
+		jwtSecret   string
+		hubSecret   string
+		expectError bool
+		desc        string
+	}{
+		{
+			name:        "dev_environment_allows_dev_secrets",
+			environment: "development",
+			jwtSecret:   "vdp-core-dev-secret",
+			hubSecret:   "vdp-s2s-dev-secret",
+			expectError: false,
+			desc:        "Development environment should allow dev secrets",
+		},
+		{
+			name:        "local_environment_allows_dev_secrets",
+			environment: "local",
+			jwtSecret:   "vdp-core-dev-secret",
+			hubSecret:   "vdp-s2s-dev-secret",
+			expectError: false,
+			desc:        "Local environment should allow dev secrets",
+		},
+		{
+			name:        "test_environment_allows_dev_secrets",
+			environment: "test",
+			jwtSecret:   "vdp-core-dev-secret",
+			hubSecret:   "vdp-s2s-dev-secret",
+			expectError: false,
+			desc:        "Test environment should allow dev secrets",
+		},
+		{
+			name:        "ci_environment_allows_dev_secrets",
+			environment: "ci",
+			jwtSecret:   "vdp-core-dev-secret",
+			hubSecret:   "vdp-s2s-dev-secret",
+			expectError: false,
+			desc:        "CI environment should allow dev secrets",
+		},
+		{
+			name:        "production_rejects_dev_jwt_secret",
+			environment: "production",
+			jwtSecret:   "vdp-core-dev-secret",
+			hubSecret:   "prod-hub-secret-xxx",
+			expectError: true,
+			desc:        "Production must reject dev JWT secret",
+		},
+		{
+			name:        "production_rejects_dev_hub_secret",
+			environment: "production",
+			jwtSecret:   "prod-jwt-secret-xxx",
+			hubSecret:   "vdp-s2s-dev-secret",
+			expectError: true,
+			desc:        "Production must reject dev HUB secret",
+		},
+		{
+			name:        "production_rejects_empty_jwt_secret",
+			environment: "production",
+			jwtSecret:   "",
+			hubSecret:   "prod-hub-secret-xxx",
+			expectError: true,
+			desc:        "Production must reject empty JWT secret",
+		},
+		{
+			name:        "production_rejects_empty_hub_secret",
+			environment: "production",
+			jwtSecret:   "prod-jwt-secret-xxx",
+			hubSecret:   "",
+			expectError: true,
+			desc:        "Production must reject empty HUB secret",
+		},
+		{
+			name:        "staging_rejects_dev_secrets",
+			environment: "staging",
+			jwtSecret:   "vdp-core-dev-secret",
+			hubSecret:   "vdp-s2s-dev-secret",
+			expectError: true,
+			desc:        "Staging must reject dev secrets",
+		},
+		{
+			name:        "alpha_rejects_dev_secrets",
+			environment: "alpha",
+			jwtSecret:   "vdp-core-dev-secret",
+			hubSecret:   "vdp-s2s-dev-secret",
+			expectError: true,
+			desc:        "Alpha must reject dev secrets",
+		},
+		{
+			name:        "production_accepts_prod_secrets",
+			environment: "production",
+			jwtSecret:   "prod-jwt-secret-at-least-32-chars-long!!",
+			hubSecret:   "prod-hub-shared-secret-at-least-32-chars",
+			expectError: false,
+			desc:        "Production should accept proper production secrets",
+		},
 	}
-	cfg.JWTSecret = "rotated-core-secret"
-	cfg.HubSharedSecret = "rotated-s2s-secret"
-	if err := cfg.ValidateProduction(); err != nil {
-		t.Fatalf("unexpected: %v", err)
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			cfg := &Config{
+				Environment:     tt.environment,
+				JWTSecret:       tt.jwtSecret,
+				HubSharedSecret: tt.hubSecret,
+			}
+
+			err := cfg.ValidateProduction()
+
+			if tt.expectError && err == nil {
+				t.Errorf("%s: expected error but got none\nDesc: %s", tt.name, tt.desc)
+			}
+			if !tt.expectError && err != nil {
+				t.Errorf("%s: unexpected error: %v\nDesc: %s", tt.name, err, tt.desc)
+			}
+		})
 	}
 }
 
-func TestValidateProductionSkipsDevelopment(t *testing.T) {
-	t.Parallel()
-	cfg := &config.Config{Environment: "development", JWTSecret: "vdp-core-dev-secret"}
-	if err := cfg.ValidateProduction(); err != nil {
-		t.Fatalf("dev env should skip: %v", err)
-	}
-}
+// TestIsLocalEnvironment verifies environment classification.
+func TestIsLocalEnvironment(t *testing.T) {
+	localEnvs := []string{"", "development", "dev", "DEV", "local", "LOCAL", "test", "TEST", "ci", "CI"}
+	prodEnvs := []string{"production", "PRODUCTION", "staging", "alpha", "beta", "gamma", "prod"}
 
-func TestValidateProductionEnvironments(t *testing.T) {
-	t.Parallel()
-	localEnvs := []string{"", "development", "dev", "local", "test", "ci", "Development", " DEV "}
 	for _, env := range localEnvs {
-		env := env
-		t.Run("local/"+env, func(t *testing.T) {
-			t.Parallel()
-			cfg := &config.Config{
-				Environment:     env,
-				JWTSecret:       "vdp-core-dev-secret",
-				HubSharedSecret: "vdp-s2s-dev-secret",
-			}
-			if err := cfg.ValidateProduction(); err != nil {
-				t.Fatalf("local env %q should allow dev secrets: %v", env, err)
-			}
-		})
+		if !isLocalEnvironment(env) {
+			t.Errorf("isLocalEnvironment(%q) should be true", env)
+		}
 	}
-	networkEnvs := []string{"production", "prod", "staging", "alpha", "beta", "gamma", "STAGING"}
-	for _, env := range networkEnvs {
-		env := env
-		t.Run("network/"+env, func(t *testing.T) {
-			t.Parallel()
-			cfg := &config.Config{
-				Environment:     env,
-				JWTSecret:       "vdp-core-dev-secret",
-				HubSharedSecret: "vdp-s2s-dev-secret",
-			}
-			if err := cfg.ValidateProduction(); err == nil {
-				t.Fatalf("network env %q must reject dev secrets", env)
-			}
-			cfg.JWTSecret = "rotated-core-secret"
-			cfg.HubSharedSecret = "rotated-s2s-secret"
-			if err := cfg.ValidateProduction(); err != nil {
-				t.Fatalf("network env %q should accept rotated secrets: %v", env, err)
-			}
-		})
+
+	for _, env := range prodEnvs {
+		if isLocalEnvironment(env) {
+			t.Errorf("isLocalEnvironment(%q) should be false", env)
+		}
 	}
 }

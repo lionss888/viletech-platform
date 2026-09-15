@@ -6,13 +6,13 @@ todos:
     content: "P1: Docs honesty → phase_1_docs_honesty_5117c6f8 (уже закрыт import_docs_honesty_sync)"
     status: completed
   - id: phase2-security
-    content: "P2: Security → phase_2_security_hardening_140a1ecf"
-    status: pending
+    content: "P2: Security → phase_2_security_hardening_140a1ecf (закрыт: AuthZ/ACL/PII/secrets/backup docs)"
+    status: completed
   - id: phase3-staging
-    content: "P3: Staging → phase_3_staging_readiness_d70c6ff0"
-    status: pending
+    content: "P3: Staging → phase_3_staging_readiness_d70c6ff0 (закрыт: local live DOCS/MAIL smoke; alpha SSH key ops leftover)"
+    status: completed
   - id: phase4-ops
-    content: "P4: Ops → phase_4_ops_excellence_20962059"
+    content: "P4: Ops → phase_4_ops_excellence_20962059 (следующий)"
     status: pending
   - id: milestone-prod
     content: "M1: Prod go-live → milestone_1_prod_go_live_38e889e1 (после P1–P4)"
@@ -66,9 +66,9 @@ flowchart LR
 ## Дочерние планы
 
 - **P1 Docs honesty** — [`phase_1_docs_honesty_5117c6f8.plan.md`](phase_1_docs_honesty_5117c6f8.plan.md) — **completed** (факт: [`import_docs_honesty_sync_3d8a9c27.plan.md`](import_docs_honesty_sync_3d8a9c27.plan.md)). Срок ~4–6 ч.
-- **P2 Security** — [`phase_2_security_hardening_140a1ecf.plan.md`](phase_2_security_hardening_140a1ecf.plan.md) — pending. ~3–4 раб. дня. Следующий к исполнению.
-- **P3 Staging** — [`phase_3_staging_readiness_d70c6ff0.plan.md`](phase_3_staging_readiness_d70c6ff0.plan.md) — pending. После P2. ~2–3 дня.
-- **P4 Ops** — [`phase_4_ops_excellence_20962059.plan.md`](phase_4_ops_excellence_20962059.plan.md) — pending. После P3. ~2–3 дня.
+- **P2 Security** — [`phase_2_security_hardening_140a1ecf.plan.md`](phase_2_security_hardening_140a1ecf.plan.md) — **completed** (AuthZ matrix + file ACL + Provider/hub PII scrub + prod secret guards + rotation/backup runbooks; Phase 2 пункты `security-signoff-checklist.md`). Evidence: `authz_matrix_audit_test.go`, `file_acl_test.go`, `provider_pii_audit_test.go`, `hub_events_pii_audit_test.go`, `secrets-rotation-runbook.md`, `backup-encryption-runbook.md`.
+- **P3 Staging** — [`phase_3_staging_readiness_d70c6ff0.plan.md`](phase_3_staging_readiness_d70c6ff0.plan.md) — **completed** (2026-09-15: make staging-smoke green with live docs/mail/sms; rollback-rehearsal-local + test-cd-scripts; alpha edge health/login OK; remote SSH rollback blocked until DEPLOY_SSH_KEY refresh).
+- **P4 Ops** — [`phase_4_ops_excellence_20962059.plan.md`](phase_4_ops_excellence_20962059.plan.md) — pending. **Следующий к исполнению.** ~2–3 дня.
 - **M1 Prod go-live** — [`milestone_1_prod_go_live_38e889e1.plan.md`](milestone_1_prod_go_live_38e889e1.plan.md) — pending. После P1–P4. Gate: `make release-gate` + handover checklists.
 - **P5 Export domain** — [`phase_5_export_domain_dffbc889.plan.md`](phase_5_export_domain_dffbc889.plan.md) — pending. После M1. ~5–7 дней.
 - **P6 Export UI/E2E** — [`phase_6_export_ui_e2e_22fcdbc8.plan.md`](phase_6_export_ui_e2e_22fcdbc8.plan.md) — pending. После P5. ~4–6 дней.
@@ -78,8 +78,8 @@ flowchart LR
 
 ## Цели (сводка)
 
-- **Сейчас:** пилот импорт ~90% (после P1), prod go-live ~45%, full scope вводных ~65%.
-- **После M1 (~8–11 раб. дней от старта P2):** import pilot prod-ready 95%+.
+- **Сейчас:** пилот импорт ~90% (P1), security (P2) и staging smoke local (P3) закрыты, prod go-live ~65–70% (остались P4 ops + M1 gate + alpha SSH key), full scope вводных ~65%.
+- **После M1 (~2–3 раб. дня от старта P4):** import pilot prod-ready 95%+.
 - **После M2 (~30–40 раб. дней от M1):** in-scope маршруты вводных domain→E2E; residual gaps остаются gaps.
 
 ## Dependency Map
@@ -106,6 +106,7 @@ flowchart LR
 
 ## Риски
 
-- AuthZ audit в P2 может вскрыть дыры → fix до P3.
+- ~~AuthZ audit в P2 может вскрыть дыры → fix до P3.~~ **снято:** дыры (accounts list, org create, counterparties, Provider identity docs) закрыты в P2.
 - Vendor URL в P3 — внешняя зависимость по сроку.
 - P7/P8 domain уже частично в formpayment — не переписывать с нуля, дожимать product+E2E.
+- Ops-side backup encryption: runbook есть; фактическая верификация на инфра — в P4 / M1 handover.

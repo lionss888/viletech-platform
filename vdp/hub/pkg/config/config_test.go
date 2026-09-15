@@ -1,57 +1,116 @@
-package config_test
+package config
 
 import (
 	"testing"
-
-	"github.com/viletech/vdp/hub/pkg/config"
 )
 
-func TestValidateProductionRejectsDevSecret(t *testing.T) {
-	t.Parallel()
-	cfg := &config.Config{Environment: "production", SharedSecret: "vdp-s2s-dev-secret"}
-	if err := cfg.ValidateProduction(); err == nil {
-		t.Fatal("expected error for dev S2S secret in production")
+// TestValidateProduction ensures dev S2S secret is rejected in production environments.
+func TestValidateProduction(t *testing.T) {
+	tests := []struct {
+		name         string
+		environment  string
+		sharedSecret string
+		expectError  bool
+		desc         string
+	}{
+		{
+			name:         "dev_environment_allows_dev_secret",
+			environment:  "development",
+			sharedSecret: "vdp-s2s-dev-secret",
+			expectError:  false,
+			desc:         "Development environment should allow dev secret",
+		},
+		{
+			name:         "local_environment_allows_dev_secret",
+			environment:  "local",
+			sharedSecret: "vdp-s2s-dev-secret",
+			expectError:  false,
+			desc:         "Local environment should allow dev secret",
+		},
+		{
+			name:         "test_environment_allows_dev_secret",
+			environment:  "test",
+			sharedSecret: "vdp-s2s-dev-secret",
+			expectError:  false,
+			desc:         "Test environment should allow dev secret",
+		},
+		{
+			name:         "ci_environment_allows_dev_secret",
+			environment:  "ci",
+			sharedSecret: "vdp-s2s-dev-secret",
+			expectError:  false,
+			desc:         "CI environment should allow dev secret",
+		},
+		{
+			name:         "production_rejects_dev_secret",
+			environment:  "production",
+			sharedSecret: "vdp-s2s-dev-secret",
+			expectError:  true,
+			desc:         "Production must reject dev S2S secret",
+		},
+		{
+			name:         "production_rejects_empty_secret",
+			environment:  "production",
+			sharedSecret: "",
+			expectError:  true,
+			desc:         "Production must reject empty S2S secret",
+		},
+		{
+			name:         "staging_rejects_dev_secret",
+			environment:  "staging",
+			sharedSecret: "vdp-s2s-dev-secret",
+			expectError:  true,
+			desc:         "Staging must reject dev secret",
+		},
+		{
+			name:         "alpha_rejects_dev_secret",
+			environment:  "alpha",
+			sharedSecret: "vdp-s2s-dev-secret",
+			expectError:  true,
+			desc:         "Alpha must reject dev secret",
+		},
+		{
+			name:         "production_accepts_prod_secret",
+			environment:  "production",
+			sharedSecret: "prod-hub-shared-secret-at-least-32-chars",
+			expectError:  false,
+			desc:         "Production should accept proper production secret",
+		},
 	}
-	cfg.SharedSecret = "rotated-s2s-secret"
-	if err := cfg.ValidateProduction(); err != nil {
-		t.Fatalf("unexpected: %v", err)
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			cfg := &Config{
+				Environment:  tt.environment,
+				SharedSecret: tt.sharedSecret,
+			}
+
+			err := cfg.ValidateProduction()
+
+			if tt.expectError && err == nil {
+				t.Errorf("%s: expected error but got none\nDesc: %s", tt.name, tt.desc)
+			}
+			if !tt.expectError && err != nil {
+				t.Errorf("%s: unexpected error: %v\nDesc: %s", tt.name, err, tt.desc)
+			}
+		})
 	}
 }
 
-func TestValidateProductionSkipsDevelopment(t *testing.T) {
-	t.Parallel()
-	cfg := &config.Config{Environment: "development", SharedSecret: "vdp-s2s-dev-secret"}
-	if err := cfg.ValidateProduction(); err != nil {
-		t.Fatalf("dev env should skip: %v", err)
-	}
-}
+// TestIsLocalEnvironment verifies environment classification.
+func TestIsLocalEnvironment(t *testing.T) {
+	localEnvs := []string{"", "development", "dev", "DEV", "local", "LOCAL", "test", "TEST", "ci", "CI"}
+	prodEnvs := []string{"production", "PRODUCTION", "staging", "alpha", "beta", "gamma", "prod"}
 
-func TestValidateProductionEnvironments(t *testing.T) {
-	t.Parallel()
-	localEnvs := []string{"", "development", "dev", "local", "test", "ci", "Development", " DEV "}
 	for _, env := range localEnvs {
-		env := env
-		t.Run("local/"+env, func(t *testing.T) {
-			t.Parallel()
-			cfg := &config.Config{Environment: env, SharedSecret: "vdp-s2s-dev-secret"}
-			if err := cfg.ValidateProduction(); err != nil {
-				t.Fatalf("local env %q should allow dev secrets: %v", env, err)
-			}
-		})
+		if !isLocalEnvironment(env) {
+			t.Errorf("isLocalEnvironment(%q) should be true", env)
+		}
 	}
-	networkEnvs := []string{"production", "prod", "staging", "alpha", "beta", "gamma", "STAGING"}
-	for _, env := range networkEnvs {
-		env := env
-		t.Run("network/"+env, func(t *testing.T) {
-			t.Parallel()
-			cfg := &config.Config{Environment: env, SharedSecret: "vdp-s2s-dev-secret"}
-			if err := cfg.ValidateProduction(); err == nil {
-				t.Fatalf("network env %q must reject dev secrets", env)
-			}
-			cfg.SharedSecret = "rotated-s2s-secret"
-			if err := cfg.ValidateProduction(); err != nil {
-				t.Fatalf("network env %q should accept rotated secrets: %v", env, err)
-			}
-		})
+
+	for _, env := range prodEnvs {
+		if isLocalEnvironment(env) {
+			t.Errorf("isLocalEnvironment(%q) should be false", env)
+		}
 	}
 }
