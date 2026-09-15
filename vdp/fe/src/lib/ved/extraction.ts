@@ -95,3 +95,24 @@ export function canControlExtraction(role: string, status?: string): boolean {
   const st = status ?? "";
   return st === "creating" || st === "draft" || st.includes("correction");
 }
+
+export type ExtractionPanelMode = ReturnType<typeof extractionPanelMode>;
+
+/** CTA label next to document upload for opening the extraction dialog. */
+export function extractionTriggerLabel(mode: ExtractionPanelMode): string {
+  if (mode === "pending") return "Распознавание…";
+  if (mode === "review") return "Просмотр данных";
+  if (mode === "idle") return "Статус распознавания";
+  return "";
+}
+
+/** Dialog / sheet title for the extraction review surface. */
+export function extractionDialogTitle(mode: ExtractionPanelMode): string {
+  if (mode === "review") return "Распознанные данные";
+  return "Распознавание";
+}
+
+/** Desktop modal vs mobile bottom sheet. */
+export function extractionShellVariant(isMobile: boolean): "modal" | "sheet" {
+  return isMobile ? "sheet" : "modal";
+}

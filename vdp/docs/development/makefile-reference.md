@@ -60,7 +60,7 @@ npm test в fe, make test, make compose-e2e. Команда make integration-gat
 
 ## ci-pr-fast и ci-pr
 
-Локальная страховка required checks VDP CI на pull_request. `make ci-pr-fast`: docs-format-check, test-cd-scripts, test-adapters, integration-gate. `make ci-pr`: то же плюс узкий Playwright (login-form, user-submit, provider-acl, reject-path) — как `PLAYWRIGHT_ARGS` в job playwright на PR. Не заменяет `make release-gate` (полный suite / handover). Процесс агента: `.cursor/rules/vdp-ci-local-gate.mdc`.
+Локальная страховка required checks VDP CI на pull_request. `make ci-pr-fast`: docs-format-check, test-cd-scripts, test-adapters, integration-gate. `make ci-pr`: то же плюс узкий Playwright (login-form, user-submit, provider-acl, reject-path) — как job playwright на PR. `make ci-pr-pilot`: ci-pr плюс тег @pilot-matrix (паритет GitHub path-filter). Не заменяет `make release-gate` (полный suite / handover). Процесс агента: `.cursor/rules/vdp-ci-local-gate.mdc`. Local QG: PR Gate (smoke) это ci-pr, PR Gate (Pilot) это ci-pr-pilot.
 
 ## playwright-e2e и compose-playwright
 

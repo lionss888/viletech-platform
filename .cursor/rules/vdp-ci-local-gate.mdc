@@ -5,28 +5,62 @@ alwaysApply: true
 
 # VDP: локальная страховка CI (Cursor process)
 
-Источник: паритет с `.github/workflows/vdp-ci.yml`. Команды — из каталога `vdp`. Связано: `тесты-архитектуры`, `честность-готовности`, `vdp-fe-docker-пересборка`, `mgmt-tg-notify`, `docs/conventions/format.md`.
+Источник: паритет с `.github/workflows/vdp-ci.yml`. Команды — из каталога `vdp`. Связано: `тесты-архитектуры`, `честность-готовности`, `vdp-fe-docker-пересборка`, `mgmt-tg-notify`, `docs/conventions/format.md`, `планирование-сверка-с-rules` (имя gate в DoD плана с первой версии).
 
 ## Лестница gate (не путать)
 
 | Уровень | Команда | Когда |
 |---|---|---|
-| Pre-commit (быстро) | `make precommit-gate` / хук `.githooks` | каждый коммит: `docs-format-check` + `make test` + TG gate |
+| Environment parity | `make check-env-parity` | **первый** gate; проверка версий Node.js/Go vs CI; в pre-commit |
+| Pre-commit (быстро) | `make precommit-gate` / хук `.githooks` | каждый коммит: env-parity + `docs-format-check` + `make test` + TG gate |
 | PR-паритет без browser | `make ci-pr-fast` | итерации backend/API, пока UI E2E не нужен |
-| PR-паритет (required checks) | `make ci-pr` | перед push / PR / «готово к CI» |
+| PR-паритет (узкий Playwright) | `make ci-pr` | перед push / PR, если path-filter **не** включает pilot-matrix |
+| PR-паритет + лестница | `make ci-pr-pilot` | e2e / `@pilot-matrix` / ActionPanel / rate-commission / formpayment — то же, что GitHub job `playwright (pilot-matrix)` |
 | Main / handover | `make release-gate` | только по явной просьбе или перед тегом/`vdp-v*` (долго) |
+| Deploy secrets check | `make check-deploy-secrets` | проверка MGMT_NOTIFY_TOKEN/CHAT_ID перед деплоем |
 
-`ci-pr` ≈ jobs: docs + fast(adapters) + integration + пауза 65s (rate-limit) + **узкий** Playwright как на `pull_request`.  
+`ci-pr-fast` ≈ static checks (docs/CD/adapters/secrets/lovable/fe-unit/go-units) параллельно через `ci-pr-static.sh` → `compose-e2e` (один стек).  
+`ci-pr` ≈ `ci-pr-fast` + пауза 65s (rate-limit) + **узкий** Playwright как job `playwright` на `pull_request`. **Не** полный PR: GitHub при path-filter дополнительно гоняет `@pilot-matrix`.  
+`ci-pr-pilot` ≈ `ci-pr` + пауза 65s + `@pilot-matrix`. Local QG: кнопка **PR Gate (Pilot)**; **PR Gate (smoke)** = только `ci-pr`.  
 `release-gate` ≈ полный browser + pilot-matrix + postgres integration — **не** гонять молча на каждый фикс.
+
+**MUST (один PR):** продуктовое изменение и тесты слоёв, которые оно ломает, в одном diff. Нельзя закрывать волну с зелёным нижним gate (`ci-pr` / unit), если GitHub path-filter включит верхний (`ci-pr-pilot`).
+
+## Схема ci-pr-fast (run-all без ранних блокеров)
+
+Фаза 1 (static/unit): все независимые проверки запускаются параллельно через `scripts/ci-pr-static.sh`. Агрегирует exit коды всех шагов. Fail одного шага не блокирует остальные — все выполняются до конца и печатаются в таблице результатов.
+
+Проверки фазы 1: `docs-format-check`, `test-cd-scripts`, `check-deploy-secrets`, `test-adapters`, `lovable-seed-check`, `pilot-matrix-stale`, `fe npm test`, 8 модулей `go test` (core/hub/shared/extraction/mail-gateway/sms-gateway/manager-ops/release-gate).
+
+Фаза 2 (compose/browser): запускается только если фаза 1 зелёная. Один Docker compose stack + sleep 65 + Playwright. Последовательно (не параллельно на одном хосте).
+
+## Environment parity (MUST FIRST)
+
+**До любых тестов** проверь, что локальная среда соответствует CI:
+
+```bash
+cd vdp && make check-env-parity
+```
+
+Проверяет:
+- Node.js версия совпадает с `vdp/fe/.nvmrc`
+- `package-lock.json` существует и не содержит `file://` зависимостей
+
+**Fail-fast**: Если environment parity check красный, **останови работу** и предложи пользователю исправить:
+- `nvm use` (или `mise use`) для переключения Node.js версии
+- `npm install` для регенерации `package-lock.json`
+
+**CI guarantee**: `env-parity` job в GitHub Actions гарантирует, что .nvmrc существует и используется workflow. Без локальной проверки — расхождение версий гарантировано через N коммитов.
 
 ## MUST для агента
 
 Триггеры (сработал любой):
 
+0. **Всегда первым**: `make check-env-parity` перед любыми тестами/билдами.
 1. Пользователь просит **push**, **PR**, «готово к CI», «застраховать CI», «проверь как в CI», merge-ready по `vdp/**`.
 2. Агент собирается утверждать, что **CI будет зелёным** / PR можно мержить после правок в `vdp/`.
 3. После фикса **красного** VDP CI — перед новым «готово» снова прогон.
-4. Агент **создал или существенно правил** файлы под `vdp/docs/**` или `vdp/README.md` (особенно вне `docs/development/`) — **до** «готово» / коммита / следующего шага прогнать из `vdp/`:
+4. Агент **создал или существенно правил** файлы под `vdp/docs/**` или `vdp/README.md` (особенно вне `docs/development/`) — **до** «готово** / коммита / следующего шага прогнать из `vdp/`:
    - минимум **`make docs-format-check`**;
    - не ждать только pre-commit хука (history чата не ослабляет).
 5. Кнопка **Run** в Local QG canvas (`local-qg.canvas.tsx`) или промпт `Local QG RUN` — это **запуск**, не обсуждение: выполнить указанную команду сразу.
@@ -35,42 +69,83 @@ alwaysApply: true
 
 1. Предложить и при согласии (или если пользователь уже сказал «прогони» / нажал Run в Local QG) выполнить из `vdp/`:
    - по умолчанию **`make ci-pr`**;
-   - если пользователь просит быстрее / без browser — **`make ci-pr-fast`**, и честно сказать, что Playwright PR-smoke ещё не гонялся;
+   - если затронуты `vdp/fe/e2e/**`, `@pilot-matrix`, ActionPanel/status-matrix/rate-commission или formpayment domain → **`make ci-pr-pilot`** (GitHub path-filter запустит `playwright-pilot-matrix`);
+   - если пользователь просит быстрее / без browser — **`make ci-pr-fast`**, и честно сказать, что Playwright PR-smoke / pilot-matrix ещё не гонялись;
    - при правках только документации — достаточно **`make docs-format-check`** (+ при желании `test-cd-scripts`, если трогали CD-контракты);
    - при явной команде из Local QG — **ровно ту**, что в промпте (не подменять `precommit-gate` на `ci-pr`).
 2. Красный gate → **не** утверждать готовность CI; починить или явно перечислить пробел.
 3. `make release-gate` — только если пользователь просит полный контур / handover / тег.
 4. FE Docker deps: по-прежнему **спросить** перед `compose-fe-refresh` (`vdp-fe-docker-пересборка`).
-5. Ops/product docs вне `docs/development/`: без таблиц, списков, bold, backticks, fence — см. `docs/conventions/format.md`. How-to с командами/таблицами — в `docs/development/`.
+5. Ops/product docs вне `docs/development/`: без таблиц, списков, bold, backticks, fence — см. `docs/conventions/format.md`. How-to с командами (fenced) — в `docs/development/`; таблицы/списки/bold запрещены и там.
 
 ## Shell / sandbox (MUST)
 
-Для локальных VDP gate из агента (`make docs-format-check`, `make precommit-gate`, `make ci-pr-fast`, `make ci-pr`, `make release-gate` и их цепочки с `go test` / Docker / TG notify):
+Для локальных VDP gate из агента (`make docs-format-check`, `make precommit-gate`, `make ci-pr-fast`, `make ci-pr`, `make ci-pr-pilot`, `make release-gate` и их цепочки с `go test` / Docker / TG notify):
 
 1. **Первый** вызов Shell сразу с полным снятием sandbox (`required_permissions: ["all"]` или эквивалент).
 2. **Не** делать пробный запуск в readonly sandbox — ломает make (`No rule to make target`), chmod, module cache, notify.
 3. **Не** спрашивать пользователя «можно ли без sandbox» для этих команд: это часть Local QG / precommit / ci-pr.
 4. Один прогон: не «сначала sandbox, потом retry».
 
+## Deploy secrets check (MUST)
+
+Начиная с этого момента, `ci-pr` и `release-gate` включают проверку **management notify secrets** (`MGMT_NOTIFY_TOKEN` + `MGMT_NOTIFY_CHAT_ID`). Без этих секретов deploy workflows (GitHub Actions / GitLab CI) **упадут** на runtime-проверке перед отправкой уведомления о выкате.
+
+**Как настроить локально:**
+
+```bash
+# Вариант 1: ~/.vedy_bot/env (приоритет)
+echo "MGMT_NOTIFY_TOKEN=your_bot_token" >> ~/.vedy_bot/env
+echo "MGMT_NOTIFY_CHAT_ID=your_chat_id" >> ~/.vedy_bot/env
+
+# Вариант 2: ~/.vdp-intake/env (fallback)
+echo "TELEGRAM_INTAKE_TOKEN=your_bot_token" >> ~/.vdp-intake/env
+echo "TELEGRAM_INTAKE_CHAT_IDS=your_chat_id" >> ~/.vdp-intake/env
+
+# Вариант 3: shell session
+export MGMT_NOTIFY_TOKEN="your_bot_token"
+export MGMT_NOTIFY_CHAT_ID="your_chat_id"
+```
+
+**Как настроить в CI:**
+
+- **GitHub:** Repository Settings → Secrets → Actions → New secret: `MGMT_NOTIFY_TOKEN`, `MGMT_NOTIFY_CHAT_ID`
+- **GitLab:** Project Settings → CI/CD → Variables → Add variable: `MGMT_NOTIFY_TOKEN`, `MGMT_NOTIFY_CHAT_ID` (Protected: yes)
+
+**Получить токен и chat_id:**
+
+1. Создать бота: https://t.me/BotFather → `/newbot` → скопировать токен
+2. Отправить сообщение боту (любое)
+3. Получить chat_id: `curl https://api.telegram.org/bot<TOKEN>/getUpdates`
+
+Проверка встроена в `ci-pr` и `release-gate`; можно запустить отдельно: `make check-deploy-secrets`.
+
 ## MUST NOT
 
-- Заявлять «CI ок» / «паритет PR» без локального `ci-pr` или `ci-pr-fast` (с оговоркой) на затронутом изменении.
+- **Пропускать `make check-env-parity`** перед любыми тестами/билдами — это первый gate всегда.
+- Заявлять «CI ок» / «паритет PR» без локального `ci-pr` / `ci-pr-pilot` (по path-filter) или `ci-pr-fast` (с оговоркой) на затронутом изменении.
+- Называть Local QG **PR Gate (smoke)** / `make ci-pr` полным паритетом GitHub PR, если path-filter включит `playwright-pilot-matrix`.
 - Подменять `ci-pr` одним `make test` или только unit FE.
 - Класть полный `release-gate` в pre-commit или гонять его без запроса (дорого, не PR-паритет).
 - Обходить Docker Playwright на macOS host `npx playwright install`, если команда — Makefile `playwright-e2e`.
 - Закрывать волну/PR после правок `vdp/docs/**` без локального `docs-format-check`.
 - Трактовать кнопку Run / `Local QG RUN` как «спроси, стоит ли гонять» — это команда на выполнение.
+- Пропускать `check-deploy-secrets` перед push в main или PR, который может вызвать deploy.
+- **Утверждать «готово» без зелёного `make ci-pr`** — расхождение версий и прочие локальные особенности ломают CI.
+- **Утверждать «CI ok / merge-ready» после правок `vdp/fe/e2e/**`, `@pilot-matrix`, ActionPanel, status-matrix, rate-commission или formpayment domain без зелёного `make ci-pr-pilot`** — локальный `ci-pr` не гоняет `playwright-pilot-matrix`, а GitHub required checks запускают его по path-filter.
 
 ## Что делать человеку (коротко)
 
 Один раз: `make -C vdp install-git-hooks` (pre-commit = docs-format + unit + TG).  
-Перед push в PR: `cd vdp && make ci-pr`.  
+Перед push в PR: `cd vdp && make ci-pr`. Если в diff `vdp/fe/e2e/**` или лестница (ActionPanel / rate-commission / formpayment) — **`make ci-pr-pilot`** (Local QG: PR Gate (Pilot)).  
 Перед handover: `make release-gate`.
 
 ## Анти-паттерны
 
 - «Локально собралось» без compose-e2e / узкого Playwright при изменении journey/API.
 - Тихий skip Playwright при заявлении полного PR-паритета.
-- Путать `precommit-gate` (docs + unit) с `ci-pr` (полный CI PR).
+- Путать `precommit-gate` (docs + unit) с `ci-pr` (узкий CI PR) или с `ci-pr-pilot` (лестница).
+- Называть Local QG PR Gate (smoke) полным GitHub PR.
 - Писать rich markdown в `docs/operations/` и чинить только после красного GitHub docs job.
 - Пробный `make` в sandbox агента → ложный fail / `No rule to make target`; потом «сориентировался» на all.
+- Пушить в main/PR без проверки deploy secrets → fail на CI deploy step с ошибкой «Management notify secrets are required».

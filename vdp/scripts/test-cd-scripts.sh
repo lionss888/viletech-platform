@@ -28,11 +28,16 @@ for script in \
   scripts/notify-mgmt.sh \
   scripts/ci-mgmt-notify.sh \
   scripts/precommit-mgmt-notify.sh \
-  scripts/configure-gitlab-mirror.sh; do
+  scripts/configure-gitlab-mirror.sh \
+  scripts/check-pilot-matrix-stale.sh; do
   [ -f "$script" ] || fail "missing $script"
   bash -n "$script"
   echo "syntax ok: $script"
 done
+
+echo "== check-pilot-matrix-stale on current specs =="
+bash scripts/check-pilot-matrix-stale.sh
+grep -q 'check-pilot-matrix-stale' scripts/ci-pr-static.sh || fail "ci-pr-static must run check-pilot-matrix-stale.sh"
 
 echo "== mgmt-notify-sanitize self-test =="
 python3 scripts/mgmt-notify-sanitize.py --self-test
@@ -413,10 +418,21 @@ grep -q 'from.*file-pick-button' "$WIZARD_PAGE" \
   || fail "forms-new-page must import shared FilePickButton"
 ! grep -q 'function FilePickButton' "$WIZARD_PAGE" \
   || fail "forms-new-page must NOT have local FilePickButton (use shared)"
+grep -q 'function FileField' "$WIZARD_PAGE" \
+  || fail "forms-new-page must define FileField (div wrapper for FilePickButton)"
+# Invoice/contract FilePick must use FileField, not wrapping Field/label
+grep -q '<FileField label="Инвойс' "$WIZARD_PAGE" \
+  || fail "wizard invoice FilePickButton must be wrapped in FileField, not Field"
+grep -q '<FileField label="Контракт' "$WIZARD_PAGE" \
+  || fail "wizard contract FilePickButton must be wrapped in FileField, not Field"
+! grep -E '<Field[^>]*>[[:space:]]*<FilePickButton' "$WIZARD_PAGE" \
+  || fail "forms-new-page must NOT wrap FilePickButton in Field (label causes double filechooser)"
 # E2E must test gesture via filechooser, not just setInputFiles
 WAVE2_SPEC="$ROOT/fe/e2e/wave2-wizard.spec.ts"
-grep -Eq "waitForEvent\(['\"]filechooser['\"]" "$WAVE2_SPEC" \
-  || fail "wave2-wizard.spec must use waitForEvent('filechooser') for gesture test"
+grep -Eq "waitForEvent\(['\"]filechooser['\"]|on\(['\"]filechooser['\"]" "$WAVE2_SPEC" \
+  || fail "wave2-wizard.spec must listen for filechooser (waitForEvent or page.on) for gesture test"
+grep -Eq 'exactly one filechooser|choosers\.length\)\.toBe\(1\)|no second filechooser' "$WAVE2_SPEC" \
+  || fail "wave2-wizard.spec must assert exactly one filechooser (no double open)"
 
 make compose-release-config-check
 echo "test-cd-scripts passed"

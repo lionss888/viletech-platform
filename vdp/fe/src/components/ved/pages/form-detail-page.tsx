@@ -10,7 +10,7 @@ import {
   nextStepHint,
   rejectFromHistory,
 } from "@/lib/api/mappers";
-import { ExtractionReviewPanel } from "@/components/ved/ExtractionReviewPanel";
+import { ExtractionReviewDialog } from "@/components/ved/ExtractionReviewDialog";
 import { CorrectionGuidancePanel } from "@/components/ved/CorrectionGuidancePanel";
 import { CounterpartyPickDialog } from "@/components/ved/CounterpartyPickDialog";
 import { OrganizationPickDialog } from "@/components/ved/OrganizationPickDialog";
@@ -35,7 +35,12 @@ import {
   subjectsOf,
   subjectsPendingReview,
 } from "@/lib/ved/compliance";
-import { canControlExtraction } from "@/lib/ved/extraction";
+import {
+  canControlExtraction,
+  extractionPanelMode,
+  extractionTriggerLabel,
+  parseExtractionResult,
+} from "@/lib/ved/extraction";
 import { canProviderDeleteDocuments, canUploadDocuments } from "@/lib/ved/doc-upload-policy";
 import { dateTime, money } from "@/lib/ved/format";
 import { isPostpayRateOnPP } from "@/lib/ved/manager-payment";
@@ -63,6 +68,7 @@ export function FormDetail() {
   const [cpDialogOpen, setCpDialogOpen] = useState(false);
   const [orgDialogOpen, setOrgDialogOpen] = useState(false);
   const [editOpen, setEditOpen] = useState(false);
+  const [extractionDialogOpen, setExtractionDialogOpen] = useState(false);
   const [uploadBusy, setUploadBusy] = useState(false);
   const [uploadError, setUploadError] = useState<string | null>(null);
   const formQuery = useQuery({
@@ -225,6 +231,18 @@ export function FormDetail() {
       ];
   const paymentRequisites = isProvider ? providerPaymentRequisites(form, org, cp) : [];
   const visibleDocuments = isProvider ? providerVisibleDocuments(form) : form.documents;
+  const invoiceJson = form.invoiceJson ?? formQuery.data?.invoice_json;
+  const extractionMode =
+    mode === "app" && !isProvider
+      ? extractionPanelMode({
+          role,
+          hasDraft: Boolean(parseExtractionResult(invoiceJson)),
+          status: form.status,
+          noDocuments: Boolean(form.noDocuments),
+          hasDocuments: visibleDocuments.length > 0,
+        })
+      : "hide";
+  const extractionTrigger = extractionTriggerLabel(extractionMode);
   const showRateCommission =
     form.status === "payment_sent" &&
     isPostpayRateOnPP({
@@ -275,20 +293,6 @@ export function FormDetail() {
         </div>
       </div>
 
-      {mode === "app" && !isProvider && (
-        <div className="mt-4">
-          <ExtractionReviewPanel
-            formId={form.id}
-            invoiceJson={form.invoiceJson ?? formQuery.data?.invoice_json}
-            role={role}
-            status={form.status}
-            noDocuments={Boolean(form.noDocuments)}
-            hasDocuments={visibleDocuments.length > 0}
-            canConfirm={role === "user" || role === "manager" || role === "root"}
-          />
-        </div>
-      )}
-
       {(form.rejectText || form.rejectMark) && (
         <div className="mt-4 rounded-lg bg-return-soft p-4" data-testid="return-banner">
           <p className="label-caps text-return">Возврат на доработку</p>
@@ -317,23 +321,35 @@ export function FormDetail() {
                   {visibleDocuments.length}
                 </span>
               </p>
-              {canUploadDocs && (
-                <label className="flex h-9 cursor-pointer items-center rounded-md bg-primary px-3 text-xs font-semibold text-primary-foreground hover:opacity-90">
-                  {uploadBusy ? "Загрузка…" : "Загрузить документы"}
-                  <input
-                    type="file"
-                    accept=".pdf,application/pdf"
-                    multiple
-                    className="sr-only"
-                    disabled={uploadBusy}
-                    data-testid="form-doc-upload"
-                    onChange={(e) => {
-                      void onUploadDocs(e.target.files);
-                      e.target.value = "";
-                    }}
-                  />
-                </label>
-              )}
+              <div className="flex flex-wrap items-center gap-2">
+                {extractionMode !== "hide" && extractionTrigger ? (
+                  <button
+                    type="button"
+                    data-testid="extraction-dialog-trigger"
+                    className="flex h-9 items-center rounded-md border border-border bg-card px-3 text-xs font-semibold text-foreground hover:bg-muted"
+                    onClick={() => setExtractionDialogOpen(true)}
+                  >
+                    {extractionTrigger}
+                  </button>
+                ) : null}
+                {canUploadDocs && (
+                  <label className="flex h-9 cursor-pointer items-center rounded-md bg-primary px-3 text-xs font-semibold text-primary-foreground hover:opacity-90">
+                    {uploadBusy ? "Загрузка…" : "Загрузить документы"}
+                    <input
+                      type="file"
+                      accept=".pdf,application/pdf"
+                      multiple
+                      className="sr-only"
+                      disabled={uploadBusy}
+                      data-testid="form-doc-upload"
+                      onChange={(e) => {
+                        void onUploadDocs(e.target.files);
+                        e.target.value = "";
+                      }}
+                    />
+                  </label>
+                )}
+              </div>
             </div>
             {visibleDocuments.length === 0 ? (
               <p className="mt-2 text-sm text-muted-foreground">
@@ -610,6 +626,20 @@ export function FormDetail() {
             setEditOpen(false);
             setCpDialogOpen(true);
           }}
+        />
+      )}
+
+      {extractionMode !== "hide" && (
+        <ExtractionReviewDialog
+          open={extractionDialogOpen}
+          onOpenChange={setExtractionDialogOpen}
+          formId={form.id}
+          invoiceJson={invoiceJson}
+          role={role}
+          status={form.status}
+          noDocuments={Boolean(form.noDocuments)}
+          hasDocuments={visibleDocuments.length > 0}
+          canConfirm={role === "user" || role === "manager" || role === "root"}
         />
       )}
     </VedAppShell>

@@ -20,7 +20,9 @@
 
 Роль Банк (bank). Канал рядом с кабинетом клиента. Создание заявки с меткой «от банка».
 
-Роли sales, viewer, treasurer, senior_provider, one_c. Участие по process config. В пилотных автотестах полного пути не обязательны; в справочнике учтены как возможные слоты без отдельного браузерного прогона каждого.
+Роли sales, viewer, senior_provider, one_c. Участие по process config. В пилотных автотестах полного пути не обязательны; в справочнике учтены как возможные слоты без отдельного браузерного прогона каждого.
+
+Роль Казначей (treasurer). Участие по process config на импортных маршрутах. Browser coverage: @pilot-matrix import advance с execution_deadline (pilot-matrix-full-ladder) и import postpay RATE_ON_PP (pilot-matrix-postpay-rate). Не входит в обязательный PR smoke.
 
 ## Главный путь заявки (spine)
 

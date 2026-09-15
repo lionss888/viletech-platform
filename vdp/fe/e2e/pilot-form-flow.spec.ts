@@ -196,6 +196,8 @@ test.describe("Pilot form flow @pilot-flow", () => {
     await expect(page.getByTestId("change-organization")).toBeVisible();
     await expect(page.getByTestId("edit-form-action")).toBeVisible();
     await expect(page.getByTestId("form-doc-upload")).toBeAttached();
+    await page.getByTestId("extraction-dialog-trigger").click();
+    await expect(page.getByRole("dialog")).toBeVisible();
     await expect(page.getByTestId("extraction-controls")).toBeVisible();
   });
 });

@@ -1,4 +1,4 @@
-.PHONY: deps test test-integration test-adapters build db-setup db-migrate compose-db-migrate run-hub run-core run smoke stop compose-up compose-up-prod compose-down compose-ps compose-e2e compose-fe-smoke compose-fe-refresh compose-fe-prod-smoke compose-playwright lovable-seed-check integration-gate playwright-e2e playwright-pilot playwright-pilot-matrix robot-matrix-check docs-format-check release-gate image-build image-push image-build-push compose-release-config-check compose-release-up deploy-alpha deploy-beta deploy-gamma rollback-alpha rollback-beta rollback-gamma test-cd-scripts notify-mgmt core-seed-reset install-git-hooks precommit-gate ci-pr-fast ci-pr ci-pr-pilot
+.PHONY: deps test test-integration test-adapters build db-setup db-migrate compose-db-migrate run-hub run-core run smoke stop compose-up compose-up-prod compose-down compose-ps compose-e2e compose-fe-smoke compose-fe-refresh compose-fe-prod-smoke compose-playwright lovable-seed-check integration-gate playwright-e2e playwright-pilot playwright-pilot-matrix robot-matrix-check docs-format-check check-deploy-secrets release-gate image-build image-push image-build-push compose-release-config-check compose-release-up deploy-alpha deploy-beta deploy-gamma rollback-alpha rollback-beta rollback-gamma test-cd-scripts notify-mgmt core-seed-reset install-git-hooks precommit-gate ci-pr-fast ci-pr ci-pr-pilot
 
 CORE_DIR := core
 HUB_DIR := hub
@@ -187,18 +187,16 @@ compose-e2e: compose-up
 
 # RD10: unit gates + compose journey (RD1–RD9 spots on shared stack).
 integration-gate:
-	cd fe && npm test
-	$(MAKE) lovable-seed-check
-	$(MAKE) test
+	@chmod +x scripts/ci-pr-static.sh
+	@./scripts/ci-pr-static.sh
 	$(MAKE) compose-e2e
 
 # Local PR parity for VDP CI (vdp-ci.yml) without full nightly Playwright / release-gate.
-# Fast: docs + CD contract + adapters + integration-gate (fe unit + go unit + compose-e2e).
+# Fast: static checks (parallel) + compose-e2e.
 ci-pr-fast:
-	$(MAKE) docs-format-check
-	$(MAKE) test-cd-scripts
-	$(MAKE) test-adapters
-	$(MAKE) integration-gate
+	@chmod +x scripts/ci-pr-static.sh
+	@./scripts/ci-pr-static.sh
+	$(MAKE) compose-e2e
 	@echo "ci-pr-fast green (PR parity without browser E2E)"
 
 # Full PR-required surface: ci-pr-fast + narrow Playwright (same PLAYWRIGHT_ARGS as pull_request job).
@@ -245,9 +243,18 @@ docs-format-check:
 	@chmod +x scripts/docs-format-check.sh
 	@./scripts/docs-format-check.sh
 
+check-deploy-secrets:
+	@chmod +x scripts/check-deploy-secrets.sh
+	@./scripts/check-deploy-secrets.sh
+
+check-env-parity:
+	@chmod +x scripts/check-env-parity.sh
+	@./scripts/check-env-parity.sh
+
 # RH4: pre-handover — all reliability gates (requires compose for e2e/playwright).
 release-gate:
 	$(MAKE) robot-matrix-check
+	$(MAKE) check-deploy-secrets
 	$(MAKE) test-integration
 	$(MAKE) test-adapters
 	$(MAKE) integration-gate

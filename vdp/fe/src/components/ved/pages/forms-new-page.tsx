@@ -4,6 +4,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { CounterpartyPickDialog } from "@/components/ved/CounterpartyPickDialog";
 import { FilePickButton } from "@/components/ved/file-pick-button";
+import { OcrProgress } from "@/components/ved/ocr-progress";
 import { OrganizationPickDialog } from "@/components/ved/OrganizationPickDialog";
 import { VedAppShell } from "@/components/ved/VedAppShell";
 import {
@@ -14,11 +15,7 @@ import {
   transitionForm,
 } from "@/lib/api/forms";
 import { assertFileSize, UploadError } from "@/lib/api/files";
-import {
-  CREATE_REVIEW_OCR_BANNER,
-  CREATE_REVIEW_OCR_CAPTION,
-  CREATE_REVIEW_OCR_PENDING,
-} from "@/lib/ved/create-review-copy";
+import { CREATE_REVIEW_OCR_BANNER, CREATE_REVIEW_OCR_CAPTION } from "@/lib/ved/create-review-copy";
 import { parseExtractionResult } from "@/lib/ved/extraction";
 import { usePlatformBasePath, usePlatformMode } from "@/lib/ved/platform-mode";
 import { usePlatformStore } from "@/lib/ved/platform-store";
@@ -53,6 +50,7 @@ export function NewForm() {
   const [formId, setFormId] = useState<string | null>(null);
   const [ocrPending, setOcrPending] = useState(false);
   const [ocrReady, setOcrReady] = useState(false);
+  const [ocrProgressVisible, setOcrProgressVisible] = useState(false);
   const touchedRef = useRef<WizardTouched>({});
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const [draft, setDraft] = useState({
@@ -144,6 +142,7 @@ export function NewForm() {
   useEffect(() => {
     if (!formId || mode !== "app" || draft.noDocuments || ocrReady) return;
     setOcrPending(true);
+    setOcrProgressVisible(true);
     const tick = async () => {
       try {
         const form = await getForm(formId);
@@ -433,10 +432,8 @@ export function NewForm() {
 
       <div className="panel mt-4 w-full p-5 lg:w-3/4">
         {error && <p className="mb-4 rounded-md bg-destructive-soft px-2 py-1.5 text-xs text-destructive">{error}</p>}
-        {ocrPending && !ocrReady && step > WIZARD_STEP.docs && (
-          <p className="mb-4 rounded-md bg-wait-soft px-3 py-2 text-sm text-wait" data-testid="wizard-ocr-pending">
-            {CREATE_REVIEW_OCR_PENDING}
-          </p>
+        {ocrProgressVisible && step > WIZARD_STEP.docs && (
+          <OcrProgress done={ocrReady} onHide={() => setOcrProgressVisible(false)} />
         )}
 
         {step === WIZARD_STEP.docs && (
@@ -456,22 +453,22 @@ export function NewForm() {
             )}
             {!draft.noDocuments && (
               <>
-                <Field label="Инвойс (PDF, до 15 МБ)" invalid={invalidFields.includes("invoiceFile")}>
+                <FileField label="Инвойс (PDF, до 15 МБ)" invalid={invalidFields.includes("invoiceFile")}>
                   <FilePickButton
                     file={draft.invoiceFile}
                     testId="wizard-invoice-file"
                     pickLabel="Выбрать инвойс"
                     onPick={(file) => onFilePick("invoiceFile", file)}
                   />
-                </Field>
-                <Field label="Контракт (PDF, до 15 МБ) — необязательно">
+                </FileField>
+                <FileField label="Контракт (PDF, до 15 МБ) — необязательно">
                   <FilePickButton
                     file={draft.contractFile}
                     testId="wizard-contract-file"
                     pickLabel="Выбрать контракт"
                     onPick={(file) => onFilePick("contractFile", file)}
                   />
-                </Field>
+                </FileField>
                 <p className="text-xs text-muted-foreground">
                   Чаще достаточно инвойса. После «Далее» распознавание пойдёт в фоне — можно заполнять форму дальше.
                 </p>
@@ -769,61 +766,63 @@ export function NewForm() {
         )}
 
         <div className="mt-6 flex flex-col gap-2">
-          <div className="flex flex-wrap gap-2">
-            {step < WIZARD_STEPS.length - 1 ? (
-              <button
-                type="button"
-                onClick={() => void nextStep()}
-                disabled={bootstrapping}
-                className="flex-1 rounded-md bg-primary px-4 py-2.5 text-sm font-semibold text-primary-foreground disabled:opacity-50"
-              >
-                {bootstrapping ? "Создание…" : "Далее"}
-              </button>
-            ) : (
-              <>
-                <button
-                  type="button"
-                  onClick={() => void finalize("submit")}
-                  disabled={submitting}
-                  data-testid="wizard-send-manager"
-                  className="flex-1 rounded-md bg-accent px-4 py-2.5 text-sm font-semibold text-accent-foreground disabled:opacity-50"
-                >
-                  {submitting ? "Отправка…" : "Отправить менеджеру"}
-                </button>
-                <button
-                  type="button"
-                  onClick={() => void finalize("draft")}
-                  disabled={submitting}
-                  data-testid="wizard-save-draft"
-                  className="flex-1 rounded-md bg-muted px-4 py-2.5 text-sm font-semibold text-foreground disabled:opacity-50"
-                >
-                  {submitting ? "Сохранение…" : "Сохранить черновик"}
-                </button>
-              </>
-            )}
-            {step === WIZARD_STEP.docs && (
-              <button
-                type="button"
-                onClick={() => setField("noDocuments", !draft.noDocuments)}
-                className={cn(
-                  "flex-1 rounded-md px-4 py-2.5 text-sm font-semibold",
-                  draft.noDocuments ? "bg-[#C45D02]/[0.08] text-[#C45D02]" : "bg-muted text-muted-foreground",
-                )}
-                data-testid="wizard-no-documents"
-              >
-                {draft.noDocuments ? "✓ У меня нет документов" : "У меня нет документов"}
-              </button>
-            )}
+          <div className="flex items-center gap-2">
             {step > 0 && (
               <button
                 type="button"
                 onClick={() => setStep(step - 1)}
-                className="flex-1 rounded-md px-4 py-2.5 text-sm font-semibold text-muted-foreground hover:bg-muted"
+                className="shrink-0 rounded-md px-3 py-2.5 text-sm font-semibold bg-primary/[0.08] text-primary sm:bg-transparent sm:text-muted-foreground sm:hover:bg-muted"
               >
-                Назад
+                ← Назад
               </button>
             )}
+            <div className="flex flex-1 flex-wrap gap-2">
+              {step < WIZARD_STEPS.length - 1 ? (
+                <button
+                  type="button"
+                  onClick={() => void nextStep()}
+                  disabled={bootstrapping}
+                  className="flex-1 rounded-md bg-primary px-4 py-2.5 text-sm font-semibold text-primary-foreground disabled:opacity-50"
+                >
+                  {bootstrapping ? "Создание…" : "Далее"}
+                </button>
+              ) : (
+                <>
+                  <button
+                    type="button"
+                    onClick={() => void finalize("submit")}
+                    disabled={submitting}
+                    data-testid="wizard-send-manager"
+                    className="flex-1 rounded-md bg-accent px-4 py-2.5 text-sm font-semibold text-accent-foreground disabled:opacity-50"
+                  >
+                    {submitting ? "Отправка…" : "Отправить менеджеру"}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => void finalize("draft")}
+                    disabled={submitting}
+                    data-testid="wizard-save-draft"
+                    className="flex-1 rounded-md bg-muted px-4 py-2.5 text-sm font-semibold text-foreground disabled:opacity-50"
+                  >
+                    {submitting ? "Сохранение…" : "Сохранить черновик"}
+                  </button>
+                </>
+              )}
+            </div>
           </div>
+          {step === WIZARD_STEP.docs && (
+            <button
+              type="button"
+              onClick={() => setField("noDocuments", !draft.noDocuments)}
+              className={cn(
+                "w-full rounded-md px-4 py-2.5 text-sm font-semibold",
+                draft.noDocuments ? "bg-[#C45D02]/[0.08] text-[#C45D02]" : "bg-muted text-muted-foreground",
+              )}
+              data-testid="wizard-no-documents"
+            >
+              {draft.noDocuments ? "✓ У меня нет документов" : "У меня нет документов"}
+            </button>
+          )}
           {step === WIZARD_STEP.review && !draft.noDocuments && (
             <p className="text-xs text-muted-foreground">{CREATE_REVIEW_OCR_CAPTION}</p>
           )}
@@ -845,11 +844,11 @@ function Field({
   children: React.ReactNode;
 }) {
   return (
-    <label className="block">
+    <label className="flex h-full flex-col">
       <span className={cn("label-caps", invalid && "text-destructive")}>{label}</span>
       <div
         className={cn(
-          "mt-1",
+          "mt-auto pt-1",
           invalid &&
             "[&_.field]:border-destructive [&_.field]:ring-1 [&_.field]:ring-destructive/30 [&_button]:border-destructive",
         )}
@@ -859,6 +858,28 @@ function Field({
       {invalid && <span className="mt-1 block text-xs font-semibold text-destructive">Заполните это поле</span>}
       {hint && !invalid && <span className="mt-1 block text-xs text-muted-foreground">{hint}</span>}
     </label>
+  );
+}
+
+/**
+ * Wrapper for FilePickButton: root must be a div, not a wrapping label.
+ * A label around input[type=file] + programmatic openPicker() opens the OS dialog twice.
+ */
+function FileField({
+  label,
+  invalid = false,
+  children,
+}: {
+  label: string;
+  invalid?: boolean;
+  children: React.ReactNode;
+}) {
+  return (
+    <div className="flex h-full flex-col" data-testid="wizard-file-field">
+      <span className={cn("label-caps", invalid && "text-destructive")}>{label}</span>
+      <div className="mt-auto pt-1">{children}</div>
+      {invalid && <span className="mt-1 block text-xs font-semibold text-destructive">Заполните это поле</span>}
+    </div>
   );
 }
 

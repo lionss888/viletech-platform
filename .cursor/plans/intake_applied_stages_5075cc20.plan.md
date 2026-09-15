@@ -26,9 +26,9 @@ todos:
 isProject: false
 ---
 
-# Поток вводных: прикладные этапы (мастер AP0–AP5)
+# vedy_bot: прикладные этапы (мастер AP0–AP5)
 
-Это **сборка планов работ**, не немедленный код. Исполнять **по одному дочернему плану**; мастер не закрывать целиком. Модуль уже есть: [`инструменты/поток-вводных/`](инструменты/поток-вводных/). Устаревшие [`intake_master_index_c872b56d.plan.md`](.cursor/plans/intake_master_index_c872b56d.plan.md) / [`tg_intake_pipeline_8f8217bc.plan.md`](.cursor/plans/tg_intake_pipeline_8f8217bc.plan.md) — не исполнять; при старте AP0 пометить superseded.
+Это **сборка планов работ**, не немедленный код. Исполнять **по одному дочернему плану**; мастер не закрывать целиком. Модуль: [`инструменты/vedy_bot/`](инструменты/vedy_bot/) (переименован из `поток-вводных`). Устаревшие [`intake_master_index_c872b56d.plan.md`](.cursor/plans/intake_master_index_c872b56d.plan.md) / [`tg_intake_pipeline_8f8217bc.plan.md`](.cursor/plans/tg_intake_pipeline_8f8217bc.plan.md) — не исполнять; при старте AP0 пометить superseded.
 
 ## Зафиксированные решения
 

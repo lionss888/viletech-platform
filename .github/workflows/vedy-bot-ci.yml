@@ -1,0 +1,88 @@
+name: vedy_bot CI
+
+on:
+  push:
+    branches: [main, master]
+    paths:
+      - "инструменты/vedy_bot/**"
+      - ".github/workflows/vedy-bot-*.yml"
+  pull_request:
+    paths:
+      - "инструменты/vedy_bot/**"
+      - ".github/workflows/vedy-bot-*.yml"
+  workflow_dispatch:
+
+concurrency:
+  group: vedy-bot-ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    name: test (go + fe)
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      CI: "true"
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version: "1.22"
+          cache-dependency-path: инструменты/vedy_bot/go.sum
+
+      # No npm cache. FE install wipes node_modules + package-lock.json then
+      # npm install fresh so rolldown platform/WASI bindings resolve on Linux
+      # (npm optional-deps bug: https://github.com/npm/cli/issues/4828).
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: инструменты/vedy_bot/fe/.nvmrc
+
+      - name: Go unit tests
+        working-directory: инструменты/vedy_bot
+        run: go test ./cmd/... ./internal/...
+
+      - name: FE unit tests
+        working-directory: инструменты/vedy_bot
+        run: make fe-test
+
+      - name: Verify rolldown native binding
+        working-directory: инструменты/vedy_bot/fe
+        run: |
+          node --input-type=module -e "await import('rolldown'); console.log('rolldown native binding ok')"
+          test -d node_modules/@rolldown/binding-linux-x64-gnu \
+            -o -d node_modules/@rolldown/binding-linux-x64-musl \
+            -o -d node_modules/@rolldown/binding-wasm32-wasi \
+            || { echo "missing rolldown platform binding"; ls -la node_modules/@rolldown/ || true; exit 1; }
+
+  smoke:
+    name: smoke (console without TG)
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    needs: [test]
+    env:
+      CI: "true"
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version: "1.22"
+          cache-dependency-path: инструменты/vedy_bot/go.sum
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: инструменты/vedy_bot/fe/.nvmrc
+
+      - name: Build FE
+        working-directory: инструменты/vedy_bot
+        run: make fe-build
+
+      - name: Smoke test (SPA + API)
+        working-directory: инструменты/vedy_bot
+        env:
+          # Fake TG creds so config.Load succeeds; poller errors but console starts
+          TELEGRAM_INTAKE_TOKEN: "000000000:AASmokeSmokeSmokeSmokeSmokeSmokeSmoke"
+          TELEGRAM_INTAKE_CHAT_IDS: "-1001"
+          INTAKE_CONSOLE_TOKEN: "ci-smoke-token"
+        run: make smoke

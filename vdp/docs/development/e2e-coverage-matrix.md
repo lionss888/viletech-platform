@@ -138,6 +138,10 @@ Journey Root cancel admin. Unit root-flow.test. API RD8 + Root. UI E2E pilot-for
 
 Journey Bank channel badge. Unit bank-channel.test. API RD9 + Root. UI E2E bank-badge.spec.ts.
 
+Journey import advance treasurer deadline. Unit HTTP IMP1. API compose-e2e advance_treasurer. UI E2E pilot-matrix-full-ladder.spec.ts @pilot-matrix (IMP7). Not in required PR smoke; gate make playwright-pilot-matrix or path-filter on ladder surface.
+
+Journey import POSTPAY_RATE_ON_PP provider-first rate commission. Unit HTTP IMP2 IMP3. API compose-e2e postpay_RATE_ON_PP. FE unit rate commission. UI E2E pilot-matrix-postpay-rate.spec.ts @pilot-matrix (IMP8) to completed. Not in required PR smoke; gate make playwright-pilot-matrix or path-filter on ladder surface.
+
 ## Честность
 
 Матрица не утверждает full role times status browser coverage. Root tool = API scenario runner + отчёт, не Chromium в кабинете. Mutating runs: local/alpha/demo/test; gamma/prod default dry_run. PR playwright smoke: login-form, user-submit, provider-acl, reject-path (не полный suite).

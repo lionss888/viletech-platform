@@ -203,6 +203,12 @@ test.describe("Pilot robot matrix full UI ladder @pilot-matrix", () => {
     await loginAs("treasurer");
     await waitForFormDetail(page, formId);
     await clickAction(page, /^Подтвердить покрытие$/);
+    // IMP7: test optional execution_deadline input
+    const deadlineInput = page.locator('input[type="datetime-local"]');
+    await expect(deadlineInput).toBeVisible({ timeout: 5_000 });
+    const futureDate = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000); // +7 days
+    const deadlineValue = futureDate.toISOString().slice(0, 16); // "YYYY-MM-DDTHH:MM"
+    await deadlineInput.fill(deadlineValue);
     await confirmModal(page);
     await expectFormStatus(page, "payment_processing", { timeout: 30_000 });
 

@@ -57,6 +57,8 @@ test.describe("Form UX dead-ends (journeys)", () => {
     await expect(page.getByTestId("change-organization")).toBeVisible();
     await expect(page.getByTestId("edit-form-action")).toBeVisible();
     await expect(page.getByTestId("form-doc-upload")).toBeAttached();
+    await page.getByTestId("extraction-dialog-trigger").click();
+    await expect(page.getByRole("dialog")).toBeVisible();
     await expect(page.getByTestId("extraction-controls")).toBeVisible();
     await expect(page.getByRole("button", { name: /Запустить распознавание|Перезапустить/i })).toBeVisible();
   });

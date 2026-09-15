@@ -1,6 +1,11 @@
 import { test, expect, type Page } from "./fixtures/auth.fixture";
+import type { FileChooser } from "@playwright/test";
 import { assertCoreHealthy, loginAllRoles } from "./helpers/api";
 import { expectFormStatus } from "./helpers/status";
+import {
+  finishTermsAndReview as finishTermsAndReviewShared,
+  saveWizardDraft,
+} from "./helpers/wizard";
 
 async function fillNoDocsAndReachParties(
   page: Page,
@@ -23,21 +28,7 @@ async function finishTermsAndReview(page: Page): Promise<void> {
   await expect(page.getByTestId("wizard-client-currency")).toBeVisible();
   await expect(page.getByTestId("wizard-counterparty-currency")).toBeVisible();
   await expect(page.getByText("Валюта инвойса")).toHaveCount(0);
-  await page.getByTestId("wizard-amount").fill("1500");
-  const hs = page.getByLabel(/Код ТН ВЭД/i);
-  if (await hs.count()) {
-    const options = hs.locator("option");
-    const count = await options.count();
-    if (count > 1) {
-      await hs.selectOption({ index: 1 });
-    }
-  }
-  const ship = page.locator('input[type="date"]');
-  if (await ship.count()) {
-    await ship.first().fill("2026-10-01");
-  }
-  await page.getByRole("button", { name: "Далее" }).click();
-  await expect(page.getByTestId("wizard-review-step")).toBeVisible();
+  await finishTermsAndReviewShared(page, "1500");
 }
 
 test.describe("Wave2 wizard / OCR / submit", () => {
@@ -45,22 +36,25 @@ test.describe("Wave2 wizard / OCR / submit", () => {
     await assertCoreHealthy();
   });
 
-  test("gesture: zone click opens filechooser for invoice", async ({ page, loginAs }) => {
+  test("gesture: zone click opens exactly one filechooser for invoice", async ({ page, loginAs }) => {
     await loginAs("user");
     await page.goto("/forms/new");
     await expect(page.getByTestId("wizard-docs-step")).toBeVisible();
 
-    // Click on zone must trigger native file dialog (filechooser event)
-    const [fileChooser] = await Promise.all([
-      page.waitForEvent("filechooser"),
-      page.getByTestId("wizard-invoice-file-zone").click(),
-    ]);
-    expect(fileChooser).toBeTruthy();
-    expect(fileChooser.isMultiple()).toBe(false);
+    const choosers: FileChooser[] = [];
+    const onChooser = (fc: FileChooser) => {
+      choosers.push(fc);
+    };
+    page.on("filechooser", onChooser);
+    await page.getByTestId("wizard-invoice-file-zone").click();
+    await expect.poll(() => choosers.length).toBeGreaterThanOrEqual(1);
+    await page.waitForTimeout(500);
+    page.off("filechooser", onChooser);
+    expect(choosers.length).toBe(1);
+    expect(choosers[0].isMultiple()).toBe(false);
 
-    // Accept a file through the chooser
     const pdf = Buffer.from("%PDF-1.4 gesture-test");
-    await fileChooser.setFiles({
+    await choosers[0].setFiles({
       name: "gesture-invoice.pdf",
       mimeType: "application/pdf",
       buffer: pdf,
@@ -68,16 +62,21 @@ test.describe("Wave2 wizard / OCR / submit", () => {
     await expect(page.getByTestId("wizard-invoice-file-zone")).toContainText("gesture-invoice.pdf");
   });
 
-  test("gesture: zone click opens filechooser for contract", async ({ page, loginAs }) => {
+  test("gesture: zone click opens exactly one filechooser for contract", async ({ page, loginAs }) => {
     await loginAs("user");
     await page.goto("/forms/new");
     await expect(page.getByTestId("wizard-docs-step")).toBeVisible();
 
-    const [fileChooser] = await Promise.all([
-      page.waitForEvent("filechooser"),
-      page.getByTestId("wizard-contract-file-zone").click(),
-    ]);
-    expect(fileChooser).toBeTruthy();
+    const choosers: FileChooser[] = [];
+    const onChooser = (fc: FileChooser) => {
+      choosers.push(fc);
+    };
+    page.on("filechooser", onChooser);
+    await page.getByTestId("wizard-contract-file-zone").click();
+    await expect.poll(() => choosers.length).toBeGreaterThanOrEqual(1);
+    await page.waitForTimeout(500);
+    page.off("filechooser", onChooser);
+    expect(choosers.length).toBe(1);
   });
 
   test("docs first: invoice-only reaches review without contract", async ({ page, loginAs }) => {
@@ -116,7 +115,7 @@ test.describe("Wave2 wizard / OCR / submit", () => {
     await page.goto("/forms/new");
     await fillNoDocsAndReachParties(page);
     await finishTermsAndReview(page);
-    await page.getByTestId("wizard-save-draft").click();
+    await saveWizardDraft(page);
     await expect(page.getByTestId("form-params")).toBeVisible({ timeout: 30_000 });
     await expectFormStatus(page, /^(creating|draft)$/, { timeout: 20_000 });
   });
@@ -141,7 +140,7 @@ test.describe("Wave2 wizard / OCR / submit", () => {
     await page.goto("/forms/new");
     await fillNoDocsAndReachParties(page, "advance");
     await finishTermsAndReview(page);
-    await page.getByTestId("wizard-save-draft").click();
+    await saveWizardDraft(page);
     await expect(page.getByTestId("form-params")).toBeVisible({ timeout: 30_000 });
     await expect(page.getByText("Аванс")).toBeVisible();
   });

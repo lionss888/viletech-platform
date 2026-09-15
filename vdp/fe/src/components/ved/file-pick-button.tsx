@@ -1,22 +1,8 @@
-import { useEffect, useRef, useState } from "react";
+import { useRef, useState } from "react";
 
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from "@/components/ui/sheet";
+import { useIsMobileViewport } from "@/lib/hooks/use-is-mobile-viewport";
 import { cn } from "@/lib/utils";
-
-/**
- * Determines mobile viewport to open file picker via bottom sheet on small screens.
- */
-function useIsMobileViewport(): boolean {
-  const [mobile, setMobile] = useState(false);
-  useEffect(() => {
-    const mq = window.matchMedia("(max-width: 639px)");
-    const update = () => setMobile(mq.matches);
-    update();
-    mq.addEventListener("change", update);
-    return () => mq.removeEventListener("change", update);
-  }, []);
-  return mobile;
-}
 
 export type FilePickButtonProps = {
   file: File | null;

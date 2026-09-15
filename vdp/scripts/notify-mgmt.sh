@@ -3,8 +3,8 @@
 #
 # Secrets (first match wins for token / chat):
 #   MGMT_NOTIFY_TOKEN | TELEGRAM_INTAKE_TOKEN | UPTIME_BOT_TOKEN
-#   MGMT_NOTIFY_CHAT_ID | MGMT_NOTIFY_CHAT_IDS | TELEGRAM_INTAKE_CHAT_IDS | ~/.vdp-intake/remind_chat_id | UPTIME_CHAT_ID
-# Optional env file: MGMT_NOTIFY_ENV_FILE (default ~/.vdp-intake/env)
+#   MGMT_NOTIFY_CHAT_ID | MGMT_NOTIFY_CHAT_IDS | TELEGRAM_INTAKE_CHAT_IDS | ~/.vedy_bot/remind_chat_id | ~/.vdp-intake/remind_chat_id | UPTIME_CHAT_ID
+# Optional env file: MGMT_NOTIFY_ENV_FILE (default ~/.vedy_bot/env or ~/.vdp-intake/env)
 #
 # Usage:
 #   ./scripts/notify-mgmt.sh --kind done --title "UX кабинетов" --body $'строка1\nстрока2'
@@ -186,7 +186,14 @@ if [ "$DRY_RUN" = 1 ]; then
   exit 0
 fi
 
-ENV_FILE="${MGMT_NOTIFY_ENV_FILE:-${HOME}/.vdp-intake/env}"
+# Try ~/.vedy_bot/env first, fall back to ~/.vdp-intake/env
+if [ -n "${MGMT_NOTIFY_ENV_FILE:-}" ]; then
+  ENV_FILE="$MGMT_NOTIFY_ENV_FILE"
+elif [ -f "${HOME}/.vedy_bot/env" ]; then
+  ENV_FILE="${HOME}/.vedy_bot/env"
+else
+  ENV_FILE="${HOME}/.vdp-intake/env"
+fi
 if [ -f "$ENV_FILE" ]; then
   set -a
   # shellcheck disable=SC1090
@@ -196,7 +203,10 @@ fi
 
 TOKEN="${MGMT_NOTIFY_TOKEN:-${TELEGRAM_INTAKE_TOKEN:-${UPTIME_BOT_TOKEN:-}}}"
 CHAT="${MGMT_NOTIFY_CHAT_ID:-${MGMT_NOTIFY_CHAT_IDS:-${TELEGRAM_INTAKE_CHAT_IDS:-}}}"
-if [ -z "$CHAT" ] && [ -f "${HOME}/.vdp-intake/remind_chat_id" ]; then
+# Try ~/.vedy_bot/remind_chat_id first, fall back to ~/.vdp-intake/remind_chat_id
+if [ -z "$CHAT" ] && [ -f "${HOME}/.vedy_bot/remind_chat_id" ]; then
+  CHAT="$(tr -d '[:space:]' <"${HOME}/.vedy_bot/remind_chat_id")"
+elif [ -z "$CHAT" ] && [ -f "${HOME}/.vdp-intake/remind_chat_id" ]; then
   CHAT="$(tr -d '[:space:]' <"${HOME}/.vdp-intake/remind_chat_id")"
 fi
 CHAT="${CHAT:-${UPTIME_CHAT_ID:-}}"
@@ -226,7 +236,14 @@ if [ "$ok" != 1 ]; then
 fi
 
 MSG_ID="$(python3 -c 'import json,sys; d=json.loads(sys.argv[1]); print((d.get("result") or {}).get("message_id",""))' "$RESP")"
-LOG_DIR="${MGMT_NOTIFY_LOG_DIR:-${HOME}/.vdp-intake}"
+# Log to ~/.vedy_bot if it exists, else ~/.vdp-intake
+if [ -n "${MGMT_NOTIFY_LOG_DIR:-}" ]; then
+  LOG_DIR="$MGMT_NOTIFY_LOG_DIR"
+elif [ -d "${HOME}/.vedy_bot" ]; then
+  LOG_DIR="${HOME}/.vedy_bot"
+else
+  LOG_DIR="${HOME}/.vdp-intake"
+fi
 mkdir -p "$LOG_DIR"
 printf '%s kind=%s message_id=%s\n' "$(date -u +%Y-%m-%dT%H:%M:%SZ)" "$KIND" "$MSG_ID" >>"$LOG_DIR/notify-mgmt.log"
 echo "notify-mgmt: ok message_id=${MSG_ID}"

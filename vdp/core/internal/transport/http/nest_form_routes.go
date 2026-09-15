@@ -398,6 +398,9 @@ func (s *Server) handleNestFormSpecialGET(w http.ResponseWriter, r *http.Request
 	}
 }
 
+// handleTreasurerConfirmPayment processes treasurer confirm-payment (import advance §10.2; postpay RATE_ON_PP §10.3).
+// Body: optional execution_deadline (RFC3339 or yyyy-mm-dd). Target status: payment_processing (advance) or report_waiting (RATE_ON_PP).
+// Role: Treasurer or Root. Method: PUT or PATCH /api/v1/treasurer/form-payment/{id}/confirm-payment.
 func (s *Server) handleTreasurerConfirmPayment(w http.ResponseWriter, r *http.Request, principal authz.Principal, id string) {
 	var body struct {
 		ExecutionDeadline string `json:"execution_deadline"`

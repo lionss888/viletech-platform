@@ -21,6 +21,34 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  env-parity:
+    name: environment parity check
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    steps:
+      - uses: actions/checkout@v4
+      - name: Verify .nvmrc exists
+        run: |
+          if [ ! -f vdp/fe/.nvmrc ]; then
+            echo "❌ vdp/fe/.nvmrc missing. Create it to pin Node.js version."
+            exit 1
+          fi
+          echo "✅ .nvmrc found: $(cat vdp/fe/.nvmrc)"
+      - name: Verify CI uses node-version-file
+        run: |
+          if ! grep -q "node-version-file.*\.nvmrc" .github/workflows/vdp-ci.yml; then
+            echo "❌ CI workflow must use 'node-version-file: vdp/fe/.nvmrc', not hardcoded version"
+            exit 1
+          fi
+          echo "✅ CI workflow uses .nvmrc"
+      - name: Verify package-lock.json exists
+        run: |
+          if [ ! -f vdp/fe/package-lock.json ]; then
+            echo "❌ vdp/fe/package-lock.json missing. Run 'npm install' in vdp/fe."
+            exit 1
+          fi
+          echo "✅ package-lock.json found"
+
   fast:
     name: fast (unit)
     if: >-
@@ -28,6 +56,7 @@ jobs:
       (github.event_name != 'push' || !contains(github.event.head_commit.message, '[skip mirror-loop]'))
     runs-on: ubuntu-latest
     timeout-minutes: 15
+    needs: [env-parity]
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-go@v5
@@ -38,7 +67,7 @@ jobs:
             vdp/hub/go.sum
       - uses: actions/setup-node@v4
         with:
-          node-version: "20"
+          node-version-file: vdp/fe/.nvmrc
           cache: npm
           cache-dependency-path: vdp/fe/package-lock.json
       - name: FE unit tests
@@ -68,7 +97,7 @@ jobs:
     name: integration (postgres + compose-e2e)
     runs-on: ubuntu-latest
     timeout-minutes: 35
-    needs: [fast]
+    needs: [env-parity, fast]
     services:
       postgres:
         image: postgres:16
@@ -126,7 +155,7 @@ jobs:
     name: playwright (browser E2E)
     runs-on: ubuntu-latest
     timeout-minutes: 45
-    needs: [fast]
+    needs: [env-parity, fast]
     steps:
       - uses: actions/checkout@v4
       - name: Compose up + Playwright journeys
@@ -174,7 +203,7 @@ jobs:
           echo "Changed files (sample):"
           printf '%s\n' "$changed" | head -40
           if printf '%s\n' "$changed" | grep -E \
-            '^(vdp/fe/e2e/|vdp/fe/src/lib/ved/actions\.ts|vdp/fe/src/components/ved/ActionPanel\.tsx|vdp/core/internal/domain/formpayment/|vdp/core/internal/service/(contract|form_payment_assign)\.go)'; then
+            '^(vdp/fe/e2e/|vdp/fe/src/lib/ved/actions\.ts|vdp/fe/src/lib/ved/manager-payment\.ts|vdp/fe/src/lib/api/forms-rate-commission|vdp/fe/src/components/ved/(ActionPanel|RateCommissionPanel)\.tsx|vdp/core/internal/domain/formpayment/|vdp/core/internal/service/(contract|form_payment_assign|form_payment_nest)\.go|vdp/core/internal/transport/http/nest_form_routes\.go)'; then
             echo "run=true" >> "$GITHUB_OUTPUT"
             echo "pilot-matrix required for this PR"
           else
@@ -189,7 +218,7 @@ jobs:
       needs.detect-pilot-matrix.outputs.run == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 45
-    needs: [fast, detect-pilot-matrix]
+    needs: [env-parity, fast, detect-pilot-matrix]
     steps:
       - uses: actions/checkout@v4
       - name: Compose up + pilot-matrix journeys
@@ -221,7 +250,7 @@ jobs:
       github.actor != 'vdp-mirror-bot' &&
       (github.event_name == 'push' || github.event_name == 'pull_request') &&
       (github.event_name != 'push' || !contains(github.event.head_commit.message, '[skip mirror-loop]'))
-    needs: [fast, docs, integration, playwright, detect-pilot-matrix, playwright-pilot-matrix]
+    needs: [env-parity, fast, docs, integration, playwright, detect-pilot-matrix, playwright-pilot-matrix]
     runs-on: ubuntu-latest
     timeout-minutes: 3
     steps:
