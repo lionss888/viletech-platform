@@ -1,22 +1,265 @@
-# Example Prometheus alert rules (adjust thresholds per environment)
-
 groups:
-  - name: vdp_semantic
+  - name: vdp_business_sla
+    interval: 60s
     rules:
-      - alert: VdpFormsStuckAwaitingProvider
-        expr: vdp_forms_stuck{status=~"payment_received|payment_processing"} > 0
-        for: 30m
+      # Stuck Awaiting Provider Assignment
+      - alert: VDPStuckAwaitingProvider
+        expr: |
+          (
+            vdp_forms_by_status{status="awaiting_provider_assignment"} 
+            and on() (time() - vdp_form_status_last_update_timestamp{status="awaiting_provider_assignment"}) > 7200
+          ) > 0
+        for: 5m
         labels:
           severity: warning
+          component: manager-ops
         annotations:
-          summary: "VDP forms stuck before payment_sent"
-          description: "Check runbooks/stuck-payment.md"
+          summary: "Forms stuck in awaiting_provider_assignment for over 2 hours"
+          description: "{{ $value }} forms have been awaiting provider assignment for more than 2 hours. Manager queue may be backed up."
+          runbook_url: "https://docs.vdp.local/runbooks/stuck-provider-assignment"
+      
+      - alert: VDPStuckAwaitingProviderCritical
+        expr: |
+          (
+            vdp_forms_by_status{status="awaiting_provider_assignment"} 
+            and on() (time() - vdp_form_status_last_update_timestamp{status="awaiting_provider_assignment"}) > 14400
+          ) > 0
+        for: 5m
+        labels:
+          severity: critical
+          component: manager-ops
+        annotations:
+          summary: "CRITICAL: Forms stuck in awaiting_provider_assignment for over 4 hours"
+          description: "{{ $value }} forms have been awaiting provider assignment for more than 4 hours. Immediate manager escalation required."
+          runbook_url: "https://docs.vdp.local/runbooks/stuck-provider-assignment"
 
-      - alert: VdpHubInboxFailures
-        expr: rate(vdp_hub_inbox_failed_total[5m]) > 0.1
+      # Stuck Payment Processing
+      - alert: VDPStuckPaymentProcessing
+        expr: |
+          (
+            vdp_forms_by_status{status="payment_processing"} 
+            and on() (time() - vdp_form_provider_assigned_timestamp{status="payment_processing"}) > 1800
+          ) > 0
+        for: 5m
+        labels:
+          severity: warning
+          component: hub
+        annotations:
+          summary: "Forms stuck in payment_processing for over 30 minutes"
+          description: "{{ $value }} forms have been in payment_processing for more than 30 minutes since provider assignment. Check provider connectivity."
+          runbook_url: "https://docs.vdp.local/runbooks/stuck-payment"
+
+      - alert: VDPStuckPaymentProcessingCritical
+        expr: |
+          (
+            vdp_forms_by_status{status="payment_processing"} 
+            and on() (time() - vdp_form_provider_assigned_timestamp{status="payment_processing"}) > 7200
+          ) > 0
+        for: 5m
+        labels:
+          severity: critical
+          component: hub
+        annotations:
+          summary: "CRITICAL: Forms stuck in payment_processing for over 2 hours"
+          description: "{{ $value }} forms have been in payment_processing for more than 2 hours. Provider may be down. Immediate escalation required."
+          runbook_url: "https://docs.vdp.local/runbooks/stuck-payment"
+
+      # Stuck Compliance Review
+      - alert: VDPStuckComplianceReview
+        expr: |
+          (
+            vdp_forms_by_status{status="awaiting_compliance_approval"} 
+            and on() (time() - vdp_form_status_last_update_timestamp{status="awaiting_compliance_approval"}) > 86400
+          ) > 0
+        for: 10m
+        labels:
+          severity: warning
+          component: compliance
+        annotations:
+          summary: "Forms stuck in compliance review for over 24 hours"
+          description: "{{ $value }} forms have been awaiting compliance approval for more than 24 hours. Check CO queue depth and availability."
+          runbook_url: "https://docs.vdp.local/runbooks/compliance-backlog"
+
+      - alert: VDPStuckComplianceReviewCritical
+        expr: |
+          (
+            vdp_forms_by_status{status="awaiting_compliance_approval"} 
+            and on() (time() - vdp_form_status_last_update_timestamp{status="awaiting_compliance_approval"}) > 259200
+          ) > 0
         for: 10m
         labels:
           severity: critical
+          component: compliance
         annotations:
-          summary: "Hub inbox processing failures"
-          description: "Check runbooks/hub-failure.md"
+          summary: "CRITICAL: Forms stuck in compliance review for over 72 hours"
+          description: "{{ $value }} forms have been awaiting compliance approval for more than 72 hours. Immediate compliance manager escalation required."
+          runbook_url: "https://docs.vdp.local/runbooks/compliance-backlog"
+
+      # Hub Inbox Failures
+      - alert: VDPHubInboxFailures
+        expr: |
+          increase(vdp_hub_inbox_failed_total[1h]) > 5
+        for: 5m
+        labels:
+          severity: warning
+          component: hub
+        annotations:
+          summary: "Hub inbox has {{ $value }} failed events in last hour"
+          description: "Hub inbox accumulated {{ $value }} failed events (after max retries) in the last hour. Plugin failures or external service issues."
+          runbook_url: "https://docs.vdp.local/runbooks/hub-failure"
+
+      - alert: VDPHubInboxFailuresCritical
+        expr: |
+          increase(vdp_hub_inbox_failed_total[1h]) > 10
+        for: 5m
+        labels:
+          severity: critical
+          component: hub
+        annotations:
+          summary: "CRITICAL: Hub inbox has {{ $value }} failed events in last hour"
+          description: "Hub inbox accumulated {{ $value }} failed events in the last hour. Severe plugin or external service degradation."
+          runbook_url: "https://docs.vdp.local/runbooks/hub-failure"
+
+      # Docs Service Errors
+      - alert: VDPDocsServiceErrors
+        expr: |
+          rate(vdp_external_service_errors_total{service="docs"}[5m]) * 300 > 3
+        for: 2m
+        labels:
+          severity: warning
+          component: docs-service
+        annotations:
+          summary: "Docs service experiencing {{ $value }} errors per 5 minutes"
+          description: "Docs service has {{ $value }} consecutive failures in the last 5 minutes. Document generation may be blocked."
+          runbook_url: "https://docs.vdp.local/runbooks/docs-service-down"
+
+      - alert: VDPDocsServiceErrorsCritical
+        expr: |
+          rate(vdp_external_service_errors_total{service="docs"}[5m]) * 300 > 5
+        for: 2m
+        labels:
+          severity: critical
+          component: docs-service
+        annotations:
+          summary: "CRITICAL: Docs service has {{ $value }} errors per 5 minutes"
+          description: "Docs service is severely degraded with {{ $value }} errors in 5 minutes. All document generation likely blocked."
+          runbook_url: "https://docs.vdp.local/runbooks/docs-service-down"
+
+      # Mail Gateway Health
+      - alert: VDPMailGatewayUnhealthy
+        expr: |
+          up{job="mail-gateway"} == 0
+        for: 2m
+        labels:
+          severity: warning
+          component: mail-gateway
+        annotations:
+          summary: "Mail gateway health check failing"
+          description: "Mail gateway /health endpoint is not responding. Email notifications may be delayed."
+          runbook_url: "https://docs.vdp.local/runbooks/gateway-unhealthy"
+
+      - alert: VDPMailGatewayDeliveryFailures
+        expr: |
+          rate(vdp_external_service_errors_total{service="mail"}[5m]) * 300 > 3
+        for: 2m
+        labels:
+          severity: critical
+          component: mail-gateway
+        annotations:
+          summary: "CRITICAL: Mail gateway has {{ $value }} delivery failures per 5 minutes"
+          description: "Mail gateway experiencing {{ $value }} consecutive delivery failures. User email notifications blocked."
+          runbook_url: "https://docs.vdp.local/runbooks/gateway-unhealthy"
+
+      # SMS Gateway Health
+      - alert: VDPSMSGatewayUnhealthy
+        expr: |
+          up{job="sms-gateway"} == 0
+        for: 2m
+        labels:
+          severity: warning
+          component: sms-gateway
+        annotations:
+          summary: "SMS gateway health check failing"
+          description: "SMS gateway /health endpoint is not responding. SMS notifications may be delayed."
+          runbook_url: "https://docs.vdp.local/runbooks/gateway-unhealthy"
+
+      - alert: VDPSMSGatewayDeliveryFailures
+        expr: |
+          rate(vdp_external_service_errors_total{service="sms"}[5m]) * 300 > 3
+        for: 2m
+        labels:
+          severity: critical
+          component: sms-gateway
+        annotations:
+          summary: "CRITICAL: SMS gateway has {{ $value }} delivery failures per 5 minutes"
+          description: "SMS gateway experiencing {{ $value }} consecutive delivery failures. SMS OTP and notifications blocked."
+          runbook_url: "https://docs.vdp.local/runbooks/gateway-unhealthy"
+
+      # Stuck Refund Processing
+      - alert: VDPStuckRefundProcessing
+        expr: |
+          (
+            vdp_forms_by_status{status="payment_refund_processing"} 
+            and on() (time() - vdp_form_status_last_update_timestamp{status="payment_refund_processing"}) > 3600
+          ) > 0
+        for: 5m
+        labels:
+          severity: warning
+          component: hub
+        annotations:
+          summary: "Forms stuck in refund processing for over 1 hour"
+          description: "{{ $value }} forms have been in refund processing for more than 1 hour. Check provider refund adapter logs."
+          runbook_url: "https://docs.vdp.local/runbooks/stuck-refund"
+
+      - alert: VDPStuckRefundProcessingCritical
+        expr: |
+          (
+            vdp_forms_by_status{status="payment_refund_processing"} 
+            and on() (time() - vdp_form_status_last_update_timestamp{status="payment_refund_processing"}) > 14400
+          ) > 0
+        for: 5m
+        labels:
+          severity: critical
+          component: hub
+        annotations:
+          summary: "CRITICAL: Forms stuck in refund processing for over 4 hours"
+          description: "{{ $value }} forms have been in refund processing for more than 4 hours. Customer refund severely delayed."
+          runbook_url: "https://docs.vdp.local/runbooks/stuck-refund"
+
+  - name: vdp_recording_rules
+    interval: 30s
+    rules:
+      # Recording rules for dashboards and SLIs
+      - record: vdp:forms_total_by_status
+        expr: sum by (status) (vdp_forms_by_status)
+
+      - record: vdp:hub_inbox_success_rate_5m
+        expr: |
+          (
+            rate(vdp_hub_inbox_processed_total[5m]) 
+            / 
+            (rate(vdp_hub_inbox_processed_total[5m]) + rate(vdp_hub_inbox_failed_total[5m]))
+          ) * 100
+
+      - record: vdp:external_service_success_rate_5m
+        expr: |
+          (
+            rate(vdp_external_service_requests_total[5m]) 
+            - 
+            rate(vdp_external_service_errors_total[5m])
+          ) 
+          / 
+          rate(vdp_external_service_requests_total[5m]) 
+          * 100
+
+      - record: vdp:payment_processing_latency_p95
+        expr: |
+          histogram_quantile(0.95, 
+            rate(vdp_form_status_duration_seconds_bucket{status="payment_processing"}[5m])
+          )
+
+      - record: vdp:compliance_review_latency_p95
+        expr: |
+          histogram_quantile(0.95, 
+            rate(vdp_form_status_duration_seconds_bucket{status="awaiting_compliance_approval"}[5m])
+          )

@@ -18,6 +18,10 @@ Nest form-payment XLSX and compliance export use real OOXML (export.MinimalXLSX)
 
 Пакет IMP0–IMP7 закрыт на уровне домена API и кабинетов Manager или Treasurer. Аванс: казначей confirm-payment с опциональным execution_deadline → payment_processing (IMP7 @pilot-matrix); API rate/commission доступен до signing_order для §10.2 п.1 primary-фиксации (r12_verification_test.go), UI workshop отдельно. Постоплата POSTPAY_RATE_ON_PP: provider-first, курс и три режима вознаграждения после ПП, доп. поручение, казначей → report_waiting; полный browser ladder до completed в pilot-matrix-postpay-rate (IMP8 @pilot-matrix). Verify: unit HTTP FE unit make ci-pr и make playwright-pilot-matrix. Не заявлено: полный wizard payment_method:advance end-to-end, make release-gate как обязательный gate пакета. Вне scope: POSTPAY_FIXED_RATE, экспортный overpay-treasurer redesign, PDF primary без курса как отдельный UX-воркшоп.
 
+## Export routes Phase 5-6
+
+Экспортный маршрут PAY_FROM_EXPORT закрыт на уровне домена API и кабинетов Manager и Treasurer (Phase 5 domain, Phase 6 UI/E2E). State machine: форма принята → advance_signing_order → получение валюты от контрагента → казначей confirm с методом PAY_FROM_EXPORT → treasurer_signing → User верификационный документ → treasurer_complete → completed. Отделён от импортного покрытия клиента без смены импортной логики. Unit: export_machine_test.go (happy path, transition matrix, role AuthZ, payment method guard, idempotency). HTTP: export_flow_test.go (creation, happy path, treasurer AuthZ, invalid transitions). FE: wizard direction export, actions.ts treasurer export CTA, statuses labels, action-bridge mapping, unit tests manager-payment/wizard-steps. UI E2E: pilot-matrix-export.spec.ts @pilot-matrix happy path до completed. CI: path-filter export surface (actions/statuses/wizard-steps/e2e/formpayment). Verify: make ci-pr-pilot включает export spec. Не заявлено: полный wizard export payment_method end-to-end, множественные экспортные сценарии за пределами treasurer happy path, browser матрица всех экспортных статусов × ролей. Казначейские кабинеты export и UI воркшоп верификационных полей — отдельно от Phase 6 scope.
+
 ## B.2 Documents (2026-08 pilot)
 
 Готовность ~90% after B.2 wave 1–2 backend + FE recovery (2026-08-31). Backend: org signer fields, enriched docs payload, 15MB upload limit, DOCS API, docs-service, compose-e2e docs assert. FE: OrgProfileCard (PATCH org signer/contact), wizard upload with 413 guard, document download via preview API, payment proof soft warning. Still open: customer workshop D4/D5 (report N orders, RUB formulas), legal template sign-off per PA, prod PDF pixel fidelity. Matrix: docs/pilot/b2-uat-field-matrix.md. Diadoc/OCR: manual / optional per b2-decisions.md.
@@ -46,7 +50,13 @@ make test-integration with build tag integration runs five postgres tests in CI 
 
 ## Observability prod
 
-Structured logs and observability.md baseline. Semantic alerts (semantic-alerts.md), runbooks (runbooks/), example Prometheus rules in repo. Deployed alerting — на стороне ops/staging.
+Phase 4 Ops Excellence complete (2026-09-15). Correlation: hub logger enhanced with context-based form_payment_id and event_id matching core pattern. Dispatcher enriches context before plugin execution. Full flow documented in correlation-logging.md. Tests: core/pkg/logger/logger_test.go, hub/pkg/logger/logger_test.go. 
+
+Semantic alerts: Prometheus rules defined in ops/prometheus-rules.example.yml covering stuck payments (30m warning, 2h critical), hub inbox failures (5+ warning, 10+ critical per hour), gateway health (DOCS MAIL SMS), compliance backlog (24h warning, 72h critical), and refund delays. Deployment script scripts/deploy-alerts-staging.sh with verification checklist ready.
+
+Runbooks: stuck-payment.md and hub-failure.md with dry-run verification. On-call guide established at on-call-guide.md with rotation, escalation paths, and common scenarios.
+
+Awaiting ops infrastructure: Prometheus with /metrics endpoints from core and hub, Alertmanager with on-call notification channel, live alert firing test. Phase 4 deliverables met: alerting architecture defined, tested, and deployment-ready.
 
 ## Migration from Nest
 

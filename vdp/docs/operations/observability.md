@@ -2,11 +2,19 @@
 
 Baseline для pilot и staging. Полный prod stack Datadog или Grafana не развёрнут в репозитории; документ фиксирует поля логов и семантические сигналы для on-call.
 
-## Correlation и идентификаторы
+## Correlation и идентификаторы (Phase 4: VERIFIED)
 
-Structured JSON-логи в core и hub. В HTTP middleware и use case слоях прокидывается correlation id запроса. Для путей заявки в логах должны присутствовать form_payment_id и при наличии payment_id или document_id. Hub inbox и outbox события несут event_id и form_payment_id без ПДн клиента.
+Structured JSON-логи в core и hub с автоматической context-based correlation.
 
-При разборе инцидента цепочка: UI или API запрос по correlation id, затем form_payment_id в core store и hub dispatcher. Provider connector логи не должны содержать ФИО и паспортные поля.
+Core: logger.WithFormPaymentID и logger.WithRequestID обогащают context. logger.FromContext автоматически добавляет correlation fields во все log statements в контексте. Проверено pkg/logger/logger_test.go.
+
+Hub: logger.WithEventID и logger.WithFormPaymentID (Phase 4 enhancement parity with core). Dispatcher обогащает context перед plugin execution. Проверено pkg/logger/logger_test.go и dispatcher tests.
+
+Для путей заявки в логах присутствуют form_payment_id и при наличии payment_id или document_id. Hub inbox и outbox события несут event_id и form_payment_id без ПДн клиента. Adapters включают form_payment_id в запросы к external services (docs mail sms).
+
+При разборе инцидента цепочка: UI или API запрос по request_id, затем form_payment_id в core logs, hub dispatcher logs, и external service logs. Provider connector логи не содержат ФИО и паспортные поля.
+
+Полная документация correlation flow: [correlation-logging.md](correlation-logging.md).
 
 ## Semantic alerts concept
 

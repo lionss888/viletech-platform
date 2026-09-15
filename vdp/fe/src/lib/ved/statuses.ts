@@ -84,6 +84,18 @@ export const STATUS_META: Record<string, StatusMeta> = {
     stage: "signing_order",
   },
   signing_order_accepted: { label: "Поручение подтверждено", short: "Поручение принято", tone: "done", stage: "signing_order" },
+  signing_order_treasurer: {
+    label: "Поручение казначея на подпись (экспорт)",
+    short: "Поручение казначея",
+    tone: "wait",
+    stage: "signing_order",
+  },
+  signing_order_verification_treasurer: {
+    label: "Верификация казначея (экспорт)",
+    short: "Верификация казначея",
+    tone: "work",
+    stage: "signing_order",
+  },
 
   advance_signing_order: {
     label: "Доп. поручение на подпись",
@@ -119,6 +131,7 @@ export const STATUS_META: Record<string, StatusMeta> = {
   payment_received: { label: "Средства от клиента получены", short: "Средства получены", tone: "work", stage: "payment" },
   payment_processing: { label: "Платёж в исполнении", short: "В исполнении", tone: "work", stage: "payment" },
   payment_sent: { label: "Платёж отправлен контрагенту", short: "Платёж отправлен", tone: "done", stage: "payment" },
+  payment_sent_treasurer: { label: "Платёж подтверждён казначеем (экспорт)", short: "Подтверждён казначеем", tone: "done", stage: "payment" },
   manager_checking: { label: "Возвращена менеджеру на уточнение", short: "Уточнение", tone: "return", stage: "payment" },
 
   payment_refund_waiting: { label: "Ожидается возврат средств", short: "Возврат", tone: "wait", stage: "payment" },

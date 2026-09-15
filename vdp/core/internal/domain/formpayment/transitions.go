@@ -292,6 +292,8 @@ var transitionsImportFormRateOnProviderPostpay = map[Status][]Status{
 }
 
 var transitionsExportForm = map[Status][]Status{
+	// Export-specific: form_accepted can go to advance_signing_order
+	StatusFormAccepted: {StatusAdvanceSigningOrder},
 	StatusAdvanceSigningOrderWaitingVerification: {StatusAdvanceSigningOrderVerification},
 	StatusAdvanceSigningOrderVerification: {
 		StatusAdvanceSigningOrderWaitingVerification,

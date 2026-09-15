@@ -189,3 +189,35 @@ describe("manager payment/refund bridge", () => {
     expect(processing).toContain("prov_payment_return");
   });
 });
+
+describe("export treasurer flow", () => {
+  it("excludes import advance gate for export", () => {
+    expect(isImportAdvanceCoverageGate({ direction: "export" })).toBe(false);
+    expect(isImportAdvanceCoverageGate({ direction: "export", condition: "advance" })).toBe(false);
+    expect(isImportAdvanceCoverageGate({ direction: "export", paymentMethod: "PAY_FROM_EXPORT" })).toBe(false);
+  });
+
+  it("exposes treasurer export CTAs on export statuses", () => {
+    const paymentSentTreasurer = actionsFor("treasurer", "payment_sent_treasurer").map((a) => a.id);
+    expect(paymentSentTreasurer).toContain("treas_signing");
+
+    const verificationTreasurer = actionsFor("treasurer", "signing_order_verification_treasurer").map((a) => a.id);
+    expect(verificationTreasurer).toContain("treas_complete");
+  });
+
+  it("exposes user upload treasurer verification action", () => {
+    const signingOrderTreasurer = actionsFor("user", "signing_order_treasurer").map((a) => a.id);
+    expect(signingOrderTreasurer).toContain("upload_treasurer_verification");
+  });
+
+  it("maps treasurer export actions to bridge", () => {
+    expect(resolveDemoAction("treas_signing")).toEqual({
+      kind: "transition",
+      coreAction: "treasurer_signing",
+    });
+    expect(resolveDemoAction("treas_complete")).toEqual({
+      kind: "transition",
+      coreAction: "treasurer_complete",
+    });
+  });
+});

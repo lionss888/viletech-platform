@@ -23,7 +23,10 @@ export const WIZARD_STEP = {
 } as const;
 
 /** Persist wizard condition as Nest payment_method. */
-export function conditionToPaymentMethod(condition: FormCondition): string {
+export function conditionToPaymentMethod(condition: FormCondition, direction?: string): string {
+  if (direction === "export") {
+    return "PAY_FROM_EXPORT";
+  }
   return condition === "postPayment" ? "post_payment" : "advance";
 }
 

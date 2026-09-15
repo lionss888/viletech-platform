@@ -20,6 +20,9 @@ const MATRIX: Record<VedRole, Record<string, FormAction[]>> = {
       { id: "accept_form", label: "Отправить на проверку", tone: "accent", nextStatus: "organization_waiting_verification" },
       { id: "cancel_form", label: "Отменить заявку", tone: "danger", nextStatus: "canceled_by_user", confirm: "Отменить заявку?" },
     ],
+    signing_order_treasurer: [
+      { id: "upload_treasurer_verification", label: "Загрузить верификационный документ", tone: "accent", requiresFile: true, nextStatus: "signing_order_verification_treasurer" },
+    ],
     form_waiting_corrections: [
       { id: "accept_corrections", label: "Отправить исправления", tone: "accent", nextStatus: "form_waiting_verification" },
       { id: "cancel_form", label: "Отменить заявку", tone: "danger", nextStatus: "canceled_by_user", confirm: "Отменить заявку?" },
@@ -196,6 +199,23 @@ const MATRIX: Record<VedRole, Record<string, FormAction[]>> = {
         tone: "accent",
         confirm: "Подтвердить заход рублёвого покрытия и передать в исполнение?",
         // nextStatus depends on payment route: advance → payment_processing, RATE_ON_PP → report_waiting (§10.2/10.3)
+      },
+    ],
+    payment_sent_treasurer: [
+      {
+        id: "treas_signing",
+        label: "Сформировать поручение казначея",
+        tone: "accent",
+        nextStatus: "signing_order_treasurer",
+      },
+    ],
+    signing_order_verification_treasurer: [
+      {
+        id: "treas_complete",
+        label: "Завершить сделку",
+        tone: "accent",
+        confirm: "Подтвердить завершение экспортной сделки?",
+        nextStatus: "completed",
       },
     ],
   },

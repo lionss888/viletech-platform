@@ -7,6 +7,7 @@ import (
 
 	"github.com/viletech/vdp/hub/internal/inbox"
 	"github.com/viletech/vdp/hub/internal/registry"
+	"github.com/viletech/vdp/hub/pkg/logger"
 	"github.com/viletech/vdp/shared/events"
 )
 
@@ -21,6 +22,10 @@ func New(store inbox.Store, plugins *registry.Registry, log *slog.Logger) *Dispa
 }
 
 func (d *Dispatcher) Handle(ctx context.Context, env events.Envelope) (map[string]any, error) {
+	// Enrich context with correlation fields for automatic logging
+	ctx = logger.WithEventID(ctx, env.EventID)
+	ctx = logger.WithFormPaymentID(ctx, env.FormPaymentID)
+	
 	if rec, ok := d.inbox.AlreadyProcessed(ctx, env.EventID); ok {
 		return rec.Result, nil
 	}
@@ -34,7 +39,9 @@ func (d *Dispatcher) Handle(ctx context.Context, env events.Envelope) (map[strin
 		"form_payment_id": env.FormPaymentID,
 		"payload":         env.Payload,
 	}
-	d.log.Info("dispatch", "plugin", pluginName, "action", action, "form_payment_id", env.FormPaymentID, "event_id", env.EventID)
+	// Use context-aware logger to automatically include correlation fields
+	log := logger.FromContext(ctx, d.log)
+	log.Info("dispatch", "plugin", pluginName, "action", action)
 	result, err := plugin.Execute(ctx, action, params)
 	if err != nil {
 		return nil, fmt.Errorf("plugin %s: %w", pluginName, err)
