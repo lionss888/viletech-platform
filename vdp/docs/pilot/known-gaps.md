@@ -8,7 +8,7 @@
 
 ## Hub integrations depth
 
-Docs and mail HTTP contract verified in CI via make test-adapters with httptest.Server. Staging: scripts/staging-smoke.sh + staging-env.example for DOCS_URL / MAIL_URL. Dev compose uses stub when URLs empty (docs/{id}/stub.pdf).
+Docs and mail HTTP contract verified in CI via make test-adapters with httptest.Server. Staging: make staging-smoke or scripts/staging-smoke.sh plus staging-env.example for DOCS_URL and MAIL_URL. Phase 3 (2026-09-15): local compose green with live docs-service and mail-gateway and sms-gateway URLs (not empty fixture). Alpha public core health and seed login OK; hub docs mail remain loopback on VM; remote on-host smoke and rollback need refreshed DEPLOY_SSH_KEY (SSH publickey denied from workstation). Empty DOCS_URL or MAIL_URL still stubs in hub. Diadoc ONEC bank OCR stay fixture or manual until vendor URL in secret store — do not claim 100 percent live.
 
 ## XLSX and templates
 

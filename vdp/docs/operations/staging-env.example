@@ -1,15 +1,22 @@
-# Staging environment example (copy to secret store / .env.staging — do not commit secrets)
+# Staging environment example (copy to secret store or .env.staging — do not commit secrets)
 
-CORE_URL=https://staging-core.example.com
-HUB_URL=https://staging-hub.example.com
+# Phase 3 paths. Local compose staging-like uses published ports below. Remote alpha or staging
+# uses HTTPS core and loopback hub or docs or mail on the VM (not public). Empty DOCS_URL or
+# MAIL_URL keeps hub fixture stubs — do not claim live vendor path without URL.
 
-# Hub adapters — required for real document/mail path (see staging-checklist.md)
-# Compose dev: http://127.0.0.1:8090/generate (docs-service in docker-compose.yml)
-DOCS_URL=https://docs-service.example.com/generate
-# Compose dev: http://127.0.0.1:8091/notify (mail-gateway local provider)
-MAIL_URL=https://mail-gateway.example.com/notify
-# Compose dev: http://127.0.0.1:8092/notify (sms-gateway local provider)
-SMS_URL=https://sms-gateway.example.com/notify
+# --- Local compose (make staging-smoke defaults) ---
+CORE_URL=http://127.0.0.1:8080
+HUB_URL=http://127.0.0.1:8081
+DOCS_URL=http://127.0.0.1:8090/generate
+MAIL_URL=http://127.0.0.1:8091/notify
+SMS_URL=http://127.0.0.1:8092/notify
+
+# --- Remote staging or alpha (fill after bootstrap-host; secrets stay on VM .env.deploy) ---
+# CORE_URL=https://alpha.vedy.io
+# HUB_URL=http://127.0.0.1:8081
+# DOCS_URL=http://127.0.0.1:8090/generate
+# MAIL_URL=http://127.0.0.1:8091/notify
+# SMS_URL=http://127.0.0.1:8092/notify
 
 # Telegram platform bot (optional). Empty token → hub fixture.
 TELEGRAM_BOT_TOKEN=
@@ -34,12 +41,13 @@ EXTRACTION_GOLD_DIR=/var/vdp/extraction-gold
 # OWN_FEW_SHOT_K=3
 # OWN_MODEL_PATH=
 
-# 1C / Diadoc — optional. Empty URL → hub fixture / smart stub. Do not claim vendor-ready.
+# 1C / Diadoc — optional for import pilot. Empty URL → hub fixture or smart stub.
+# Do not claim vendor-ready without URL. Manual Diadoc path remains in UI.
 # ONEC_URL=https://1c.example.com/vdp
 # DIADOC_URL=https://diadoc.example.com/vdp
 
 # Optional bank channel webhook receiver for RD9 manual smoke
-BANK_WEBHOOK_URL=https://bank-receiver.example.com/vdp/events
+# BANK_WEBHOOK_URL=https://bank-receiver.example.com/vdp/events
 
 ENVIRONMENT=staging
 JWT_SECRET=replace-with-rotated-core-secret
