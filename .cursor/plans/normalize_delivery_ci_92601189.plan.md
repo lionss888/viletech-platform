@@ -16,7 +16,7 @@ todos:
     status: completed
   - id: verify-pr32-green
     content: "После push подтвердить green playwright-pilot-matrix на PR #32"
-    status: pending
+    status: completed
 isProject: false
 ---
 
