@@ -7,10 +7,10 @@ todos:
     status: completed
   - id: run-ci-pr-pilot
     content: Локально make ci-pr-pilot до push
-    status: pending
+    status: in_progress
   - id: harden-local-gate-rule
     content: "Rules: e2e/@pilot-matrix paths → обязателен ci-pr-pilot"
-    status: in_progress
+    status: completed
   - id: fail-fast-assert
     content: Короткий expect на review/CTA вместо 7м silent wait
     status: completed

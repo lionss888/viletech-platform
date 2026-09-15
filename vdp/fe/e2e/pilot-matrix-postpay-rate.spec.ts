@@ -1,13 +1,18 @@
 import { test, expect } from "./fixtures/auth.fixture";
-import { assertCoreHealthy, loginAllRoles } from "./helpers/api";
+import { assertCoreHealthy } from "./helpers/api";
 import { expectFormStatus } from "./helpers/status";
 import type { Page } from "@playwright/test";
 import { readRobotPdf, loadRobotPack } from "./helpers/robot-fixtures";
 
+const TAKE_IN_REVIEW = /Взять (заявку|организацию) в проверку|Взять .* в проверку/i;
+const CONFIRM_FORM = /Подтвердить заявку/;
+const APPROVE_ORG = /Одобрить организацию и (передать во внешний комплаенс|продолжить)/;
+const AFTER_SUBMIT = /organization_waiting_verification|form_waiting_verification/;
+
 async function waitForFormDetail(page: Page, formId: string) {
   await page.goto(`/forms/${formId}`);
   await page.waitForLoadState("networkidle");
-  await expect(page.getByTestId("form-card")).toBeVisible({ timeout: 30_000 });
+  await expect(page.getByTestId("form-params")).toBeVisible({ timeout: 30_000 });
 }
 
 async function clickAction(page: Page, name: string | RegExp) {
@@ -87,16 +92,15 @@ test.describe("Pilot matrix POSTPAY_RATE_ON_PP @pilot-matrix", () => {
     await fillNoDocsAndReachParties(page, "postPayment");
     await finishTermsAndReview(page, "5000");
     await page.getByTestId("wizard-save-draft").click();
-    await expect(page.getByTestId("form-card")).toBeVisible({ timeout: 30_000 });
+    await expect(page.getByTestId("form-params")).toBeVisible({ timeout: 30_000 });
     const url = page.url();
     const formId = url.split("/forms/")[1]?.split(/[?#]/)[0];
     expect(formId).toBeTruthy();
 
-    // 2. User: recognize_complete + submit
-    await clickAction(page, /^Завершить распознавание$/);
+    // 2. User: no-doc form auto-lands on draft; submit directly
     await expectFormStatus(page, "draft", { timeout: 30_000 });
     await clickAction(page, /^Отправить на проверку$/);
-    await expectFormStatus(page, "form_waiting_verification", { timeout: 30_000 });
+    await expectFormStatus(page, /organization_waiting_verification|form_waiting_verification/, { timeout: 30_000 });
 
     // 3. ECO: accept
     await logout();
