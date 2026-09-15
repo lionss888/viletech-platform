@@ -228,14 +228,20 @@ export async function createRejectedForm(
   return id;
 }
 
-/** Provider-assigned form at payment_processing. */
-export async function createProviderProcessingForm(tokens: ApiTokens, suffix: string): Promise<string> {
+/** Funds received from client; provider not assigned yet. */
+export async function createPaymentReceivedForm(tokens: ApiTokens, suffix: string): Promise<string> {
   const id = await createFormAccepted(tokens, suffix);
   await authPut(tokens.manager, `/api/v1/manager/form-payment/${id}/order/signing`);
   await authPut(tokens.user, `/api/v1/site/form-payment/${id}/order`);
   await authPut(tokens.manager, `/api/v1/manager/form-payment/${id}/order/start`);
   await authPut(tokens.manager, `/api/v1/manager/form-payment/${id}/order/accept`);
   await authPut(tokens.manager, `/api/v1/manager/form-payment/${id}/payment/received`);
+  return id;
+}
+
+/** Provider-assigned form at payment_processing. */
+export async function createProviderProcessingForm(tokens: ApiTokens, suffix: string): Promise<string> {
+  const id = await createPaymentReceivedForm(tokens, suffix);
   await authPost(tokens.manager, `/api/v1/forms/${id}/provider`, {
     provider_id: PROVIDER_ID,
     client_agreed: true,

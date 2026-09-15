@@ -92,3 +92,17 @@ export function blocksAdvanceSigningWithoutRate(input: {
 /** Guided copy when advance signing waits for rate + commission. */
 export const ADVANCE_SIGNING_NEEDS_RATE =
   "Укажите курс и комиссию — без этого доп. поручение сформировать нельзя.";
+
+/** Export form_accepted only allows advance_signing; import keeps agent/contract CTAs. */
+export function hidesFormAcceptedActionForDirection(input: {
+  status: string;
+  actionId: string;
+  direction?: string;
+}): boolean {
+  if (input.status !== "form_accepted") return false;
+  const isExport = (input.direction ?? "import").toLowerCase() === "export";
+  if (isExport) {
+    return input.actionId !== "mgr_advance_signing";
+  }
+  return input.actionId === "mgr_advance_signing";
+}

@@ -102,6 +102,7 @@ const MATRIX: Record<VedRole, Record<string, FormAction[]>> = {
     form_accepted: [
       { id: "mgr_assign_agent", label: "Назначить платёжного агента", tone: "primary", nextStatus: "form_accepted" },
       { id: "mgr_contract_attach", label: "Прикрепить договор вручную", tone: "accent", requiresFile: true, nextStatus: "signing_order" },
+      { id: "mgr_advance_signing", label: "Сформировать поручение", tone: "accent", nextStatus: "advance_signing_order" },
       { id: "mgr_form_reject", label: "Вернуть на коррекцию", tone: "quiet", requiresReason: true, nextStatus: "form_waiting_corrections" },
     ],
     contract_verification: [
@@ -206,6 +207,14 @@ const MATRIX: Record<VedRole, Record<string, FormAction[]>> = {
         tone: "accent",
         confirm: "Подтвердить заход рублёвого покрытия и передать в исполнение?",
         // nextStatus depends on payment route: advance → payment_processing, RATE_ON_PP → report_waiting (§10.2/10.3)
+      },
+    ],
+    payment_processing: [
+      {
+        id: "treas_confirm_payment",
+        label: "Подтвердить покрытие",
+        tone: "accent",
+        confirm: "Подтвердить поступление валюты по экспорту и передать казначею?",
       },
     ],
     payment_sent_treasurer: [

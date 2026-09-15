@@ -163,7 +163,14 @@ test.describe("Pilot robot matrix export treasurer flow @pilot-matrix", () => {
     await clickAction(page, /Подтвердить получение средств/i);
     await expectFormStatus(page, "payment_received", { timeout: 30_000 });
 
-    // 10. Manager starts payment processing
+    // 10. Assign execution provider, then start payment
+    await clickAction(page, /^Назначить платёжного провайдера$/);
+    const providerSelect = page.locator("label").filter({ hasText: /Провайдер исполнения/i }).locator("select");
+    await expect(providerSelect).toBeVisible({ timeout: 10_000 });
+    await expect.poll(async () => providerSelect.locator("option").count(), { timeout: 20_000 }).toBeGreaterThan(1);
+    await providerSelect.selectOption({ index: 1 });
+    await confirmModal(page);
+    await expectFormStatus(page, "payment_received", { timeout: 30_000 });
     await clickAction(page, /Запустить исполнение платежа/i);
     await expectFormStatus(page, "payment_processing", { timeout: 30_000 });
 

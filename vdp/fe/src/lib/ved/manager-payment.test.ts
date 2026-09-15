@@ -7,6 +7,7 @@ import {
   ADVANCE_SIGNING_NEEDS_RATE,
   blocksAdvanceSigningWithoutRate,
   blocksPaymentStartWithoutProvider,
+  hidesFormAcceptedActionForDirection,
   hidesPaymentStartForImportAdvance,
   IMPORT_ADVANCE_AWAITS_TREASURER,
   isImportAdvanceCoverageGate,
@@ -78,6 +79,7 @@ describe("import advance treasurer gate", () => {
   it("exposes treasurer confirm CTA and nest bridge", () => {
     const ids = actionsFor("treasurer", "payment_received").map((a) => a.id);
     expect(ids).toContain("treas_confirm_payment");
+    expect(actionsFor("treasurer", "payment_processing").map((a) => a.id)).toContain("treas_confirm_payment");
     expect(appActionsFor("treasurer", "payment_received").map((a) => a.id)).toContain("treas_confirm_payment");
     expect(resolveDemoAction("treas_confirm_payment")).toEqual({ kind: "nest_confirm_payment" });
     expect(IMPORT_ADVANCE_AWAITS_TREASURER.length).toBeGreaterThan(10);
@@ -138,6 +140,45 @@ describe("postpay RATE_ON_PP rate gate (IMP5)", () => {
   it("exposes mgr_advance_signing on payment_sent for manager", () => {
     const ids = actionsFor("manager", "payment_sent").map((a) => a.id);
     expect(ids).toContain("mgr_advance_signing");
+  });
+
+  it("keeps export form_accepted on advance signing and hides it for import", () => {
+    expect(
+      hidesFormAcceptedActionForDirection({
+        status: "form_accepted",
+        actionId: "mgr_advance_signing",
+        direction: "export",
+      }),
+    ).toBe(false);
+    expect(
+      hidesFormAcceptedActionForDirection({
+        status: "form_accepted",
+        actionId: "mgr_assign_agent",
+        direction: "export",
+      }),
+    ).toBe(true);
+    expect(
+      hidesFormAcceptedActionForDirection({
+        status: "form_accepted",
+        actionId: "mgr_advance_signing",
+        direction: "import",
+      }),
+    ).toBe(true);
+    expect(
+      hidesFormAcceptedActionForDirection({
+        status: "form_accepted",
+        actionId: "mgr_assign_agent",
+        direction: "import",
+      }),
+    ).toBe(false);
+    expect(
+      hidesFormAcceptedActionForDirection({
+        status: "payment_sent",
+        actionId: "mgr_advance_signing",
+        direction: "import",
+      }),
+    ).toBe(false);
+    expect(actionsFor("manager", "form_accepted").map((a) => a.id)).toContain("mgr_advance_signing");
   });
 });
 

@@ -180,7 +180,7 @@ test.describe("Pilot matrix POSTPAY_RATE_ON_PP @pilot-matrix", () => {
     await clickAction(page, /^Назначить платёжного провайдера$/);
     const providerSelect = page.locator("label").filter({ hasText: /Провайдер исполнения/i }).locator("select");
     await expect(providerSelect).toBeVisible({ timeout: 10_000 });
-    expect(await providerSelect.locator("option").count()).toBeGreaterThan(1);
+    await expect.poll(async () => providerSelect.locator("option").count(), { timeout: 20_000 }).toBeGreaterThan(1);
     await providerSelect.selectOption({ index: 1 });
     await confirmModal(page);
     await expectFormStatus(page, "payment_received", { timeout: 30_000 });
