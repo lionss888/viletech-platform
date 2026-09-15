@@ -42,7 +42,8 @@ alwaysApply: true
 2. Затронутые unit (не «потом добавим»).
 3. `make precommit-gate` / то, что хук гоняет — при коммите.
 4. UI journey / кабинет → минимум **`make ci-pr`** (не подменять одним `ci-pr-fast` без оговорки).
-5. ActionPanel / status-matrix / pilot CTA → **`make ci-pr-pilot`**.
+5. ActionPanel / status-matrix / pilot CTA / правки в `vdp/fe/e2e/**` / `@pilot-matrix` paths → **`make ci-pr-pilot`**.
+6. Утверждение «CI ok / merge-ready» после таких правок без зелёного `ci-pr-pilot` = нарушение `честность-готовности`.
 6. `make release-gate` — только по явной просьбе или handover.
 7. «CI ок / merge-ready» — только после зелёного заявленного gate (`честность-готовности`).
 

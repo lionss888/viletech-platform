@@ -65,7 +65,8 @@ cd vdp && make check-env-parity
 
 1. Предложить и при согласии (или если пользователь уже сказал «прогони» / нажал Run в Local QG) выполнить из `vdp/`:
    - по умолчанию **`make ci-pr`**;
-   - если пользователь просит быстрее / без browser — **`make ci-pr-fast`**, и честно сказать, что Playwright PR-smoke ещё не гонялся;
+   - если затронуты `vdp/fe/e2e/**`, `@pilot-matrix`, ActionPanel/status-matrix/rate-commission или formpayment domain → **`make ci-pr-pilot`** (GitHub path-filter запустит `playwright-pilot-matrix`);
+   - если пользователь просит быстрее / без browser — **`make ci-pr-fast`**, и честно сказать, что Playwright PR-smoke / pilot-matrix ещё не гонялись;
    - при правках только документации — достаточно **`make docs-format-check`** (+ при желании `test-cd-scripts`, если трогали CD-контракты);
    - при явной команде из Local QG — **ровно ту**, что в промпте (не подменять `precommit-gate` на `ci-pr`).
 2. Красный gate → **не** утверждать готовность CI; починить или явно перечислить пробел.
@@ -126,6 +127,7 @@ export MGMT_NOTIFY_CHAT_ID="your_chat_id"
 - Трактовать кнопку Run / `Local QG RUN` как «спроси, стоит ли гонять» — это команда на выполнение.
 - Пропускать `check-deploy-secrets` перед push в main или PR, который может вызвать deploy.
 - **Утверждать «готово» без зелёного `make ci-pr`** — расхождение версий и прочие локальные особенности ломают CI.
+- **Утверждать «CI ok / merge-ready» после правок `vdp/fe/e2e/**`, `@pilot-matrix`, ActionPanel, status-matrix, rate-commission или formpayment domain без зелёного `make ci-pr-pilot`** — локальный `ci-pr` не гоняет `playwright-pilot-matrix`, а GitHub required checks запускают его по path-filter.
 
 ## Что делать человеку (коротко)
 
