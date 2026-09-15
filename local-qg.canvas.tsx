@@ -20,11 +20,18 @@ export default function LocalQualityGate() {
           <h2 className="text-2xl font-bold mb-4 text-cyan-400">🚀 Quick Gates</h2>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             <GateButton
-              title="PR Gate (Full)"
+              title="PR Gate (smoke)"
               command="cd vdp && make ci-pr"
-              description="Docs + Tests + Adapters + Integration + E2E"
+              description="Узкий Playwright (4 spec). Не равен GitHub pilot-matrix."
               color="from-green-500 to-emerald-600"
               emoji="✅"
+            />
+            <GateButton
+              title="PR Gate (Pilot)"
+              command="cd vdp && make ci-pr-pilot"
+              description="ci-pr + @pilot-matrix. Когда изменены e2e / лестница / ActionPanel."
+              color="from-teal-500 to-emerald-700"
+              emoji="🪜"
             />
             <GateButton
               title="PR Gate (Fast)"

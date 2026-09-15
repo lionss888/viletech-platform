@@ -10,4 +10,4 @@ alwaysApply: true
 - Перед закрытием gate — самопроверка: unit/service/e2e по заявленному scope, не только happy-path.
 - Паритет Nest↔vdp описывай по матрице endpoint/tests, без ложных «паритет 100%».
 - План без слоёв (unit/E2E/…) или без имени QG-команды в DoD — **не готов к исполнению**; см. `планирование-сверка-с-rules`.
-- «CI ok / merge-ready» после правок `vdp/fe/e2e/**` или `@pilot-matrix` paths без зелёного `make ci-pr-pilot` — ложная готовность: GitHub required checks запускают `playwright-pilot-matrix`, а локальный `ci-pr` его не гоняет.
+- «CI ok / merge-ready» после правок `vdp/fe/e2e/**` или `@pilot-matrix` paths без зелёного `make ci-pr-pilot` — ложная готовность: GitHub required checks запускают `playwright-pilot-matrix`, а локальный `ci-pr` / кнопка Local QG **PR Gate (smoke)** его не гоняют.
