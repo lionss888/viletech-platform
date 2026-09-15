@@ -4,16 +4,16 @@ overview: "На alpha клик «Выбрать инвойс» открывае�
 todos:
   - id: file-field-wrapper
     content: FileField (div) + заменить Field вокруг invoice/contract FilePickButton в forms-new-page
-    status: in_progress
+    status: completed
   - id: contracts-guard
     content: Обновить fe-interaction-contracts + static guard в test-cd-scripts.sh
-    status: pending
+    status: completed
   - id: e2e-single-chooser
     content: "Regression: zone click → ровно один filechooser + файл в zone"
-    status: pending
+    status: completed
   - id: qg-ci-pr-pilot
     content: check-env-parity → unit/cd → make ci-pr-pilot; локальный repro жеста
-    status: pending
+    status: in_progress
 isProject: false
 ---
 

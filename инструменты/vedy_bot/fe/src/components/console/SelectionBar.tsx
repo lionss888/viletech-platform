@@ -127,7 +127,9 @@ export function SelectionBar({
 
         {publishPreview && onPublish && (
           <div className="mt-3 space-y-2 rounded-lg border border-border bg-background/60 p-2">
-            <p className="font-mono text-[11px] text-muted-foreground">Превью перед отправкой в TG</p>
+            <p className="font-mono text-[11px] text-muted-foreground">
+              Превью перед отправкой в TG
+            </p>
             <Textarea
               value={edited}
               onChange={(e) => setEdited(e.target.value)}
@@ -156,7 +158,12 @@ export function SelectionBar({
               >
                 Отправить
               </Button>
-              <Button size="sm" variant="ghost" disabled={busy} onClick={() => setPublishPreview(false)}>
+              <Button
+                size="sm"
+                variant="ghost"
+                disabled={busy}
+                onClick={() => setPublishPreview(false)}
+              >
                 Отмена
               </Button>
             </div>
@@ -164,7 +171,8 @@ export function SelectionBar({
         )}
 
         <p className="mt-2 font-mono text-[10px] leading-relaxed text-muted-foreground">
-          «Разобрать» — локально. «Спросить у агента» — нужен key_…. Отправка в TG проходит sanitize.
+          «Разобрать» — локально. «Спросить у агента» — нужен key_…. Отправка в TG проходит
+          sanitize.
         </p>
       </div>
     </div>

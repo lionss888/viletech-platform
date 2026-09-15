@@ -453,22 +453,22 @@ export function NewForm() {
             )}
             {!draft.noDocuments && (
               <>
-                <Field label="Инвойс (PDF, до 15 МБ)" invalid={invalidFields.includes("invoiceFile")}>
+                <FileField label="Инвойс (PDF, до 15 МБ)" invalid={invalidFields.includes("invoiceFile")}>
                   <FilePickButton
                     file={draft.invoiceFile}
                     testId="wizard-invoice-file"
                     pickLabel="Выбрать инвойс"
                     onPick={(file) => onFilePick("invoiceFile", file)}
                   />
-                </Field>
-                <Field label="Контракт (PDF, до 15 МБ) — необязательно">
+                </FileField>
+                <FileField label="Контракт (PDF, до 15 МБ) — необязательно">
                   <FilePickButton
                     file={draft.contractFile}
                     testId="wizard-contract-file"
                     pickLabel="Выбрать контракт"
                     onPick={(file) => onFilePick("contractFile", file)}
                   />
-                </Field>
+                </FileField>
                 <p className="text-xs text-muted-foreground">
                   Чаще достаточно инвойса. После «Далее» распознавание пойдёт в фоне — можно заполнять форму дальше.
                 </p>
@@ -858,6 +858,28 @@ function Field({
       {invalid && <span className="mt-1 block text-xs font-semibold text-destructive">Заполните это поле</span>}
       {hint && !invalid && <span className="mt-1 block text-xs text-muted-foreground">{hint}</span>}
     </label>
+  );
+}
+
+/**
+ * Wrapper for FilePickButton: root must be a div, not a wrapping label.
+ * A label around input[type=file] + programmatic openPicker() opens the OS dialog twice.
+ */
+function FileField({
+  label,
+  invalid = false,
+  children,
+}: {
+  label: string;
+  invalid?: boolean;
+  children: React.ReactNode;
+}) {
+  return (
+    <div className="flex h-full flex-col" data-testid="wizard-file-field">
+      <span className={cn("label-caps", invalid && "text-destructive")}>{label}</span>
+      <div className="mt-auto pt-1">{children}</div>
+      {invalid && <span className="mt-1 block text-xs font-semibold text-destructive">Заполните это поле</span>}
+    </div>
   );
 }
 

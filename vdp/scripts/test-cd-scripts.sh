@@ -418,10 +418,21 @@ grep -q 'from.*file-pick-button' "$WIZARD_PAGE" \
   || fail "forms-new-page must import shared FilePickButton"
 ! grep -q 'function FilePickButton' "$WIZARD_PAGE" \
   || fail "forms-new-page must NOT have local FilePickButton (use shared)"
+grep -q 'function FileField' "$WIZARD_PAGE" \
+  || fail "forms-new-page must define FileField (div wrapper for FilePickButton)"
+# Invoice/contract FilePick must use FileField, not wrapping Field/label
+grep -q '<FileField label="Инвойс' "$WIZARD_PAGE" \
+  || fail "wizard invoice FilePickButton must be wrapped in FileField, not Field"
+grep -q '<FileField label="Контракт' "$WIZARD_PAGE" \
+  || fail "wizard contract FilePickButton must be wrapped in FileField, not Field"
+! grep -E '<Field[^>]*>[[:space:]]*<FilePickButton' "$WIZARD_PAGE" \
+  || fail "forms-new-page must NOT wrap FilePickButton in Field (label causes double filechooser)"
 # E2E must test gesture via filechooser, not just setInputFiles
 WAVE2_SPEC="$ROOT/fe/e2e/wave2-wizard.spec.ts"
-grep -Eq "waitForEvent\(['\"]filechooser['\"]" "$WAVE2_SPEC" \
-  || fail "wave2-wizard.spec must use waitForEvent('filechooser') for gesture test"
+grep -Eq "waitForEvent\(['\"]filechooser['\"]|on\(['\"]filechooser['\"]" "$WAVE2_SPEC" \
+  || fail "wave2-wizard.spec must listen for filechooser (waitForEvent or page.on) for gesture test"
+grep -Eq 'exactly one filechooser|choosers\.length\)\.toBe\(1\)|no second filechooser' "$WAVE2_SPEC" \
+  || fail "wave2-wizard.spec must assert exactly one filechooser (no double open)"
 
 make compose-release-config-check
 echo "test-cd-scripts passed"

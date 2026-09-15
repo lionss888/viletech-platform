@@ -54,7 +54,7 @@ export function setAgentKey(key: string): void {
 }
 
 export function isDemoMode(): boolean {
-  return import.meta.env.VITE_INTAKE_DEMO === "1";
+  return import.meta.env["VITE_INTAKE_DEMO"] === "1";
 }
 
 async function api<T>(path: string, opts: RequestInit = {}): Promise<T> {
@@ -78,9 +78,7 @@ async function api<T>(path: string, opts: RequestInit = {}): Promise<T> {
 
 export function mapThreadMsg(m: ThreadMsg): ConsoleMessage {
   const direction =
-    m.direction === "out" || m.direction === "agent" || m.direction === "in"
-      ? m.direction
-      : "in";
+    m.direction === "out" || m.direction === "agent" || m.direction === "in" ? m.direction : "in";
   const text = (m.text || "").trim();
   const isAgent = direction === "agent";
   let title: string | undefined;
@@ -89,13 +87,21 @@ export function mapThreadMsg(m: ThreadMsg): ConsoleMessage {
   let recommendations: string[] | undefined;
   if (isAgent && text.includes("---")) {
     const [head, ...rest] = text.split("---");
-    note = head.trim();
+    note = (head ?? "").trim();
     summary = rest.join("---").trim() || text;
   }
   if (isAgent) {
-    const lines = summary.split("\n").map((l) => l.trim()).filter(Boolean);
-    if (lines[0]?.includes("Локальный") || lines[0]?.includes("разбор") || lines[0]?.includes("Агент")) {
-      title = lines[0];
+    const lines = summary
+      .split("\n")
+      .map((l) => l.trim())
+      .filter(Boolean);
+    const firstLine = lines[0];
+    if (
+      firstLine?.includes("Локальный") ||
+      firstLine?.includes("разбор") ||
+      firstLine?.includes("Агент")
+    ) {
+      title = firstLine;
       summary = lines.slice(1).join("\n") || summary;
     }
     const recIdx = lines.findIndex((l) => /рекомендац/i.test(l));
@@ -106,34 +112,35 @@ export function mapThreadMsg(m: ThreadMsg): ConsoleMessage {
         .filter(Boolean);
     }
   }
-  return {
+  const mapped: ConsoleMessage = {
     id: m.id || `${m.chat_id}:${m.message_id}:${m.direction}`,
     timestamp: m.at || new Date().toISOString(),
     author: m.from_user || (direction === "agent" ? "agent" : "unknown"),
     channel: direction === "agent" ? "agent" : "telegram",
     event: m.kind || m.trigger || "message",
     direction,
-    messageId: m.message_id,
-    chatId: m.chat_id,
-    tgChannel: m.channel || "manager",
-    title,
     summary,
-    note,
-    recommendations,
+    tgChannel: m.channel || "manager",
   };
+  if (m.message_id !== undefined) mapped.messageId = m.message_id;
+  if (m.chat_id !== undefined) mapped.chatId = m.chat_id;
+  if (title !== undefined) mapped.title = title;
+  if (note !== undefined) mapped.note = note;
+  if (recommendations !== undefined) mapped.recommendations = recommendations;
+  return mapped;
 }
 
 export function mapHitlCard(raw: Record<string, unknown>): HitlCard {
-  const status = String(raw.status || "awaiting_approve") as HitlCard["status"];
+  const status = String(raw["status"] || "awaiting_approve") as HitlCard["status"];
   const ok =
     status === "approved" || status === "awaiting_approve" || status === "rejected"
       ? status
       : "awaiting_approve";
   return {
-    id: String(raw.id || ""),
+    id: String(raw["id"] || ""),
     status: ok,
-    author: String(raw.from_username || raw.author || "@bot"),
-    text: String(raw.summary || raw.proposal || raw.text || ""),
+    author: String(raw["from_username"] || raw["author"] || "@bot"),
+    text: String(raw["summary"] || raw["proposal"] || raw["text"] || ""),
   };
 }
 

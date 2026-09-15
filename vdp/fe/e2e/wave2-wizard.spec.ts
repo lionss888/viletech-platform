@@ -1,4 +1,5 @@
 import { test, expect, type Page } from "./fixtures/auth.fixture";
+import type { FileChooser } from "@playwright/test";
 import { assertCoreHealthy, loginAllRoles } from "./helpers/api";
 import { expectFormStatus } from "./helpers/status";
 import {
@@ -35,22 +36,25 @@ test.describe("Wave2 wizard / OCR / submit", () => {
     await assertCoreHealthy();
   });
 
-  test("gesture: zone click opens filechooser for invoice", async ({ page, loginAs }) => {
+  test("gesture: zone click opens exactly one filechooser for invoice", async ({ page, loginAs }) => {
     await loginAs("user");
     await page.goto("/forms/new");
     await expect(page.getByTestId("wizard-docs-step")).toBeVisible();
 
-    // Click on zone must trigger native file dialog (filechooser event)
-    const [fileChooser] = await Promise.all([
-      page.waitForEvent("filechooser"),
-      page.getByTestId("wizard-invoice-file-zone").click(),
-    ]);
-    expect(fileChooser).toBeTruthy();
-    expect(fileChooser.isMultiple()).toBe(false);
+    const choosers: FileChooser[] = [];
+    const onChooser = (fc: FileChooser) => {
+      choosers.push(fc);
+    };
+    page.on("filechooser", onChooser);
+    await page.getByTestId("wizard-invoice-file-zone").click();
+    await expect.poll(() => choosers.length).toBeGreaterThanOrEqual(1);
+    await page.waitForTimeout(500);
+    page.off("filechooser", onChooser);
+    expect(choosers.length).toBe(1);
+    expect(choosers[0].isMultiple()).toBe(false);
 
-    // Accept a file through the chooser
     const pdf = Buffer.from("%PDF-1.4 gesture-test");
-    await fileChooser.setFiles({
+    await choosers[0].setFiles({
       name: "gesture-invoice.pdf",
       mimeType: "application/pdf",
       buffer: pdf,
@@ -58,16 +62,21 @@ test.describe("Wave2 wizard / OCR / submit", () => {
     await expect(page.getByTestId("wizard-invoice-file-zone")).toContainText("gesture-invoice.pdf");
   });
 
-  test("gesture: zone click opens filechooser for contract", async ({ page, loginAs }) => {
+  test("gesture: zone click opens exactly one filechooser for contract", async ({ page, loginAs }) => {
     await loginAs("user");
     await page.goto("/forms/new");
     await expect(page.getByTestId("wizard-docs-step")).toBeVisible();
 
-    const [fileChooser] = await Promise.all([
-      page.waitForEvent("filechooser"),
-      page.getByTestId("wizard-contract-file-zone").click(),
-    ]);
-    expect(fileChooser).toBeTruthy();
+    const choosers: FileChooser[] = [];
+    const onChooser = (fc: FileChooser) => {
+      choosers.push(fc);
+    };
+    page.on("filechooser", onChooser);
+    await page.getByTestId("wizard-contract-file-zone").click();
+    await expect.poll(() => choosers.length).toBeGreaterThanOrEqual(1);
+    await page.waitForTimeout(500);
+    page.off("filechooser", onChooser);
+    expect(choosers.length).toBe(1);
   });
 
   test("docs first: invoice-only reaches review without contract", async ({ page, loginAs }) => {

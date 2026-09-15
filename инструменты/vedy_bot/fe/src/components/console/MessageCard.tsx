@@ -69,9 +69,7 @@ export function MessageCard({ message, selected, onToggle }: Props) {
       </div>
 
       <div className="px-4 py-3">
-        {message.title && (
-          <h3 className="font-mono text-sm text-foreground">{message.title}</h3>
-        )}
+        {message.title && <h3 className="font-mono text-sm text-foreground">{message.title}</h3>}
 
         {message.summary && (
           <p

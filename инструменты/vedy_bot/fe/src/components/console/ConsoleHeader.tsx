@@ -65,12 +65,16 @@ export function ConsoleHeader({
             </span>
             <span aria-hidden>·</span>
             <span className="inline-flex items-center gap-1.5" title="INTAKE_CONSOLE_TOKEN">
-              <span className={`size-1.5 rounded-full ${consoleOk ? "bg-success" : "bg-warning"}`} />
+              <span
+                className={`size-1.5 rounded-full ${consoleOk ? "bg-success" : "bg-warning"}`}
+              />
               консоль {consoleOk ? "токен ок" : "нет Bearer"}
             </span>
             <span aria-hidden>·</span>
             <span className="inline-flex items-center gap-1.5" title="CURSOR_API_KEY (key_…)">
-              <span className={`size-1.5 rounded-full ${agentOk ? "bg-success" : "bg-muted-foreground"}`} />
+              <span
+                className={`size-1.5 rounded-full ${agentOk ? "bg-success" : "bg-muted-foreground"}`}
+              />
               агент {agentOk ? "ключ задан" : "без key_…"}
             </span>
             <span aria-hidden>·</span>

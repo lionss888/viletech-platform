@@ -44,8 +44,7 @@ export const Route = createFileRoute("/")({
       { property: "og:title", content: "Консоль чата — живое зеркало Telegram и разбор" },
       {
         property: "og:description",
-        content:
-          "Лента чата, выделение сообщений, разбор и карточки HITL в одном рабочем экране.",
+        content: "Лента чата, выделение сообщений, разбор и карточки HITL в одном рабочем экране.",
       },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
@@ -100,9 +99,7 @@ function Index() {
   }, [demo, refresh]);
 
   const toggle = (id: string) =>
-    setSelected((prev) =>
-      prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id],
-    );
+    setSelected((prev) => (prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]));
 
   const pending = cards.filter((c) => c.status === "awaiting_approve").length;
 

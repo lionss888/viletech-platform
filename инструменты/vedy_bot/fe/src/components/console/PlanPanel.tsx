@@ -18,10 +18,12 @@ export function PlanPanel({ open, onOpenChange, busy }: Props) {
   useEffect(() => {
     if (!open) return;
     void listPlans()
-      .then((items) => {
+      .then(async (items) => {
         setPlans(items);
-        if (items[0]?.id) {
-          return getPlan(items[0].id).then(setActive);
+        const firstId = items[0]?.id;
+        if (firstId) {
+          setActive(await getPlan(firstId));
+          return;
         }
         setActive(null);
       })
@@ -63,7 +65,9 @@ export function PlanPanel({ open, onOpenChange, busy }: Props) {
           ))}
         </div>
         {!active ? (
-          <p className="font-mono text-xs text-muted-foreground">Нет планов в .cursor/plans/тгбот</p>
+          <p className="font-mono text-xs text-muted-foreground">
+            Нет планов в .cursor/plans/тгбот
+          </p>
         ) : (
           <div className="space-y-3">
             <Input
@@ -80,7 +84,10 @@ export function PlanPanel({ open, onOpenChange, busy }: Props) {
             />
             <div className="space-y-2">
               {(active.todos || []).map((t, i) => (
-                <div key={t.id || i} className="flex flex-wrap items-center gap-2 rounded border border-border p-2">
+                <div
+                  key={t.id || i}
+                  className="flex flex-wrap items-center gap-2 rounded border border-border p-2"
+                >
                   <Input
                     value={t.content}
                     onChange={(e) => updateTodo(i, { content: e.target.value })}
@@ -137,7 +144,9 @@ export function PlanPanel({ open, onOpenChange, busy }: Props) {
                 Сохранить
               </Button>
               {active.path && (
-                <span className="truncate font-mono text-[10px] text-muted-foreground">{active.path}</span>
+                <span className="truncate font-mono text-[10px] text-muted-foreground">
+                  {active.path}
+                </span>
               )}
             </div>
             {status && <p className="font-mono text-[11px] text-muted-foreground">{status}</p>}

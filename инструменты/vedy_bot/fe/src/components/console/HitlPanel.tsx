@@ -54,9 +54,7 @@ function Card({
   return (
     <div className="rounded-xl border border-border bg-surface p-4">
       <div className="flex flex-wrap items-center gap-2">
-        <span
-          className={`rounded-md border px-2 py-0.5 text-[11px] ${statusStyles[card.status]}`}
-        >
+        <span className={`rounded-md border px-2 py-0.5 text-[11px] ${statusStyles[card.status]}`}>
           {statusLabels[card.status]}
         </span>
         <span className="truncate text-[11px] text-muted-foreground">{card.author}</span>
@@ -189,22 +187,17 @@ export function HitlPanel({
 }) {
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent
-        side="right"
-        className="w-full border-border bg-background sm:max-w-md"
-      >
+      <SheetContent side="right" className="w-full border-border bg-background sm:max-w-md">
         <SheetHeader className="gap-1 px-5 pb-4 pt-5">
           <SheetTitle className="text-base font-semibold">Карточки на решение</SheetTitle>
-          <SheetDescription className="text-[12px]">
-            Требуют вашего согласования
-          </SheetDescription>
+          <SheetDescription className="text-[12px]">Требуют вашего согласования</SheetDescription>
         </SheetHeader>
         <div className="console-scroll space-y-3 overflow-y-auto px-5 pb-6">
           {cards.map((card) => (
             <Card
               key={card.id}
               card={card}
-              busy={busy}
+              busy={busy ?? false}
               onApprove={onApprove}
               onReject={onReject}
               onAskAgent={onAskAgent}
