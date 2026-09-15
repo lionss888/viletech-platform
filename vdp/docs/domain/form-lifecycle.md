@@ -50,9 +50,15 @@ form_waiting_corrections после eco_reject, ico_reject или manager contin
 
 ## Ветка refund
 
-payment_refund_waiting и связанные refund_* статусы при mgr_refund_init и далее.
+Возврат средств клиенту после получения платежа. Инициируется менеджером из статусов signing_order_accepted, payment_received, manager_checking или advance_signing_order_accepted (любого статуса где FundsHeld true).
 
-cancel_by_manager с активным refund блокируется 409 cannot finalize cancel while funds are unrefunded.
+Поток возврата начинается с mgr_refund_init переводящего форму в payment_refund_waiting с обязательным указанием суммы и валюты возврата (должны совпадать с полученными средствами) и установкой FundsHeld true. Действие mgr_refund_start переводит в payment_refund_processing для запуска процесса возврата. Опционально mgr_refund_file прикрепляет подтверждающий документ возврата. Действие mgr_refund_sent переводит в payment_refund_sent для подтверждения возврата средств устанавливая FundsRefunded true и FundsHeld false. Действие mgr_refund_stop откатывает из payment_refund_processing в payment_refund_waiting. Действие mgr_refund_cancel отменяет процесс возврата возвращая к предыдущему статусу (signing_order_accepted или advance_signing_order_accepted).
+
+Инвариант невозвращённых средств: отмена заявки (cancel_by_manager, cancel_by_user, cancel_by_eco, cancel_by_ico) блокируется с кодом 409 CONFLICT если FundsHeld true и FundsRefunded false. Ошибка: cannot finalize cancel while funds are unrefunded initiate refund first. После payment_refund_sent средства считаются возвращёнными (FundsRefunded true), отмена заявки разрешена.
+
+Валидация суммы возврата: сумма и валюта должны точно совпадать с полученными средствами (ValidateRefundAmount). Частичный возврат вне scope MVP.
+
+Покрытие: домен (refund.go, machine.go, transitions.go), unit tests (refund_test.go включая invariant, stop/cancel, amount validation), HTTP routes (r7_refund_routes.go), HTTP tests (r7_refund_test.go включая AuthZ для Manager/Treasurer), FE API (refund.ts), FE UI (RefundPanel.tsx, ActionPanel refund CTAs, actions.ts refund mappings), FE unit tests (manager-payment.test.ts refund bridge), E2E @pilot-matrix (pilot-matrix-refund.spec.ts happy path и stop/cancel).
 
 ## Ветка provider return
 

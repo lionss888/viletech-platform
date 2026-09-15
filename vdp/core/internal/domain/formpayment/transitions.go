@@ -162,6 +162,8 @@ var transitionsImportForm = map[Status][]Status{
 	StatusPaymentRefundProcessing: {
 		StatusPaymentRefundWaiting,
 		StatusPaymentRefundSent,
+		StatusSigningOrderAccepted,
+		StatusAdvanceSigningOrderAccepted,
 	},
 	StatusPaymentRefundSent: {
 		StatusSigningOrderAccepted,
