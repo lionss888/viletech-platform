@@ -7,7 +7,7 @@ todos:
     status: completed
   - id: run-ci-pr-pilot
     content: Локально make ci-pr-pilot до push
-    status: in_progress
+    status: completed
   - id: harden-local-gate-rule
     content: "Rules: e2e/@pilot-matrix paths → обязателен ci-pr-pilot"
     status: completed
