@@ -64,11 +64,15 @@ Data migration legacy Nest monolith not in vdp scope. Greenfield seed data only.
 
 ## Out of scope roadmap
 
-Logistics module. Product modules analytics and assistant under vdp/analytics and vdp/assistant remain placeholders (.gitkeep). Full BDUI schema engine. Client feedback items waiting Dasha forms: provider return-funds UI and Word cycle for order or report templates.
+Полный флоу логистов как отдельный продукт и доска из секции 8 вводных. Ветка SHIPMENT_* в заявке это закрывающие документы отгрузки внутри form-payment не логистический модуль. Product modules analytics and assistant under vdp/analytics and vdp/assistant remain placeholders (.gitkeep). Full BDUI schema engine. Client feedback items waiting Dasha forms: provider return-funds UI and Word cycle for order or report templates.
 
 ## Gap analysis reference
 
 Internal analysis заметки/gap-analysis-backend.md wider than R11 closed items. Pilot package does not include internal notes path; summary captured here.
+
+## Phase 8 shipment branch
+
+Ветка отгрузки закрыта как опциональный контур form-payment не как процент полного логистического продукта. Domain unit HTTP FE ShipmentPanel CTA Manager User E2E pilot-matrix-shipment.spec.ts compose-e2e P5. Happy path остаётся report accept completed. Не заявлено: отдельный кабинет логистов статусы ожидания информации от логистов трекинг груза. Verify: make ci-pr-pilot включает shipment spec. Не входит в обязательный PR smoke.
 
 ## Residual R11
 
@@ -80,7 +84,7 @@ RW1–RW9 copy layer and glossariy synced per RW9 gate. Root wording unchanged b
 
 ## Security prod sign-off
 
-Role ACL tested in unit e2e including treasurer AuthZ on confirm. Checklist security-signoff-checklist.md; prod config guard rejects dev JWT/S2S secrets. Formal customer sign-off pending.
+Role ACL tested in unit e2e including treasurer AuthZ on confirm. Checklist security-signoff-checklist.md. Prod config guard rejects dev JWT/S2S secrets. Milestone 1 2026-09-15: contractor software items on the checklist are marked done. Customer signature and handover-secrets rotation remain open as a known-gap for import UAT. Formal customer sign-off pending.
 
 ## OCR / document extraction
 

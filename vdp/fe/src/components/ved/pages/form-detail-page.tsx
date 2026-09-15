@@ -19,6 +19,7 @@ import { ActionPanel } from "@/components/ved/ActionPanel";
 import { DocumentList } from "@/components/ved/DocumentViewer";
 import { RateCommissionPanel } from "@/components/ved/RateCommissionPanel";
 import { RefundPanel } from "@/components/ved/RefundPanel";
+import { ShipmentPanel } from "@/components/ved/ShipmentPanel";
 import { DirectionTag, StatusBadge } from "@/components/ved/StatusBadge";
 import { ChannelBadge } from "@/components/ved/ChannelBadge";
 import { StageStepper } from "@/components/ved/StageStepper";
@@ -566,6 +567,7 @@ export function FormDetail() {
                 />
               )}
               {!isProvider && <RefundPanel form={form} />}
+              {!isProvider && <ShipmentPanel form={form} />}
             </>
           )}
 

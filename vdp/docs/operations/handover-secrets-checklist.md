@@ -4,6 +4,10 @@
 
 Этот документ закрывает gate ротации секретов и доступов на этапе передачи заказчику. Использовать после фразы «пора передавать заказчику», до подписи security-signoff-checklist.md и staging go-live. Связанные документы: security-signoff-checklist.md, staging-checklist.md, ci.md, gitlab-setup.md (operations pointer), development/gitlab-setup.md (howto), deploy-rollback.md.
 
+## Milestone 1 processing (2026-09-15)
+
+Import-pilot software gate processed on the contractor side. Management notify secrets for deploy status are present. Control questions one through six stay not done until the customer rotates tokens, deploy keys, application secrets on the VM, and cloud accounts. Ownership handover is not closed. Import UAT traffic is allowed with this known-gap. Prod ownership transfer is a customer action, not a contractor software claim.
+
 ## Контрольный вопрос (старт gate)
 
 Ответ «да» на все пункты ниже обязателен перед передачей. Любой «нет» — gate не закрыт.
@@ -83,3 +87,5 @@ security-signoff-checklist.md подписан; пункты про секрет
 Заказчик получил краткую памятку: где Environments, как откатить digest, кого звать при 502 после freeze VM. Статус не выполнено.
 
 Примечания / исключения с согласия заказчика:
+
+Milestone 1 import-pilot 2026-09-15. The six control questions remain нет. The contractor does not rotate or revoke customer PAT, deploy keys, or VM application secrets from this workstation. Alpha public health is live; remote SSH rotate is blocked until DEPLOY_SSH_KEY refresh. This checklist stays the live ownership gate after import UAT.

@@ -45,6 +45,7 @@ const ACTION_CAPABILITY: Record<string, string> = {
   mgr_shipment_waiting: "manager.ops",
   mgr_shipment_start: "manager.ops",
   mgr_shipment_reject: "manager.ops",
+  mgr_shipment_stop: "manager.ops",
   mgr_completed: "manager.ops",
   mgr_refund_init: "manager.ops",
   mgr_refund_cancel: "manager.ops",

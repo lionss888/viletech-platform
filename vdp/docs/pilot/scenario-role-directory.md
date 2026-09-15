@@ -70,7 +70,7 @@
 
 ## Расширение матрицы
 
-Идентификатор happy_path_shipment_branch. Не элемент каталога из 17, а ветка отгрузки в matrix. Покрытие API P5 shipment. Покрытие UI шаги отгрузки в pilot-matrix. Статус covered.
+Идентификатор happy_path_shipment_branch. Не элемент каталога из 17 а опциональная ветка отгрузки. Покрытие API P5 shipment и r5_shipment_test. Покрытие UI ShipmentPanel и шаги отгрузки в pilot-matrix-shipment.spec.ts. Happy path report completed не требует отгрузку. Статус covered как ветка не как logistics product.
 
 ## Правила для тестов
 

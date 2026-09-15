@@ -116,7 +116,7 @@ Row extraction_confirm_updates_amount. API covered. UI form-ux-deadends spot. Fi
 
 Row manager_sets_deal_rate. API covered. UI manager-rate spot. Fixture template until customer.
 
-Row happy_path_shipment_branch. Matrix extension. API P5 shipment. UI pilot-matrix shipment steps. Fixture template until customer.
+Row happy_path_shipment_branch. Matrix extension. API P5 shipment plus r5_shipment_test AuthZ reject stop. UI pilot-matrix-shipment.spec.ts optional report complete and shipment branch. Fixture template until customer. Not in required PR smoke.
 
 Commands: `make robot-matrix-check`, `make playwright-pilot-matrix`, `make compose-e2e`, `make release-gate`. Customer import: `./scripts/robot-fixtures-import.sh /path/to/pack`. Discrepancy report: `./scripts/robot-matrix-discrepancy-report.sh pass|fail`.
 
@@ -142,7 +142,7 @@ Journey import advance treasurer deadline. Unit HTTP IMP1. API compose-e2e advan
 
 Journey import POSTPAY_RATE_ON_PP provider-first rate commission. Unit HTTP IMP2 IMP3. API compose-e2e postpay_RATE_ON_PP. FE unit rate commission. UI E2E pilot-matrix-postpay-rate.spec.ts @pilot-matrix (IMP8) to completed. Not in required PR smoke; gate make playwright-pilot-matrix or path-filter on ladder surface.
 
-Journey export treasurer PAY_FROM_EXPORT. Unit HTTP export. API export_flow_test HTTP to completed. FE unit actions treasurer export. UI E2E pilot-matrix-export.spec.ts @pilot-matrix (Phase 6) User submit → Manager continuity → advance order → Manager payment_received → Treasurer confirm → Treasurer signing order → User verification upload → Treasurer complete to completed. Export domain P5. Export UI/E2E P6. Not in required PR smoke; gate make playwright-pilot-matrix or path-filter on ladder surface (actions/statuses/wizard-steps/e2e/formpayment).
+Journey optional shipment branch. Unit shipment_test.go. API compose-e2e P5 plus r5_shipment_test. UI E2E pilot-matrix-shipment.spec.ts @pilot-matrix. Happy path report accept completed remains without shipment. Not in required PR smoke; gate make playwright-pilot-matrix or path-filter on ladder surface. Full logistics product out of scope.
 
 ## Честность
 

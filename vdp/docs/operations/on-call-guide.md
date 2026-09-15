@@ -4,6 +4,10 @@ Phase 4 Ops Excellence
 
 On-call engineer responsibilities for VDP money path and integrations. Production and pilot deployments.
 
+## Customer handover
+
+Milestone 1 import-pilot 2026-09-15. This page plus runbooks stuck-payment and hub-failure are the on-call transfer artifact. Rotation names and paging roster remain with the customer. Live metrics and alerting still await ops infrastructure. Until the customer names a replacement, contractor primary coverage for the alpha contour follows this guide. Secondary and manager seats are customer-owned. Rollback steps live in deploy-rollback.md. After freeze of a preemptible VM, restart the compose stack and confirm core health on the public host.
+
 On-Call Rotation
 
 Primary On-Call: Responds to critical alerts within 15 minutes, investigates and resolves or escalates within 1 hour.

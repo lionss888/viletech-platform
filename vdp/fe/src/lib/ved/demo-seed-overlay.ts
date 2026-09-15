@@ -32,12 +32,13 @@ export function applyDemoSeedOverlay(users: PlatformUser[], forms: PaymentForm[]
     const nextEmail = DEMO_EMAIL_REMAP[user.email];
     return nextEmail ? { ...user, email: nextEmail } : user;
   });
-  if (forms.some((form) => form.number === EXTRA_FORM_NUMBER)) {
-    return { users: remappedUsers, forms };
+  const patchedForms = forms.map(rebuildFormTimeline);
+  if (patchedForms.some((form) => form.number === EXTRA_FORM_NUMBER)) {
+    return { users: remappedUsers, forms: patchedForms };
   }
   return {
     users: remappedUsers,
-    forms: [...forms, buildExtraForm(forms.length)],
+    forms: [...patchedForms, buildExtraForm(patchedForms.length)],
   };
 }
 
@@ -94,6 +95,21 @@ function buildExtraForm(index: number): PaymentForm {
 
 /** Exported for unit tests. */
 export const DEMO_OVERLAY_EXTRA_FORM_NUMBER = EXTRA_FORM_NUMBER;
+
+function daysAgoFromIso(value: string): number {
+  const parsed = Date.parse(value);
+  if (Number.isNaN(parsed)) {
+    return 1;
+  }
+  return Math.max(0, Math.round((NOW - parsed) / DAY));
+}
+
+function rebuildFormTimeline(form: PaymentForm): PaymentForm {
+  return {
+    ...form,
+    timeline: buildTimeline(form.status, daysAgoFromIso(form.createdAt), form.number),
+  };
+}
 
 function buildTimeline(status: string, days: number, number: string): TimelineEntry[] {
   const rail = stagesForProcess(undefined, status as FormStatus);

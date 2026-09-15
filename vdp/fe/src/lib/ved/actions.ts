@@ -162,6 +162,7 @@ const MATRIX: Record<VedRole, Record<string, FormAction[]>> = {
     payment_sent: [
       { id: "mgr_report_signing", label: "Отправить отчёт агента на подпись", tone: "accent", nextStatus: "report_waiting" },
       { id: "mgr_advance_signing", label: "Сформировать доп. поручение", tone: "quiet", nextStatus: "advance_signing_order" },
+      { id: "mgr_shipment_waiting", label: "Перейти к документам отгрузки", tone: "quiet", nextStatus: "shipment_waiting" },
     ],
     report_waiting_verification: [
       { id: "mgr_report_start", label: "Взять отчёт в проверку", tone: "primary", nextStatus: "report_verification" },
@@ -171,7 +172,12 @@ const MATRIX: Record<VedRole, Record<string, FormAction[]>> = {
       { id: "mgr_report_reject", label: "Вернуть отчёт", tone: "quiet", requiresReason: true, nextStatus: "report_waiting_corrections" },
     ],
     report_accepted: [
-      { id: "mgr_shipment_waiting", label: "Перейти к документам отгрузки", tone: "accent", nextStatus: "shipment_waiting" },
+      { id: "mgr_completed", label: "Завершить заявку", tone: "accent", nextStatus: "completed" },
+      { id: "mgr_shipment_waiting", label: "Перейти к документам отгрузки", tone: "quiet", nextStatus: "shipment_waiting" },
+    ],
+    advance_signing_order_accepted: [
+      { id: "mgr_payment_received", label: "Подтвердить получение средств", tone: "accent", nextStatus: "payment_received" },
+      { id: "mgr_shipment_waiting", label: "Перейти к документам отгрузки", tone: "quiet", nextStatus: "shipment_waiting" },
     ],
     shipment_waiting_verification: [
       { id: "mgr_shipment_start", label: "Взять отгрузку в проверку", tone: "primary", nextStatus: "shipment_verification" },
@@ -179,6 +185,7 @@ const MATRIX: Record<VedRole, Record<string, FormAction[]>> = {
     shipment_verification: [
       { id: "mgr_completed", label: "Закрыть заявку", tone: "accent", nextStatus: "completed" },
       { id: "mgr_shipment_reject", label: "Вернуть документы", tone: "quiet", requiresReason: true, nextStatus: "shipment_waiting_corrections" },
+      { id: "mgr_shipment_stop", label: "Приостановить проверку отгрузки", tone: "quiet", nextStatus: "shipment_waiting_verification" },
     ],
   },
 

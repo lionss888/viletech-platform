@@ -10,6 +10,7 @@ import (
 	"strconv"
 	"strings"
 	"sync"
+	"sync/atomic"
 	"time"
 
 	"github.com/viletech/vdp/core/internal/authz"
@@ -381,10 +382,9 @@ func (s *Server) rateLimit(next http.Handler) http.Handler {
 			ip = r.RemoteAddr
 		}
 		key := ip + "|" + time.Now().UTC().Format("200601021504")
-		val, _ := s.limiters.LoadOrStore(key, new(int))
-		count := val.(*int)
-		*count++
-		if *count > limit {
+		val, _ := s.limiters.LoadOrStore(key, new(atomic.Int64))
+		count := val.(*atomic.Int64)
+		if count.Add(1) > int64(limit) {
 			w.WriteHeader(http.StatusTooManyRequests)
 			return
 		}

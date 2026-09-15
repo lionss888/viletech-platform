@@ -60,6 +60,12 @@ form_waiting_corrections после eco_reject, ico_reject или manager contin
 
 Покрытие: домен (refund.go, machine.go, transitions.go), unit tests (refund_test.go включая invariant, stop/cancel, amount validation), HTTP routes (r7_refund_routes.go), HTTP tests (r7_refund_test.go включая AuthZ для Manager/Treasurer), FE API (refund.ts), FE UI (RefundPanel.tsx, ActionPanel refund CTAs, actions.ts refund mappings), FE unit tests (manager-payment.test.ts refund bridge), E2E @pilot-matrix (pilot-matrix-refund.spec.ts happy path и stop/cancel).
 
+## Ветка shipment
+
+Опциональный контур закрывающих документов отгрузки. Не является happy path и не заменяет report accept переход в completed. Не путать с денежным порядком RATE_ON_PP секции 10 и не смешивать с отдельным продуктом логистов из секции 8 вводных. Менеджер завершает заявку подтверждением отчёта без обязательной лестницы отгрузки. Статус report_accepted остаётся для Nest и ручного входа в ветку. Shipment инициируется менеджером из report_accepted payment_sent или advance_signing_order_accepted когда нужны закрывающие документы. Статусы ветки shipment_waiting shipment_waiting_verification shipment_verification shipment_waiting_corrections. Действие shipment_waiting открывает ветку. Действие shipment_upload пользователя переводит в shipment_waiting_verification. Менеджер shipment_start берёт документы в проверку. Действие shipment_accept или complete закрывает заявку в completed. Действие shipment_reject возвращает на shipment_waiting_corrections. Действие shipment_stop откатывает проверку в shipment_waiting_verification. Пользователь shipment_accept_user может закрыть заявку из shipment_verification как альтернатива менеджеру.
+
+Покрытие: domain transitions actions status shipment unit tests shipment_test.go включая AuthZ stop reject и report_accept без отгрузки. HTTP routes manager shipment waiting start stop accept reject и site shipment upload accept. HTTP tests r5_shipment_test.go AuthZ 403 и reject stop. FE CTA Manager User ShipmentPanel actions.ts action-bridge. FE unit manager-close.test.ts. E2E @pilot-matrix pilot-matrix-shipment.spec.ts optional report complete и ветка отгрузки. Compose-e2e P5 shipment smoke. Полный флоу логистов Ожидаем информации от логистов вне scope MVP.
+
 ## Ветка provider return
 
 prov_payment_return переводит в manager_checking. Manager уточняет и снова mgr_payment_start.

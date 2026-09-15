@@ -1,12 +1,12 @@
 # Готовность и ограничения MVP
 
-Дата оценки 2026-09-15. Правило честности: done в матрице Nest to vdp означает маршрут замаплен и проходит gate test. Не полный продуктовый паритет Nest. Не боевые интеграции без staging config. Пакет импортных маршрутов IMP0–IMP7 закрыт на уровне domain API unit HTTP. Экспортный маршрут PAY_FROM_EXPORT закрыт на уровне domain API unit HTTP FE E2E (Phase 5-6). Pilot-matrix browser coverage: import advance treasurer с execution_deadline (IMP7), import postpay RATE_ON_PP provider-first rate commission до completed (IMP8), export PAY_FROM_EXPORT treasurer до completed (Phase 6). Полный wizard payment_method:advance и export end-to-end не заявлен.
+Дата оценки 2026-09-15. Правило честности: done в матрице Nest to vdp означает маршрут замаплен и проходит gate test. Не полный продуктовый паритет Nest. Не боевые интеграции без staging config. Пакет импортных маршрутов IMP0–IMP7 закрыт на уровне domain API unit HTTP. Экспортный маршрут PAY_FROM_EXPORT закрыт на уровне domain API unit HTTP FE E2E (Phase 5-6). Pilot-matrix browser coverage: import advance treasurer с execution_deadline (IMP7), import postpay RATE_ON_PP provider-first rate commission до completed (IMP8), export PAY_FROM_EXPORT treasurer до completed (Phase 6). Phase 7 возврат ДС (refund) закрыт на уровне domain API unit HTTP FE E2E. Phase 8 отгрузка (shipment) закрыта как опциональная ветка domain API unit HTTP FE pilot-matrix. Полный wizard payment_method:advance и export end-to-end не заявлен.
 
 Post-Lovable FE app-контур восстановлен. Волны UX 0–4 (parties wizard docs provider report close) и FE gesture contracts (FilePickButton filechooser) в коде. B.2 FE org/docs upload ~90% (см. b2-fe-handoff.md). Staging deploy — workflows и rollback docs ready; VM Environments still ops-side.
 
 ## Полнота реализации
 
-Оценка около 90 процентов для пилотного контура заявки с импортными и экспортными ветками. Backend R0–R12 + B.2 + IMP домен и API + Phase 5 export domain. FE: кабинеты User Manager Provider плюс Treasurer на авансе и экспорте, панель курса или комиссии на RATE_ON_PP. Browser ladders pilot-matrix: import advance treasurer deadline, import postpay RATE_ON_PP, export PAY_FROM_EXPORT treasurer. Phase 4 Ops Excellence complete (correlation, alerts, runbooks ready for ops infrastructure). Vendor hardening — оговорка (real vendor config on staging). Модули analytics и assistant в vdp — placeholders.
+Оценка около 92 процентов для пилотного контура заявки с импортными и экспортными ветками плюс возврат и отгрузка. Backend R0–R12 + B.2 + IMP домен и API + Phase 5 export domain + Phase 7 refund + Phase 8 shipment. FE: кабинеты User Manager Provider плюс Treasurer на авансе и экспорте, панель курса или комиссии на RATE_ON_PP, RefundPanel, ShipmentPanel. Browser ladders pilot-matrix: import advance treasurer deadline, import postpay RATE_ON_PP, export PAY_FROM_EXPORT treasurer, refund happy path, shipment optional branch. Phase 4 Ops Excellence complete (correlation, alerts, runbooks ready for ops infrastructure). Vendor hardening — оговорка (real vendor config on staging). Модули analytics и assistant в vdp — placeholders.
 
 ## Качество MVP
 
@@ -22,7 +22,7 @@ Post-Lovable FE app-контур восстановлен. Волны UX 0–4 (
 
 Полный app journey User to completed на seed data через compose (process spine User Manager Provider; ICO ECO optional via process-roles).
 
-Role cabinets ICO ECO Manager Provider Treasurer (import advance confirm, export PAY_FROM_EXPORT) Bank channel smoke. Manager rate and commission panel на POSTPAY_RATE_ON_PP после payment_sent. Pilot-matrix browser: import advance treasurer с deadline, import postpay RATE_ON_PP до completed, export PAY_FROM_EXPORT treasurer до completed.
+Role cabinets ICO ECO Manager Provider Treasurer (import advance confirm, export PAY_FROM_EXPORT) Bank channel smoke. Manager rate and commission panel на POSTPAY_RATE_ON_PP после payment_sent. Pilot-matrix browser: import advance treasurer с deadline, import postpay RATE_ON_PP до completed, export PAY_FROM_EXPORT treasurer до completed, refund happy path, optional shipment branch. Ветка отгрузки не заменяет report completed и не равна полному логистическому продукту.
 
 Unit postgres integration compose-e2e playwright PR smoke plus optional pilot-matrix. CI vdp-ci.yml on main.
 
