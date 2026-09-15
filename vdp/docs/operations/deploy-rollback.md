@@ -60,9 +60,15 @@ Remote-файл .env.deploy с секретами не откатывается,
 
 Проверка через домен: curl -sfI https://alpha.vedy.io/login.
 
-Не-прод дополнительно проверяется скриптом ./scripts/staging-smoke.sh на хосте.
+Не-прод дополнительно проверяется скриптом ./scripts/staging-smoke.sh на хосте. Локально: make staging-smoke с compose docs-service и mail-gateway.
 
 Preemptible VM: после разморозки compose up по текущему pin, без пересборки.
+
+## Rehearsal log
+
+Дата 2026-09-15. Действие local pin swap rehearsal через make rollback-rehearsal-local плюс make test-cd-scripts (контракт rollback-compose-release.sh и migrate). Результат green.
+
+Дата 2026-09-15. Действие remote rollback на alpha через make rollback-alpha. Результат blocked: SSH deploy@alpha.vedy.io Permission denied publickey for workstation key. Публичный edge alpha login и core health 200 подтверждены без SSH. Следующий шаг ops: обновить GitHub Environment secret DEPLOY_SSH_KEY и повторить rollback-alpha с verify wait-release-health.
 
 ## Post-incident
 
