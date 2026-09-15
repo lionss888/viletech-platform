@@ -7,7 +7,6 @@ import {
   purgeDemoMockCounterparties,
 } from "./helpers/api";
 import { expectFormStatus } from "./helpers/status";
-import { loadRobotPack } from "./helpers/robot-fixtures";
 
 async function waitForFormDetail(page: Page, formId: string): Promise<void> {
   await page.goto(`/forms/${formId}`);
@@ -43,7 +42,6 @@ test.describe("Pilot robot matrix refund flow @pilot-matrix", () => {
     loginAs,
   }) => {
     test.setTimeout(240_000);
-    const { pack } = loadRobotPack();
     const roles = await loginAllRoles();
     await purgeDemoMockCounterparties(roles.manager);
     const formId = await createPaymentReceivedForm(roles, `ref-${Date.now()}`);
@@ -53,8 +51,8 @@ test.describe("Pilot robot matrix refund flow @pilot-matrix", () => {
     await expectFormStatus(page, /payment_received/);
 
     await clickAction(page, /Инициировать возврат средств/);
-    await page.getByLabel(/Сумма возврата/).fill("1000");
-    await page.getByLabel(/Валюта/).fill(pack.deal_fields.currency);
+    await page.getByLabel(/Сумма возврата/).fill("750");
+    await page.getByLabel(/Валюта/).fill("USD");
     await page.getByLabel(/Комментарий для клиента/).fill("Pilot refund");
     await confirmModal(page);
     await expectFormStatus(page, /payment_refund_waiting/);
@@ -72,7 +70,6 @@ test.describe("Pilot robot matrix refund flow @pilot-matrix", () => {
     loginAs,
   }) => {
     test.setTimeout(240_000);
-    const { pack } = loadRobotPack();
     const roles = await loginAllRoles();
     await purgeDemoMockCounterparties(roles.manager);
     const formId = await createPaymentReceivedForm(roles, `ref-stop-${Date.now()}`);
@@ -82,8 +79,8 @@ test.describe("Pilot robot matrix refund flow @pilot-matrix", () => {
     await expectFormStatus(page, /payment_received/);
 
     await clickAction(page, /Инициировать возврат средств/);
-    await page.getByLabel(/Сумма возврата/).fill("1000");
-    await page.getByLabel(/Валюта/).fill(pack.deal_fields.currency);
+    await page.getByLabel(/Сумма возврата/).fill("750");
+    await page.getByLabel(/Валюта/).fill("USD");
     await page.getByLabel(/Комментарий для клиента/).fill("Pilot refund stop");
     await confirmModal(page);
     await expectFormStatus(page, /payment_refund_waiting/);

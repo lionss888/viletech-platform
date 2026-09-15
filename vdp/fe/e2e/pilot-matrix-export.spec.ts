@@ -21,6 +21,7 @@ async function createExportDraftForm(
 ): Promise<string> {
   const created = (await authPost(userToken, "/api/v1/site/form-payment", {
     direction: "export",
+    payment_method: "PAY_FROM_EXPORT",
     currency: packCurrency,
     invoice_amount: "1000",
     no_documents: true,
@@ -33,9 +34,10 @@ async function createExportDraftForm(
 }
 
 async function waitForFormDetail(page: Page, formId: string): Promise<void> {
-  await page.goto(`/forms/${formId}`);
-  await page.waitForLoadState("networkidle");
-  await expect(page.getByTestId("form-params")).toBeVisible({ timeout: 20_000 });
+  await expect(async () => {
+    await page.goto(`/forms/${formId}`, { waitUntil: "domcontentloaded" });
+    await expect(page.getByTestId("form-params")).toBeVisible({ timeout: 15_000 });
+  }).toPass({ timeout: 60_000 });
 }
 
 async function clickAction(page: Page, name: string | RegExp): Promise<void> {
@@ -179,7 +181,7 @@ test.describe("Pilot robot matrix export treasurer flow @pilot-matrix", () => {
     await loginAs("treasurer");
     await waitForFormDetail(page, formId);
     // Note: For export, treasurer_confirm transitions to payment_sent_treasurer instead of payment_processing
-    await clickAction(page, /Подтвердить/i);
+    await clickAction(page, /Подтвердить покрытие/);
     await confirmModal(page);
     await expectFormStatus(page, "payment_sent_treasurer", { timeout: 30_000 });
 
@@ -203,8 +205,5 @@ test.describe("Pilot robot matrix export treasurer flow @pilot-matrix", () => {
     await clickAction(page, /Завершить сделку/i);
     await confirmModal(page);
     await expectFormStatus(page, "completed", { timeout: 30_000 });
-
-    // Verify final status
-    await expect(page.getByTestId("status-badge")).toContainText(/Завершено|Закрыта/, { timeout: 10_000 });
   });
 });

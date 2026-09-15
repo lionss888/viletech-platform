@@ -158,7 +158,7 @@ export function FormDetail() {
     }
   }
 
-  if (!formId || (mode === "app" && formQuery.isLoading && !form)) {
+  if (!formId || (mode === "app" && formQuery.isFetching && !form)) {
     return (
       <VedAppShell title="Заявка">
         <p className="text-sm text-muted-foreground">Загрузка…</p>

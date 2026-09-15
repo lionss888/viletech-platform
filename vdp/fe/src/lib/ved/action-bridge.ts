@@ -50,7 +50,7 @@ const DEMO_TO_CORE: Record<string, string> = {
   prov_payment_return: "provider_return",
   prov_payment_start: "provider_start",
   root_cancel_form: "cancel_by_manager",
-  upload_treasurer_verification: "user_upload_treasurer_verification",
+  upload_treasurer_verification: "treasurer_user_verify",
   treas_signing: "treasurer_signing",
   treas_complete: "treasurer_complete",
   order_signing: "order_signing",
@@ -94,7 +94,7 @@ const FILE_THEN_TRANSITION: Record<string, { coreAction: string; docKind: string
   upload_order_advance: { coreAction: "advance_user_upload", docKind: "advance_order" },
   upload_report: { coreAction: "report_upload", docKind: "report" },
   upload_shipment: { coreAction: "shipment_upload", docKind: "shipment" },
-  upload_treasurer_verification: { coreAction: "user_upload_treasurer_verification", docKind: "treasurer_verification" },
+  upload_treasurer_verification: { coreAction: "treasurer_user_verify", docKind: "treasurer_verification" },
   mgr_order_attach: { coreAction: "order_signing", docKind: "order" },
   mgr_refund_file: { coreAction: "refund_sent", docKind: "refund_proof" },
 };

@@ -77,5 +77,10 @@ describe("resolveDemoAction", () => {
     });
     expect(resolveDemoAction("upload_report")?.kind).toBe("file_then_transition");
     expect(resolveDemoAction("upload_shipment")?.kind).toBe("file_then_transition");
+    expect(resolveDemoAction("upload_treasurer_verification")).toEqual({
+      kind: "file_then_transition",
+      coreAction: "treasurer_user_verify",
+      docKind: "treasurer_verification",
+    });
   });
 });
