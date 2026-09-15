@@ -37,7 +37,7 @@ isProject: false
 
 **Добавить перед списком работ:**
 ```markdown
-**Prerequisite:** Старый `pilot-matrix-postpay-rate.spec.ts` стал stale (TEST_STALE: ожидает несуществующую кнопку "Создать черновик" на wizard-terms-step) — удалить или переименовать перед началом P2.
+**Prerequisite:** `@pilot-matrix` postpay держит CTA в sync с UI через `e2e/helpers/wizard.ts` (`wizard-save-draft`). Не удалять spec из‑за старого TEST_STALE «Создать черновик».
 ```
 
 **Зачем:** Связь с UAT блокером; явное указание, что нужно убрать stale test перед созданием нового.

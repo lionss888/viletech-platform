@@ -104,8 +104,7 @@ flowchart LR
 
 ### B3. Реестр stale / контракт копирайта CTA
 
-- Один короткий список known-stale E2E (или комментарий `// STALE:` + grep в precommit/static) — нельзя мержить с открытым STALE на `@pilot-matrix`.
-- Предпочитать `data-testid` над хрупкими русскими labels в ladder-тестах.
+Закрыто в [`e2e_suite_health_d8af9fdf.plan.md`](e2e_suite_health_d8af9fdf.plan.md): `scripts/check-pilot-matrix-stale.sh` в `ci-pr-static`; helper `wizard-save-draft`.
 
 ### B4. Дисциплина PR на `d2`
 

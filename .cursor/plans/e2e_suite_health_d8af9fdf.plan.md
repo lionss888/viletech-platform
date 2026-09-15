@@ -4,22 +4,22 @@ overview: "Один follow-up к normalize_delivery_ci: убрать TEST_STALE 
 todos:
   - id: inventory-cta
     content: Сверить @pilot-matrix CTA с wizard testid (не 21 spec)
-    status: pending
+    status: completed
   - id: wizard-helper
     content: "Общий helper: review-step + wizard-save-draft из wave2"
-    status: pending
+    status: completed
   - id: fail-fast-cta
     content: expect 15s на финальный CTA; не 420s как wait пропавшей кнопки
-    status: pending
+    status: completed
   - id: stale-grep
     content: Grep STALE в @pilot-matrix в ci-pr-static / precommit
-    status: pending
+    status: completed
   - id: cross-plan-note
     content: Закрыть B3 в normalize_delivery_ci; правка prerequisite в import_growth
-    status: pending
+    status: completed
   - id: gate-ci-pr-pilot
     content: check-env-parity затем make ci-pr-pilot до готово
-    status: pending
+    status: in_progress
 isProject: false
 ---
 

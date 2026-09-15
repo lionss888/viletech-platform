@@ -1,8 +1,9 @@
 import { test, expect } from "./fixtures/auth.fixture";
 import { assertCoreHealthy } from "./helpers/api";
 import { expectFormStatus } from "./helpers/status";
-import type { Page } from "@playwright/test";
+import { finishTermsAndReview, saveWizardDraft } from "./helpers/wizard";
 import { readRobotPdf, loadRobotPack } from "./helpers/robot-fixtures";
+import type { Page } from "@playwright/test";
 
 const TAKE_IN_REVIEW = /Взять (заявку|организацию) в проверку|Взять .* в проверку/i;
 const CONFIRM_FORM = /Подтвердить заявку/;
@@ -51,20 +52,6 @@ async function fillNoDocsAndReachParties(
   await page.getByRole("button", { name: "Далее" }).click();
 }
 
-async function finishTermsAndReview(page: Page, amount: string): Promise<void> {
-  await expect(page.getByTestId("wizard-terms-step")).toBeVisible();
-  await page.getByTestId("wizard-amount").fill(amount);
-  const hs = page.getByLabel(/Код ТН ВЭД/i);
-  if (await hs.count()) {
-    const count = await hs.locator("option").count();
-    if (count > 1) await hs.selectOption({ index: 1 });
-  }
-  const ship = page.locator('input[type="date"]');
-  if (await ship.count()) await ship.first().fill("2026-10-01");
-  await page.getByRole("button", { name: "Далее" }).click();
-  await expect(page.getByTestId("wizard-review-step")).toBeVisible({ timeout: 15_000 });
-}
-
 /**
  * Pilot Matrix — POSTPAY_RATE_ON_PP (§10.3 / IMP8).
  * Tag: @pilot-matrix. Command: make playwright-pilot-matrix
@@ -90,7 +77,7 @@ test.describe("Pilot matrix POSTPAY_RATE_ON_PP @pilot-matrix", () => {
     await page.waitForLoadState("networkidle");
     await fillNoDocsAndReachParties(page, "postPayment");
     await finishTermsAndReview(page, "5000");
-    await page.getByTestId("wizard-save-draft").click();
+    await saveWizardDraft(page);
     await expect(page.getByTestId("form-params")).toBeVisible({ timeout: 30_000 });
     const url = page.url();
     const formId = url.split("/forms/")[1]?.split(/[?#]/)[0];

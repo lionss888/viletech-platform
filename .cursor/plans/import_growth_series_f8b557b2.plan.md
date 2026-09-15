@@ -77,7 +77,7 @@ flowchart LR
 
 **Факты.** HTTP: [`imp2_postpay_rate_on_pp_test.go`](vdp/core/internal/transport/http/imp2_postpay_rate_on_pp_test.go). FE: [`RateCommissionPanel.tsx`](vdp/fe/src/components/ved/RateCommissionPanel.tsx), gating в [`manager-payment.ts`](vdp/fe/src/lib/ved/manager-payment.ts). Browser journey отсутствует. В [`actions.ts`](vdp/fe/src/lib/ved/actions.ts) у `treas_confirm_payment` зашит `nextStatus: "payment_processing"` — для postpay домен ведёт в `report_waiting` (проекция UI врёт).
 
-**Prerequisite:** Старый `pilot-matrix-postpay-rate.spec.ts` стал stale (TEST_STALE: ожидает несуществующую кнопку "Создать черновик" на wizard-terms-step) — удалить или переименовать перед началом P2.
+**Prerequisite:** `@pilot-matrix` postpay держит CTA в sync с UI через `e2e/helpers/wizard.ts` (`wizard-save-draft`). Не удалять spec из‑за старого TEST_STALE «Создать черновик».
 
 **Работы.**
 - Новый `@pilot-matrix` spec (или ветка в full-ladder): import + `post_payment` → auto mode → provider до рублей → panel rate+один reward_mode → `mgr_advance_signing` (блок без rate) → user upload advance order → treasurer confirm → статус `report_waiting`.

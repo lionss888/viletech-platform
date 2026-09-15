@@ -30,7 +30,7 @@ alwaysApply: true
 
 Фаза 1 (static/unit): все независимые проверки запускаются параллельно через `scripts/ci-pr-static.sh`. Агрегирует exit коды всех шагов. Fail одного шага не блокирует остальные — все выполняются до конца и печатаются в таблице результатов.
 
-Проверки фазы 1: `docs-format-check`, `test-cd-scripts`, `check-deploy-secrets`, `test-adapters`, `lovable-seed-check`, `fe npm test`, 8 модулей `go test` (core/hub/shared/extraction/mail-gateway/sms-gateway/manager-ops/release-gate).
+Проверки фазы 1: `docs-format-check`, `test-cd-scripts`, `check-deploy-secrets`, `test-adapters`, `lovable-seed-check`, `pilot-matrix-stale`, `fe npm test`, 8 модулей `go test` (core/hub/shared/extraction/mail-gateway/sms-gateway/manager-ops/release-gate).
 
 Фаза 2 (compose/browser): запускается только если фаза 1 зелёная. Один Docker compose stack + sleep 65 + Playwright. Последовательно (не параллельно на одном хосте).
 
@@ -144,7 +144,8 @@ export MGMT_NOTIFY_CHAT_ID="your_chat_id"
 
 - «Локально собралось» без compose-e2e / узкого Playwright при изменении journey/API.
 - Тихий skip Playwright при заявлении полного PR-паритета.
-- Путать `precommit-gate` (docs + unit) с `ci-pr` (полный CI PR).
+- Путать `precommit-gate` (docs + unit) с `ci-pr` (узкий CI PR) или с `ci-pr-pilot` (лестница).
+- Называть Local QG PR Gate (smoke) полным GitHub PR.
 - Писать rich markdown в `docs/operations/` и чинить только после красного GitHub docs job.
 - Пробный `make` в sandbox агента → ложный fail / `No rule to make target`; потом «сориентировался» на all.
 - Пушить в main/PR без проверки deploy secrets → fail на CI deploy step с ошибкой «Management notify secrets are required».

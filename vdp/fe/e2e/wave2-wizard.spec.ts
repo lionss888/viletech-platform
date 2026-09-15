@@ -1,6 +1,10 @@
 import { test, expect, type Page } from "./fixtures/auth.fixture";
 import { assertCoreHealthy, loginAllRoles } from "./helpers/api";
 import { expectFormStatus } from "./helpers/status";
+import {
+  finishTermsAndReview as finishTermsAndReviewShared,
+  saveWizardDraft,
+} from "./helpers/wizard";
 
 async function fillNoDocsAndReachParties(
   page: Page,
@@ -23,21 +27,7 @@ async function finishTermsAndReview(page: Page): Promise<void> {
   await expect(page.getByTestId("wizard-client-currency")).toBeVisible();
   await expect(page.getByTestId("wizard-counterparty-currency")).toBeVisible();
   await expect(page.getByText("Валюта инвойса")).toHaveCount(0);
-  await page.getByTestId("wizard-amount").fill("1500");
-  const hs = page.getByLabel(/Код ТН ВЭД/i);
-  if (await hs.count()) {
-    const options = hs.locator("option");
-    const count = await options.count();
-    if (count > 1) {
-      await hs.selectOption({ index: 1 });
-    }
-  }
-  const ship = page.locator('input[type="date"]');
-  if (await ship.count()) {
-    await ship.first().fill("2026-10-01");
-  }
-  await page.getByRole("button", { name: "Далее" }).click();
-  await expect(page.getByTestId("wizard-review-step")).toBeVisible();
+  await finishTermsAndReviewShared(page, "1500");
 }
 
 test.describe("Wave2 wizard / OCR / submit", () => {
@@ -116,7 +106,7 @@ test.describe("Wave2 wizard / OCR / submit", () => {
     await page.goto("/forms/new");
     await fillNoDocsAndReachParties(page);
     await finishTermsAndReview(page);
-    await page.getByTestId("wizard-save-draft").click();
+    await saveWizardDraft(page);
     await expect(page.getByTestId("form-params")).toBeVisible({ timeout: 30_000 });
     await expectFormStatus(page, /^(creating|draft)$/, { timeout: 20_000 });
   });
@@ -141,7 +131,7 @@ test.describe("Wave2 wizard / OCR / submit", () => {
     await page.goto("/forms/new");
     await fillNoDocsAndReachParties(page, "advance");
     await finishTermsAndReview(page);
-    await page.getByTestId("wizard-save-draft").click();
+    await saveWizardDraft(page);
     await expect(page.getByTestId("form-params")).toBeVisible({ timeout: 30_000 });
     await expect(page.getByText("Аванс")).toBeVisible();
   });

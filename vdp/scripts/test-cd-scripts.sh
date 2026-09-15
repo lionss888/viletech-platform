@@ -28,11 +28,16 @@ for script in \
   scripts/notify-mgmt.sh \
   scripts/ci-mgmt-notify.sh \
   scripts/precommit-mgmt-notify.sh \
-  scripts/configure-gitlab-mirror.sh; do
+  scripts/configure-gitlab-mirror.sh \
+  scripts/check-pilot-matrix-stale.sh; do
   [ -f "$script" ] || fail "missing $script"
   bash -n "$script"
   echo "syntax ok: $script"
 done
+
+echo "== check-pilot-matrix-stale on current specs =="
+bash scripts/check-pilot-matrix-stale.sh
+grep -q 'check-pilot-matrix-stale' scripts/ci-pr-static.sh || fail "ci-pr-static must run check-pilot-matrix-stale.sh"
 
 echo "== mgmt-notify-sanitize self-test =="
 python3 scripts/mgmt-notify-sanitize.py --self-test
