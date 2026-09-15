@@ -60,7 +60,7 @@ export async function authPut(token: string, path: string, body: Record<string, 
   }
 }
 
-async function authPost(token: string, path: string, body: Record<string, unknown> = {}): Promise<unknown> {
+export async function authPost(token: string, path: string, body: Record<string, unknown> = {}): Promise<unknown> {
   const res = await fetch(`${CORE_URL}${path}`, {
     method: "POST",
     headers: {
