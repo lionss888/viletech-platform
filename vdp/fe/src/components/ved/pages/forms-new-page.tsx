@@ -266,7 +266,7 @@ export function NewForm() {
     }
     if (mode === "app" && draft.condition) {
       await patchForm(created.id, nestFormPrefixForRole(session?.role ?? "user"), {
-        payment_method: conditionToPaymentMethod(draft.condition),
+        payment_method: conditionToPaymentMethod(draft.condition, draft.direction),
         currency: derivedCurrency,
       });
     }
@@ -319,7 +319,7 @@ export function NewForm() {
     } = {
       invoice_amount: amount,
       currency: derivedCurrency,
-      payment_method: conditionToPaymentMethod(draft.condition),
+      payment_method: conditionToPaymentMethod(draft.condition, draft.direction),
       direction: draft.direction,
       kind: draft.kind,
     };

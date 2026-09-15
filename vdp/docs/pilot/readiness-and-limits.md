@@ -1,18 +1,18 @@
 # Готовность и ограничения MVP
 
-Дата оценки 2026-09-14. Правило честности: done в матрице Nest to vdp означает маршрут замаплен и проходит gate test. Не полный продуктовый паритет Nest. Не боевые интеграции без staging config. Пакет импортных маршрутов IMP0–IMP7 закрыт на уровне domain API unit HTTP. Pilot-matrix browser coverage: аванс treasurer с execution_deadline (IMP7) и постоплата POSTPAY_RATE_ON_PP provider-first rate commission до completed (IMP8). Полный wizard payment_method:advance end-to-end не заявлен.
+Дата оценки 2026-09-15. Правило честности: done в матрице Nest to vdp означает маршрут замаплен и проходит gate test. Не полный продуктовый паритет Nest. Не боевые интеграции без staging config. Пакет импортных маршрутов IMP0–IMP7 закрыт на уровне domain API unit HTTP. Экспортный маршрут PAY_FROM_EXPORT закрыт на уровне domain API unit HTTP FE E2E (Phase 5-6). Pilot-matrix browser coverage: import advance treasurer с execution_deadline (IMP7), import postpay RATE_ON_PP provider-first rate commission до completed (IMP8), export PAY_FROM_EXPORT treasurer до completed (Phase 6). Полный wizard payment_method:advance и export end-to-end не заявлен.
 
 Post-Lovable FE app-контур восстановлен. Волны UX 0–4 (parties wizard docs provider report close) и FE gesture contracts (FilePickButton filechooser) в коде. B.2 FE org/docs upload ~90% (см. b2-fe-handoff.md). Staging deploy — workflows и rollback docs ready; VM Environments still ops-side.
 
 ## Полнота реализации
 
-Оценка около 90 процентов для пилотного контура заявки с импортными ветками. Backend R0–R12 + B.2 + IMP домен и API. FE: кабинеты User Manager Provider плюс Treasurer на авансе и панель курса или комиссии на RATE_ON_PP. Browser ladders pilot-matrix: import advance treasurer deadline и import postpay RATE_ON_PP. Prod observability и vendor hardening — оговорки. Модули analytics и assistant в vdp — placeholders.
+Оценка около 90 процентов для пилотного контура заявки с импортными и экспортными ветками. Backend R0–R12 + B.2 + IMP домен и API + Phase 5 export domain. FE: кабинеты User Manager Provider плюс Treasurer на авансе и экспорте, панель курса или комиссии на RATE_ON_PP. Browser ladders pilot-matrix: import advance treasurer deadline, import postpay RATE_ON_PP, export PAY_FROM_EXPORT treasurer. Phase 4 Ops Excellence complete (correlation, alerts, runbooks ready for ops infrastructure). Vendor hardening — оговорка (real vendor config on staging). Модули analytics и assistant в vdp — placeholders.
 
 ## Качество MVP
 
 Оценка 7.5 из 10 для MVP demo. Оценка 6 из 10 для prod без hardening.
 
-Сильные unit и HTTP gate tests включая IMP1–3. compose reproducible. RH program и path-filter pilot-matrix на PR при касании ladder surface. Слабее prod observability deployed alerting real vendor integrations, wizard payment_method:advance end-to-end browser и import journeys вне обязательного PR smoke.
+Сильные unit и HTTP gate tests включая IMP1–3. compose reproducible. RH program и path-filter pilot-matrix на PR при касании ladder surface. Phase 4 Ops: correlation logging, semantic alerts architecture, runbooks complete. Слабее: live Prometheus deployment (awaiting ops infrastructure), real vendor integrations on staging, wizard payment_method:advance end-to-end browser и import journeys вне обязательного PR smoke.
 
 ## Передача пилот
 
@@ -22,13 +22,13 @@ Post-Lovable FE app-контур восстановлен. Волны UX 0–4 (
 
 Полный app journey User to completed на seed data через compose (process spine User Manager Provider; ICO ECO optional via process-roles).
 
-Role cabinets ICO ECO Manager Provider Treasurer (import advance confirm) Bank channel smoke. Manager rate and commission panel на POSTPAY_RATE_ON_PP после payment_sent. Pilot-matrix browser: import advance treasurer с deadline и import postpay RATE_ON_PP до completed.
+Role cabinets ICO ECO Manager Provider Treasurer (import advance confirm, export PAY_FROM_EXPORT) Bank channel smoke. Manager rate and commission panel на POSTPAY_RATE_ON_PP после payment_sent. Pilot-matrix browser: import advance treasurer с deadline, import postpay RATE_ON_PP до completed, export PAY_FROM_EXPORT treasurer до completed.
 
 Unit postgres integration compose-e2e playwright PR smoke plus optional pilot-matrix. CI vdp-ci.yml on main.
 
 ## Что нельзя обещать на пилоте
 
-100 процентов готовности. Полный паритет Nest. Полный browser matrix all statuses. Полный wizard payment_method:advance end-to-end. Prod Diadoc mail OCR without staging config. Real XLSX pixel fidelity. Prod secrets in compose defaults. POSTPAY_FIXED_RATE. Analytics assistant product modules. Own OCR model as PRIMARY.
+100 процентов готовности. Полный паритет Nest. Полный browser matrix all statuses. Полный wizard payment_method:advance и export end-to-end. Множественные экспортные сценарии за пределами PAY_FROM_EXPORT treasurer happy path. Prod Diadoc mail OCR without staging config. Real XLSX pixel fidelity. Prod secrets in compose defaults. POSTPAY_FIXED_RATE. Analytics assistant product modules. Own OCR model as PRIMARY.
 
 ## Document extraction (dual-track)
 
@@ -52,7 +52,7 @@ JWT_SECRET vdp-core-dev-secret. HUB_SHARED_SECRET vdp-s2s-dev-secret. Only for l
 
 ## Gate metrics reference
 
-R1 form-payment 148/148 done. R12 matrix 331/331 in-scope done. IMP series P1-P7 закрыт: HTTP IMP1 IMP2 IMP3 green; FE unit treasurer rate commission all reward modes; compose-e2e API journeys IMP1 advance_treasurer IMP2 postpay_RATE_ON_PP; pilot-matrix browser coverage advance treasurer с execution_deadline (IMP7) и postpay RATE_ON_PP (IMP8). go test pass core hub. make integration-gate pass on stack. make release-gate recommended before handover.
+R1 form-payment 148/148 done. R12 matrix 331/331 in-scope done. IMP series P1-P7 закрыт: HTTP IMP1 IMP2 IMP3 green; FE unit treasurer rate commission all reward modes; compose-e2e API journeys IMP1 advance_treasurer IMP2 postpay_RATE_ON_PP; pilot-matrix browser coverage advance treasurer с execution_deadline (IMP7) и postpay RATE_ON_PP (IMP8). Export Phase 5-6 закрыт: domain export_machine_test HTTP export_flow_test green; FE unit actions statuses wizard-steps export; pilot-matrix-export browser coverage PAY_FROM_EXPORT treasurer до completed; CI path-filter export surface. go test pass core hub. make integration-gate pass on stack. make release-gate recommended before handover.
 
 ## Следующие шаги prod
 

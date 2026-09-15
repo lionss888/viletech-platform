@@ -142,6 +142,8 @@ Journey import advance treasurer deadline. Unit HTTP IMP1. API compose-e2e advan
 
 Journey import POSTPAY_RATE_ON_PP provider-first rate commission. Unit HTTP IMP2 IMP3. API compose-e2e postpay_RATE_ON_PP. FE unit rate commission. UI E2E pilot-matrix-postpay-rate.spec.ts @pilot-matrix (IMP8) to completed. Not in required PR smoke; gate make playwright-pilot-matrix or path-filter on ladder surface.
 
+Journey export treasurer PAY_FROM_EXPORT. Unit HTTP export. API export_flow_test HTTP to completed. FE unit actions treasurer export. UI E2E pilot-matrix-export.spec.ts @pilot-matrix (Phase 6) User submit → Manager continuity → advance order → Manager payment_received → Treasurer confirm → Treasurer signing order → User verification upload → Treasurer complete to completed. Export domain P5. Export UI/E2E P6. Not in required PR smoke; gate make playwright-pilot-matrix or path-filter on ladder surface (actions/statuses/wizard-steps/e2e/formpayment).
+
 ## Честность
 
 Матрица не утверждает full role times status browser coverage. Root tool = API scenario runner + отчёт, не Chromium в кабинете. Mutating runs: local/alpha/demo/test; gamma/prod default dry_run. PR playwright smoke: login-form, user-submit, provider-acl, reject-path (не полный suite).

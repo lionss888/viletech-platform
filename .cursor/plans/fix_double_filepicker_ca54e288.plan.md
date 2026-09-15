@@ -13,7 +13,7 @@ todos:
     status: completed
   - id: qg-ci-pr-pilot
     content: check-env-parity → unit/cd → make ci-pr-pilot; локальный repro жеста
-    status: in_progress
+    status: completed
 isProject: false
 ---
 

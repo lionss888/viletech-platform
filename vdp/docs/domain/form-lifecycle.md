@@ -32,6 +32,16 @@ completed — закрытие сделки.
 
 Покрытие: домен и API (IMP2), режимы вознаграждения (IMP3), FE панель курса и комиссии плюс gating advance signing без rate (IMP5), полный browser ladder @pilot-matrix (IMP8, spec pilot-matrix-postpay-rate). Режим POSTPAY_FIXED_RATE вне scope пакета.
 
+## Экспорт: казначей PAY_FROM_EXPORT
+
+При direction export и payment_method PAY_FROM_EXPORT экспортная заявка проходит через отдельный казначейский flow. После принятия формы (form_accepted) менеджер инициирует предоплатное поручение (advance_signing_order). Клиент загружает подписанное поручение, менеджер проверяет. После приёма поручения (advance_signing_order_accepted) менеджер фиксирует получение валютной оплаты от контрагента (payment_received). Затем payment_start для передачи казначею.
+
+Казначей подтверждает платёж через treasurer_confirm с методом PAY_FROM_EXPORT: переход в payment_sent_treasurer. Далее treasurer_signing переводит в signing_order_treasurer для формирования поручения. User загружает верификационный документ (signing_order_verification_treasurer). Treasurer_complete завершает сделку: переход в completed без обязательной лестницы отчёта.
+
+Экспортный treasurer flow отдельный от импортного покрытия и не подменяет импортную логику. Отличие от импорта: клиент получает деньги от контрагента до казначейского подтверждения, что является противоположным импортному аддендуму секции 10 во вводных.
+
+Покрытие: домен, state machine transitions, unit tests, HTTP API tests (Phase 5). UI кабинеты казначея и browser E2E ladder для export вне scope Phase 5.
+
 ## Ветка corrections
 
 form_waiting_corrections после eco_reject, ico_reject или manager continuity reject. User submit возвращает в form_waiting_verification. При возврате менеджером на доработку в UI достаточно текстовой причины без справочника отметок.

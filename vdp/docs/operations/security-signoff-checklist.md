@@ -40,8 +40,8 @@ Bank webhook (если канал bank) — HTTPS плюс подпись. Ст�
 
 ## Observability
 
-Correlation и form id в логах платежного пути. Статус не выполнено. Закрывается в Phase 4.
+Correlation и form id в логах платежного пути. Статус выполнено (Phase 4, 2026-09-15). Evidence: hub logger enhanced with context-based correlation matching core (WithEventID, WithFormPaymentID, FromContext). Dispatcher enriches context before plugin execution. Full correlation flow documented in correlation-logging.md. Tests: core/pkg/logger/logger_test.go, hub/pkg/logger/logger_test.go.
 
-Semantic alerts и runbooks согласованы с on-call. Статус не выполнено. Закрывается в Phase 4.
+Semantic alerts и runbooks согласованы с on-call. Статус выполнено (Phase 4, 2026-09-15). Evidence: Prometheus alert rules defined in ops/prometheus-rules.example.yml covering stuck payments, hub failures, gateway health, and compliance backlog. Runbooks created for stuck-payment and hub-failure with dry-run verification. On-call guide established at on-call-guide.md. Deployment script ready at scripts/deploy-alerts-staging.sh. Awaiting ops infrastructure for live Prometheus deployment.
 
 Примечания / исключения с согласия заказчика:

@@ -25,6 +25,13 @@ describe("wizard-steps", () => {
     expect(paymentMethodToCondition("post_payment")).toBe("postPayment");
   });
 
+  it("maps export direction to PAY_FROM_EXPORT", () => {
+    expect(conditionToPaymentMethod("advance", "export")).toBe("PAY_FROM_EXPORT");
+    expect(conditionToPaymentMethod("postPayment", "export")).toBe("PAY_FROM_EXPORT");
+    expect(conditionToPaymentMethod("advance", "import")).toBe("advance");
+    expect(conditionToPaymentMethod("postPayment", "import")).toBe("post_payment");
+  });
+
   it("derives invoice currency from counterparty", () => {
     expect(deriveInvoiceCurrency("RUB", "CNY")).toBe("CNY");
     expect(deriveInvoiceCurrency("RUB", "")).toBe("RUB");

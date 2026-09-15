@@ -36,11 +36,13 @@ Top tasks. Назначить агента и платёжного провай�
 
 ## Treasurer
 
-Зона. Подтверждение рублёвого покрытия клиента на импорте. Не подменяет менеджера в курсе и поручении.
+Зона. Подтверждение денежных операций: рублёвое покрытие на импорте, валютные переводы на экспорте с методом PAY_FROM_EXPORT. Не подменяет менеджера в курсе и формировании поручения.
 
-Top tasks. На авансе: подтвердить поступление рублей на payment_received и передать в payment_processing со сроком исполнения. На POSTPAY_RATE_ON_PP: подтвердить рубли после доп. поручения и перевести к отчёту.
+Top tasks импорт. На авансе: подтвердить поступление рублей от клиента на payment_received и передать в payment_processing со сроком исполнения провайдеру. На POSTPAY_RATE_ON_PP: подтвердить рубли после доп. поручения и перевести к отчёту.
 
-Действия. treasurer confirm-payment (Nest path treasurer), смежные treasurer nesting actions для export PAY_FROM_EXPORT без изменения семантики импорта. AuthZ RoleTreasurer или Root на use case.
+Top tasks экспорт (PAY_FROM_EXPORT). После фиксации менеджером получения валюты от контрагента (payment_received, payment_processing): treasurer_confirm переводит в payment_sent_treasurer. Далее treasurer_signing для формирования казначейского поручения, ожидание верификационного документа от User, и treasurer_complete для завершения сделки в completed. Экспортный flow отделён от импортного; импортная логика покрытия не меняется.
+
+Действия. treasurer confirm-payment (Nest path treasurer на импорте и экспорте), treasurer_signing (signing-order-treasurer), treasurer_user_verify (загрузка верификации клиентом на экспорте), treasurer_complete (complete-from-verification-treasurer на экспорте). AuthZ RoleTreasurer или Root на use case.
 
 ## Provider
 
