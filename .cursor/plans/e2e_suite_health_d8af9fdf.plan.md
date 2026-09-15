@@ -19,7 +19,7 @@ todos:
     status: completed
   - id: gate-ci-pr-pilot
     content: check-env-parity затем make ci-pr-pilot до готово
-    status: in_progress
+    status: completed
 isProject: false
 ---
 
