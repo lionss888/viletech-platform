@@ -36,6 +36,7 @@ echo "Launching parallel checks..."
 
 # Make targets
 run_bg "docs-format-check" make docs-format-check
+run_bg "perf-gate" make perf-gate
 run_bg "test-cd-scripts" make test-cd-scripts
 run_bg "check-deploy-secrets" make check-deploy-secrets
 run_bg "test-adapters" make test-adapters

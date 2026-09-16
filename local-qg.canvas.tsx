@@ -27,8 +27,6 @@ const NO_BROWSER_PROMPT = `${RUN} Команда (ровно одна): cd vdp &
 
 const BROWSER_ONLY_PROMPT = `${RUN} Команда (ровно одна): cd vdp && make playwright-e2e. Только сценарии в браузере (вход, заявка, роли). Нужна уже поднятая локальная среда (Docker). Не проверяет оформление текстов и не гоняет всю лестницу ролей.`;
 
-const DOCS_PROMPT = `${RUN} Команда (ровно одна): cd vdp && make docs-format-check. Только оформление документов: без таблиц, списков и выделения в операционных текстах.`;
-
 const ENV_PROMPT = `${RUN} Команда (ровно одна): cd vdp && make check-env-parity. Проверь, что на этой машине та же версия Node, что в проекте. Если нет — скажи, что сделать (nvm use / mise), без установки пакетов без спроса.`;
 
 const SECRETS_PROMPT = `${RUN} Команда (ровно одна): cd vdp && make check-deploy-secrets. Проверь, может ли компьютер отправить служебное сообщение о выкате. Не печатай токены и секреты. Если нет — объясни простым языком, какой файл создать, без значений.`;
@@ -47,21 +45,32 @@ const ROBOT_CABINET_PROMPT = `${RUN} Команда (ровно одна): cd vd
 const ROBOT_MATRIX_CHECK_PROMPT = `${RUN} Команда (ровно одна): cd vdp && make robot-matrix-check. Быстрая проверка, что файлы матрицы и слоты фикстур на месте (без прогона сценариев). ~секунды.`;
 
 const RELEASE_GATE_PROMPT = `${RUN} Команда (ровно одна): cd vdp && make release-gate. Полный Local QG перед передачей/тегом: unit, compose-e2e, браузер, Pilot Robot Matrix. Долго. Не путать с «лестницей» перед push.`;
+const DOCS_CREATE_PROMPT = `Local QG — создание документации. Это не make-gate. Не коммить и не пушь.
 
-const COMMENTS_PROMPT = `Local QG — комментирование кода. Это не make-gate. Не коммить и не пушь.
+По git status и git diff найди публичные места без документации и добавь только недостающее:
+- JSDoc (TypeScript) или GoDoc у публичных функций и типов;
+- короткое «зачем» у неочевидных правил домена (роль, статус, деньги);
+- новые .md не создавай без явной дыры в уже существующем how-to под docs/development/;
+- не трогай чужой код вне diff.
+В конце: список файлов и что добавил. Процент не считай — для процента есть кнопка «Документация · тест».`;
 
-Посмотри незакоммиченные правки (git status, git diff). Добавь комментарии только там, где без них не понять смысл для следующего человека:
-- публичные функции и типы: JSDoc (TypeScript) или GoDoc;
-- неочевидное правило домена (роль, статус, деньги) — одно короткое предложение «почему»;
-- не комментируй очевидное (setX, return err);
-- не пиши новые markdown-файлы и не трогай чужой код вне diff.
-В конце: список файлов и что пояснил.`;
+const DOCS_TEST_PROMPT = `${RUN} Документация · тест. Сделай два шага по порядку, без обсуждения.
+
+1) Команда (ровно одна): cd vdp && make docs-format-check. Оформление рабочих текстов: без таблиц, списков и «жирного». Красный — скажи отдельно простым языком.
+2) Затем (не make): по git status и git diff посчитай наличие документации в незакоммиченных правках.
+   - Знаменатель Y: публичные функции/типы/экспорты в diff (+ изменённые файлы docs, если есть).
+   - Числитель X: у скольких уже есть JSDoc/GoDoc или осмысленный блок docs.
+   - В ответе первой строкой: «Документация: N% (X из Y)».
+   - Ниже — короткий список пробелов (файл · символ).
+Ничего не правь и не коммить.`;
+
+const PERF_PROMPT = `${RUN} Команда (ровно одна): cd vdp && make perf-gate. Замер скорости проверки перехода статуса заявки. Если дольше бюджета — скажи простым языком, что тормозит (не проценты комментариев). Не коммить.`;
 
 const TRIAGE_PROMPT = `Local QG — подскажи проверку. Не запускай тесты, пока человек не нажмёт другую кнопку.
 
 По git status и git diff скажи простым языком:
 1. Что менялось (экраны, правила заявки, тексты, только план).
-2. Какую кнопку нажать в Local QG (перед коммитом / без браузера / с браузером / документация / лестница / Pilot Robot Matrix).
+2. Какую кнопку нажать в Local QG (перед коммитом / без браузера / с браузером / документация создать или тест / производительность / лестница / Pilot Robot Matrix).
 3. Почему именно её, одной фразой.
 Не коммить. Не пушь. Не запускай make.`;
 
@@ -299,45 +308,84 @@ export default function LocalQG() {
             </Stack>
           </CardBody>
         </Card>
+      </Grid>
 
+      <Stack gap={6}>
+        <Text size="small">Документация</Text>
+        <Text tone="secondary" size="small">
+          Создание — дописать JSDoc/GoDoc. Тест — оформление текстов и процент
+          наличия по diff («Документация: N%»).
+        </Text>
+      </Stack>
+
+      <Grid columns={2} gap={12}>
         <Card>
-          <CardHeader>Документация</CardHeader>
+          <CardHeader>Документация · создать</CardHeader>
           <CardBody>
             <Stack gap={10}>
               <Text tone="secondary" size="small">
-                Смотрит, что в рабочих текстах нет таблиц, списков и «жирного»
-                оформления — иначе публикация на GitHub падает. ~10 сек.
-              </Text>
-              <Button
-                variant="secondary"
-                onClick={() =>
-                  dispatch({ type: "newComposerChat", userPrompt: DOCS_PROMPT })
-                }
-              >
-                Запустить
-              </Button>
-            </Stack>
-          </CardBody>
-        </Card>
-
-        <Card>
-          <CardHeader>Комментарии в коде</CardHeader>
-          <CardBody>
-            <Stack gap={10}>
-              <Text tone="secondary" size="small">
-                Агент подпишет ваши незакоммиченные правки короткими пояснениями
-                (зачем правило, а не «что делает строка»). Тесты не запускает.
+                Допишет JSDoc/GoDoc и короткие пояснения «зачем» в ваших
+                незакоммиченных правках. Процент не считает.
               </Text>
               <Button
                 variant="secondary"
                 onClick={() =>
                   dispatch({
                     type: "newComposerChat",
-                    userPrompt: COMMENTS_PROMPT,
+                    userPrompt: DOCS_CREATE_PROMPT,
                   })
                 }
               >
-                Пояснить правки
+                Создать
+              </Button>
+            </Stack>
+          </CardBody>
+        </Card>
+
+        <Card>
+          <CardHeader>Документация · тест</CardHeader>
+          <CardBody>
+            <Stack gap={10}>
+              <Text tone="secondary" size="small">
+                Сначала оформление текстов (как на GitHub), затем процент
+                наличия документации по diff: «Документация: N% (X из Y)».
+                Ничего не правит. ~10–30 сек.
+              </Text>
+              <Button
+                variant="secondary"
+                onClick={() =>
+                  dispatch({
+                    type: "newComposerChat",
+                    userPrompt: DOCS_TEST_PROMPT,
+                  })
+                }
+              >
+                Показать %
+              </Button>
+            </Stack>
+          </CardBody>
+        </Card>
+      </Grid>
+
+      <Grid columns={2} gap={12}>
+        <Card>
+          <CardHeader>Производительность</CardHeader>
+          <CardBody>
+            <Stack gap={10}>
+              <Text tone="secondary" size="small">
+                Замер: сколько занимает проверка «можно ли перевести заявку в
+                этот статус». Если дольше бюджета — gate красный. ~10–30 сек.
+              </Text>
+              <Button
+                variant="secondary"
+                onClick={() =>
+                  dispatch({
+                    type: "newComposerChat",
+                    userPrompt: PERF_PROMPT,
+                  })
+                }
+              >
+                Запустить
               </Button>
             </Stack>
           </CardBody>
@@ -448,7 +496,10 @@ export default function LocalQG() {
               отдельно логика / кабинеты.
             </Text>
             <Text size="small">
-              Меняли только текст инструкции — «Документация».
+              Нужны docs — сначала «· создать», потом «· тест».
+            </Text>
+            <Text size="small">
+              Трогали статусы заявки / переходы — «Производительность».
             </Text>
             <Text size="small">Не знаете — «Что мне запустить».</Text>
           </Stack>

@@ -29,7 +29,8 @@ for script in \
   scripts/ci-mgmt-notify.sh \
   scripts/precommit-mgmt-notify.sh \
   scripts/configure-gitlab-mirror.sh \
-  scripts/check-pilot-matrix-stale.sh; do
+  scripts/check-pilot-matrix-stale.sh \
+  scripts/perf-gate.sh; do
   [ -f "$script" ] || fail "missing $script"
   bash -n "$script"
   echo "syntax ok: $script"
@@ -392,6 +393,9 @@ grep -q 'robot-matrix-check' Makefile || fail "Makefile missing robot-matrix-che
 grep -q '^ci-pr:' Makefile || fail "Makefile missing ci-pr target"
 grep -q '^ci-pr-fast:' Makefile || fail "Makefile missing ci-pr-fast target"
 grep -q '^ci-pr-pilot:' Makefile || fail "Makefile missing ci-pr-pilot target"
+grep -q '^perf-gate:' Makefile || fail "Makefile missing perf-gate"
+[ -f scripts/perf-gate.sh ] || fail "missing scripts/perf-gate.sh"
+bash -n scripts/perf-gate.sh || fail "perf-gate.sh syntax"
 grep -q 'detect-pilot-matrix' ../.github/workflows/vdp-ci.yml \
   || fail "vdp-ci.yml must detect pilot-matrix paths on PR"
 grep -q 'playwright-pilot-matrix:' ../.github/workflows/vdp-ci.yml \
