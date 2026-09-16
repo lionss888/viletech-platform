@@ -16,7 +16,7 @@ todos:
     status: completed
   - id: unblock-main
     content: "authPost на main (через #36); закрыть #35; проверить browser E2E на main"
-    status: in_progress
+    status: completed
 isProject: false
 ---
 
