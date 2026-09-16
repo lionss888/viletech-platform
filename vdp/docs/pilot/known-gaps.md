@@ -1,6 +1,6 @@
 # Известные пробелы
 
-Честный список ограничений MVP. Не блокеры для пилот demo при принятии оговорок readiness-and-limits.md. Дата сверки 2026-09-14 после пакета импортных маршрутов IMP0–IMP7, P1–P7, pilot-matrix browser IMP8 postpay и волн UX 0–4.
+Честный список ограничений MVP. Не блокеры для пилот demo при принятии оговорок readiness-and-limits.md. Дата сверки 2026-09-16: in-scope маршруты вводных покрыты domain to E2E при зелёной ci-pr-pilot (import advance, RATE_ON_PP, export PAY_FROM_EXPORT, refund, shipment branch). Residual: bank live webhook, PDF pixel, analytics placeholders, продукт логистов, POSTPAY_FIXED_RATE, own OCR PRIMARY, Nest data migration, полный browser matrix.
 
 ## Nest parity semantics
 
@@ -16,11 +16,11 @@ Nest form-payment XLSX and compliance export use real OOXML (export.MinimalXLSX)
 
 ## Import routes IMP package
 
-Пакет IMP0–IMP7 закрыт на уровне домена API и кабинетов Manager или Treasurer. Аванс: казначей confirm-payment с опциональным execution_deadline → payment_processing (IMP7 @pilot-matrix); API rate/commission доступен до signing_order для §10.2 п.1 primary-фиксации (r12_verification_test.go), UI workshop отдельно. Постоплата POSTPAY_RATE_ON_PP: provider-first, курс и три режима вознаграждения после ПП, доп. поручение, казначей → report_waiting; полный browser ladder до completed в pilot-matrix-postpay-rate (IMP8 @pilot-matrix). Verify: unit HTTP FE unit make ci-pr и make playwright-pilot-matrix. Не заявлено: полный wizard payment_method:advance end-to-end, make release-gate как обязательный gate пакета. Вне scope: POSTPAY_FIXED_RATE, экспортный overpay-treasurer redesign, PDF primary без курса как отдельный UX-воркшоп.
+Пакет IMP0–IMP7 закрыт на уровне домена API и кабинетов Manager или Treasurer. Аванс: казначей confirm-payment с опциональным execution_deadline → payment_processing (IMP7 @pilot-matrix); API rate/commission доступен до signing_order для §10.2 п.1 primary-фиксации (r12_verification_test.go), UI workshop отдельно. Постоплата POSTPAY_RATE_ON_PP: provider-first, курс и три режима вознаграждения после ПП, доп. поручение, казначей → report_waiting; полный browser ladder до completed в pilot-matrix-postpay-rate (IMP8 @pilot-matrix). Verify: unit HTTP FE unit, ci-pr-pilot зелёная 2026-09-16 включая полный browser suite и pilot-matrix. Не заявлено: полный wizard payment_method:advance end-to-end. Вне scope: POSTPAY_FIXED_RATE, экспортный overpay-treasurer redesign, PDF primary без курса как отдельный UX-воркшоп.
 
 ## Export routes Phase 5-6
 
-Экспортный маршрут PAY_FROM_EXPORT закрыт на уровне домена API и кабинетов Manager и Treasurer (Phase 5 domain, Phase 6 UI/E2E). State machine: форма принята → advance_signing_order → получение валюты от контрагента → казначей confirm с методом PAY_FROM_EXPORT → treasurer_signing → User верификационный документ → treasurer_complete → completed. Отделён от импортного покрытия клиента без смены импортной логики. Unit: export_machine_test.go (happy path, transition matrix, role AuthZ, payment method guard, idempotency). HTTP: export_flow_test.go (creation, happy path, treasurer AuthZ, invalid transitions). FE: wizard direction export, actions.ts treasurer export CTA, statuses labels, action-bridge mapping, unit tests manager-payment/wizard-steps. UI E2E: pilot-matrix-export.spec.ts @pilot-matrix happy path до completed. CI: path-filter export surface (actions/statuses/wizard-steps/e2e/formpayment). Verify: make ci-pr-pilot включает export spec. Не заявлено: полный wizard export payment_method end-to-end, множественные экспортные сценарии за пределами treasurer happy path, browser матрица всех экспортных статусов × ролей. Казначейские кабинеты export и UI воркшоп верификационных полей — отдельно от Phase 6 scope.
+Экспортный маршрут PAY_FROM_EXPORT закрыт на уровне домена API и кабинетов Manager и Treasurer (Phase 5 domain, Phase 6 UI/E2E). State machine: форма принята → advance_signing_order → получение валюты от контрагента → казначей confirm с методом PAY_FROM_EXPORT → treasurer_signing → User верификационный документ → treasurer_complete → completed. Отделён от импортного покрытия клиента без смены импортной логики. Unit: export_machine_test.go (happy path, transition matrix, role AuthZ, payment method guard, idempotency). HTTP: export_flow_test.go (creation, happy path, treasurer AuthZ, invalid transitions). FE: wizard direction export, actions.ts treasurer export CTA, statuses labels, action-bridge mapping, unit tests manager-payment/wizard-steps. UI E2E: pilot-matrix-export.spec.ts @pilot-matrix happy path до completed. CI: path-filter export surface (actions/statuses/wizard-steps/e2e/formpayment). Verify: ci-pr-pilot 2026-09-16 включает export spec (зелёный). Не заявлено: полный wizard export payment_method end-to-end, множественные экспортные сценарии за пределами treasurer happy path, browser матрица всех экспортных статусов × ролей. Казначейские кабинеты export и UI воркшоп верификационных полей — отдельно от Phase 6 scope.
 
 ## B.2 Documents (2026-08 pilot)
 
@@ -38,7 +38,7 @@ GitHub Actions: vdp-ci.yml (fast/docs/integration/playwright; на PR path-filte
 
 ## Playwright UI coverage
 
-Playwright: login-form, user-submit, happy-path, completed-journey, reject-path, ico-org, provider-acl, bank-badge, manager-payment, manager-hides-drafts, wave и pilot-form-flow и pilot-matrix specs включая pilot-matrix-full-ladder (advance treasurer deadline) и pilot-matrix-postpay-rate (POSTPAY_RATE_ON_PP). Full browser matrix all roles × all statuses not covered. Shared catalog scenarioverify; Root /testing runs API scenarios on demand (catalog size ≠ footer form count). Backend compose-e2e covers API journeys including RH2 ICO reject refund full P5 advance shipment. PR smoke includes reject-path + provider-acl. Import treasurer и RATE_ON_PP UI journeys не входят в обязательный PR smoke; gate make playwright-pilot-matrix или path-filter на ladder surface.
+Playwright: login-form, user-submit, happy-path, completed-journey, reject-path, ico-org, provider-acl, bank-badge, manager-payment, manager-hides-drafts, wave и pilot-form-flow и pilot-matrix specs: full-ladder, postpay-rate, export, refund, shipment. ci-pr-pilot 2026-09-16: 9 passed @pilot-matrix. Full browser matrix all roles × all statuses not covered.
 
 ## CTA / process-roles touchpoints
 
@@ -64,11 +64,15 @@ Data migration legacy Nest monolith not in vdp scope. Greenfield seed data only.
 
 ## Out of scope roadmap
 
-Logistics module. Product modules analytics and assistant under vdp/analytics and vdp/assistant remain placeholders (.gitkeep). Full BDUI schema engine. Client feedback items waiting Dasha forms: provider return-funds UI and Word cycle for order or report templates.
+Полный флоу логистов как отдельный продукт и доска из секции 8 вводных. Ветка SHIPMENT_* в заявке это закрывающие документы отгрузки внутри form-payment не логистический модуль. Product modules analytics and assistant under vdp/analytics and vdp/assistant remain placeholders (.gitkeep). Full BDUI schema engine. Client feedback items waiting Dasha forms: provider return-funds UI and Word cycle for order or report templates.
 
 ## Gap analysis reference
 
 Internal analysis заметки/gap-analysis-backend.md wider than R11 closed items. Pilot package does not include internal notes path; summary captured here.
+
+## Phase 8 shipment branch
+
+Ветка отгрузки закрыта как опциональный контур form-payment не как процент полного логистического продукта. Domain unit HTTP FE ShipmentPanel CTA Manager User E2E pilot-matrix-shipment.spec.ts compose-e2e P5. Happy path остаётся report accept completed. Не заявлено: отдельный кабинет логистов статусы ожидания информации от логистов трекинг груза. Verify: ci-pr-pilot 2026-09-16 включает shipment spec (зелёный). Не входит в обязательный PR smoke.
 
 ## Residual R11
 
@@ -80,7 +84,7 @@ RW1–RW9 copy layer and glossariy synced per RW9 gate. Root wording unchanged b
 
 ## Security prod sign-off
 
-Role ACL tested in unit e2e including treasurer AuthZ on confirm. Checklist security-signoff-checklist.md; prod config guard rejects dev JWT/S2S secrets. Formal customer sign-off pending.
+Role ACL tested in unit e2e including treasurer AuthZ on confirm. Checklist security-signoff-checklist.md. Prod config guard rejects dev JWT/S2S secrets. Milestone 1 2026-09-15: contractor software items on the checklist are marked done; локальная сборочная команда handover green. Customer signature and handover-secrets rotation remain open as a known-gap for import UAT. Formal customer sign-off pending. Alpha public core health 200. Remote SSH rotate still blocked until DEPLOY_SSH_KEY refresh.
 
 ## OCR / document extraction
 
@@ -92,5 +96,9 @@ Own CPU: Ollama Qwen2.5-3b plus few-shot is testable (EXTRACTION_PRIMARY equals 
 Applied skips: YaLM 100B self-host; Onyx as OCR/IE. HF equals LoRA tooling only; open-llms equals license checklist before train (extraction/train/lora_recipe.md).
 
 OCR is optional side-path only. recognize_complete in app advances draft without vendor OCR. Never on transactional payment commit. Manual entry remains available.
+
+## Milestone 2 in-scope вводных
+
+2026-09-16. Честный claim: in-scope маршруты вводных покрыты domain to E2E. §9 чеклист синхронизирован с фактом кода: исходные девять пунктов domain/API закрыты; плюс export PAY_FROM_EXPORT и ветка shipment. Не 100 процентов продукта. Остаток: живой bank webhook, pixel PDF, продукт логистов, POSTPAY_FIXED_RATE, analytics/assistant, own OCR PRIMARY, Nest data migration, полный browser matrix, ротация секретов заказчика.
 
 При закрытии gap обновляйте readiness-and-limits.md и этот файл в одном PR.

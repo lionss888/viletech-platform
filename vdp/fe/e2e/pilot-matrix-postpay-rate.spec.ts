@@ -1,6 +1,7 @@
 import { test, expect } from "./fixtures/auth.fixture";
 import { assertCoreHealthy } from "./helpers/api";
 import { expectFormStatus } from "./helpers/status";
+import { waitForFormDetail } from "./helpers/form-detail";
 import { finishTermsAndReview, saveWizardDraft } from "./helpers/wizard";
 import { readRobotPdf, loadRobotPack } from "./helpers/robot-fixtures";
 import type { Page } from "@playwright/test";
@@ -10,11 +11,6 @@ const CONFIRM_FORM = /Подтвердить заявку/;
 const APPROVE_ORG = /Одобрить организацию и (передать во внешний комплаенс|продолжить)/;
 const AFTER_SUBMIT = /organization_waiting_verification|form_waiting_verification/;
 
-async function waitForFormDetail(page: Page, formId: string) {
-  await page.goto(`/forms/${formId}`);
-  await page.waitForLoadState("networkidle");
-  await expect(page.getByTestId("form-params")).toBeVisible({ timeout: 30_000 });
-}
 
 async function clickAction(page: Page, name: string | RegExp) {
   const btn = page.getByRole("button", { name });
@@ -180,7 +176,7 @@ test.describe("Pilot matrix POSTPAY_RATE_ON_PP @pilot-matrix", () => {
     await clickAction(page, /^Назначить платёжного провайдера$/);
     const providerSelect = page.locator("label").filter({ hasText: /Провайдер исполнения/i }).locator("select");
     await expect(providerSelect).toBeVisible({ timeout: 10_000 });
-    expect(await providerSelect.locator("option").count()).toBeGreaterThan(1);
+    await expect.poll(async () => providerSelect.locator("option").count(), { timeout: 20_000 }).toBeGreaterThan(1);
     await providerSelect.selectOption({ index: 1 });
     await confirmModal(page);
     await expectFormStatus(page, "payment_received", { timeout: 30_000 });

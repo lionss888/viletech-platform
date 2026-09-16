@@ -7,6 +7,7 @@ import {
   purgeDemoMockCounterparties,
 } from "./helpers/api";
 import { expectFormStatus } from "./helpers/status";
+import { waitForFormDetail } from "./helpers/form-detail";
 import { loadRobotPack, readRobotPdf } from "./helpers/robot-fixtures";
 
 const TAKE_IN_REVIEW = /Взять (заявку|организацию) в проверку|Взять .* в проверку/i;
@@ -21,6 +22,7 @@ async function createExportDraftForm(
 ): Promise<string> {
   const created = (await authPost(userToken, "/api/v1/site/form-payment", {
     direction: "export",
+    payment_method: "PAY_FROM_EXPORT",
     currency: packCurrency,
     invoice_amount: "1000",
     no_documents: true,
@@ -30,12 +32,6 @@ async function createExportDraftForm(
   // For export, the wizard automatically sets payment_method to PAY_FROM_EXPORT when direction is export
   await authPost(userToken, `/api/v1/forms/${created.id}/actions/recognize_complete`, {});
   return created.id;
-}
-
-async function waitForFormDetail(page: Page, formId: string): Promise<void> {
-  await page.goto(`/forms/${formId}`);
-  await page.waitForLoadState("networkidle");
-  await expect(page.getByTestId("form-params")).toBeVisible({ timeout: 20_000 });
 }
 
 async function clickAction(page: Page, name: string | RegExp): Promise<void> {
@@ -163,7 +159,14 @@ test.describe("Pilot robot matrix export treasurer flow @pilot-matrix", () => {
     await clickAction(page, /Подтвердить получение средств/i);
     await expectFormStatus(page, "payment_received", { timeout: 30_000 });
 
-    // 10. Manager starts payment processing
+    // 10. Assign execution provider, then start payment
+    await clickAction(page, /^Назначить платёжного провайдера$/);
+    const providerSelect = page.locator("label").filter({ hasText: /Провайдер исполнения/i }).locator("select");
+    await expect(providerSelect).toBeVisible({ timeout: 10_000 });
+    await expect.poll(async () => providerSelect.locator("option").count(), { timeout: 20_000 }).toBeGreaterThan(1);
+    await providerSelect.selectOption({ index: 1 });
+    await confirmModal(page);
+    await expectFormStatus(page, "payment_received", { timeout: 30_000 });
     await clickAction(page, /Запустить исполнение платежа/i);
     await expectFormStatus(page, "payment_processing", { timeout: 30_000 });
 
@@ -172,7 +175,7 @@ test.describe("Pilot robot matrix export treasurer flow @pilot-matrix", () => {
     await loginAs("treasurer");
     await waitForFormDetail(page, formId);
     // Note: For export, treasurer_confirm transitions to payment_sent_treasurer instead of payment_processing
-    await clickAction(page, /Подтвердить/i);
+    await clickAction(page, /Подтвердить покрытие/);
     await confirmModal(page);
     await expectFormStatus(page, "payment_sent_treasurer", { timeout: 30_000 });
 
@@ -196,8 +199,5 @@ test.describe("Pilot robot matrix export treasurer flow @pilot-matrix", () => {
     await clickAction(page, /Завершить сделку/i);
     await confirmModal(page);
     await expectFormStatus(page, "completed", { timeout: 30_000 });
-
-    // Verify final status
-    await expect(page.getByTestId("status-badge")).toContainText(/Завершено|Закрыта/, { timeout: 10_000 });
   });
 });

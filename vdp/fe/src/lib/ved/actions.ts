@@ -102,6 +102,7 @@ const MATRIX: Record<VedRole, Record<string, FormAction[]>> = {
     form_accepted: [
       { id: "mgr_assign_agent", label: "Назначить платёжного агента", tone: "primary", nextStatus: "form_accepted" },
       { id: "mgr_contract_attach", label: "Прикрепить договор вручную", tone: "accent", requiresFile: true, nextStatus: "signing_order" },
+      { id: "mgr_advance_signing", label: "Сформировать поручение", tone: "accent", nextStatus: "advance_signing_order" },
       { id: "mgr_form_reject", label: "Вернуть на коррекцию", tone: "quiet", requiresReason: true, nextStatus: "form_waiting_corrections" },
     ],
     contract_verification: [
@@ -162,6 +163,7 @@ const MATRIX: Record<VedRole, Record<string, FormAction[]>> = {
     payment_sent: [
       { id: "mgr_report_signing", label: "Отправить отчёт агента на подпись", tone: "accent", nextStatus: "report_waiting" },
       { id: "mgr_advance_signing", label: "Сформировать доп. поручение", tone: "quiet", nextStatus: "advance_signing_order" },
+      { id: "mgr_shipment_waiting", label: "Перейти к документам отгрузки", tone: "quiet", nextStatus: "shipment_waiting" },
     ],
     report_waiting_verification: [
       { id: "mgr_report_start", label: "Взять отчёт в проверку", tone: "primary", nextStatus: "report_verification" },
@@ -171,7 +173,12 @@ const MATRIX: Record<VedRole, Record<string, FormAction[]>> = {
       { id: "mgr_report_reject", label: "Вернуть отчёт", tone: "quiet", requiresReason: true, nextStatus: "report_waiting_corrections" },
     ],
     report_accepted: [
-      { id: "mgr_shipment_waiting", label: "Перейти к документам отгрузки", tone: "accent", nextStatus: "shipment_waiting" },
+      { id: "mgr_completed", label: "Завершить заявку", tone: "accent", nextStatus: "completed" },
+      { id: "mgr_shipment_waiting", label: "Перейти к документам отгрузки", tone: "quiet", nextStatus: "shipment_waiting" },
+    ],
+    advance_signing_order_accepted: [
+      { id: "mgr_payment_received", label: "Подтвердить получение средств", tone: "accent", nextStatus: "payment_received" },
+      { id: "mgr_shipment_waiting", label: "Перейти к документам отгрузки", tone: "quiet", nextStatus: "shipment_waiting" },
     ],
     shipment_waiting_verification: [
       { id: "mgr_shipment_start", label: "Взять отгрузку в проверку", tone: "primary", nextStatus: "shipment_verification" },
@@ -179,6 +186,7 @@ const MATRIX: Record<VedRole, Record<string, FormAction[]>> = {
     shipment_verification: [
       { id: "mgr_completed", label: "Закрыть заявку", tone: "accent", nextStatus: "completed" },
       { id: "mgr_shipment_reject", label: "Вернуть документы", tone: "quiet", requiresReason: true, nextStatus: "shipment_waiting_corrections" },
+      { id: "mgr_shipment_stop", label: "Приостановить проверку отгрузки", tone: "quiet", nextStatus: "shipment_waiting_verification" },
     ],
   },
 
@@ -199,6 +207,14 @@ const MATRIX: Record<VedRole, Record<string, FormAction[]>> = {
         tone: "accent",
         confirm: "Подтвердить заход рублёвого покрытия и передать в исполнение?",
         // nextStatus depends on payment route: advance → payment_processing, RATE_ON_PP → report_waiting (§10.2/10.3)
+      },
+    ],
+    payment_processing: [
+      {
+        id: "treas_confirm_payment",
+        label: "Подтвердить покрытие",
+        tone: "accent",
+        confirm: "Подтвердить поступление валюты по экспорту и передать казначею?",
       },
     ],
     payment_sent_treasurer: [

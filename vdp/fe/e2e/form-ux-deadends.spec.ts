@@ -1,4 +1,5 @@
-import { test, expect, type Page } from "./fixtures/auth.fixture";
+import { test, expect } from "./fixtures/auth.fixture";
+import { waitForFormDetail } from "./helpers/form-detail";
 import {
   assertCoreHealthy,
   createCounterpartyApi,
@@ -10,11 +11,6 @@ import {
   uploadAndAttachInvoice,
 } from "./helpers/api";
 
-async function waitForFormDetail(page: Page, formId: string): Promise<void> {
-  await page.goto(`/forms/${formId}`);
-  await page.waitForLoadState("networkidle");
-  await expect(page.getByTestId("form-params")).toBeVisible({ timeout: 20_000 });
-}
 
 /** S-User-01..04 / S-Mgr-01 SubjectReview — companion to pilot-form-flow (@pilot-flow). */
 test.describe("Form UX dead-ends (journeys)", () => {

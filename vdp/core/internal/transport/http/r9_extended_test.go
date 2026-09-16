@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"strings"
+	"sync"
 	"testing"
 	"time"
 )
@@ -79,7 +80,7 @@ func TestR9SSEStatusChanged(t *testing.T) {
 	req.Header.Set("Authorization", "Bearer "+user)
 	ctx, cancel := context.WithCancel(req.Context())
 	req = req.WithContext(ctx)
-	res := httptest.NewRecorder()
+	res := &syncSSERecorder{ResponseRecorder: httptest.NewRecorder()}
 	done := make(chan struct{})
 	go func() {
 		core.ServeHTTP(res, req)
@@ -87,20 +88,20 @@ func TestR9SSEStatusChanged(t *testing.T) {
 	}()
 	deadline := time.Now().Add(time.Second)
 	for time.Now().Before(deadline) {
-		if strings.Contains(res.Body.String(), "event: connected") {
+		if strings.Contains(res.BodyString(), "event: connected") {
 			break
 		}
 		time.Sleep(10 * time.Millisecond)
 	}
-	if !strings.Contains(res.Body.String(), "event: connected") {
+	if !strings.Contains(res.BodyString(), "event: connected") {
 		cancel()
 		<-done
-		t.Fatalf("missing connected: %s", res.Body.String())
+		t.Fatalf("missing connected: %s", res.BodyString())
 	}
 	postJSON(t, core, user, "/api/v1/forms/"+formID+"/actions/recognize_complete", nil)
 	deadline = time.Now().Add(time.Second)
 	for time.Now().Before(deadline) {
-		if strings.Contains(res.Body.String(), "status_changed") {
+		if strings.Contains(res.BodyString(), "status_changed") {
 			cancel()
 			<-done
 			return
@@ -109,7 +110,37 @@ func TestR9SSEStatusChanged(t *testing.T) {
 	}
 	cancel()
 	<-done
-	t.Fatalf("missing status_changed: %s", res.Body.String())
+	t.Fatalf("missing status_changed: %s", res.BodyString())
+}
+
+// syncSSERecorder guards ResponseRecorder against concurrent Write/Body reads in SSE tests.
+type syncSSERecorder struct {
+	*httptest.ResponseRecorder
+	mu sync.Mutex
+}
+
+func (r *syncSSERecorder) Write(p []byte) (int, error) {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	return r.ResponseRecorder.Write(p)
+}
+
+func (r *syncSSERecorder) WriteHeader(statusCode int) {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	r.ResponseRecorder.WriteHeader(statusCode)
+}
+
+func (r *syncSSERecorder) Flush() {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	r.ResponseRecorder.Flush()
+}
+
+func (r *syncSSERecorder) BodyString() string {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	return r.Body.String()
 }
 
 func getJSONArray(t *testing.T, h http.Handler, token, path string) []any {

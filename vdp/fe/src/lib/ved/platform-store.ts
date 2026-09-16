@@ -123,7 +123,12 @@ function useApiPlatformStore(): VedStore {
     saveStaticOverrides(staticOverrides);
   }, [staticOverrides]);
 
-  const formsQuery = useQuery({ queryKey: ["forms"], queryFn: listForms, enabled });
+  const accountScope = auth.account?.id ?? auth.role ?? "anon";
+  const formsQuery = useQuery({
+    queryKey: ["forms", accountScope],
+    queryFn: listForms,
+    enabled,
+  });
   const orgsQuery = useQuery({ queryKey: ["organizations"], queryFn: listOrganizations, enabled });
   const cpQuery = useQuery({ queryKey: ["counterparties"], queryFn: listCounterparties, enabled });
   const agentsQuery = useQuery({ queryKey: ["agents"], queryFn: listAgents, enabled });

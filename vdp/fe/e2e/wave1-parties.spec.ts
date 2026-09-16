@@ -1,4 +1,4 @@
-import { test, expect, type Page } from "./fixtures/auth.fixture";
+import { test, expect } from "./fixtures/auth.fixture";
 import {
   assertCoreHealthy,
   createOrganizationApi,
@@ -7,12 +7,8 @@ import {
   loginAllRoles,
 } from "./helpers/api";
 import { expectFormStatus } from "./helpers/status";
+import { waitForFormDetail } from "./helpers/form-detail";
 
-async function waitForFormDetail(page: Page, formId: string): Promise<void> {
-  await page.goto(`/forms/${formId}`);
-  await page.waitForLoadState("networkidle");
-  await expect(page.getByTestId("form-params")).toBeVisible({ timeout: 20_000 });
-}
 
 test.describe("Wave1 parties / orgs", () => {
   test.beforeAll(async () => {

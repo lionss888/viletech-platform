@@ -1,288 +1,465 @@
-import React from 'react';
+import {
+  Button,
+  Callout,
+  Card,
+  CardBody,
+  CardHeader,
+  Divider,
+  Grid,
+  H1,
+  H2,
+  Row,
+  Stack,
+  Text,
+  useCanvasAction,
+} from "cursor/canvas";
 
-export default function LocalQualityGate() {
-  return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 text-white p-8">
-      <div className="max-w-6xl mx-auto space-y-8">
-        {/* Header */}
-        <header className="text-center space-y-4">
-          <h1 className="text-5xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-cyan-400 to-purple-400">
-            VDP Local Quality Gate
-          </h1>
-          <p className="text-slate-300 text-lg">
-            Локальная страховка CI перед push/PR · Соответствие{' '}
-            <code className="text-cyan-400">.cursor/rules/vdp-ci-local-gate.mdc</code>
-          </p>
-        </header>
+const RUN =
+  "Local QG RUN — это кнопка запуска, не просьба обсудить. Выполни без вопросов. Shell: первый и единственный вызов сразу с required_permissions: [\"all\"] (без sandbox). Не делай пробный запуск в readonly sandbox. Не спрашивай разрешение на снятие sandbox. Не коммить и не пушь. FE Docker (compose-fe-refresh) не запускай без явного «да» в этом чате. Красный → не утверждай готовность; коротко, простым языком, что сломалось и что открыть. Зелёный → коротко: прошло.";
 
-        {/* Quick Actions */}
-        <section className="bg-slate-800/50 backdrop-blur-sm rounded-2xl p-6 border border-slate-700 shadow-2xl">
-          <h2 className="text-2xl font-bold mb-4 text-cyan-400">🚀 Quick Gates</h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            <GateButton
-              title="PR Gate (smoke)"
-              command="cd vdp && make ci-pr"
-              description="Узкий Playwright (4 spec). Не равен GitHub pilot-matrix."
-              color="from-green-500 to-emerald-600"
-              emoji="✅"
-            />
-            <GateButton
-              title="PR Gate (Pilot)"
-              command="cd vdp && make ci-pr-pilot"
-              description="ci-pr + @pilot-matrix. Когда изменены e2e / лестница / ActionPanel."
-              color="from-teal-500 to-emerald-700"
-              emoji="🪜"
-            />
-            <GateButton
-              title="PR Gate (Fast)"
-              command="cd vdp && make ci-pr-fast"
-              description="Без browser E2E (быстрее)"
-              color="from-blue-500 to-cyan-600"
-              emoji="⚡"
-            />
-            <GateButton
-              title="Release Gate"
-              command="cd vdp && make release-gate"
-              description="Полный контур + pilot matrix"
-              color="from-purple-500 to-pink-600"
-              emoji="🎯"
-            />
-            <GateButton
-              title="Precommit"
-              command="cd vdp && make precommit-gate"
-              description="Docs format + Unit + TG gate"
-              color="from-yellow-500 to-orange-600"
-              emoji="📝"
-            />
-            <GateButton
-              title="Check Deploy Secrets"
-              command="cd vdp && make check-deploy-secrets"
-              description="Проверка MGMT_NOTIFY_TOKEN/CHAT_ID"
-              color="from-red-500 to-rose-600"
-              emoji="🔐"
-            />
-            <GateButton
-              title="Docs Format"
-              command="cd vdp && make docs-format-check"
-              description="Только форматирование документации"
-              color="from-indigo-500 to-blue-600"
-              emoji="📄"
-            />
-          </div>
-        </section>
+const PRECOMMIT_PROMPT = `${RUN} Команда (ровно одна): cd vdp && make precommit-gate. Это тот же слой, что GitHub Desktop при Commit: версии программ, оформление текстов, автоматические проверки кода.`;
 
-        {/* Deploy Secrets Check */}
-        <section className="bg-red-900/20 backdrop-blur-sm rounded-2xl p-6 border border-red-700 shadow-2xl">
-          <h2 className="text-2xl font-bold mb-4 text-red-400">⚠️ Deploy Secrets Required</h2>
-          <div className="space-y-4 text-slate-200">
-            <p className="font-semibold">
-              Deploy workflows требуют <code className="text-cyan-400">MGMT_NOTIFY_TOKEN</code> +{' '}
-              <code className="text-cyan-400">MGMT_NOTIFY_CHAT_ID</code>
-            </p>
-            <div className="bg-slate-800/50 rounded-lg p-4 space-y-2 text-sm">
-              <p className="font-mono text-green-400"># Локальная настройка (выбери один):</p>
-              <p className="font-mono">echo "MGMT_NOTIFY_TOKEN=your_bot_token" &gt;&gt; ~/.vedy_bot/env</p>
-              <p className="font-mono">echo "MGMT_NOTIFY_CHAT_ID=your_chat_id" &gt;&gt; ~/.vedy_bot/env</p>
-              <p className="font-mono text-slate-400"># или через ~/.vdp-intake/env</p>
-            </div>
-            <div className="bg-slate-800/50 rounded-lg p-4 space-y-2 text-sm">
-              <p className="font-mono text-blue-400"># GitHub Secrets (для CI):</p>
-              <p>Repository Settings → Secrets → Actions → New secret:</p>
-              <ul className="list-disc list-inside ml-4 space-y-1">
-                <li>
-                  <code className="text-cyan-400">MGMT_NOTIFY_TOKEN</code>: ваш bot token
-                </li>
-                <li>
-                  <code className="text-cyan-400">MGMT_NOTIFY_CHAT_ID</code>: ваш chat id
-                </li>
-              </ul>
-            </div>
-            <div className="bg-slate-800/50 rounded-lg p-4 space-y-2 text-sm">
-              <p className="font-mono text-purple-400"># GitLab CI Variables (для CI):</p>
-              <p>Project Settings → CI/CD → Variables → Add variable:</p>
-              <ul className="list-disc list-inside ml-4 space-y-1">
-                <li>
-                  <code className="text-cyan-400">MGMT_NOTIFY_TOKEN</code>: bot token (Protected: yes)
-                </li>
-                <li>
-                  <code className="text-cyan-400">MGMT_NOTIFY_CHAT_ID</code>: chat id (Protected: yes)
-                </li>
-              </ul>
-            </div>
-            <div className="bg-slate-800/50 rounded-lg p-4 space-y-2 text-sm">
-              <p className="font-mono text-yellow-400"># Получить токен и chat_id:</p>
-              <ol className="list-decimal list-inside ml-4 space-y-1">
-                <li>
-                  Создать бота: <a href="https://t.me/BotFather" className="text-cyan-400 underline">@BotFather</a> →{' '}
-                  <code>/newbot</code>
-                </li>
-                <li>Скопировать токен из ответа</li>
-                <li>Отправить сообщение боту (любое)</li>
-                <li>
-                  Получить chat_id:{' '}
-                  <code className="text-green-400">
-                    curl https://api.telegram.org/bot&lt;TOKEN&gt;/getUpdates
-                  </code>
-                </li>
-              </ol>
-            </div>
-          </div>
-        </section>
+const PILOT_PROMPT = `${RUN} Команда (ровно одна): cd vdp && make ci-pr-pilot. Это проверка перед публикацией на GitHub: код, тексты, поднятие локальной среды и проход сценариев в браузере по заявке (включая длинную лестницу ролей и Pilot Robot Matrix).`;
 
-        {/* Test Commands */}
-        <section className="bg-slate-800/50 backdrop-blur-sm rounded-2xl p-6 border border-slate-700 shadow-2xl">
-          <h2 className="text-2xl font-bold mb-4 text-purple-400">🧪 Test Commands</h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <TestButton title="Unit Tests" command="cd vdp && make test" emoji="🔬" />
-            <TestButton title="Adapters Tests" command="cd vdp && make test-adapters" emoji="🔌" />
-            <TestButton title="Integration Tests" command="cd vdp && make test-integration" emoji="🔗" />
-            <TestButton title="FE Tests" command="cd vdp/fe && npm test" emoji="⚛️" />
-            <TestButton title="CD Scripts" command="cd vdp && make test-cd-scripts" emoji="📦" />
-            <TestButton title="Robot Matrix" command="cd vdp && make robot-matrix-check" emoji="🤖" />
-          </div>
-        </section>
+const SMOKE_PROMPT = `${RUN} Команда (ровно одна): cd vdp && make ci-pr. Это короткая проверка с браузером (несколько ключевых сценариев). Если меняли экраны заявки, кнопки ролей или файлы e2e — этого мало, нужен ci-pr-pilot.`;
 
-        {/* Compose Commands */}
-        <section className="bg-slate-800/50 backdrop-blur-sm rounded-2xl p-6 border border-slate-700 shadow-2xl">
-          <h2 className="text-2xl font-bold mb-4 text-cyan-400">🐳 Docker Compose</h2>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <ComposeButton title="Up" command="cd vdp && make compose-up" emoji="🚀" color="green" />
-            <ComposeButton title="Down" command="cd vdp && make compose-down" emoji="🛑" color="red" />
-            <ComposeButton
-              title="Refresh FE Deps"
-              command="cd vdp && make compose-fe-refresh"
-              emoji="🔄"
-              color="blue"
-            />
-            <ComposeButton title="E2E" command="cd vdp && ./scripts/compose-e2e.sh" emoji="🧪" color="purple" />
-            <ComposeButton title="Status" command="cd vdp && docker compose ps" emoji="📊" color="yellow" />
-            <ComposeButton title="Logs" command="cd vdp && docker compose logs -f" emoji="📜" color="indigo" />
-          </div>
-        </section>
+const NO_BROWSER_PROMPT = `${RUN} Команда (ровно одна): cd vdp && make ci-pr-fast. Без открытия браузера: правила текстов, мелкие проверки кода и сервисов. Не проверяет, что человек может нажать кнопки в кабинете.`;
 
-        {/* Rules Reference */}
-        <section className="bg-slate-800/50 backdrop-blur-sm rounded-2xl p-6 border border-slate-700 shadow-2xl">
-          <h2 className="text-2xl font-bold mb-4 text-yellow-400">📋 Rules Reference</h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
-            <RuleLink
-              title="vdp-ci-local-gate"
-              path=".cursor/rules/vdp-ci-local-gate.mdc"
-              description="Локальная страховка CI"
-            />
-            <RuleLink
-              title="mgmt-tg-notify"
-              path=".cursor/rules/mgmt-tg-notify.mdc"
-              description="Management TG уведомления"
-            />
-            <RuleLink
-              title="vdp-fe-docker-пересборка"
-              path=".cursor/rules/vdp-fe-docker-пересборка.mdc"
-              description="FE Docker deps refresh"
-            />
-            <RuleLink title="честность-готовности" path=".cursor/rules/честность-готовности.mdc" description="DoD" />
-          </div>
-        </section>
+const BROWSER_ONLY_PROMPT = `${RUN} Команда (ровно одна): cd vdp && make playwright-e2e. Только сценарии в браузере (вход, заявка, роли). Нужна уже поднятая локальная среда (Docker). Не проверяет оформление текстов и не гоняет всю лестницу ролей.`;
 
-        {/* Footer */}
-        <footer className="text-center text-slate-400 text-sm pt-8">
-          <p>
-            💡 Промпт для запуска:{' '}
-            <code className="text-cyan-400 bg-slate-800 px-2 py-1 rounded">@local-qg.canvas.tsx Local QG RUN</code>
-          </p>
-          <p className="mt-2">Shell: без sandbox · FE Docker: спрашивай · CI must: check-deploy-secrets</p>
-        </footer>
-      </div>
-    </div>
-  );
-}
+const DOCS_PROMPT = `${RUN} Команда (ровно одна): cd vdp && make docs-format-check. Только оформление документов: без таблиц, списков и выделения в операционных текстах.`;
 
-// Helper Components
-interface GateButtonProps {
-  title: string;
-  command: string;
-  description: string;
-  color: string;
-  emoji: string;
-}
+const ENV_PROMPT = `${RUN} Команда (ровно одна): cd vdp && make check-env-parity. Проверь, что на этой машине та же версия Node, что в проекте. Если нет — скажи, что сделать (nvm use / mise), без установки пакетов без спроса.`;
 
-function GateButton({ title, command, description, color, emoji }: GateButtonProps) {
-  return (
-    <div className="group relative bg-slate-700/50 rounded-xl p-4 border border-slate-600 hover:border-slate-500 transition-all hover:scale-105 cursor-pointer">
-      <div className={`absolute inset-0 bg-gradient-to-br ${color} opacity-0 group-hover:opacity-10 rounded-xl transition-opacity`}></div>
-      <div className="relative space-y-2">
-        <div className="flex items-center gap-2">
-          <span className="text-2xl">{emoji}</span>
-          <h3 className="font-bold text-lg">{title}</h3>
-        </div>
-        <p className="text-slate-400 text-sm">{description}</p>
-        <code className="block text-xs text-slate-300 bg-slate-900/50 p-2 rounded mt-2 font-mono break-all">
-          {command}
-        </code>
-      </div>
-    </div>
-  );
-}
+const SECRETS_PROMPT = `${RUN} Команда (ровно одна): cd vdp && make check-deploy-secrets. Проверь, может ли компьютер отправить служебное сообщение о выкате. Не печатай токены и секреты. Если нет — объясни простым языком, какой файл создать, без значений.`;
 
-interface TestButtonProps {
-  title: string;
-  command: string;
-  emoji: string;
-}
+const COMPOSE_UP_PROMPT = `${RUN} Команда (ровно одна): cd vdp && make compose-up. Подними локальную среду (Docker). В конце коротко: поднялось или нет (по make compose-ps / health). Не трогай FE deps (compose-fe-refresh) без явного «да».`;
 
-function TestButton({ title, command, emoji }: TestButtonProps) {
-  return (
-    <div className="bg-slate-700/50 rounded-lg p-3 border border-slate-600 hover:border-purple-500 transition-all cursor-pointer">
-      <div className="flex items-center gap-2 mb-2">
-        <span className="text-xl">{emoji}</span>
-        <h3 className="font-semibold">{title}</h3>
-      </div>
-      <code className="text-xs text-slate-300 font-mono">{command}</code>
-    </div>
-  );
-}
+const ROBOT_BOTH_PROMPT = `${RUN} Pilot Robot Matrix — оба робота по очереди. Нужна уже поднятая среда (если нет — сначала make compose-up). Выполни строго по порядку, без обсуждения:
+1) cd vdp && make compose-e2e
+2) cd vdp && make playwright-pilot-matrix
+Пакет данных: VDP_ROBOT_FIXTURE_PACK по умолчанию template (не переключай на customer, пока pack не ready). Красный на шаге 1 — шаг 2 не гоняй; скажи, что упало.`;
 
-interface ComposeButtonProps {
-  title: string;
-  command: string;
-  emoji: string;
-  color: string;
-}
+const ROBOT_LOGIC_PROMPT = `${RUN} Команда (ровно одна): cd vdp && make compose-e2e. Это робот логики Pilot Robot Matrix: сценарии заявки через API (без кликов в кабинете). Нужна уже поднятая среда (make compose-up).`;
 
-function ComposeButton({ title, command, emoji, color }: ComposeButtonProps) {
-  const colorMap: Record<string, string> = {
-    green: 'hover:border-green-500',
-    red: 'hover:border-red-500',
-    blue: 'hover:border-blue-500',
-    purple: 'hover:border-purple-500',
-    yellow: 'hover:border-yellow-500',
-    indigo: 'hover:border-indigo-500',
-  };
+const ROBOT_CABINET_PROMPT = `${RUN} Команда (ровно одна): cd vdp && make playwright-pilot-matrix. Это робот кабинетов Pilot Robot Matrix: клики по лестнице ролей в браузере (@pilot-matrix). Нужна уже поднятая среда. Пакет данных: VDP_ROBOT_FIXTURE_PACK=template по умолчанию; customer только если pack уже imported и status=ready.`;
+
+const ROBOT_MATRIX_CHECK_PROMPT = `${RUN} Команда (ровно одна): cd vdp && make robot-matrix-check. Быстрая проверка, что файлы матрицы и слоты фикстур на месте (без прогона сценариев). ~секунды.`;
+
+const RELEASE_GATE_PROMPT = `${RUN} Команда (ровно одна): cd vdp && make release-gate. Полный Local QG перед передачей/тегом: unit, compose-e2e, браузер, Pilot Robot Matrix. Долго. Не путать с «лестницей» перед push.`;
+
+const COMMENTS_PROMPT = `Local QG — комментирование кода. Это не make-gate. Не коммить и не пушь.
+
+Посмотри незакоммиченные правки (git status, git diff). Добавь комментарии только там, где без них не понять смысл для следующего человека:
+- публичные функции и типы: JSDoc (TypeScript) или GoDoc;
+- неочевидное правило домена (роль, статус, деньги) — одно короткое предложение «почему»;
+- не комментируй очевидное (setX, return err);
+- не пиши новые markdown-файлы и не трогай чужой код вне diff.
+В конце: список файлов и что пояснил.`;
+
+const TRIAGE_PROMPT = `Local QG — подскажи проверку. Не запускай тесты, пока человек не нажмёт другую кнопку.
+
+По git status и git diff скажи простым языком:
+1. Что менялось (экраны, правила заявки, тексты, только план).
+2. Какую кнопку нажать в Local QG (перед коммитом / без браузера / с браузером / документация / лестница / Pilot Robot Matrix).
+3. Почему именно её, одной фразой.
+Не коммить. Не пушь. Не запускай make.`;
+
+export default function LocalQG() {
+  const dispatch = useCanvasAction();
 
   return (
-    <div
-      className={`bg-slate-700/50 rounded-lg p-3 border border-slate-600 ${colorMap[color]} transition-all cursor-pointer`}
-    >
-      <div className="flex items-center gap-2 mb-2">
-        <span className="text-xl">{emoji}</span>
-        <h3 className="font-semibold">{title}</h3>
-      </div>
-      <code className="text-xs text-slate-300 font-mono">{command}</code>
-    </div>
-  );
-}
+    <Stack gap={24} style={{ padding: 24, maxWidth: 720 }}>
+      <Stack gap={6}>
+        <H1>Local QG</H1>
+        <Text tone="secondary">
+          Локальный контроль качества. Нажмите кнопку — агент сам запустит
+          проверку и напишет, прошло или нет. Команды знать не нужно. Не
+          коммитит и не публикует сам.
+        </Text>
+      </Stack>
 
-interface RuleLinkProps {
-  title: string;
-  path: string;
-  description: string;
-}
+      <Callout tone="info" title="Сначала коммит, потом GitHub">
+        GitHub Desktop при Commit уже гоняет короткий слой. Кнопка ниже — то же
+        самое заранее, чтобы ошибка была в чате, а не в окне «Commit failed».
+        Перед отправкой ветки на GitHub — «Лестница заявки». Роботы матрицы —
+        отдельный блок ниже, когда нужно проверить путь заявки без полного PR
+        gate.
+      </Callout>
 
-function RuleLink({ title, path, description }: RuleLinkProps) {
-  return (
-    <div className="bg-slate-700/50 rounded-lg p-3 border border-slate-600 hover:border-yellow-500 transition-all">
-      <h3 className="font-semibold text-cyan-400 mb-1">{title}</h3>
-      <p className="text-xs text-slate-400 mb-2">{description}</p>
-      <code className="text-xs text-slate-300 font-mono">{path}</code>
-    </div>
+      <Stack gap={8}>
+        <H2>1. Перед коммитом</H2>
+        <Text tone="secondary" size="small">
+          То же, что при Commit в GitHub Desktop: версии программ на компьютере,
+          тексты без запрещённой разметки, автоматические проверки кода. Если
+          красное — коммит отклонят. ~2–5 мин.
+        </Text>
+        <Button
+          onClick={() =>
+            dispatch({ type: "newComposerChat", userPrompt: PRECOMMIT_PROMPT })
+          }
+        >
+          Проверить перед коммитом
+        </Button>
+      </Stack>
+
+      <Divider />
+
+      <Stack gap={8}>
+        <H2>2. Перед отправкой на GitHub</H2>
+        <Text tone="secondary" size="small">
+          Меняли экраны заявки, кнопки ролей, мастер, курс/комиссию или проверки в
+          браузере — эта кнопка. Иначе GitHub может покраснеть, даже если коммит
+          прошёл. ~15–25 мин.
+        </Text>
+        <Button
+          onClick={() =>
+            dispatch({ type: "newComposerChat", userPrompt: PILOT_PROMPT })
+          }
+        >
+          Лестница заявки
+        </Button>
+        <Text tone="tertiary" size="small">
+          Короче (несколько сценариев в браузере, не вся лестница):
+        </Text>
+        <Button
+          variant="secondary"
+          onClick={() =>
+            dispatch({ type: "newComposerChat", userPrompt: SMOKE_PROMPT })
+          }
+        >
+          Короткая проверка с браузером
+        </Button>
+      </Stack>
+
+      <Divider />
+
+      <Stack gap={8}>
+        <H2>3. Pilot Robot Matrix</H2>
+        <Text tone="secondary" size="small">
+          Роботы матрицы: сначала логика заявки (API), затем клики в кабинетах.
+          Нужна поднятая локальная среда. Данные по умолчанию — учебный пакет
+          template (не данные заказчика).
+        </Text>
+        <Button
+          onClick={() =>
+            dispatch({ type: "newComposerChat", userPrompt: ROBOT_BOTH_PROMPT })
+          }
+        >
+          Запустить обоих роботов
+        </Button>
+      </Stack>
+
+      <Grid columns={2} gap={12}>
+        <Card>
+          <CardHeader>Робот логики</CardHeader>
+          <CardBody>
+            <Stack gap={10}>
+              <Text tone="secondary" size="small">
+                Прогоняет сценарии матрицы через API: статусы, роли, переходы.
+                Без открытия кабинетов. ~2–5 мин.
+              </Text>
+              <Button
+                variant="secondary"
+                onClick={() =>
+                  dispatch({
+                    type: "newComposerChat",
+                    userPrompt: ROBOT_LOGIC_PROMPT,
+                  })
+                }
+              >
+                Запустить
+              </Button>
+            </Stack>
+          </CardBody>
+        </Card>
+
+        <Card>
+          <CardHeader>Робот кабинетов</CardHeader>
+          <CardBody>
+            <Stack gap={10}>
+              <Text tone="secondary" size="small">
+                Кликает лестницу ролей в браузере (метки @pilot-matrix). Нужен
+                уже поднятый Docker. ~5–15 мин.
+              </Text>
+              <Button
+                variant="secondary"
+                onClick={() =>
+                  dispatch({
+                    type: "newComposerChat",
+                    userPrompt: ROBOT_CABINET_PROMPT,
+                  })
+                }
+              >
+                Запустить
+              </Button>
+            </Stack>
+          </CardBody>
+        </Card>
+
+        <Card>
+          <CardHeader>Поднять среду</CardHeader>
+          <CardBody>
+            <Stack gap={10}>
+              <Text tone="secondary" size="small">
+                Docker compose-up. Делайте перед роботами, если стенд ещё не
+                запущен.
+              </Text>
+              <Button
+                variant="secondary"
+                onClick={() =>
+                  dispatch({
+                    type: "newComposerChat",
+                    userPrompt: COMPOSE_UP_PROMPT,
+                  })
+                }
+              >
+                Поднять
+              </Button>
+            </Stack>
+          </CardBody>
+        </Card>
+
+        <Card>
+          <CardHeader>Файлы матрицы</CardHeader>
+          <CardBody>
+            <Stack gap={10}>
+              <Text tone="secondary" size="small">
+                Быстро: на месте ли список сценариев и слоты фикстур. Сценарии
+                не гоняет. ~секунды.
+              </Text>
+              <Button
+                variant="secondary"
+                onClick={() =>
+                  dispatch({
+                    type: "newComposerChat",
+                    userPrompt: ROBOT_MATRIX_CHECK_PROMPT,
+                  })
+                }
+              >
+                Проверить
+              </Button>
+            </Stack>
+          </CardBody>
+        </Card>
+      </Grid>
+
+      <Divider />
+
+      <H2>4. Частичные проверки</H2>
+      <Text tone="secondary" size="small">
+        Когда правили только часть и не хотите ждать четверть часа.
+      </Text>
+
+      <Grid columns={2} gap={12}>
+        <Card>
+          <CardHeader>Без браузера</CardHeader>
+          <CardBody>
+            <Stack gap={10}>
+              <Text tone="secondary" size="small">
+                Проверяет тексты и внутренние правила (статусы, роли, расчёты).
+                Не открывает кабинет. Подходит, если меняли только логику или
+                документы, не кнопки на экране. ~2–3 мин.
+              </Text>
+              <Button
+                variant="secondary"
+                onClick={() =>
+                  dispatch({
+                    type: "newComposerChat",
+                    userPrompt: NO_BROWSER_PROMPT,
+                  })
+                }
+              >
+                Запустить
+              </Button>
+            </Stack>
+          </CardBody>
+        </Card>
+
+        <Card>
+          <CardHeader>С браузером</CardHeader>
+          <CardBody>
+            <Stack gap={10}>
+              <Text tone="secondary" size="small">
+                Робот заходит в кабинеты как пользователь: вход, заявка,
+                действия ролей. Нужна уже запущенная локальная среда. Не
+                проверяет оформление документов. ~1–8 мин.
+              </Text>
+              <Button
+                variant="secondary"
+                onClick={() =>
+                  dispatch({
+                    type: "newComposerChat",
+                    userPrompt: BROWSER_ONLY_PROMPT,
+                  })
+                }
+              >
+                Запустить
+              </Button>
+            </Stack>
+          </CardBody>
+        </Card>
+
+        <Card>
+          <CardHeader>Документация</CardHeader>
+          <CardBody>
+            <Stack gap={10}>
+              <Text tone="secondary" size="small">
+                Смотрит, что в рабочих текстах нет таблиц, списков и «жирного»
+                оформления — иначе публикация на GitHub падает. ~10 сек.
+              </Text>
+              <Button
+                variant="secondary"
+                onClick={() =>
+                  dispatch({ type: "newComposerChat", userPrompt: DOCS_PROMPT })
+                }
+              >
+                Запустить
+              </Button>
+            </Stack>
+          </CardBody>
+        </Card>
+
+        <Card>
+          <CardHeader>Комментарии в коде</CardHeader>
+          <CardBody>
+            <Stack gap={10}>
+              <Text tone="secondary" size="small">
+                Агент подпишет ваши незакоммиченные правки короткими пояснениями
+                (зачем правило, а не «что делает строка»). Тесты не запускает.
+              </Text>
+              <Button
+                variant="secondary"
+                onClick={() =>
+                  dispatch({
+                    type: "newComposerChat",
+                    userPrompt: COMMENTS_PROMPT,
+                  })
+                }
+              >
+                Пояснить правки
+              </Button>
+            </Stack>
+          </CardBody>
+        </Card>
+
+        <Card>
+          <CardHeader>Полный handover</CardHeader>
+          <CardBody>
+            <Stack gap={10}>
+              <Text tone="secondary" size="small">
+                Самый длинный Local QG перед передачей или тегом: unit, API,
+                браузер, матрица. Не для каждого коммита. ~20–40 мин.
+              </Text>
+              <Button
+                variant="secondary"
+                onClick={() =>
+                  dispatch({
+                    type: "newComposerChat",
+                    userPrompt: RELEASE_GATE_PROMPT,
+                  })
+                }
+              >
+                Запустить
+              </Button>
+            </Stack>
+          </CardBody>
+        </Card>
+      </Grid>
+
+      <Divider />
+
+      <H2>Помощники</H2>
+      <Grid columns={2} gap={12}>
+        <Card>
+          <CardHeader>Что мне запустить</CardHeader>
+          <CardBody>
+            <Stack gap={10}>
+              <Text tone="secondary" size="small">
+                Смотрит, какие файлы вы меняли, и называет одну кнопку выше.
+                Ничего не гоняет.
+              </Text>
+              <Button
+                variant="secondary"
+                onClick={() =>
+                  dispatch({ type: "newComposerChat", userPrompt: TRIAGE_PROMPT })
+                }
+              >
+                Подсказать
+              </Button>
+            </Stack>
+          </CardBody>
+        </Card>
+
+        <Card>
+          <CardHeader>Версии на компьютере</CardHeader>
+          <CardBody>
+            <Stack gap={10}>
+              <Text tone="secondary" size="small">
+                Часто коммит падает сразу: другая версия Node. Эта кнопка
+                проверяет совпадение с проектом. ~5 сек.
+              </Text>
+              <Button
+                variant="secondary"
+                onClick={() =>
+                  dispatch({ type: "newComposerChat", userPrompt: ENV_PROMPT })
+                }
+              >
+                Проверить
+              </Button>
+            </Stack>
+          </CardBody>
+        </Card>
+
+        <Card>
+          <CardHeader>Сообщение о выкате</CardHeader>
+          <CardBody>
+            <Stack gap={10}>
+              <Text tone="secondary" size="small">
+                На сервере после выката должно уйти служебное сообщение в чат.
+                Если ключей нет — выкат на GitHub может упасть в конце.
+              </Text>
+              <Button
+                variant="secondary"
+                onClick={() =>
+                  dispatch({ type: "newComposerChat", userPrompt: SECRETS_PROMPT })
+                }
+              >
+                Проверить
+              </Button>
+            </Stack>
+          </CardBody>
+        </Card>
+      </Grid>
+
+      <Card collapsible defaultOpen={false}>
+        <CardHeader>Как выбрать (если сомневаетесь)</CardHeader>
+        <CardBody>
+          <Stack gap={8}>
+            <Text size="small">
+              Сейчас жмёте Commit в GitHub Desktop — «Проверить перед коммитом».
+            </Text>
+            <Text size="small">
+              Меняли кнопки, мастер заявки, роли, курс — «Лестница заявки» до
+              push.
+            </Text>
+            <Text size="small">
+              Хотите только путь заявки роботами — «Запустить обоих роботов» или
+              отдельно логика / кабинеты.
+            </Text>
+            <Text size="small">
+              Меняли только текст инструкции — «Документация».
+            </Text>
+            <Text size="small">Не знаете — «Что мне запустить».</Text>
+          </Stack>
+        </CardBody>
+      </Card>
+
+      <Row justify="center">
+        <Text tone="quaternary" size="small">
+          Local QG · кнопка = запуск · агент не публикует сам
+        </Text>
+      </Row>
+    </Stack>
   );
 }

@@ -16,12 +16,14 @@ import {
   ADVANCE_SIGNING_NEEDS_RATE,
   blocksAdvanceSigningWithoutRate,
   blocksPaymentStartWithoutProvider,
+  hidesFormAcceptedActionForDirection,
   hidesPaymentStartForImportAdvance,
   IMPORT_ADVANCE_AWAITS_TREASURER,
   isImportAdvanceCoverageGate,
   isPostpayRateOnPP,
   PAYMENT_START_PROVIDER_LOCK,
 } from "@/lib/ved/manager-payment";
+import { APP_SEED_ACCOUNTS } from "@/lib/ved/app-seed-accounts";
 import { usePlatformStore } from "@/lib/ved/platform-store";
 import { useProcessRolesRows } from "@/lib/ved/use-process-roles-snapshot";
 import type { ActionTone, FormAction, PaymentForm } from "@/lib/ved/types";
@@ -65,7 +67,7 @@ export function ActionPanel({
   /** Opens whole-form edit when draft/corrections. */
   onEditForm?: (() => void) | undefined;
 }) {
-  const { session, applyAction, complianceTools, providers, paymentAgents, users } = usePlatformStore();
+  const { session, applyAction, complianceTools, paymentAgents, users } = usePlatformStore();
   const processRoles = useProcessRolesRows();
   const [pending, setPending] = useState<FormAction | null>(null);
   const [reason, setReason] = useState("");
@@ -103,10 +105,21 @@ export function ActionPanel({
   }, [orgContractsQuery.data]);
 
   const executionProviders = users.filter((u) => u.role === "provider" && !u.blocked);
+  const seedExecutionProviders = APP_SEED_ACCOUNTS.filter((account) => account.role === "provider").map(
+    (account) => ({
+      id: account.accountId,
+      name: account.personName,
+      country: "—",
+    }),
+  );
   const providerOptions =
     executionProviders.length > 0
-      ? executionProviders.map((u) => ({ id: u.id, name: u.name, country: u.organization ?? "—" }))
-      : providers;
+      ? executionProviders.map((u) => ({
+          id: u.id,
+          name: u.name,
+          country: u.organization ?? "—",
+        }))
+      : seedExecutionProviders;
 
   const role = session?.role ?? "user";
   const rawActions = filterAgencyContractActions(actionsFor(role, form.status, processRoles), {
@@ -122,6 +135,11 @@ export function ActionPanel({
             status: form.status,
             actionId: action.id,
             condition: form.condition,
+            direction: form.direction,
+          }) &&
+          !hidesFormAcceptedActionForDirection({
+            status: form.status,
+            actionId: action.id,
             direction: form.direction,
           }),
       ),

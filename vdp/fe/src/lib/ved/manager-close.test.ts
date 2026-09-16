@@ -40,10 +40,19 @@ describe("manager report/close bridge", () => {
       kind: "transition",
       coreAction: "complete",
     });
+    expect(resolveDemoAction("mgr_shipment_stop")).toEqual({
+      kind: "transition",
+      coreAction: "shipment_stop",
+    });
   });
 
   it("exposes manager CTAs for report and shipment stages", () => {
     expect(actionsFor("manager", "payment_sent").map((a) => a.id)).toContain("mgr_report_signing");
+    const paymentSent = actionsFor("manager", "payment_sent");
+    const reportPrimary = paymentSent.find((a) => a.id === "mgr_report_signing");
+    expect(reportPrimary?.tone).toBe("accent");
+    const shipmentQuiet = paymentSent.find((a) => a.id === "mgr_shipment_waiting");
+    expect(shipmentQuiet?.tone).toBe("quiet");
 
     const reportQueue = actionsFor("manager", "report_waiting_verification").map((a) => a.id);
     expect(reportQueue).toContain("mgr_report_start");
@@ -54,12 +63,16 @@ describe("manager report/close bridge", () => {
     expect(accept?.label).toBe("Подтвердить отчет и завершить сделку");
     expect(accept?.nextStatus).toBe("completed");
 
-    // Shipment CTAs remain for Nest/advance branch, not post-report happy path.
     const afterReport = actionsFor("manager", "report_accepted").map((a) => a.id);
+    expect(afterReport).toContain("mgr_completed");
     expect(afterReport).toContain("mgr_shipment_waiting");
+    const complete = actionsFor("manager", "report_accepted").find((a) => a.id === "mgr_completed");
+    expect(complete?.tone).toBe("accent");
 
     const shipmentReview = actionsFor("manager", "shipment_verification").map((a) => a.id);
     expect(shipmentReview).toContain("mgr_completed");
+    expect(shipmentReview).toContain("mgr_shipment_reject");
+    expect(shipmentReview).toContain("mgr_shipment_stop");
   });
 
   it("exposes user upload CTAs for report and shipment", () => {

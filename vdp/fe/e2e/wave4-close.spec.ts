@@ -7,12 +7,8 @@ import {
   loginAllRoles,
 } from "./helpers/api";
 import { expectFormStatus } from "./helpers/status";
+import { waitForFormDetail } from "./helpers/form-detail";
 
-async function waitForFormDetail(page: import("@playwright/test").Page, formId: string): Promise<void> {
-  await page.goto(`/forms/${formId}`);
-  await page.waitForLoadState("networkidle");
-  await expect(page.getByTestId("form-params")).toBeVisible({ timeout: 20_000 });
-}
 
 async function confirmModal(page: import("@playwright/test").Page): Promise<void> {
   const confirm = page.getByRole("button", { name: /^Подтвердить$/ });

@@ -95,6 +95,7 @@ const MATRIX: Partial<Record<VedRole, Partial<Record<string, AppFormAction[]>>>>
     ],
     payment_sent: [
       { id: "report_signing", label: "Отправить отчёт на подпись", tone: "accent", coreAction: "report_signing" },
+      { id: "shipment_waiting", label: "Перейти к документам отгрузки", tone: "quiet", coreAction: "shipment_waiting" },
     ],
     report_waiting_verification: [
       { id: "report_start", label: "Взять отчёт в проверку", tone: "primary", coreAction: "report_start" },
@@ -107,6 +108,14 @@ const MATRIX: Partial<Record<VedRole, Partial<Record<string, AppFormAction[]>>>>
     ],
     shipment_verification: [
       { id: "complete", label: "Закрыть заявку", tone: "accent", coreAction: "complete" },
+      {
+        id: "shipment_reject",
+        label: "Вернуть документы",
+        tone: "quiet",
+        coreAction: "shipment_reject",
+        requiresReason: true,
+      },
+      { id: "shipment_stop", label: "Приостановить проверку отгрузки", tone: "quiet", coreAction: "shipment_stop" },
     ],
   },
   treasurer: {

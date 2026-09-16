@@ -14,7 +14,7 @@ contract_waiting, contract_verification, signing_order, signing_order_accepted �
 
 payment_received, payment_processing, payment_sent — платёж через provider. Детали денежного порядка зависят от маршрута импорта (см. ниже).
 
-report_waiting, report_waiting_verification — отчёт агента. Подтверждение отчёта менеджером переводит в completed (happy path без обязательной лестницы отгрузки после accept).
+report_waiting, report_waiting_verification — отчёт агента. Подтверждение отчёта менеджером переводит в completed (happy path без обязательной лестницы отгрузки после accept). Шкала Жизненный цикл в UI не показывает Отгрузку между Отчётом и Завершено; этап Отгрузка появляется на полоске только если заявка уже в shipment_*.
 
 shipment_waiting и связанные shipment verification stages остаются в state machine для Nest и отдельных веток (в том числе advance), но не обязательны после report accept в пилотном UI-пути.
 
@@ -40,7 +40,7 @@ completed — закрытие сделки.
 
 Экспортный treasurer flow отдельный от импортного покрытия и не подменяет импортную логику. Отличие от импорта: клиент получает деньги от контрагента до казначейского подтверждения, что является противоположным импортному аддендуму секции 10 во вводных.
 
-Покрытие: домен, state machine transitions, unit tests, HTTP API tests (Phase 5). UI кабинеты казначея и browser E2E ladder для export вне scope Phase 5.
+Покрытие: домен, state machine transitions, unit tests, HTTP API tests (Phase 5). UI кабинеты казначея и browser E2E ladder PAY_FROM_EXPORT treasurer до completed (Phase 6, spec pilot-matrix-export). Не все экспортные сценарии и не полный wizard payment_method.
 
 ## Ветка corrections
 
@@ -50,9 +50,21 @@ form_waiting_corrections после eco_reject, ico_reject или manager contin
 
 ## Ветка refund
 
-payment_refund_waiting и связанные refund_* статусы при mgr_refund_init и далее.
+Возврат средств клиенту после получения платежа. Инициируется менеджером из статусов signing_order_accepted, payment_received, manager_checking или advance_signing_order_accepted (любого статуса где FundsHeld true).
 
-cancel_by_manager с активным refund блокируется 409 cannot finalize cancel while funds are unrefunded.
+Поток возврата начинается с mgr_refund_init переводящего форму в payment_refund_waiting с обязательным указанием суммы и валюты возврата (должны совпадать с полученными средствами) и установкой FundsHeld true. Действие mgr_refund_start переводит в payment_refund_processing для запуска процесса возврата. Опционально mgr_refund_file прикрепляет подтверждающий документ возврата. Действие mgr_refund_sent переводит в payment_refund_sent для подтверждения возврата средств устанавливая FundsRefunded true и FundsHeld false. Действие mgr_refund_stop откатывает из payment_refund_processing в payment_refund_waiting. Действие mgr_refund_cancel отменяет процесс возврата возвращая к предыдущему статусу (signing_order_accepted или advance_signing_order_accepted).
+
+Инвариант невозвращённых средств: отмена заявки (cancel_by_manager, cancel_by_user, cancel_by_eco, cancel_by_ico) блокируется с кодом 409 CONFLICT если FundsHeld true и FundsRefunded false. Ошибка: cannot finalize cancel while funds are unrefunded initiate refund first. После payment_refund_sent средства считаются возвращёнными (FundsRefunded true), отмена заявки разрешена.
+
+Валидация суммы возврата: сумма и валюта должны точно совпадать с полученными средствами (ValidateRefundAmount). Частичный возврат вне scope MVP.
+
+Покрытие: домен (refund.go, machine.go, transitions.go), unit tests (refund_test.go включая invariant, stop/cancel, amount validation), HTTP routes (r7_refund_routes.go), HTTP tests (r7_refund_test.go включая AuthZ для Manager/Treasurer), FE API (refund.ts), FE UI (RefundPanel.tsx, ActionPanel refund CTAs, actions.ts refund mappings), FE unit tests (manager-payment.test.ts refund bridge), E2E @pilot-matrix (pilot-matrix-refund.spec.ts happy path и stop/cancel).
+
+## Ветка shipment
+
+Опциональный контур закрывающих документов отгрузки. Не является happy path и не заменяет report accept переход в completed. Не путать с денежным порядком RATE_ON_PP секции 10 и не смешивать с отдельным продуктом логистов из секции 8 вводных. Менеджер завершает заявку подтверждением отчёта без обязательной лестницы отгрузки. Статус report_accepted остаётся для Nest и ручного входа в ветку. Shipment инициируется менеджером из report_accepted payment_sent или advance_signing_order_accepted когда нужны закрывающие документы. Статусы ветки shipment_waiting shipment_waiting_verification shipment_verification shipment_waiting_corrections. Действие shipment_waiting открывает ветку. Действие shipment_upload пользователя переводит в shipment_waiting_verification. Менеджер shipment_start берёт документы в проверку. Действие shipment_accept или complete закрывает заявку в completed. Действие shipment_reject возвращает на shipment_waiting_corrections. Действие shipment_stop откатывает проверку в shipment_waiting_verification. Пользователь shipment_accept_user может закрыть заявку из shipment_verification как альтернатива менеджеру.
+
+Покрытие: domain transitions actions status shipment unit tests shipment_test.go включая AuthZ stop reject и report_accept без отгрузки. HTTP routes manager shipment waiting start stop accept reject и site shipment upload accept. HTTP tests r5_shipment_test.go AuthZ 403 и reject stop. FE CTA Manager User ShipmentPanel actions.ts action-bridge. FE unit manager-close.test.ts. E2E @pilot-matrix pilot-matrix-shipment.spec.ts optional report complete и ветка отгрузки. Compose-e2e P5 shipment smoke. Полный флоу логистов Ожидаем информации от логистов вне scope MVP.
 
 ## Ветка provider return
 

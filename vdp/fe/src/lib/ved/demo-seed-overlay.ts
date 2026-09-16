@@ -1,6 +1,7 @@
 import { FORMS, USERS } from "./mock";
-import { STAGES, statusMeta } from "./statuses";
-import type { AttachedDocument, PaymentForm, PlatformUser, TimelineEntry, VedRole } from "./types";
+import { stagesForProcess } from "./process-stage-filters";
+import { statusMeta } from "./statuses";
+import type { AttachedDocument, FormStatus, PaymentForm, PlatformUser, TimelineEntry, VedRole } from "./types";
 
 const DEMO_EMAIL_REMAP: Record<string, string> = {
   "manager2@bdui.local": "manager2@demo.vdp.local",
@@ -31,12 +32,13 @@ export function applyDemoSeedOverlay(users: PlatformUser[], forms: PaymentForm[]
     const nextEmail = DEMO_EMAIL_REMAP[user.email];
     return nextEmail ? { ...user, email: nextEmail } : user;
   });
-  if (forms.some((form) => form.number === EXTRA_FORM_NUMBER)) {
-    return { users: remappedUsers, forms };
+  const patchedForms = forms.map(rebuildFormTimeline);
+  if (patchedForms.some((form) => form.number === EXTRA_FORM_NUMBER)) {
+    return { users: remappedUsers, forms: patchedForms };
   }
   return {
     users: remappedUsers,
-    forms: [...forms, buildExtraForm(forms.length)],
+    forms: [...patchedForms, buildExtraForm(patchedForms.length)],
   };
 }
 
@@ -94,8 +96,24 @@ function buildExtraForm(index: number): PaymentForm {
 /** Exported for unit tests. */
 export const DEMO_OVERLAY_EXTRA_FORM_NUMBER = EXTRA_FORM_NUMBER;
 
+function daysAgoFromIso(value: string): number {
+  const parsed = Date.parse(value);
+  if (Number.isNaN(parsed)) {
+    return 1;
+  }
+  return Math.max(0, Math.round((NOW - parsed) / DAY));
+}
+
+function rebuildFormTimeline(form: PaymentForm): PaymentForm {
+  return {
+    ...form,
+    timeline: buildTimeline(form.status, daysAgoFromIso(form.createdAt), form.number),
+  };
+}
+
 function buildTimeline(status: string, days: number, number: string): TimelineEntry[] {
-  const current = STAGES.findIndex((stage) => stage.id === statusMeta(status).stage);
+  const rail = stagesForProcess(undefined, status as FormStatus);
+  const current = rail.findIndex((stage) => stage.id === statusMeta(status).stage);
   const actorByStage: Partial<Record<string, VedRole>> = {
     new: "user",
     organization_verification: "internal_compliance_officer",
@@ -107,7 +125,7 @@ function buildTimeline(status: string, days: number, number: string): TimelineEn
     shipment: "manager",
     completed: "manager",
   };
-  return STAGES.map((stage, i) => ({
+  return rail.map((stage, i) => ({
     id: `${number}-tl-${stage.id}`,
     title: stage.label,
     at: iso(days - i * 0.4),

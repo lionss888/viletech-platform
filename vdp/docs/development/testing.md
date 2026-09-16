@@ -145,7 +145,7 @@ UI CTA. upload_report, mgr_completed.
 
 Core API. report/*, shipment/*.
 
-Gate. manager-close.test, compose-e2e.
+Gate. manager-close.test, compose-e2e P5 shipment, pilot-matrix-shipment.spec.ts.
 
 ### RD7 provider execution
 

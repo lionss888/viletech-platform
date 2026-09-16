@@ -182,7 +182,10 @@ export function statusMeta(status: FormStatus): StatusMeta {
   return STATUS_META[status] ?? { label: status, short: status, tone: "neutral", stage: "new" };
 }
 
-/** Ordered process stages for progress UI (Goal-Gradient). */
+/**
+ * Happy-path stages for progress UI (Goal-Gradient).
+ * Отчёт → Завершено: shipment is optional Nest branch, not on the rail (Daria P17).
+ */
 export const STAGES: { id: StageId; label: string }[] = [
   { id: "new", label: "Новая" },
   { id: "organization_verification", label: "Организация" },
@@ -191,9 +194,11 @@ export const STAGES: { id: StageId; label: string }[] = [
   { id: "signing_order", label: "Поручение" },
   { id: "payment", label: "Платёж" },
   { id: "agent_report", label: "Отчёт" },
-  { id: "shipment", label: "Отгрузка" },
   { id: "completed", label: "Завершено" },
 ];
+
+/** Optional stage inserted into the rail only when status is already in shipment_*. */
+export const SHIPMENT_STAGE: { id: StageId; label: string } = { id: "shipment", label: "Отгрузка" };
 
 /** Опции фильтра списка — сгруппированы по стадии, а не по всем 40+ статусам. */
 export const STATUS_FILTERS: { value: string; label: string; statuses: string[] }[] = [

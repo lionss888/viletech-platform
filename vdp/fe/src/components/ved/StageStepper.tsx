@@ -1,4 +1,3 @@
-import { STAGES, stageIndex, statusMeta } from "@/lib/ved/statuses";
 import { stageIndexForProcess, stagesForProcess } from "@/lib/ved/process-stage-filters";
 import type { ProcessRoleRow } from "@/lib/api/process-roles";
 import type { FormStatus } from "@/lib/ved/types";
@@ -11,10 +10,8 @@ export function StageStepper({
   status: FormStatus;
   processRoles?: ProcessRoleRow[];
 }) {
-  const stages = processRoles?.length ? stagesForProcess(processRoles) : STAGES;
-  const current = processRoles?.length
-    ? stageIndexForProcess(status, processRoles)
-    : stageIndex(statusMeta(status).stage);
+  const stages = stagesForProcess(processRoles, status);
+  const current = stageIndexForProcess(status, processRoles);
   const canceled = status.startsWith("canceled");
 
   return (

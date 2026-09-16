@@ -80,6 +80,23 @@ describe("process-stage-filters", () => {
     );
   });
 
+  it("omits Отгрузка from happy-path rail (report → completed)", () => {
+    expect(stagesForProcess(undefined).some((s) => s.id === "shipment")).toBe(false);
+    expect(stagesForProcess(continuityRoles()).some((s) => s.id === "shipment")).toBe(false);
+    const labels = stagesForProcess(continuityRoles()).map((s) => s.label);
+    expect(labels).toEqual(["Новая", "Проверка", "Договор", "Поручение", "Платёж", "Отчёт", "Завершено"]);
+  });
+
+  it("inserts Отгрузка only when status is already in shipment_*", () => {
+    const stages = stagesForProcess(continuityRoles(), "shipment_waiting");
+    expect(stages.some((s) => s.id === "shipment")).toBe(true);
+    const reportIdx = stages.findIndex((s) => s.id === "agent_report");
+    const shipIdx = stages.findIndex((s) => s.id === "shipment");
+    const doneIdx = stages.findIndex((s) => s.id === "completed");
+    expect(shipIdx).toBeGreaterThan(reportIdx);
+    expect(doneIdx).toBeGreaterThan(shipIdx);
+  });
+
   it("renames status filter На комплаенсе when continuity", () => {
     const filters = statusFiltersForProcess(continuityRoles());
     const compliance = filters.find((f) => f.value === "compliance");

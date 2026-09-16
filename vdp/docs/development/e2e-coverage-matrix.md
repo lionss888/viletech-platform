@@ -32,7 +32,7 @@ ID bank_channel_badge. API compose: RD9. Root runner: yes. UI Playwright: bank-b
 
 ID root_cancel. API compose: RD8. Root runner: yes. UI Playwright: pilot-form-flow (S-Root-02) covered.
 
-ID refund_smoke. API compose: refund smoke. Root runner: yes (OK when cancel returns 409). UI Playwright: not covered.
+ID refund_smoke. API compose: refund smoke. Root runner: yes (OK when cancel returns 409). UI Playwright: pilot-matrix-refund.spec.ts @pilot-matrix.
 
 ID manager_hides_drafts. API compose: dash. Root runner: UI-only skip (honest). UI Playwright: manager-hides-drafts.
 
@@ -116,7 +116,7 @@ Row extraction_confirm_updates_amount. API covered. UI form-ux-deadends spot. Fi
 
 Row manager_sets_deal_rate. API covered. UI manager-rate spot. Fixture template until customer.
 
-Row happy_path_shipment_branch. Matrix extension. API P5 shipment. UI pilot-matrix shipment steps. Fixture template until customer.
+Row happy_path_shipment_branch. Matrix extension. API P5 shipment plus r5_shipment_test AuthZ reject stop. UI pilot-matrix-shipment.spec.ts optional report complete and shipment branch. Fixture template until customer. Not in required PR smoke.
 
 Commands: `make robot-matrix-check`, `make playwright-pilot-matrix`, `make compose-e2e`, `make release-gate`. Customer import: `./scripts/robot-fixtures-import.sh /path/to/pack`. Discrepancy report: `./scripts/robot-matrix-discrepancy-report.sh pass|fail`.
 
@@ -132,7 +132,7 @@ Journey Manager payment received assign provider. Unit manager-payment.test. API
 
 Journey Provider payment without PII. Unit provider-flow.test. API RD7 + Root. UI E2E provider-acl.spec.ts.
 
-Journey Refund full / cancel 409. Unit + compose + Root refund_smoke. UI E2E not covered.
+Journey Refund full / cancel 409. Unit + compose + Root refund_smoke. UI E2E pilot-matrix-refund.spec.ts @pilot-matrix (happy path and stop/cancel). Not in required PR smoke.
 
 Journey Root cancel admin. Unit root-flow.test. API RD8 + Root. UI E2E pilot-form-flow S-Root-02.
 
@@ -142,7 +142,9 @@ Journey import advance treasurer deadline. Unit HTTP IMP1. API compose-e2e advan
 
 Journey import POSTPAY_RATE_ON_PP provider-first rate commission. Unit HTTP IMP2 IMP3. API compose-e2e postpay_RATE_ON_PP. FE unit rate commission. UI E2E pilot-matrix-postpay-rate.spec.ts @pilot-matrix (IMP8) to completed. Not in required PR smoke; gate make playwright-pilot-matrix or path-filter on ladder surface.
 
-Journey export treasurer PAY_FROM_EXPORT. Unit HTTP export. API export_flow_test HTTP to completed. FE unit actions treasurer export. UI E2E pilot-matrix-export.spec.ts @pilot-matrix (Phase 6) User submit → Manager continuity → advance order → Manager payment_received → Treasurer confirm → Treasurer signing order → User verification upload → Treasurer complete to completed. Export domain P5. Export UI/E2E P6. Not in required PR smoke; gate make playwright-pilot-matrix or path-filter on ladder surface (actions/statuses/wizard-steps/e2e/formpayment).
+Journey export PAY_FROM_EXPORT treasurer. Unit export_machine_test.go. HTTP export_flow_test.go. UI E2E pilot-matrix-export.spec.ts @pilot-matrix to completed. Not in required PR smoke; gate make playwright-pilot-matrix or path-filter on ladder surface. Not all export scenarios.
+
+Journey optional shipment branch. Unit shipment_test.go. API compose-e2e P5 plus r5_shipment_test. UI E2E pilot-matrix-shipment.spec.ts @pilot-matrix. Happy path report accept completed remains without shipment. Not in required PR smoke; gate make playwright-pilot-matrix or path-filter on ladder surface. Full logistics product out of scope.
 
 ## Честность
 

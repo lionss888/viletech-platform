@@ -28,4 +28,24 @@ describe("demo seed overlay", () => {
     expect(demoSeedUsers()).toEqual(applyDemoSeedOverlay(USERS, FORMS).users);
     expect(demoSeedForms()).toEqual(applyDemoSeedOverlay(USERS, FORMS).forms);
   });
+
+  it("rebuilds seed timelines on the happy-path rail without a shipment stage", () => {
+    const completed = demoSeedForms().find((form) => form.status === "completed");
+    expect(completed).toBeDefined();
+    expect(completed?.timeline.some((entry) => entry.id.endsWith("-tl-shipment"))).toBe(false);
+    expect(completed?.timeline.some((entry) => entry.id.endsWith("-tl-agent_report"))).toBe(true);
+  });
+
+  it("inserts shipment into overlay timelines only for shipment_* seed forms", () => {
+    const rawWaiting = FORMS.find((form) => form.status === "shipment_waiting");
+    expect(rawWaiting?.timeline.some((entry) => entry.id.endsWith("-tl-shipment"))).toBe(false);
+    const waiting = demoSeedForms().find((form) => form.status === "shipment_waiting");
+    expect(waiting).toBeDefined();
+    const ids = waiting?.timeline.map((entry) => entry.id) ?? [];
+    const reportIdx = ids.findIndex((id) => id.endsWith("-tl-agent_report"));
+    const shipIdx = ids.findIndex((id) => id.endsWith("-tl-shipment"));
+    const doneIdx = ids.findIndex((id) => id.endsWith("-tl-completed"));
+    expect(shipIdx).toBeGreaterThan(reportIdx);
+    expect(doneIdx).toBeGreaterThan(shipIdx);
+  });
 });

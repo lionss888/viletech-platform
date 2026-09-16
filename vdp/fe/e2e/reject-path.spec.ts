@@ -1,17 +1,12 @@
-import { type Page } from "@playwright/test";
 import { test, expect } from "./fixtures/auth.fixture";
 import { assertCoreHealthy, createRejectedForm, createSubmittedForm, loginAllRoles } from "./helpers/api";
 import { expectFormStatus } from "./helpers/status";
+import { waitForFormDetail } from "./helpers/form-detail";
 
 const TAKE_IN_REVIEW = /Взять (заявку|организацию) в проверку|Взять .* в проверку/i;
 const REJECT_FOR_CORRECTIONS = /Вернуть на доработку|Вернуть на коррекцию/i;
 const AFTER_RESUBMIT = /^(organization_waiting_verification|form_waiting_verification)$/;
 
-async function waitForFormDetail(page: Page, formId: string): Promise<void> {
-  await page.goto(`/forms/${formId}`);
-  await page.waitForLoadState("networkidle");
-  await expect(page.getByTestId("form-params")).toBeVisible({ timeout: 20_000 });
-}
 
 test.describe("Reject path (ECO → corrections → user resubmit)", () => {
   test.beforeAll(async () => {

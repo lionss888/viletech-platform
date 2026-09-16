@@ -30,6 +30,9 @@ echo "== playwright (docker ${PLAYWRIGHT_IMAGE}) =="
 # (browser then gets 404 on /node_modules/.vite/deps/* and login never hydrates).
 PLAYWRIGHT_ARGS="${PLAYWRIGHT_ARGS:-}"
 VDP_ROBOT_FIXTURE_PACK="${VDP_ROBOT_FIXTURE_PACK:-template}"
+# Parity with GitHub playwright jobs: retries (CI) + gateway headroom for long login ladders.
+CI="${CI:-1}"
+GATEWAY_RATE_LIMIT="${GATEWAY_RATE_LIMIT:-2000}"
 docker run --rm \
   --network "${COMPOSE_NETWORK}" \
   -v "${ROOT}/fe:/fe:ro" \
@@ -37,7 +40,8 @@ docker run --rm \
   -w /work \
   -e PLAYWRIGHT_BASE_URL="${E2E_FE_URL}" \
   -e CORE_URL="${E2E_CORE_URL}" \
-  -e CI="${CI:-}" \
+  -e CI="${CI}" \
+  -e GATEWAY_RATE_LIMIT="${GATEWAY_RATE_LIMIT}" \
   -e PLAYWRIGHT_ARGS="${PLAYWRIGHT_ARGS}" \
   -e E2E_WIPE_AFTER="${E2E_WIPE_AFTER}" \
   -e VDP_ROBOT_FIXTURE_PACK="${VDP_ROBOT_FIXTURE_PACK}" \

@@ -4,19 +4,19 @@ overview: "Критерии закрытия prod-ready импорт пилот�
 todos:
   - id: m1-precheck
     content: Verify Phase 1-4 completed + checklists signed
-    status: pending
+    status: completed
   - id: m1-release-gate
     content: make release-gate green
-    status: pending
+    status: completed
   - id: m1-handover-secrets
     content: handover-secrets-checklist closed
-    status: pending
+    status: completed
   - id: m1-bootstrap-oncall
     content: Prod/alpha bootstrap + on-call transfer
-    status: pending
+    status: completed
   - id: m1-docs-notify
     content: readiness prod score sync + notify-mgmt done
-    status: pending
+    status: completed
 isProject: false
 ---
 

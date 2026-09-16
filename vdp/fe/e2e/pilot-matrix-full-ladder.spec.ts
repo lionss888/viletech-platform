@@ -8,6 +8,7 @@ import {
   purgeDemoMockCounterparties,
 } from "./helpers/api";
 import { expectFormStatus } from "./helpers/status";
+import { waitForFormDetail } from "./helpers/form-detail";
 import { loadRobotPack, readRobotPdf } from "./helpers/robot-fixtures";
 
 const TAKE_IN_REVIEW = /Взять (заявку|организацию) в проверку|Взять .* в проверку/i;
@@ -15,11 +16,6 @@ const CONFIRM_FORM = /Подтвердить заявку/;
 const AFTER_SUBMIT = /^(organization_waiting_verification|form_waiting_verification)$/;
 const APPROVE_ORG = /Одобрить организацию и (передать во внешний комплаенс|продолжить)/;
 
-async function waitForFormDetail(page: Page, formId: string): Promise<void> {
-  await page.goto(`/forms/${formId}`);
-  await page.waitForLoadState("networkidle");
-  await expect(page.getByTestId("form-params")).toBeVisible({ timeout: 20_000 });
-}
 
 async function clickAction(page: Page, name: string | RegExp): Promise<void> {
   const btn = page.getByRole("button", { name });
@@ -191,8 +187,7 @@ test.describe("Pilot robot matrix full UI ladder @pilot-matrix", () => {
     await clickAction(page, /^Назначить платёжного провайдера$/);
     const providerSelect = page.locator("label").filter({ hasText: /Провайдер исполнения/i }).locator("select");
     await expect(providerSelect).toBeVisible({ timeout: 10_000 });
-    const provCount = await providerSelect.locator("option").count();
-    expect(provCount).toBeGreaterThan(1);
+    await expect.poll(async () => providerSelect.locator("option").count(), { timeout: 20_000 }).toBeGreaterThan(1);
     await providerSelect.selectOption({ index: 1 });
     await confirmModal(page);
     await expectFormStatus(page, "payment_received", { timeout: 30_000 });
