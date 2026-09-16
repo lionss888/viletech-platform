@@ -13,10 +13,10 @@ todos:
     status: completed
   - id: pr36-github
     content: "Один push; VDP CI d2 green без cancel; merge #36"
-    status: in_progress
+    status: completed
   - id: unblock-main
     content: "authPost на main (через #36); закрыть #35; проверить browser E2E на main"
-    status: pending
+    status: in_progress
 isProject: false
 ---
 
