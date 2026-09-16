@@ -1,6 +1,7 @@
 import { test, expect } from "./fixtures/auth.fixture";
 import { assertCoreHealthy } from "./helpers/api";
 import { expectFormStatus } from "./helpers/status";
+import { waitForFormDetail } from "./helpers/form-detail";
 import { finishTermsAndReview, saveWizardDraft } from "./helpers/wizard";
 import { readRobotPdf, loadRobotPack } from "./helpers/robot-fixtures";
 import type { Page } from "@playwright/test";
@@ -10,11 +11,6 @@ const CONFIRM_FORM = /Подтвердить заявку/;
 const APPROVE_ORG = /Одобрить организацию и (передать во внешний комплаенс|продолжить)/;
 const AFTER_SUBMIT = /organization_waiting_verification|form_waiting_verification/;
 
-async function waitForFormDetail(page: Page, formId: string) {
-  await page.goto(`/forms/${formId}`);
-  await page.waitForLoadState("networkidle");
-  await expect(page.getByTestId("form-params")).toBeVisible({ timeout: 30_000 });
-}
 
 async function clickAction(page: Page, name: string | RegExp) {
   const btn = page.getByRole("button", { name });

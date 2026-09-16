@@ -1,18 +1,13 @@
-import { type Page } from "@playwright/test";
 import { test, expect } from "./fixtures/auth.fixture";
 import { assertCoreHealthy, createDraftForm, createFormAccepted, loginAllRoles } from "./helpers/api";
 import { expectFormStatus } from "./helpers/status";
+import { waitForFormDetail } from "./helpers/form-detail";
 
 const TAKE_IN_REVIEW = /Взять (заявку|организацию) в проверку|Взять .* в проверку/i;
 const CONFIRM_FORM = /Подтвердить заявку/;
 /** After submit: org may still be pending or form already in review. */
 const AFTER_SUBMIT = /^(organization_waiting_verification|form_waiting_verification)$/;
 
-async function waitForFormDetail(page: Page, formId: string): Promise<void> {
-  await page.goto(`/forms/${formId}`);
-  await page.waitForLoadState("networkidle");
-  await expect(page.getByTestId("form-params")).toBeVisible({ timeout: 20_000 });
-}
 
 /** Catalog: happy_path_to_completed (UI partial — submit → review → manager CTA). */
 test.describe("Happy path (app UI)", () => {

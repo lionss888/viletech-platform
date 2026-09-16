@@ -1,3 +1,4 @@
+import { useQueryClient } from "@tanstack/react-query";
 import {
   createContext,
   useCallback,
@@ -45,6 +46,7 @@ function asVedRole(role: string | undefined): VedRole | undefined {
 }
 
 export function AuthProvider({ children }: { children: ReactNode }) {
+  const queryClient = useQueryClient();
   const [state, setState] = useState<AuthState>({
     ready: false,
     tokens: null,
@@ -62,9 +64,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setState({ ready: true, tokens, account });
     } catch {
       clearAuthTokens();
+      queryClient.clear();
       setState({ ready: true, tokens: null, account: null });
     }
-  }, []);
+  }, [queryClient]);
 
   useEffect(() => {
     void refreshAccount();
@@ -78,17 +81,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       displayName: state.account?.full_name || state.account?.email || "—",
       email: state.account?.email || "",
       login: async (email, password) => {
+        queryClient.clear();
         const tokens = await apiLogin(email, password);
         const account = await getAccount();
         setState({ ready: true, tokens, account });
       },
       logout: async () => {
         await apiLogout();
+        queryClient.clear();
         setState({ ready: true, tokens: null, account: null });
       },
       refreshAccount,
     }),
-    [state, refreshAccount],
+    [state, refreshAccount, queryClient],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

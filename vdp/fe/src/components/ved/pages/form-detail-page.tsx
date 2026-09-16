@@ -72,20 +72,21 @@ export function FormDetail() {
   const [extractionDialogOpen, setExtractionDialogOpen] = useState(false);
   const [uploadBusy, setUploadBusy] = useState(false);
   const [uploadError, setUploadError] = useState<string | null>(null);
+  const accountScope = auth.account?.id ?? auth.role ?? "anon";
   const formQuery = useQuery({
-    queryKey: ["form", formId],
+    queryKey: ["form", formId, accountScope],
     queryFn: () => getForm(formId),
-    enabled: mode === "app" && Boolean(formId),
+    enabled: mode === "app" && Boolean(formId) && auth.isAuthenticated,
   });
   const historyQuery = useQuery({
-    queryKey: ["form-history", formId],
+    queryKey: ["form-history", formId, accountScope],
     queryFn: () => getComplianceHistory(formId),
-    enabled: mode === "app" && Boolean(formId),
+    enabled: mode === "app" && Boolean(formId) && auth.isAuthenticated,
   });
   const diadocQuery = useQuery({
-    queryKey: ["form-diadoc", formId],
+    queryKey: ["form-diadoc", formId, accountScope],
     queryFn: () => getFormDiadocStatus(formId),
-    enabled: mode === "app" && Boolean(formId),
+    enabled: mode === "app" && Boolean(formId) && auth.isAuthenticated,
   });
 
   const form = useMemo(() => {
@@ -161,7 +162,9 @@ export function FormDetail() {
   if (!formId || (mode === "app" && formQuery.isFetching && !form)) {
     return (
       <VedAppShell title="Заявка">
-        <p className="text-sm text-muted-foreground">Загрузка…</p>
+        <p className="text-sm text-muted-foreground" data-testid="form-detail-loading">
+          Загрузка…
+        </p>
       </VedAppShell>
     );
   }
@@ -169,7 +172,10 @@ export function FormDetail() {
   if (!form) {
     return (
       <VedAppShell title="Заявка не найдена">
-        <div className="panel p-6 text-sm text-muted-foreground">
+        <div
+          className="panel p-6 text-sm text-muted-foreground"
+          data-testid="form-detail-unavailable"
+        >
           Заявка не найдена или недоступна вашей роли.{" "}
           <VedLink segment="/forms" className="font-semibold text-accent hover:underline">
             Вернуться в реестр

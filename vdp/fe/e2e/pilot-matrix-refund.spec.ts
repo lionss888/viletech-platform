@@ -7,12 +7,8 @@ import {
   purgeDemoMockCounterparties,
 } from "./helpers/api";
 import { expectFormStatus } from "./helpers/status";
+import { waitForFormDetail } from "./helpers/form-detail";
 
-async function waitForFormDetail(page: Page, formId: string): Promise<void> {
-  await page.goto(`/forms/${formId}`);
-  await page.waitForLoadState("networkidle");
-  await expect(page.getByTestId("form-params")).toBeVisible({ timeout: 20_000 });
-}
 
 async function clickAction(page: Page, name: string | RegExp): Promise<void> {
   const btn = page.getByRole("button", { name });

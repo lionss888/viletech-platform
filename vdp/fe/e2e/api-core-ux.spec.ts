@@ -1,4 +1,5 @@
-import { test, expect, type Page } from "./fixtures/auth.fixture";
+import { test, expect } from "./fixtures/auth.fixture";
+import { waitForFormDetail } from "./helpers/form-detail";
 import {
   assertCoreHealthy,
   createCounterpartyApi,
@@ -11,11 +12,6 @@ import {
 const TAKE_IN_REVIEW = /Взять (заявку|организацию) в проверку|Взять .* в проверку/i;
 const REJECT_FOR_CORRECTIONS = /Вернуть на доработку|Вернуть на коррекцию/i;
 
-async function waitForFormDetail(page: Page, formId: string): Promise<void> {
-  await page.goto(`/forms/${formId}`);
-  await page.waitForLoadState("networkidle");
-  await expect(page.getByTestId("form-params")).toBeVisible({ timeout: 20_000 });
-}
 
 test.describe("API Core UX fixes (journeys)", () => {
   test.beforeAll(async () => {

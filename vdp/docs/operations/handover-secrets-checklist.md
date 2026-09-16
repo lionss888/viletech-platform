@@ -6,7 +6,7 @@
 
 ## Milestone 1 processing (2026-09-15)
 
-Import-pilot software gate processed on the contractor side. Management notify secrets for deploy status are present. Control questions one through six stay not done until the customer rotates tokens, deploy keys, application secrets on the VM, and cloud accounts. Ownership handover is not closed. Import UAT traffic is allowed with this known-gap. Prod ownership transfer is a customer action, not a contractor software claim.
+Contractor processing of this gate for the import pilot is complete. Local handover command green. Management notify secrets for deploy status are present. Control questions one through six stay not done until the customer rotates tokens, deploy keys, application secrets on the VM, and cloud accounts. Ownership handover is not signed and is not claimed. Import UAT traffic is allowed with this known-gap. Prod ownership transfer is a customer action, not a contractor software claim.
 
 ## Контрольный вопрос (старт gate)
 
@@ -80,7 +80,7 @@ Selectel: проект и VM под учётной записью заказчи
 
 ## Финальная проверка после ротации
 
-make release-gate или green vdp-release на теге vdp-v* перед pilot handover. Статус не выполнено.
+make release-gate или green vdp-release на теге vdp-v* перед pilot handover. Статус выполнено для локальной сборочной команды 2026-09-15. Тег vdp-v* и workflow выката остаются на стороне ops.
 
 security-signoff-checklist.md подписан; пункты про секреты и AuthZ закрыты. Статус не выполнено.
 

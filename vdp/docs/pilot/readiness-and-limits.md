@@ -1,22 +1,22 @@
 # Готовность и ограничения MVP
 
-Дата оценки 2026-09-15. Правило честности: done в матрице Nest to vdp означает маршрут замаплен и проходит gate test. Не полный продуктовый паритет Nest. Не боевые интеграции без staging config. Пакет импортных маршрутов IMP0–IMP7 закрыт на уровне domain API unit HTTP. Экспортный маршрут PAY_FROM_EXPORT закрыт на уровне domain API unit HTTP FE E2E (Phase 5-6). Pilot-matrix browser coverage: import advance treasurer с execution_deadline (IMP7), import postpay RATE_ON_PP provider-first rate commission до completed (IMP8), export PAY_FROM_EXPORT treasurer до completed (Phase 6). Phase 7 возврат ДС (refund) закрыт на уровне domain API unit HTTP FE E2E. Phase 8 отгрузка (shipment) закрыта как опциональная ветка domain API unit HTTP FE pilot-matrix. Полный wizard payment_method:advance и export end-to-end не заявлен.
+Дата оценки 2026-09-16. Правило честности: done в матрице Nest to vdp означает маршрут замаплен и проходит gate test. Не полный продуктовый паритет Nest. Не боевые интеграции без staging config. In-scope маршруты вводных закрыты domain to E2E: импорт аванс, импорт POSTPAY_RATE_ON_PP, экспорт PAY_FROM_EXPORT, возврат ДС, опциональная ветка отгрузки. Локальная команда ci-pr-pilot зелёная 2026-09-16 (узкий PR smoke плюс вся лестница pilot-matrix: export refund shipment IMP7 IMP8). Локальная сборочная команда handover (release-gate) зелёная 2026-09-15. Полный wizard payment_method:advance, POSTPAY_FIXED_RATE, продукт логистов, analytics, own OCR PRIMARY, Nest data migration — вне in-scope.
 
 Post-Lovable FE app-контур восстановлен. Волны UX 0–4 (parties wizard docs provider report close) и FE gesture contracts (FilePickButton filechooser) в коде. B.2 FE org/docs upload ~90% (см. b2-fe-handoff.md). Staging deploy — workflows и rollback docs ready; VM Environments still ops-side.
 
 ## Полнота реализации
 
-Оценка около 92 процентов для пилотного контура заявки с импортными и экспортными ветками плюс возврат и отгрузка. Backend R0–R12 + B.2 + IMP домен и API + Phase 5 export domain + Phase 7 refund + Phase 8 shipment. FE: кабинеты User Manager Provider плюс Treasurer на авансе и экспорте, панель курса или комиссии на RATE_ON_PP, RefundPanel, ShipmentPanel. Browser ladders pilot-matrix: import advance treasurer deadline, import postpay RATE_ON_PP, export PAY_FROM_EXPORT treasurer, refund happy path, shipment optional branch. Phase 4 Ops Excellence complete (correlation, alerts, runbooks ready for ops infrastructure). Vendor hardening — оговорка (real vendor config on staging). Модули analytics и assistant в vdp — placeholders.
+Оценка около 97 процентов in-scope контура вводных после зелёной ci-pr-pilot 2026-09-16. Не 100 процентов продукта. Backend R0–R12 + B.2 + IMP + export + refund + shipment. FE: кабинеты User Manager Provider Treasurer, RefundPanel, ShipmentPanel, курс и комиссия на RATE_ON_PP. Browser ladders: import advance treasurer, import postpay RATE_ON_PP, export PAY_FROM_EXPORT, refund, shipment optional. Остаток продукта: pixel PDF, живой bank webhook, live Prometheus, ротация секретов заказчика, полный browser matrix all roles × statuses, analytics/assistant placeholders.
 
 ## Качество MVP
 
-Оценка 7.5 из 10 для MVP demo. Оценка 6 из 10 для prod без hardening.
+Оценка 8 из 10 для in-scope demo маршрутов вводных. Оценка 6.5 из 10 для prod ownership: секреты заказчика и live alerting не закрыты. Не 10 и не 100 процентов продукта.
 
 Сильные unit и HTTP gate tests включая IMP1–3. compose reproducible. RH program и path-filter pilot-matrix на PR при касании ladder surface. Phase 4 Ops: correlation logging, semantic alerts architecture, runbooks complete. Слабее: live Prometheus deployment (awaiting ops infrastructure), real vendor integrations on staging, wizard payment_method:advance end-to-end browser и import journeys вне обязательного PR smoke.
 
 ## Передача пилот
 
-Оценка 78–82 процентов готовности к UAT demo при green make ci-pr или release-gate и принятии known-gaps. Prod go-live 45–50 процентов без staging vendor config security sign-off operational monitoring и без customer robot fixtures.
+In-scope маршруты вводных: 100 процентов заявленной матрицы domain to E2E при зелёной ci-pr-pilot 2026-09-16 и принятых known-gaps. Это не 100 процентов roadmap. UAT demo этих маршрутов 96–97 процентов. Prod go-live 55–60 процентов: alpha health 200, software gate зелёный; ротация секретов и live alerting у заказчика и ops.
 
 ## Что можно показывать на пилоте
 
@@ -24,11 +24,11 @@ Post-Lovable FE app-контур восстановлен. Волны UX 0–4 (
 
 Role cabinets ICO ECO Manager Provider Treasurer (import advance confirm, export PAY_FROM_EXPORT) Bank channel smoke. Manager rate and commission panel на POSTPAY_RATE_ON_PP после payment_sent. Pilot-matrix browser: import advance treasurer с deadline, import postpay RATE_ON_PP до completed, export PAY_FROM_EXPORT treasurer до completed, refund happy path, optional shipment branch. Ветка отгрузки не заменяет report completed и не равна полному логистическому продукту.
 
-Unit postgres integration compose-e2e playwright PR smoke plus optional pilot-matrix. CI vdp-ci.yml on main.
+Unit postgres integration compose-e2e полный browser suite plus pilot-matrix. ci-pr-pilot зелёная 2026-09-16. Локальная сборочная команда handover зелёная 2026-09-15. CI vdp-ci.yml on main.
 
 ## Что нельзя обещать на пилоте
 
-100 процентов готовности. Полный паритет Nest. Полный browser matrix all statuses. Полный wizard payment_method:advance и export end-to-end. Множественные экспортные сценарии за пределами PAY_FROM_EXPORT treasurer happy path. Prod Diadoc mail OCR without staging config. Real XLSX pixel fidelity. Prod secrets in compose defaults. POSTPAY_FIXED_RATE. Analytics assistant product modules. Own OCR model as PRIMARY.
+100 процентов готовности продукта. Полный паритет Nest. Полный browser matrix all statuses. Полный wizard payment_method:advance. Множественные экспортные сценарии за пределами PAY_FROM_EXPORT treasurer happy path. Продукт логистов. POSTPAY_FIXED_RATE. Prod Diadoc mail OCR without staging config. Real XLSX pixel fidelity. Prod secrets in compose defaults. Analytics assistant. Own OCR model as PRIMARY. Nest data migration.
 
 ## Document extraction (dual-track)
 
@@ -52,7 +52,7 @@ JWT_SECRET vdp-core-dev-secret. HUB_SHARED_SECRET vdp-s2s-dev-secret. Only for l
 
 ## Gate metrics reference
 
-R1 form-payment 148/148 done. R12 matrix 331/331 in-scope done. IMP series P1-P7 закрыт: HTTP IMP1 IMP2 IMP3 green; FE unit treasurer rate commission all reward modes; compose-e2e API journeys IMP1 advance_treasurer IMP2 postpay_RATE_ON_PP; pilot-matrix browser coverage advance treasurer с execution_deadline (IMP7) и postpay RATE_ON_PP (IMP8). Export Phase 5-6 закрыт: domain export_machine_test HTTP export_flow_test green; FE unit actions statuses wizard-steps export; pilot-matrix-export browser coverage PAY_FROM_EXPORT treasurer до completed; CI path-filter export surface. go test pass core hub. make integration-gate pass on stack. make release-gate recommended before handover.
+R1 form-payment 148/148 done. R12 matrix 331/331 in-scope done. IMP series закрыт: HTTP IMP1 IMP2 IMP3; FE unit treasurer rate commission; compose-e2e IMP1 IMP2; pilot-matrix IMP7 IMP8. Export Phase 5-6: domain HTTP FE unit E2E PAY_FROM_EXPORT treasurer до completed. Refund Phase 7: domain HTTP FE E2E. Shipment Phase 8: optional branch domain HTTP FE E2E. ci-pr-pilot green 2026-09-16 (9 specs @pilot-matrix). Локальная сборочная команда handover green 2026-09-15.
 
 ## Следующие шаги prod
 

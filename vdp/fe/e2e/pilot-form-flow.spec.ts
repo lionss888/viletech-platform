@@ -1,4 +1,3 @@
-import { type Page } from "@playwright/test";
 import { test, expect } from "./fixtures/auth.fixture";
 import {
   assertCoreHealthy,
@@ -13,6 +12,7 @@ import {
   uploadAndAttachInvoice,
 } from "./helpers/api";
 import { expectFormStatus } from "./helpers/status";
+import { waitForFormDetail } from "./helpers/form-detail";
 
 const TAKE_IN_REVIEW = /Взять (заявку|организацию) в проверку|Взять .* в проверку/i;
 const REJECT_FOR_CORRECTIONS = /Вернуть на доработку|Вернуть на коррекцию/i;
@@ -21,11 +21,6 @@ const AFTER_SUBMIT = /^(organization_waiting_verification|form_waiting_verificat
 const AFTER_RESUBMIT = /^(organization_waiting_verification|form_waiting_verification)$/;
 const MOCK_CP = /Shenzhen Kaiyuan|Anadolu Makina|Emirates General Trading/i;
 
-async function waitForFormDetail(page: Page, formId: string): Promise<void> {
-  await page.goto(`/forms/${formId}`);
-  await page.waitForLoadState("networkidle");
-  await expect(page.getByTestId("form-params")).toBeVisible({ timeout: 20_000 });
-}
 
 /**
  * Pilot UI journeys (@pilot-flow): default actors User → Manager → Provider + Root.

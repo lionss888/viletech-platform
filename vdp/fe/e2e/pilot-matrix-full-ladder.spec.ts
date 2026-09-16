@@ -8,6 +8,7 @@ import {
   purgeDemoMockCounterparties,
 } from "./helpers/api";
 import { expectFormStatus } from "./helpers/status";
+import { waitForFormDetail } from "./helpers/form-detail";
 import { loadRobotPack, readRobotPdf } from "./helpers/robot-fixtures";
 
 const TAKE_IN_REVIEW = /Взять (заявку|организацию) в проверку|Взять .* в проверку/i;
@@ -15,11 +16,6 @@ const CONFIRM_FORM = /Подтвердить заявку/;
 const AFTER_SUBMIT = /^(organization_waiting_verification|form_waiting_verification)$/;
 const APPROVE_ORG = /Одобрить организацию и (передать во внешний комплаенс|продолжить)/;
 
-async function waitForFormDetail(page: Page, formId: string): Promise<void> {
-  await page.goto(`/forms/${formId}`);
-  await page.waitForLoadState("networkidle");
-  await expect(page.getByTestId("form-params")).toBeVisible({ timeout: 20_000 });
-}
 
 async function clickAction(page: Page, name: string | RegExp): Promise<void> {
   const btn = page.getByRole("button", { name });

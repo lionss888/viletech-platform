@@ -22,7 +22,7 @@ ENVIRONMENT=production плюс JWT_SECRET и HUB_SHARED_SECRET не dev-default
 
 S2S hub: ротация HUB_SHARED_SECRET задокументирована. Статус выполнено. См. secrets-rotation-runbook.md.
 
-Перед передачей заказчику: handover-secrets-checklist.md закрыт (PAT, DEPLOY_SSH_KEY, JWT и HUB на VM, доступы Selectel или reg.ru или GitHub или GitLab). Статус не выполнено. Milestone 1 2026-09-15 processed the checklist as an import-pilot known-gap: ownership rotation stays with the customer. Workstation SSH к alpha denied publickey on 2026-09-15; ops must refresh DEPLOY_SSH_KEY before remote smoke and secret rotate on the VM. Import UAT traffic is allowed with this gap. Prod ownership transfer is not claimed.
+Перед передачей заказчику: handover-secrets-checklist.md закрыт (PAT, DEPLOY_SSH_KEY, JWT и HUB на VM, доступы Selectel или reg.ru или GitHub или GitLab). Статус не выполнено. Milestone 1 2026-09-15 processed the checklist after local handover command green: ownership rotation stays with the customer. Workstation SSH к alpha denied publickey on 2026-09-15; ops must refresh DEPLOY_SSH_KEY before remote smoke and secret rotate on the VM. Import UAT traffic is allowed with this gap. Prod ownership transfer is not claimed.
 
 ## Файлы и документы
 

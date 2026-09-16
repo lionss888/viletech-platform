@@ -7,6 +7,7 @@ import {
   purgeDemoMockCounterparties,
 } from "./helpers/api";
 import { expectFormStatus } from "./helpers/status";
+import { waitForFormDetail } from "./helpers/form-detail";
 import { loadRobotPack, readRobotPdf } from "./helpers/robot-fixtures";
 
 const TAKE_IN_REVIEW = /Взять (заявку|организацию) в проверку|Взять .* в проверку/i;
@@ -31,13 +32,6 @@ async function createExportDraftForm(
   // For export, the wizard automatically sets payment_method to PAY_FROM_EXPORT when direction is export
   await authPost(userToken, `/api/v1/forms/${created.id}/actions/recognize_complete`, {});
   return created.id;
-}
-
-async function waitForFormDetail(page: Page, formId: string): Promise<void> {
-  await expect(async () => {
-    await page.goto(`/forms/${formId}`, { waitUntil: "domcontentloaded" });
-    await expect(page.getByTestId("form-params")).toBeVisible({ timeout: 15_000 });
-  }).toPass({ timeout: 60_000 });
 }
 
 async function clickAction(page: Page, name: string | RegExp): Promise<void> {

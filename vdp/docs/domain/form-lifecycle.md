@@ -40,7 +40,7 @@ completed — закрытие сделки.
 
 Экспортный treasurer flow отдельный от импортного покрытия и не подменяет импортную логику. Отличие от импорта: клиент получает деньги от контрагента до казначейского подтверждения, что является противоположным импортному аддендуму секции 10 во вводных.
 
-Покрытие: домен, state machine transitions, unit tests, HTTP API tests (Phase 5). UI кабинеты казначея и browser E2E ladder для export вне scope Phase 5.
+Покрытие: домен, state machine transitions, unit tests, HTTP API tests (Phase 5). UI кабинеты казначея и browser E2E ladder PAY_FROM_EXPORT treasurer до completed (Phase 6, spec pilot-matrix-export). Не все экспортные сценарии и не полный wizard payment_method.
 
 ## Ветка corrections
 
