@@ -19,7 +19,7 @@ const RUN =
 
 const PRECOMMIT_PROMPT = `${RUN} Команда (ровно одна): cd vdp && make precommit-gate. Это тот же слой, что GitHub Desktop при Commit: версии программ, оформление текстов, автоматические проверки кода.`;
 
-const PILOT_PROMPT = `${RUN} Команда (ровно одна): cd vdp && make ci-pr-pilot. Это проверка перед публикацией на GitHub: код, тексты, поднятие локальной среды и проход сценариев в браузере по заявке (включая длинную лестницу ролей).`;
+const PILOT_PROMPT = `${RUN} Команда (ровно одна): cd vdp && make ci-pr-pilot. Это проверка перед публикацией на GitHub: код, тексты, поднятие локальной среды и проход сценариев в браузере по заявке (включая длинную лестницу ролей и Pilot Robot Matrix).`;
 
 const SMOKE_PROMPT = `${RUN} Команда (ровно одна): cd vdp && make ci-pr. Это короткая проверка с браузером (несколько ключевых сценариев). Если меняли экраны заявки, кнопки ролей или файлы e2e — этого мало, нужен ci-pr-pilot.`;
 
@@ -32,6 +32,21 @@ const DOCS_PROMPT = `${RUN} Команда (ровно одна): cd vdp && make
 const ENV_PROMPT = `${RUN} Команда (ровно одна): cd vdp && make check-env-parity. Проверь, что на этой машине та же версия Node, что в проекте. Если нет — скажи, что сделать (nvm use / mise), без установки пакетов без спроса.`;
 
 const SECRETS_PROMPT = `${RUN} Команда (ровно одна): cd vdp && make check-deploy-secrets. Проверь, может ли компьютер отправить служебное сообщение о выкате. Не печатай токены и секреты. Если нет — объясни простым языком, какой файл создать, без значений.`;
+
+const COMPOSE_UP_PROMPT = `${RUN} Команда (ровно одна): cd vdp && make compose-up. Подними локальную среду (Docker). В конце коротко: поднялось или нет (по make compose-ps / health). Не трогай FE deps (compose-fe-refresh) без явного «да».`;
+
+const ROBOT_BOTH_PROMPT = `${RUN} Pilot Robot Matrix — оба робота по очереди. Нужна уже поднятая среда (если нет — сначала make compose-up). Выполни строго по порядку, без обсуждения:
+1) cd vdp && make compose-e2e
+2) cd vdp && make playwright-pilot-matrix
+Пакет данных: VDP_ROBOT_FIXTURE_PACK по умолчанию template (не переключай на customer, пока pack не ready). Красный на шаге 1 — шаг 2 не гоняй; скажи, что упало.`;
+
+const ROBOT_LOGIC_PROMPT = `${RUN} Команда (ровно одна): cd vdp && make compose-e2e. Это робот логики Pilot Robot Matrix: сценарии заявки через API (без кликов в кабинете). Нужна уже поднятая среда (make compose-up).`;
+
+const ROBOT_CABINET_PROMPT = `${RUN} Команда (ровно одна): cd vdp && make playwright-pilot-matrix. Это робот кабинетов Pilot Robot Matrix: клики по лестнице ролей в браузере (@pilot-matrix). Нужна уже поднятая среда. Пакет данных: VDP_ROBOT_FIXTURE_PACK=template по умолчанию; customer только если pack уже imported и status=ready.`;
+
+const ROBOT_MATRIX_CHECK_PROMPT = `${RUN} Команда (ровно одна): cd vdp && make robot-matrix-check. Быстрая проверка, что файлы матрицы и слоты фикстур на месте (без прогона сценариев). ~секунды.`;
+
+const RELEASE_GATE_PROMPT = `${RUN} Команда (ровно одна): cd vdp && make release-gate. Полный Local QG перед передачей/тегом: unit, compose-e2e, браузер, Pilot Robot Matrix. Долго. Не путать с «лестницей» перед push.`;
 
 const COMMENTS_PROMPT = `Local QG — комментирование кода. Это не make-gate. Не коммить и не пушь.
 
@@ -46,7 +61,7 @@ const TRIAGE_PROMPT = `Local QG — подскажи проверку. Не за
 
 По git status и git diff скажи простым языком:
 1. Что менялось (экраны, правила заявки, тексты, только план).
-2. Какую кнопку нажать в Local QG (перед коммитом / без браузера / с браузером / документация / лестница).
+2. Какую кнопку нажать в Local QG (перед коммитом / без браузера / с браузером / документация / лестница / Pilot Robot Matrix).
 3. Почему именно её, одной фразой.
 Не коммить. Не пушь. Не запускай make.`;
 
@@ -56,17 +71,20 @@ export default function LocalQG() {
   return (
     <Stack gap={24} style={{ padding: 24, maxWidth: 720 }}>
       <Stack gap={6}>
-        <H1>Контроль качества</H1>
+        <H1>Local QG</H1>
         <Text tone="secondary">
-          Нажмите кнопку — агент сам запустит проверку и напишет, прошло или нет.
-          Команды знать не нужно. Не коммитит и не публикует сам.
+          Локальный контроль качества. Нажмите кнопку — агент сам запустит
+          проверку и напишет, прошло или нет. Команды знать не нужно. Не
+          коммитит и не публикует сам.
         </Text>
       </Stack>
 
       <Callout tone="info" title="Сначала коммит, потом GitHub">
         GitHub Desktop при Commit уже гоняет короткий слой. Кнопка ниже — то же
         самое заранее, чтобы ошибка была в чате, а не в окне «Commit failed».
-        Перед отправкой ветки на GitHub — «Лестница заявки».
+        Перед отправкой ветки на GitHub — «Лестница заявки». Роботы матрицы —
+        отдельный блок ниже, когда нужно проверить путь заявки без полного PR
+        gate.
       </Callout>
 
       <Stack gap={8}>
@@ -116,7 +134,119 @@ export default function LocalQG() {
 
       <Divider />
 
-      <H2>3. Частичные проверки</H2>
+      <Stack gap={8}>
+        <H2>3. Pilot Robot Matrix</H2>
+        <Text tone="secondary" size="small">
+          Роботы матрицы: сначала логика заявки (API), затем клики в кабинетах.
+          Нужна поднятая локальная среда. Данные по умолчанию — учебный пакет
+          template (не данные заказчика).
+        </Text>
+        <Button
+          onClick={() =>
+            dispatch({ type: "newComposerChat", userPrompt: ROBOT_BOTH_PROMPT })
+          }
+        >
+          Запустить обоих роботов
+        </Button>
+      </Stack>
+
+      <Grid columns={2} gap={12}>
+        <Card>
+          <CardHeader>Робот логики</CardHeader>
+          <CardBody>
+            <Stack gap={10}>
+              <Text tone="secondary" size="small">
+                Прогоняет сценарии матрицы через API: статусы, роли, переходы.
+                Без открытия кабинетов. ~2–5 мин.
+              </Text>
+              <Button
+                variant="secondary"
+                onClick={() =>
+                  dispatch({
+                    type: "newComposerChat",
+                    userPrompt: ROBOT_LOGIC_PROMPT,
+                  })
+                }
+              >
+                Запустить
+              </Button>
+            </Stack>
+          </CardBody>
+        </Card>
+
+        <Card>
+          <CardHeader>Робот кабинетов</CardHeader>
+          <CardBody>
+            <Stack gap={10}>
+              <Text tone="secondary" size="small">
+                Кликает лестницу ролей в браузере (метки @pilot-matrix). Нужен
+                уже поднятый Docker. ~5–15 мин.
+              </Text>
+              <Button
+                variant="secondary"
+                onClick={() =>
+                  dispatch({
+                    type: "newComposerChat",
+                    userPrompt: ROBOT_CABINET_PROMPT,
+                  })
+                }
+              >
+                Запустить
+              </Button>
+            </Stack>
+          </CardBody>
+        </Card>
+
+        <Card>
+          <CardHeader>Поднять среду</CardHeader>
+          <CardBody>
+            <Stack gap={10}>
+              <Text tone="secondary" size="small">
+                Docker compose-up. Делайте перед роботами, если стенд ещё не
+                запущен.
+              </Text>
+              <Button
+                variant="secondary"
+                onClick={() =>
+                  dispatch({
+                    type: "newComposerChat",
+                    userPrompt: COMPOSE_UP_PROMPT,
+                  })
+                }
+              >
+                Поднять
+              </Button>
+            </Stack>
+          </CardBody>
+        </Card>
+
+        <Card>
+          <CardHeader>Файлы матрицы</CardHeader>
+          <CardBody>
+            <Stack gap={10}>
+              <Text tone="secondary" size="small">
+                Быстро: на месте ли список сценариев и слоты фикстур. Сценарии
+                не гоняет. ~секунды.
+              </Text>
+              <Button
+                variant="secondary"
+                onClick={() =>
+                  dispatch({
+                    type: "newComposerChat",
+                    userPrompt: ROBOT_MATRIX_CHECK_PROMPT,
+                  })
+                }
+              >
+                Проверить
+              </Button>
+            </Stack>
+          </CardBody>
+        </Card>
+      </Grid>
+
+      <Divider />
+
+      <H2>4. Частичные проверки</H2>
       <Text tone="secondary" size="small">
         Когда правили только часть и не хотите ждать четверть часа.
       </Text>
@@ -212,6 +342,29 @@ export default function LocalQG() {
             </Stack>
           </CardBody>
         </Card>
+
+        <Card>
+          <CardHeader>Полный handover</CardHeader>
+          <CardBody>
+            <Stack gap={10}>
+              <Text tone="secondary" size="small">
+                Самый длинный Local QG перед передачей или тегом: unit, API,
+                браузер, матрица. Не для каждого коммита. ~20–40 мин.
+              </Text>
+              <Button
+                variant="secondary"
+                onClick={() =>
+                  dispatch({
+                    type: "newComposerChat",
+                    userPrompt: RELEASE_GATE_PROMPT,
+                  })
+                }
+              >
+                Запустить
+              </Button>
+            </Stack>
+          </CardBody>
+        </Card>
       </Grid>
 
       <Divider />
@@ -291,18 +444,20 @@ export default function LocalQG() {
               push.
             </Text>
             <Text size="small">
-              Меняли только текст инструкции — «Документация».
+              Хотите только путь заявки роботами — «Запустить обоих роботов» или
+              отдельно логика / кабинеты.
             </Text>
             <Text size="small">
-              Не знаете — «Что мне запустить».
+              Меняли только текст инструкции — «Документация».
             </Text>
+            <Text size="small">Не знаете — «Что мне запустить».</Text>
           </Stack>
         </CardBody>
       </Card>
 
       <Row justify="center">
         <Text tone="quaternary" size="small">
-          Кнопка = запуск. Агент не публикует сам.
+          Local QG · кнопка = запуск · агент не публикует сам
         </Text>
       </Row>
     </Stack>
