@@ -15,14 +15,14 @@ export const MAIN_NAV: NavItem[] = [
 /** Exported constant: REFERENCE_NAV. */
 export const REFERENCE_NAV: NavItem[] = [
   { segment: "/documents", label: "Документы", roles: ["user", "manager", "provider", "root"] },
-  { segment: "/counterparties", label: "Контрагенты", roles: ["user", "manager", "root"] },
   { segment: "/organizations", label: "Организации", roles: ["manager", "root"] },
+  { segment: "/providers", label: "Провайдеры", roles: ["manager", "root"] },
+  { segment: "/counterparties", label: "Контрагенты", roles: ["user", "manager", "root"] },
+  { segment: "/codes", label: "Коды ТН ВЭД", roles: ["manager", "root"] },
+  { segment: "/currencies", label: "Валюты", roles: ["manager", "root"] },
   { segment: "/compliance-tools", label: "Инструменты комплаенс", roles: ["root"] },
   { segment: "/admin", label: "Пользователи", roles: ["root"] },
   { segment: "/process-roles", label: "Роли процесса", roles: ["root"] },
-  { segment: "/providers", label: "Провайдеры", roles: ["manager", "root"] },
-  { segment: "/codes", label: "Коды ТН ВЭД", roles: ["manager", "root"] },
-  { segment: "/currencies", label: "Валюты", roles: ["manager", "root"] },
   { segment: "/countries", label: "Страны и риски", roles: ["root"] },
   { segment: "/testing", label: "Проверка сценариев", roles: ["root"] },
 ];

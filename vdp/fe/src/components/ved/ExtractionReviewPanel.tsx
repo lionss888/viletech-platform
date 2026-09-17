@@ -110,25 +110,32 @@ export function ExtractionReviewPanel({
 
   const controlBar =
     showControls ? (
-      <div className="flex flex-wrap gap-2" data-testid="extraction-controls">
-        <button
-          type="button"
-          className="rounded-md bg-primary px-3 py-1.5 text-xs font-semibold text-primary-foreground disabled:opacity-50"
-          disabled={startMut.isPending}
-          onClick={() => startMut.mutate()}
-        >
-          {draft ? "Перезапустить распознавание" : "Запустить распознавание"}
-        </button>
-        {draft && !draft.meta.confirmed ? (
+      <div className="space-y-1.5" data-testid="extraction-controls">
+        <div className="flex flex-wrap gap-2">
           <button
             type="button"
-            className="rounded-md bg-destructive-soft px-3 py-1.5 text-xs font-semibold text-destructive disabled:opacity-50"
-            disabled={cancelMut.isPending}
-            onClick={() => cancelMut.mutate()}
+            className="rounded-md bg-primary px-3 py-1.5 text-xs font-semibold text-primary-foreground disabled:opacity-50"
+            disabled={startMut.isPending}
+            onClick={() => startMut.mutate()}
           >
-            Отменить распознавание
+            {draft ? "Перезапустить распознавание" : "Запустить распознавание"}
           </button>
-        ) : null}
+          {draft && !draft.meta.confirmed ? (
+            <button
+              type="button"
+              className="rounded-md bg-destructive-soft px-3 py-1.5 text-xs font-semibold text-destructive disabled:opacity-50"
+              disabled={cancelMut.isPending}
+              onClick={() => cancelMut.mutate()}
+            >
+              Отменить распознавание
+            </button>
+          ) : null}
+        </div>
+        <p className="text-xs text-muted-foreground" data-testid="extraction-help">
+          Распознавание читает загруженные документы и подставляет сумму, валюту, реквизиты и позиции в
+          форму. Заявка при этом никуда не отправляется — вы сможете проверить и исправить каждое поле до
+          подтверждения. Перезапуск заменит текущие распознанные данные новыми.
+        </p>
       </div>
     ) : null;
 
@@ -177,7 +184,7 @@ export function ExtractionReviewPanel({
           параметры после возврата.
         </p>
       ) : null}
-      <div className="grid gap-2 sm:grid-cols-2">
+      <div className="grid gap-2 sm:grid-cols-2" data-testid="extraction-header-fields">
         <label className="text-xs text-muted-foreground">
           Сумма
           <input
@@ -206,6 +213,15 @@ export function ExtractionReviewPanel({
           />
         </label>
         <label className="text-xs text-muted-foreground">
+          Дата договора
+          <input
+            className="mt-1 w-full rounded-md border border-border bg-background px-2 py-1.5 text-sm"
+            value={draft.header.contract_date ?? ""}
+            onChange={(e) => updateHeader("contract_date", e.target.value)}
+            disabled={!editable}
+          />
+        </label>
+        <label className="text-xs text-muted-foreground">
           Номер инвойса
           <input
             className="mt-1 w-full rounded-md border border-border bg-background px-2 py-1.5 text-sm"
@@ -214,15 +230,56 @@ export function ExtractionReviewPanel({
             disabled={!editable}
           />
         </label>
+        <label className="text-xs text-muted-foreground">
+          Дата инвойса
+          <input
+            className="mt-1 w-full rounded-md border border-border bg-background px-2 py-1.5 text-sm"
+            value={draft.header.invoice_date ?? ""}
+            onChange={(e) => updateHeader("invoice_date", e.target.value)}
+            disabled={!editable}
+          />
+        </label>
+        <label className="text-xs text-muted-foreground">
+          Компания
+          <input
+            className="mt-1 w-full rounded-md border border-border bg-background px-2 py-1.5 text-sm"
+            value={draft.header.company_name ?? ""}
+            onChange={(e) => updateHeader("company_name", e.target.value)}
+            disabled={!editable}
+          />
+        </label>
+        <label className="text-xs text-muted-foreground">
+          Коды ТН ВЭД (через запятую)
+          <input
+            className="mt-1 w-full rounded-md border border-border bg-background px-2 py-1.5 text-sm"
+            value={(draft.header.hs_codes ?? []).join(", ")}
+            onChange={(e) =>
+              setDraft({
+                ...draft,
+                header: {
+                  ...draft.header,
+                  hs_codes: e.target.value
+                    .split(",")
+                    .map((code) => code.trim())
+                    .filter(Boolean),
+                },
+              })
+            }
+            disabled={!editable}
+          />
+        </label>
       </div>
       <div className="overflow-x-auto">
-        <table className="w-full min-w-[32rem] text-left text-sm">
+        <table className="w-full min-w-[44rem] text-left text-sm" data-testid="extraction-line-items">
           <thead>
             <tr className="border-b border-border text-xs text-muted-foreground">
               <th className="py-1 pr-2">#</th>
               <th className="py-1 pr-2">Наименование</th>
               <th className="py-1 pr-2">Кол-во</th>
+              <th className="py-1 pr-2">Ед.</th>
+              <th className="py-1 pr-2">Цена</th>
               <th className="py-1 pr-2">Сумма</th>
+              <th className="py-1 pr-2">Валюта</th>
               <th className="py-1">ТН ВЭД</th>
             </tr>
           </thead>
@@ -251,10 +308,34 @@ export function ExtractionReviewPanel({
                 </td>
                 <td className="py-1 pr-2">
                   <input
+                    className="w-16 rounded border border-border bg-background px-1 py-0.5"
+                    value={row.unit ?? ""}
+                    disabled={!editable}
+                    onChange={(e) => updateLine(idx, { unit: e.target.value })}
+                  />
+                </td>
+                <td className="py-1 pr-2">
+                  <input
+                    className="w-24 rounded border border-border bg-background px-1 py-0.5"
+                    value={row.unit_price ?? ""}
+                    disabled={!editable}
+                    onChange={(e) => updateLine(idx, { unit_price: e.target.value })}
+                  />
+                </td>
+                <td className="py-1 pr-2">
+                  <input
                     className="w-24 rounded border border-border bg-background px-1 py-0.5"
                     value={row.line_amount ?? ""}
                     disabled={!editable}
                     onChange={(e) => updateLine(idx, { line_amount: e.target.value })}
+                  />
+                </td>
+                <td className="py-1 pr-2">
+                  <input
+                    className="w-20 rounded border border-border bg-background px-1 py-0.5"
+                    value={row.currency ?? ""}
+                    disabled={!editable}
+                    onChange={(e) => updateLine(idx, { currency: e.target.value })}
                   />
                 </td>
                 <td className="py-1">
@@ -269,6 +350,26 @@ export function ExtractionReviewPanel({
             ))}
           </tbody>
         </table>
+      </div>
+      <div className="space-y-1 text-xs text-muted-foreground" data-testid="extraction-meta">
+        <p>
+          {[
+            draft.doc_type ? `Тип документа: ${draft.doc_type}` : null,
+            draft.language ? `Язык: ${draft.language}` : null,
+            typeof draft.confidence === "number"
+              ? `Уверенность распознавания: ${Math.round(draft.confidence * 100)}%`
+              : null,
+          ]
+            .filter(Boolean)
+            .join(" · ") || "Дополнительные сведения о документе не распознаны."}
+        </p>
+        {draft.warnings && draft.warnings.length > 0 ? (
+          <ul className="list-disc space-y-0.5 pl-4 text-amber-600" data-testid="extraction-warnings">
+            {draft.warnings.map((warning, i) => (
+              <li key={i}>{warning}</li>
+            ))}
+          </ul>
+        ) : null}
       </div>
       {!confirmed && canConfirm ? (
         <button

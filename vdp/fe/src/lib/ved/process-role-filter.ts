@@ -12,7 +12,6 @@ const ACTION_CAPABILITY: Record<string, string> = {
   upload_report: "user.docs",
   upload_shipment: "user.docs",
   upload_payments: "user.docs",
-  upload_treasurer_verification: "user.docs",
   ico_form_start: "org.compliance",
   ico_form_accept: "org.compliance",
   ico_form_reject: "org.compliance",

@@ -36,7 +36,6 @@
                 "signing_order",
                 "payment",
                 "agent_report",
-                "shipment",
                 "completed"
               ]
             },
@@ -144,6 +143,7 @@
                 "internal_compliance_officer",
                 "compliance_officer",
                 "manager",
+                "treasurer",
                 "provider",
                 "root"
               ]

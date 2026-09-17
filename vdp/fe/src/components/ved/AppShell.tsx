@@ -28,13 +28,13 @@ const NAV: NavItem[] = [
 
 const REFERENCES: NavItem[] = [
   { to: "/documents", label: "Документы", roles: ["user", "manager", "provider", "root"] },
-  { to: "/counterparties", label: "Контрагенты", roles: ["user", "manager", "root"] },
   { to: "/organizations", label: "Организации", roles: ["manager", "root"] },
-  { to: "/compliance-tools", label: "Инструменты комплаенс", roles: ["root"] },
-  { to: "/admin", label: "Пользователи", roles: ["root"] },
   { to: "/providers", label: "Провайдеры", roles: ["manager", "root"] },
+  { to: "/counterparties", label: "Контрагенты", roles: ["user", "manager", "root"] },
   { to: "/codes", label: "Коды ТН ВЭД", roles: ["manager", "root"] },
   { to: "/currencies", label: "Валюты", roles: ["manager", "root"] },
+  { to: "/compliance-tools", label: "Инструменты комплаенс", roles: ["root"] },
+  { to: "/admin", label: "Пользователи", roles: ["root"] },
   { to: "/countries", label: "Страны и риски", roles: ["root"] },
 ];
 
