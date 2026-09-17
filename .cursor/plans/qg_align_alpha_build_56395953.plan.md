@@ -4,22 +4,22 @@ overview: Сначала разблокировать красный post-merge 
 todos:
   - id: wave0-ci-triage
     content: "Разобрать VDP CI #111 / Images, починить причину красного post-merge"
-    status: pending
+    status: completed
   - id: wave0-alpha-deploy
     content: Добиться зелёных Images+Deploy (или ручной promote) и живой проверки alpha login
-    status: pending
+    status: completed
   - id: wave1-shared-paths
     content: Единый источник pilot-matrix paths для vdp-ci.yml и prepush-gate.sh
-    status: pending
+    status: completed
   - id: wave1-prepush-hook
     content: prepush-gate.sh + .githooks/pre-push + Makefile install-git-hooks
-    status: pending
+    status: completed
   - id: wave1-local-qg
     content: Выровнять local-qg.canvas.tsx (Push gate + секция До alpha)
-    status: pending
+    status: completed
   - id: wave1-cd-tests
     content: Расширить test-cd-scripts.sh на паритет hooks/path-filter
-    status: pending
+    status: completed
 isProject: false
 ---
 
