@@ -202,14 +202,15 @@ jobs:
           changed="$(git diff --name-only "$base"..."$head" || true)"
           echo "Changed files (sample):"
           printf '%s\n' "$changed" | head -40
-          if printf '%s\n' "$changed" | grep -E \
-            '^(vdp/fe/e2e/|vdp/fe/src/lib/ved/actions\.ts|vdp/fe/src/lib/ved/statuses\.ts|vdp/fe/src/lib/ved/wizard-steps\.ts|vdp/fe/src/lib/ved/manager-payment\.ts|vdp/fe/src/lib/api/forms-rate-commission|vdp/fe/src/components/ved/(ActionPanel|RateCommissionPanel)\.tsx|vdp/core/internal/domain/formpayment/|vdp/core/internal/service/(contract|form_payment_assign|form_payment_nest)\.go|vdp/core/internal/transport/http/nest_form_routes\.go)'; then
+          chmod +x vdp/scripts/pilot-matrix-paths-match.sh
+          if printf '%s\n' "$changed" | vdp/scripts/pilot-matrix-paths-match.sh; then
             echo "run=true" >> "$GITHUB_OUTPUT"
             echo "pilot-matrix required for this PR"
           else
             echo "run=false" >> "$GITHUB_OUTPUT"
             echo "pilot-matrix skipped (paths outside ladder risk surface)"
           fi
+
 
   playwright-pilot-matrix:
     name: playwright (pilot-matrix)

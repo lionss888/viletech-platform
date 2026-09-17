@@ -400,6 +400,26 @@ grep -q 'detect-pilot-matrix' ../.github/workflows/vdp-ci.yml \
   || fail "vdp-ci.yml must detect pilot-matrix paths on PR"
 grep -q 'playwright-pilot-matrix:' ../.github/workflows/vdp-ci.yml \
   || fail "vdp-ci.yml must define playwright-pilot-matrix job"
+grep -q 'pilot-matrix-paths-match.sh' ../.github/workflows/vdp-ci.yml \
+  || fail "vdp-ci.yml detect-pilot-matrix must use pilot-matrix-paths-match.sh"
+[ -f scripts/pilot-matrix-paths.grep ] || fail "missing scripts/pilot-matrix-paths.grep"
+[ -f scripts/pilot-matrix-paths-match.sh ] || fail "missing scripts/pilot-matrix-paths-match.sh"
+[ -f scripts/prepush-gate.sh ] || fail "missing scripts/prepush-gate.sh"
+bash -n scripts/pilot-matrix-paths-match.sh || fail "pilot-matrix-paths-match.sh syntax"
+bash -n scripts/prepush-gate.sh || fail "prepush-gate.sh syntax"
+grep -q '^prepush-gate:' Makefile || fail "Makefile missing prepush-gate target"
+grep -q 'prepush-gate' ../.githooks/pre-push || fail ".githooks/pre-push must call prepush-gate"
+# Shared path pattern must still cover canonical ladder surfaces
+for needle in 'vdp/fe/e2e/' 'ActionPanel' 'formpayment' 'manager-payment'; do
+  grep -q "$needle" scripts/pilot-matrix-paths.grep \
+    || fail "pilot-matrix-paths.grep must mention $needle"
+done
+# Match helper accepts a ladder path and rejects an unrelated path
+printf 'vdp/fe/e2e/foo.spec.ts\n' | bash scripts/pilot-matrix-paths-match.sh \
+  || fail "pilot-matrix-paths-match must match e2e path"
+if printf 'README.md\n' | bash scripts/pilot-matrix-paths-match.sh; then
+  fail "pilot-matrix-paths-match must not match README.md"
+fi
 grep -q 'VDP_ROBOT_FIXTURES_ROOT' scripts/compose-playwright.sh \
   || fail "compose-playwright must mount robot fixtures root"
 ./scripts/robot-matrix-check.sh

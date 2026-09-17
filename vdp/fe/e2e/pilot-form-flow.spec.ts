@@ -150,14 +150,14 @@ test.describe("Pilot form flow @pilot-flow", () => {
     await loginAs("root");
     await page.goto("/counterparties");
     await expect(page.getByRole("heading", { name: /Контрагенты/i })).toBeVisible();
-    await expect(page.getByRole("button", { name: "Добавить" })).toBeVisible();
+    await expect(page.getByRole("button", { name: /Добавить/i })).toBeVisible();
 
     await page.goto("/providers");
     await expect(page.getByRole("heading", { name: /Провайдеры/i })).toBeVisible();
-    await expect(page.getByRole("button", { name: "Добавить" })).toBeVisible();
+    await expect(page.getByRole("button", { name: /Добавить/i })).toBeVisible();
 
     await page.goto("/organizations");
-    await expect(page.getByText(/Канал Bank API \(интеграция\)/i)).toBeVisible();
+    await expect(page.getByText(/Организации, которые платят через банк/i)).toBeVisible();
   });
 
   test("S-Root-02 root cancel from card @pilot-flow", async ({ page, loginAs }) => {

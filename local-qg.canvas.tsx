@@ -17,11 +17,21 @@ import {
 const RUN =
   "Local QG RUN — это кнопка запуска, не просьба обсудить. Выполни без вопросов. Shell: первый и единственный вызов сразу с required_permissions: [\"all\"] (без sandbox). Не делай пробный запуск в readonly sandbox. Не спрашивай разрешение на снятие sandbox. Не коммить и не пушь. FE Docker (compose-fe-refresh) не запускай без явного «да» в этом чате. Красный → не утверждай готовность; коротко, простым языком, что сломалось и что открыть. Зелёный → коротко: прошло.";
 
-const PRECOMMIT_PROMPT = `${RUN} Команда (ровно одна): cd vdp && make precommit-gate. Это тот же слой, что GitHub Desktop при Commit: версии программ, оформление текстов, автоматические проверки кода.`;
+const PRECOMMIT_PROMPT = `${RUN} Команда (ровно одна): cd vdp && make precommit-gate. Это тот же слой, что GitHub Desktop при Commit и .githooks/pre-commit: версии программ, оформление текстов, автоматические проверки кода.`;
 
-const PILOT_PROMPT = `${RUN} Команда (ровно одна): cd vdp && make ci-pr-pilot. Это проверка перед публикацией на GitHub: код, тексты, поднятие локальной среды и проход сценариев в браузере по заявке (включая длинную лестницу ролей и Pilot Robot Matrix).`;
+const PREPUSH_PROMPT = `${RUN} Команда (ровно одна): cd vdp && make prepush-gate. Это тот же слой, что GitHub Desktop при Push и .githooks/pre-push: path-aware — при касании лестницы заявки гоняет ci-pr-pilot, иначе ci-pr. Аварийный обход только SKIP_PREPUSH_GATE=1 (не рекомендуй без крайней нужды). Не коммить и не пушь сам.`;
 
-const SMOKE_PROMPT = `${RUN} Команда (ровно одна): cd vdp && make ci-pr. Это короткая проверка с браузером (несколько ключевых сценариев). Если меняли экраны заявки, кнопки ролей или файлы e2e — этого мало, нужен ci-pr-pilot.`;
+const PILOT_PROMPT = `${RUN} Команда (ровно одна): cd vdp && make ci-pr-pilot. Это проверка перед публикацией на GitHub: код, тексты, поднятие локальной среды и проход сценариев в браузере по заявке (включая длинную лестницу ролей и Pilot Robot Matrix). Тот же уровень, что pre-push при касании ladder paths.`;
+
+const SMOKE_PROMPT = `${RUN} Команда (ровно одна): cd vdp && make ci-pr. Это короткая проверка с браузером (несколько ключевых сценариев). Если меняли экраны заявки, кнопки ролей или файлы e2e — этого мало, нужен ci-pr-pilot. Тот же уровень, что pre-push без ladder paths.`;
+
+const ALPHA_STATUS_PROMPT = `${RUN} Диагностика цепочки до alpha. Не коммить и не пушь. Не запускай compose-fe-refresh.
+
+1) PATH: добавь $HOME/.local/bin если нужен gh. Если gh auth сломан — скажи перелогиниться (gh auth login), не выдумывай статусы.
+2) На main: последние run VDP CI, VDP Images, VDP Deploy (gh run list --branch main --limit 12). Кратко: зелёный / красный / skip и почему Deploy не шёл (Images/CI).
+3) Живая проверка: открой https://alpha.vedy.io/login (браузер или curl HTML) и сравни placeholder e-mail с локальным каноном «ваша @ почта». Скажи: alpha свежий или отстаёт.
+4) Если CI/Images красные — назови упавший шаг простым языком и что чинить. Не утверждай «выкатил», пока alpha не совпал с каноном.
+Deploy из canvas не делай молча (нужны secrets/SSH); только диагностика и следующий шаг человеку.`;
 
 const NO_BROWSER_PROMPT = `${RUN} Команда (ровно одна): cd vdp && make ci-pr-fast. Без открытия браузера: правила текстов, мелкие проверки кода и сервисов. Не проверяет, что человек может нажать кнопки в кабинете.`;
 
@@ -70,7 +80,7 @@ const TRIAGE_PROMPT = `Local QG — подскажи проверку. Не за
 
 По git status и git diff скажи простым языком:
 1. Что менялось (экраны, правила заявки, тексты, только план).
-2. Какую кнопку нажать в Local QG (перед коммитом / без браузера / с браузером / документация создать или тест / производительность / лестница / Pilot Robot Matrix).
+2. Какую кнопку нажать в Local QG (перед коммитом / перед Push / лестница / без браузера / с браузером / До alpha / документация создать или тест / производительность / Pilot Robot Matrix).
 3. Почему именно её, одной фразой.
 Не коммить. Не пушь. Не запускай make.`;
 
@@ -88,12 +98,12 @@ export default function LocalQG() {
         </Text>
       </Stack>
 
-      <Callout tone="info" title="Сначала коммит, потом GitHub">
-        GitHub Desktop при Commit уже гоняет короткий слой. Кнопка ниже — то же
-        самое заранее, чтобы ошибка была в чате, а не в окне «Commit failed».
-        Перед отправкой ветки на GitHub — «Лестница заявки». Роботы матрицы —
-        отдельный блок ниже, когда нужно проверить путь заявки без полного PR
-        gate.
+      <Callout tone="info" title="Commit короткий · Push = gate · alpha отдельно">
+        GitHub Desktop при Commit гоняет короткий слой (как кнопка ниже). При
+        Push — path-aware gate: лестница (ci-pr-pilot) или короткий браузерный
+        (ci-pr). Это паритет PR на GitHub, не гарантия уже выкатанной alpha.
+        После merge смотрите «До alpha»: CI → Images → Deploy. Обход Push только
+        SKIP_PREPUSH_GATE=1.
       </Callout>
 
       <Stack gap={8}>
@@ -115,11 +125,21 @@ export default function LocalQG() {
       <Divider />
 
       <Stack gap={8}>
-        <H2>2. Перед отправкой на GitHub</H2>
+        <H2>2. Перед Push на GitHub</H2>
         <Text tone="secondary" size="small">
-          Меняли экраны заявки, кнопки ролей, мастер, курс/комиссию или проверки в
-          браузере — эта кнопка. Иначе GitHub может покраснеть, даже если коммит
-          прошёл. ~15–25 мин.
+          То же, что .githooks/pre-push: сам выбирает ci-pr или ci-pr-pilot по
+          путям (как detect-pilot-matrix на PR). Нажмите до Push в Desktop, чтобы
+          ошибка была в чате. ~15–25 мин при лестнице, меньше без неё.
+        </Text>
+        <Button
+          onClick={() =>
+            dispatch({ type: "newComposerChat", userPrompt: PREPUSH_PROMPT })
+          }
+        >
+          Проверить перед Push
+        </Button>
+        <Text tone="tertiary" size="small">
+          Явно выбрать уровень:
         </Text>
         <Button
           onClick={() =>
@@ -128,9 +148,6 @@ export default function LocalQG() {
         >
           Лестница заявки
         </Button>
-        <Text tone="tertiary" size="small">
-          Короче (несколько сценариев в браузере, не вся лестница):
-        </Text>
         <Button
           variant="secondary"
           onClick={() =>
@@ -144,7 +161,25 @@ export default function LocalQG() {
       <Divider />
 
       <Stack gap={8}>
-        <H2>3. Pilot Robot Matrix</H2>
+        <H2>3. До alpha</H2>
+        <Text tone="secondary" size="small">
+          После merge в main: статусы VDP CI / Images / Deploy и живая проверка
+          login на alpha. Не заменяет Push-gate. Выкат из Local QG сам не
+          запускается — только диагностика.
+        </Text>
+        <Button
+          onClick={() =>
+            dispatch({ type: "newComposerChat", userPrompt: ALPHA_STATUS_PROMPT })
+          }
+        >
+          Статус main → alpha
+        </Button>
+      </Stack>
+
+      <Divider />
+
+      <Stack gap={8}>
+        <H2>4. Pilot Robot Matrix</H2>
         <Text tone="secondary" size="small">
           Роботы матрицы: сначала логика заявки (API), затем клики в кабинетах.
           Нужна поднятая локальная среда. Данные по умолчанию — учебный пакет
@@ -255,7 +290,7 @@ export default function LocalQG() {
 
       <Divider />
 
-      <H2>4. Частичные проверки</H2>
+      <H2>5. Частичные проверки</H2>
       <Text tone="secondary" size="small">
         Когда правили только часть и не хотите ждать четверть часа.
       </Text>
@@ -488,8 +523,11 @@ export default function LocalQG() {
               Сейчас жмёте Commit в GitHub Desktop — «Проверить перед коммитом».
             </Text>
             <Text size="small">
-              Меняли кнопки, мастер заявки, роли, курс — «Лестница заявки» до
-              push.
+              Перед Push — «Проверить перед Push» (сам выберет ci-pr или
+              лестницу). Явно: «Лестница заявки» или короткая с браузером.
+            </Text>
+            <Text size="small">
+              После merge, alpha отстаёт — «Статус main → alpha».
             </Text>
             <Text size="small">
               Хотите только путь заявки роботами — «Запустить обоих роботов» или

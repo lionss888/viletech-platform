@@ -1,4 +1,4 @@
-.PHONY: deps test test-integration test-adapters build db-setup db-migrate compose-db-migrate run-hub run-core run smoke staging-smoke stop compose-up compose-up-prod compose-down compose-ps compose-e2e compose-fe-smoke compose-fe-refresh compose-fe-prod-smoke compose-playwright lovable-seed-check integration-gate playwright-e2e playwright-pilot playwright-pilot-matrix robot-matrix-check docs-format-check check-deploy-secrets release-gate image-build image-push image-build-push compose-release-config-check compose-release-up deploy-alpha deploy-beta deploy-gamma rollback-alpha rollback-beta rollback-gamma rollback-rehearsal-local test-cd-scripts notify-mgmt core-seed-reset install-git-hooks precommit-gate ci-pr-fast ci-pr ci-pr-pilot perf-gate
+.PHONY: deps test test-integration test-adapters build db-setup db-migrate compose-db-migrate run-hub run-core run smoke staging-smoke stop compose-up compose-up-prod compose-down compose-ps compose-e2e compose-fe-smoke compose-fe-refresh compose-fe-prod-smoke compose-playwright lovable-seed-check integration-gate playwright-e2e playwright-pilot playwright-pilot-matrix robot-matrix-check docs-format-check check-deploy-secrets release-gate image-build image-push image-build-push compose-release-config-check compose-release-up deploy-alpha deploy-beta deploy-gamma rollback-alpha rollback-beta rollback-gamma rollback-rehearsal-local test-cd-scripts notify-mgmt core-seed-reset install-git-hooks precommit-gate prepush-gate ci-pr-fast ci-pr ci-pr-pilot perf-gate
 
 CORE_DIR := core
 HUB_DIR := hub
@@ -363,8 +363,15 @@ precommit-gate:
 	@chmod +x scripts/precommit-mgmt-notify.sh
 	./scripts/precommit-mgmt-notify.sh
 
+# Path-aware PR gate for push (ci-pr or ci-pr-pilot). Used by .githooks/pre-push.
+# Bypass: SKIP_PREPUSH_GATE=1
+prepush-gate:
+	@chmod +x scripts/prepush-gate.sh scripts/pilot-matrix-paths-match.sh
+	./scripts/prepush-gate.sh
+
 # From repo root: make -C vdp install-git-hooks
 install-git-hooks:
 	@git -C .. config core.hooksPath .githooks
-	@chmod +x ../.githooks/pre-commit scripts/precommit-mgmt-notify.sh
-	@echo "git hooksPath=.githooks (pre-commit → precommit-mgmt-notify)"
+	@chmod +x ../.githooks/pre-commit ../.githooks/pre-push ../.githooks/post-commit ../.githooks/post-merge \
+		scripts/precommit-mgmt-notify.sh scripts/prepush-gate.sh scripts/pilot-matrix-paths-match.sh
+	@echo "git hooksPath=.githooks (pre-commit → precommit-gate; pre-push → prepush-gate)"
