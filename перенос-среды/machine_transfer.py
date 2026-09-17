@@ -96,6 +96,18 @@ def rewrite_blob(value: bytes | str, replacements: list[tuple[str, str]]) -> byt
 
 
 def is_cursor_running() -> bool:
+    patterns = (
+        "Cursor.app/Contents/MacOS/Cursor",
+        "Cursor.app/Contents/Frameworks/Cursor",
+    )
+    for pattern in patterns:
+        result = subprocess.run(
+            ["pgrep", "-f", pattern],
+            check=False,
+            capture_output=True,
+        )
+        if result.returncode == 0:
+            return True
     for process_name in ("Cursor", "cursor"):
         result = subprocess.run(
             ["pgrep", "-x", process_name],
@@ -137,21 +149,26 @@ def backup_sqlite(source: Path, destination: Path) -> None:
         source_conn.close()
 
 
+def file_uri_variants(path: Path) -> tuple[str, str]:
+    posix = path.resolve().as_posix()
+    return (f"file://{posix}", f"file://{quote(posix, safe='/')}")
+
+
 def find_workspace_storages(user_dir: Path, repo_root: Path) -> dict[str, Path]:
     storage_root = user_dir / "workspaceStorage"
     found: dict[str, Path] = {}
     if not storage_root.exists():
         return found
-    workspace_uri = f"file://{repo_root.resolve().as_posix()}/{WORKSPACE_FILE_NAME}"
-    folder_uri = f"file://{repo_root.resolve().as_posix()}"
+    workspace_uris = file_uri_variants(repo_root / WORKSPACE_FILE_NAME)
+    folder_uris = file_uri_variants(repo_root)
     for child in storage_root.iterdir():
         meta_path = child / "workspace.json"
         if not meta_path.is_file():
             continue
         payload = meta_path.read_text(encoding="utf-8")
-        if workspace_uri in payload or payload.rstrip().endswith(f"{WORKSPACE_FILE_NAME}\""):
+        if any(uri in payload for uri in workspace_uris):
             found["code-workspace"] = child
-        elif folder_uri in payload and WORKSPACE_FILE_NAME not in payload:
+        elif any(uri in payload for uri in folder_uris) and WORKSPACE_FILE_NAME not in payload:
             found["folder"] = child
     return found
 
