@@ -1,0 +1,69 @@
+Согласование сценариев по ролям
+Дата: 2026-09-16
+
+Зачем эта папка
+Тексты для менеджмента заказчика: как идёт заявка глазами Клиента, Менеджера, Провайдера и Казначея. Не инструкция разработчику и не чеклист CI. Язык простой: кто делает шаг, что происходит, какой итог.
+
+Как читать
+Каждый файл роли — набор маршрутов в одном шаблоне: название, кто участвует, как проходит, итог, пометка id для команды. Один и тот же маршрут может повторяться в двух файлах с разным углом («что делаю я»). Сначала смотрите spine (обязательный минимум приёмки), потом ветки возврата и денежные лестницы.
+
+Пилотный контекст
+Внутренний и внешний комплаенс по умолчанию выключены. Их шаги в пилоте закрывает менеджер (continuity). Отдельные роли ICO и ECO в этих текстах не разведены в отдельные файлы.
+
+Файлы
+клиент.txt — действия и ожидания клиента
+менеджер.txt — очередь, приём, оплата, назначение провайдера, закрытие
+провайдер.txt — исполнение платежа без ПДн клиента
+казначей.txt — импорт advance / postpay и экспортный маршрут оплаты
+
+Канон для команды (машинные id)
+Справочник: vdp/docs/pilot/scenario-role-directory.md
+Матрица: vdp/docs/development/e2e-coverage-matrix.md
+
+Spine приёмки (обязательный минимум)
+happy_path_to_completed
+continuity_manager_form_approve
+manager_reject_to_corrections
+user_resubmit_after_reject
+manager_payment_assign_provider
+provider_payment_no_pii
+
+Каталог сценариев (17)
+happy_path_to_completed
+eco_reject_resubmit
+ico_org_pending_approve
+manager_payment_assign_provider
+provider_payment_no_pii
+bank_channel_badge
+root_cancel
+refund_smoke
+manager_hides_drafts
+doc_preview_visible
+health_core
+continuity_manager_form_approve
+manager_reject_to_corrections
+user_resubmit_after_reject
+provider_return_to_manager
+extraction_confirm_updates_amount
+manager_sets_deal_rate
+
+Расширение матрицы
+happy_path_shipment_branch — опциональная отгрузка; полный путь до закрытия без отгрузки остаётся основным
+
+Денежные лестницы (не отдельные id каталога 17)
+ladder_import_advance — импорт аванс, казначей и срок исполнения
+ladder_import_postpay_rate_on_pp — импорт постоплата, курс и комиссия после платёжки
+ladder_export_pay_from_export — экспорт, оплата из валюты от контрагента
+ladder_refund — возврат средств
+ladder_shipment — то же, что ветка отгрузки (см. happy_path_shipment_branch)
+
+Служебное (не роль процесса для менеджмента)
+root_cancel — отмена суперадмином; не маршрут сделки
+health_core — платформа отвечает; технический smoke
+Эти два id намеренно не развернуты в файлах ролей клиент/менеджер/провайдер/казначей.
+
+Где искать описание по id
+клиент: happy_path, eco_reject / user_resubmit, ico_org, extraction, bank_channel, doc_preview, manager_sets_deal_rate (поле на коррекции), shipment (документы клиента), continuity (ожидание после отправки)
+менеджер: happy_path, continuity, reject, payment_assign, rate, hides_drafts, doc_preview, provider_return, refund_smoke, bank_channel, ico_org (continuity), ladders (координация), shipment
+провайдер: provider_payment_no_pii, provider_return, участок happy_path и ladders оплаты
+казначей: ladder_import_advance, ladder_import_postpay_rate_on_pp, ladder_export_pay_from_export; refund/shipment — только если в процессе участвует казначей как соседний шаг менеджера (см. файл)

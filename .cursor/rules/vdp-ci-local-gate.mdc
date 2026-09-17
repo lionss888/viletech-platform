@@ -18,6 +18,7 @@ alwaysApply: true
 | PR-паритет + лестница | `make ci-pr-pilot` | e2e / `@pilot-matrix` / ActionPanel / rate-commission / formpayment — то же, что GitHub job `playwright (pilot-matrix)` |
 | Main / handover | `make release-gate` | только по явной просьбе или перед тегом/`vdp-v*` (долго) |
 | Deploy secrets check | `make check-deploy-secrets` | проверка MGMT_NOTIFY_TOKEN/CHAT_ID перед деплоем |
+| Производительность | `make perf-gate` | замер проверки перехода статуса заявки; Local QG и фаза 1 `ci-pr-fast` |
 
 `ci-pr-fast` ≈ static checks (docs/CD/adapters/secrets/lovable/fe-unit/go-units) параллельно через `ci-pr-static.sh` → `compose-e2e` (один стек).  
 `ci-pr` ≈ `ci-pr-fast` + пауза 65s (rate-limit) + **узкий** Playwright как job `playwright` на `pull_request`. **Не** полный PR: GitHub при path-filter дополнительно гоняет `@pilot-matrix`.  
@@ -30,7 +31,7 @@ alwaysApply: true
 
 Фаза 1 (static/unit): все независимые проверки запускаются параллельно через `scripts/ci-pr-static.sh`. Агрегирует exit коды всех шагов. Fail одного шага не блокирует остальные — все выполняются до конца и печатаются в таблице результатов.
 
-Проверки фазы 1: `docs-format-check`, `test-cd-scripts`, `check-deploy-secrets`, `test-adapters`, `lovable-seed-check`, `pilot-matrix-stale`, `fe npm test`, 8 модулей `go test` (core/hub/shared/extraction/mail-gateway/sms-gateway/manager-ops/release-gate).
+Проверки фазы 1: `docs-format-check`, `perf-gate`, `test-cd-scripts`, `check-deploy-secrets`, `test-adapters`, `lovable-seed-check`, `pilot-matrix-stale`, `fe npm test`, 8 модулей `go test` (core/hub/shared/extraction/mail-gateway/sms-gateway/manager-ops/release-gate).
 
 Фаза 2 (compose/browser): запускается только если фаза 1 зелёная. Один Docker compose stack + sleep 65 + Playwright. Последовательно (не параллельно на одном хосте).
 
@@ -80,7 +81,7 @@ cd vdp && make check-env-parity
 
 ## Shell / sandbox (MUST)
 
-Для локальных VDP gate из агента (`make docs-format-check`, `make precommit-gate`, `make ci-pr-fast`, `make ci-pr`, `make ci-pr-pilot`, `make release-gate` и их цепочки с `go test` / Docker / TG notify):
+Для локальных VDP gate из агента (`make docs-format-check`, `make perf-gate`, `make precommit-gate`, `make ci-pr-fast`, `make ci-pr`, `make ci-pr-pilot`, `make release-gate` и их цепочки с `go test` / Docker / TG notify):
 
 1. **Первый** вызов Shell сразу с полным снятием sandbox (`required_permissions: ["all"]` или эквивалент).
 2. **Не** делать пробный запуск в readonly sandbox — ломает make (`No rule to make target`), chmod, module cache, notify.

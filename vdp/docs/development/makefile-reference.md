@@ -80,6 +80,10 @@ Browser E2E через Docker. Команды make playwright-e2e, make compose-
 
 Контракт матрицы и packs (manifest, matrix-rows, секция в e2e-coverage-matrix). Команда make robot-matrix-check. Входит в release-gate.
 
+## perf-gate
+
+Замер go test -bench проверки перехода статуса заявки. Красный, если ns/op выше бюджета. Команда make perf-gate. Входит в фазу 1 ci-pr-fast.
+
 ## docs-format-check
 
 Проверка markdown в vdp/docs и vdp/README.md на запрещённую разметку. Команда make docs-format-check. Входит в `precommit-gate` и в `ci-pr` / `release-gate`.
