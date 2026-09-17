@@ -128,6 +128,15 @@ const MATRIX: Partial<Record<VedRole, Partial<Record<string, AppFormAction[]>>>>
         confirm: "Подтвердить заход рублёвого покрытия и передать в исполнение?",
       },
     ],
+    payment_processing: [
+      {
+        id: "treas_confirm_payment",
+        label: "Подтвердить покрытие",
+        tone: "accent",
+        coreAction: "treasurer_confirm",
+        confirm: "Подтвердить покрытие и передать в казначейское поручение?",
+      },
+    ],
   },
   provider: {
     payment_processing: [

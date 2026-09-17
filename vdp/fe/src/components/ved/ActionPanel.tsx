@@ -18,6 +18,7 @@ import {
   blocksPaymentStartWithoutProvider,
   hidesFormAcceptedActionForDirection,
   hidesPaymentStartForImportAdvance,
+  hidesTreasurerConfirmOnProcessingForImport,
   IMPORT_ADVANCE_AWAITS_TREASURER,
   isImportAdvanceCoverageGate,
   isPostpayRateOnPP,
@@ -135,6 +136,11 @@ export function ActionPanel({
             status: form.status,
             actionId: action.id,
             condition: form.condition,
+            direction: form.direction,
+          }) &&
+          !hidesTreasurerConfirmOnProcessingForImport({
+            status: form.status,
+            actionId: action.id,
             direction: form.direction,
           }) &&
           !hidesFormAcceptedActionForDirection({

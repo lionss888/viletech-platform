@@ -9,6 +9,7 @@ import {
   blocksPaymentStartWithoutProvider,
   hidesFormAcceptedActionForDirection,
   hidesPaymentStartForImportAdvance,
+  hidesTreasurerConfirmOnProcessingForImport,
   IMPORT_ADVANCE_AWAITS_TREASURER,
   isImportAdvanceCoverageGate,
   isPostpayRateOnPP,
@@ -79,7 +80,15 @@ describe("import advance treasurer gate", () => {
   it("exposes treasurer confirm CTA and nest bridge", () => {
     const ids = actionsFor("treasurer", "payment_received").map((a) => a.id);
     expect(ids).toContain("treas_confirm_payment");
+    // Matrix also lists confirm on payment_processing (export); import UI hides it.
     expect(actionsFor("treasurer", "payment_processing").map((a) => a.id)).toContain("treas_confirm_payment");
+    expect(
+      hidesTreasurerConfirmOnProcessingForImport({
+        status: "payment_processing",
+        actionId: "treas_confirm_payment",
+        direction: "import",
+      }),
+    ).toBe(true);
     expect(appActionsFor("treasurer", "payment_received").map((a) => a.id)).toContain("treas_confirm_payment");
     expect(resolveDemoAction("treas_confirm_payment")).toEqual({ kind: "nest_confirm_payment" });
     expect(IMPORT_ADVANCE_AWAITS_TREASURER.length).toBeGreaterThan(10);
@@ -239,6 +248,16 @@ describe("export treasurer flow", () => {
   });
 
   it("exposes treasurer export CTAs on export statuses", () => {
+    expect(actionsFor("treasurer", "payment_processing").map((a) => a.id)).toContain("treas_confirm_payment");
+    expect(appActionsFor("treasurer", "payment_processing").map((a) => a.id)).toContain("treas_confirm_payment");
+    expect(
+      hidesTreasurerConfirmOnProcessingForImport({
+        status: "payment_processing",
+        actionId: "treas_confirm_payment",
+        direction: "export",
+      }),
+    ).toBe(false);
+
     const paymentSentTreasurer = actionsFor("treasurer", "payment_sent_treasurer").map((a) => a.id);
     expect(paymentSentTreasurer).toContain("treas_signing");
 
