@@ -72,21 +72,20 @@ export function FormDetail() {
   const [extractionDialogOpen, setExtractionDialogOpen] = useState(false);
   const [uploadBusy, setUploadBusy] = useState(false);
   const [uploadError, setUploadError] = useState<string | null>(null);
-  const accountScope = auth.account?.id ?? auth.role ?? "anon";
   const formQuery = useQuery({
-    queryKey: ["form", formId, accountScope],
+    queryKey: ["form", formId],
     queryFn: () => getForm(formId),
-    enabled: mode === "app" && Boolean(formId) && auth.isAuthenticated,
+    enabled: mode === "app" && Boolean(formId),
   });
   const historyQuery = useQuery({
-    queryKey: ["form-history", formId, accountScope],
+    queryKey: ["form-history", formId],
     queryFn: () => getComplianceHistory(formId),
-    enabled: mode === "app" && Boolean(formId) && auth.isAuthenticated,
+    enabled: mode === "app" && Boolean(formId),
   });
   const diadocQuery = useQuery({
-    queryKey: ["form-diadoc", formId, accountScope],
+    queryKey: ["form-diadoc", formId],
     queryFn: () => getFormDiadocStatus(formId),
-    enabled: mode === "app" && Boolean(formId) && auth.isAuthenticated,
+    enabled: mode === "app" && Boolean(formId),
   });
 
   const form = useMemo(() => {
@@ -159,12 +158,10 @@ export function FormDetail() {
     }
   }
 
-  if (!formId || (mode === "app" && formQuery.isFetching && !form)) {
+  if (!formId || (mode === "app" && formQuery.isLoading && !form)) {
     return (
       <VedAppShell title="Заявка">
-        <p className="text-sm text-muted-foreground" data-testid="form-detail-loading">
-          Загрузка…
-        </p>
+        <p className="text-sm text-muted-foreground">Загрузка…</p>
       </VedAppShell>
     );
   }
@@ -172,10 +169,7 @@ export function FormDetail() {
   if (!form) {
     return (
       <VedAppShell title="Заявка не найдена">
-        <div
-          className="panel p-6 text-sm text-muted-foreground"
-          data-testid="form-detail-unavailable"
-        >
+        <div className="panel p-6 text-sm text-muted-foreground">
           Заявка не найдена или недоступна вашей роли.{" "}
           <VedLink segment="/forms" className="font-semibold text-accent hover:underline">
             Вернуться в реестр

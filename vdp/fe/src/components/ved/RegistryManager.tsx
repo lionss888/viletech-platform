@@ -158,21 +158,28 @@ export function RegistryManager({
   return (
     <div className="space-y-4">
       <div className="panel p-4">
-        <div className="flex flex-wrap items-center justify-between gap-3">
+        <p className="text-sm font-semibold">{def.title}</p>
+        {rows.length > 0 && (
+          <p className="mt-0.5 text-xs text-muted-foreground">
+            {def.subtitle}. Сейчас в списке {rows.length}
+            {records.length !== rows.length ? ` из ${records.length}` : ""} — найдите нужную запись
+            через поиск{canWrite ? ", добавьте новую или измените существующую" : ""}.
+          </p>
+        )}
+        <div className="mt-3 flex flex-wrap items-center justify-between gap-3">
           <input
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            placeholder="Поиск по справочнику"
+            placeholder="Начните вводить название, чтобы найти"
             className="field max-w-xs"
           />
           <div className="flex w-full flex-col items-stretch gap-2 sm:w-auto sm:flex-row sm:flex-wrap sm:items-center">
-            <span className="font-mono text-xs text-muted-foreground">{rows.length} записей</span>
             <button
               type="button"
               onClick={() => download(toCsv(def, records), `${def.key}.csv`)}
               className="w-full rounded-md bg-card px-3 py-2 text-xs font-semibold shadow-[0_0_0_1px_var(--input)] hover:bg-muted sm:w-auto"
             >
-              Скачать CSV
+              Скачать список
             </button>
             {canWrite && (
               <button
@@ -184,17 +191,17 @@ export function RegistryManager({
                 }}
                 className="w-full rounded-md bg-card px-3 py-2 text-xs font-semibold shadow-[0_0_0_1px_var(--input)] hover:bg-muted sm:w-auto"
               >
-                Загрузить Excel / CSV
+                Загрузить из файла
               </button>
             )}
 
-            {canWrite && (
+            {canWrite && rows.length > 0 && (
               <button
                 type="button"
                 onClick={openCreate}
                 className="w-full rounded-md bg-primary px-3 py-2 text-xs font-semibold text-primary-foreground hover:opacity-90 sm:w-auto"
               >
-                Добавить
+                Добавить {def.singular}
               </button>
             )}
           </div>
@@ -203,7 +210,7 @@ export function RegistryManager({
         {notice && <p className="mt-2 text-xs text-done">{notice}</p>}
         {!canWrite && (
           <p className="mt-2 text-xs text-muted-foreground">
-            Просмотр справочника. Изменения доступны ролям: {writeRoleLabels}.
+            Список открыт только для просмотра. Изменять его могут: {writeRoleLabels}.
           </p>
         )}
 
@@ -244,33 +251,32 @@ export function RegistryManager({
                 <tr>
                   <td
                     colSpan={def.fields.length + extraColumns.length + (canWrite ? 1 : 0)}
-                    className="py-6 text-sm text-muted-foreground"
+                    className="py-6"
                     data-testid={`registry-empty-${def.key}`}
                   >
-                    {def.key === "counterparties" ? (
-                      <>
-                        Справочник контрагентов пуст.
-                        {canWrite ? (
-                          <>
-                            {" "}
-                            <button
-                              type="button"
-                              onClick={openCreate}
-                              className="font-semibold text-accent hover:underline"
-                            >
-                              Добавьте контрагента
-                            </button>
-                            {" "}
-                            или создайте заявку и догрузите документы на карточке.
-                          </>
-                        ) : (
-                          " Обратитесь к менеджеру или добавьте запись, когда появится право записи."
-                        )}
-                      </>
+                    {query.trim() && records.length > 0 ? (
+                      <p className="text-sm text-muted-foreground">
+                        По запросу ничего не найдено — очистите поиск или измените запрос.
+                      </p>
                     ) : (
                       <>
-                        Записей пока нет.
-                        {canWrite ? " Нажмите «Добавить», чтобы создать первую." : ""}
+                        <p className="text-sm text-muted-foreground">
+                          {def.subtitle}. Здесь пока пусто — добавьте первую запись, и она сразу
+                          станет доступна в заявках.
+                        </p>
+                        {canWrite ? (
+                          <button
+                            type="button"
+                            onClick={openCreate}
+                            className="mt-3 w-full rounded-md bg-primary px-3 py-2 text-xs font-semibold text-primary-foreground hover:opacity-90 sm:w-auto"
+                          >
+                            Добавить {def.singular}
+                          </button>
+                        ) : (
+                          <p className="mt-2 text-xs text-muted-foreground">
+                            Список открыт только для просмотра. Изменять его могут: {writeRoleLabels}.
+                          </p>
+                        )}
                       </>
                     )}
                   </td>
@@ -322,13 +328,6 @@ export function RegistryManager({
                   </tr>
                 );
               })}
-              {rows.length === 0 && (
-                <tr>
-                  <td colSpan={def.fields.length + extraColumns.length + 1} className="py-8 text-center text-sm text-muted-foreground">
-                    Ничего не найдено
-                  </td>
-                </tr>
-              )}
             </tbody>
           </table>
         </div>
@@ -338,7 +337,7 @@ export function RegistryManager({
         open={draft !== null}
         onOpenChange={(open) => !open && setDraft(null)}
         title={editingId ? `Изменить ${def.singular}` : `Добавить ${def.singular}`}
-        description="Данные сохраняются в справочник и сразу доступны в заявках."
+        description="Заполните поля ниже — запись появится в справочнике и сразу станет доступна в заявках. Поля со звёздочкой обязательны."
         footer={
           <>
             <ModalButton variant="quiet" onClick={() => setDraft(null)}>
@@ -359,7 +358,11 @@ export function RegistryManager({
                 />
               ) : (
                 <label key={field.key} className="block">
-                  <span className="label-caps">{field.label}</span>
+                  <span className="label-caps">
+                    {field.label}
+                    {field.required && <span className="text-destructive"> *</span>}
+                  </span>
+                  {field.hint && <p className="mt-0.5 text-xs text-muted-foreground">{field.hint}</p>}
                   {field.type === "select" ? (
                     <select
                       value={String(draft[field.key] ?? "")}

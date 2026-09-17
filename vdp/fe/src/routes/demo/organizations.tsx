@@ -139,17 +139,17 @@ function OrganizationsRegistry() {
       )}
       {showBank && organizations.length > 0 && (
         <div className="panel mb-4 p-4">
-          <p className="label-caps">Канал Bank API (интеграция)</p>
+          <p className="text-sm font-semibold">Организации, которые платят через банк</p>
           <p className="mt-1 text-xs text-muted-foreground">
-            Настройки комиссии, webhook и агента по умолчанию для организаций с типом Bank API — не отдельный
-            банковский кабинет.
+            Здесь задаются комиссия и ответственный сотрудник для клиентов, чьи платежи проходят через банк.
+            Нажмите «Настроить» рядом с организацией, чтобы изменить условия.
           </p>
           <ul className="mt-2 divide-y divide-border">
             {organizations.slice(0, 6).map((org) => (
               <li key={org.id} className="flex flex-wrap items-center gap-2 py-2 text-sm">
                 <span className="font-semibold">{org.name}</span>
                 {org.clientType === "bank" && (
-                  <span className="rounded-md bg-wait-soft px-1.5 py-0.5 text-[10px] font-semibold text-wait">Bank client</span>
+                  <span className="rounded-md bg-wait-soft px-1.5 py-0.5 text-[10px] font-semibold text-wait">Платит через банк</span>
                 )}
                 <span className="font-mono text-xs text-muted-foreground">ИНН {org.inn}</span>
                 <span className="ml-auto">
