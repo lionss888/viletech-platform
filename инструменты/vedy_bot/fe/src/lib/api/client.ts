@@ -112,6 +112,9 @@ export function mapThreadMsg(m: ThreadMsg): ConsoleMessage {
         .filter(Boolean);
     }
   }
+  if (isAgent) {
+    summary = formatAgentError(summary);
+  }
   const mapped: ConsoleMessage = {
     id: m.id || `${m.chat_id}:${m.message_id}:${m.direction}`,
     timestamp: m.at || new Date().toISOString(),
@@ -191,6 +194,11 @@ export async function startAgent(input: {
   apiKey?: string;
   useKnowledge?: boolean;
 }): Promise<AgentJob> {
+  const key = (input.apiKey || getAgentKey()).trim();
+  const problem = agentKeyProblem(key, getToken());
+  if (problem) {
+    throw new Error(problem);
+  }
   return api("/api/agent", {
     method: "POST",
     body: JSON.stringify({
@@ -275,13 +283,50 @@ export async function publishSelection(input: {
   });
 }
 
+const AGENT_KEY_PREFIX_CANONICAL = "crsr_";
+const AGENT_KEY_PREFIX_LEGACY = "key_";
+const AGENT_KEY_CLOUD_REJECTED =
+  "облако не приняло ключ — вставь полный User API Key из раздела API (crsr_…)";
+
+export function hasAgentKeyPrefix(value: string): boolean {
+  const key = value.trim().toLowerCase();
+  return key.startsWith(AGENT_KEY_PREFIX_CANONICAL) || key.startsWith(AGENT_KEY_PREFIX_LEGACY);
+}
+
+export function formatAgentError(raw: string): string {
+  const text = (raw || "").trim();
+  if (/invalid user api key/i.test(text)) {
+    return AGENT_KEY_CLOUD_REJECTED;
+  }
+  return text;
+}
+
+export function agentKeyProblem(agentKey: string, consoleToken: string): string | null {
+  const agent = agentKey.trim();
+  const token = consoleToken.trim();
+  if (!agent) {
+    return "нет ключа агента — вставь ключ в поле «Ключ агента»";
+  }
+  if (token && agent === token) {
+    return "ключ агента совпадает с токеном консоли — нужен отдельный ключ агента";
+  }
+  return null;
+}
+
+export function formatHitlError(err: unknown): string {
+  const text = err instanceof Error ? err.message : String(err);
+  if (/card not awaiting approve/i.test(text)) {
+    return "карточка уже решена";
+  }
+  return text || "не удалось сохранить решение";
+}
+
 export function consoleKeyPresent(): boolean {
   return getToken().trim().length > 0;
 }
 
 export function agentKeyPresent(): boolean {
-  const k = getAgentKey().trim();
-  return k.startsWith("key_") || k.startsWith("crsr_");
+  return hasAgentKeyPrefix(getAgentKey());
 }
 
 export async function deleteTgMessage(messageId: number, chatId = 0): Promise<void> {

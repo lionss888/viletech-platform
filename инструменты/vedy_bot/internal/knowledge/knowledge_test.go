@@ -15,7 +15,7 @@ import (
 
 func TestRedactText(t *testing.T) {
 	t.Parallel()
-	in := "contact me@example.com or +79991234567 with key_abc12345XYZ"
+	in := "contact me@example.com or +79991234567 with key_abc12345XYZ and crsr_abc12345XYZ"
 	got := RedactText(in)
 	if strings.Contains(got, "me@example.com") {
 		t.Fatalf("email not redacted: %q", got)
@@ -23,7 +23,7 @@ func TestRedactText(t *testing.T) {
 	if strings.Contains(got, "+79991234567") {
 		t.Fatalf("phone not redacted: %q", got)
 	}
-	if strings.Contains(got, "key_abc12345XYZ") {
+	if strings.Contains(got, "key_abc12345XYZ") || strings.Contains(got, "crsr_abc12345XYZ") {
 		t.Fatalf("api key not redacted: %q", got)
 	}
 	if !strings.Contains(got, "[email]") || !strings.Contains(got, "[phone]") || !strings.Contains(got, "[key]") {

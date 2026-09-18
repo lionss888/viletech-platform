@@ -12,7 +12,7 @@ TELEGRAM_OPERATOR_CHAT_IDS=-200…        # optional operator chat/DM
 INTAKE_CONSOLE_TOKEN=long-random
 INTAKE_CONSOLE=1
 INTAKE_CONSOLE_ADDR=127.0.0.1:8787
-CURSOR_API_KEY=key_…                 # cloud Cursor for analyze/ask
+CURSOR_API_KEY=crsr_…                # User API Key from API settings; key_… still accepted
 INTAKE_AGENT_CLOUD=1                 # 0 = local cwd agent (P4)
 # INTAKE_EMBEDDING_URL=https://api.openai.com/v1
 # INTAKE_EMBEDDING_API_KEY=…
@@ -115,7 +115,7 @@ Optional demo mocks: `VITE_INTAKE_DEMO=1` (default is live Go API).
 - Selective publish of selected text to manager or operator chat (sanitize)
 - Delete a Telegram message by id
 - Manager-safe "done" template (`comms.ManagerDone`) mirrored to the chat
-- Header shows console Bearer vs agent `key_…` separately
+- Header shows console Bearer vs agent key (`crsr_…`, legacy `key_…`) separately
 
 ## Analytics boundary
 

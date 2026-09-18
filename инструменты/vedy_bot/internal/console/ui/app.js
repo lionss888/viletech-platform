@@ -174,7 +174,9 @@
       });
       await refresh();
     } catch (e) {
-      setStatus(String(e.message || e));
+      const msg = String(e.message || e);
+      setStatus(/card not awaiting approve/i.test(msg) ? "карточка уже решена" : msg);
+      await refresh();
     }
   }
 
@@ -198,7 +200,7 @@
     if (key) localStorage.setItem("intake_cursor_api_key", key);
     const prompt = (extra || $("agent-prompt").value || "").trim();
     if (mode === "ask_agent" && !key && !localStorage.getItem("intake_cursor_api_key")) {
-      resultEl.textContent = "Нужен ключ агента: вставь CURSOR_API_KEY в поле «Ключ агента» (не в вопрос).";
+      resultEl.textContent = "Нужен ключ агента: вставь его в поле «Ключ агента» (не в вопрос).";
       setStatus("нет ключа агента");
       return;
     }
@@ -241,7 +243,7 @@
           setStatus("ответ готов");
         }
         if (/Invalid User API Key/i.test(err) || /Invalid User API Key/i.test(job.result || "")) {
-          setStatus("ключ агента отклонён Cursor — нужен User API Key (key_…) из dashboard");
+          setStatus("облако не приняло ключ — вставь полный ключ из раздела API (crsr_…)");
         }
         await refresh();
         return;

@@ -171,7 +171,7 @@ export function SelectionBar({
         )}
 
         <p className="mt-2 font-mono text-[10px] leading-relaxed text-muted-foreground">
-          «Разобрать» / «Спросить у агента» — Cursor cloud (нужен CURSOR_API_KEY).
+          «Разобрать» / «Спросить у агента» — нужен ключ агента.
           Ошибка агента показывается явно, без подмены локальным stub.
         </p>
       </div>

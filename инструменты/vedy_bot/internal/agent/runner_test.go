@@ -53,7 +53,7 @@ func TestAskAgentNoKeyIsError(t *testing.T) {
 	if got.Result != "" {
 		t.Fatalf("expected empty result, got %q", got.Result)
 	}
-	if !strings.Contains(got.Error, "CURSOR_API_KEY") {
+	if !strings.Contains(got.Error, "ключа агента") {
 		t.Fatalf("error=%q", got.Error)
 	}
 	if strings.Contains(got.Result, "Локальный разбор") {
@@ -100,12 +100,53 @@ func TestAskAgentBridgeFailIsError(t *testing.T) {
 	}
 }
 
+func TestAskAgentInvalidKeyIsRussian(t *testing.T) {
+	home := t.TempDir()
+	st := store.New(home)
+	_ = st.AppendThread(store.ThreadMsg{MessageID: 1, Direction: "in", Text: "x", FromUser: "u"})
+	bridge := filepath.Join(home, "ask.mjs")
+	script := "process.stderr.write('startup failed: Invalid User API Key'); process.exit(1);\n"
+	if err := os.WriteFile(bridge, []byte(script), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	t.Setenv("INTAKE_CONSOLE_TOKEN", "")
+	r := &Runner{Store: st, Workspace: home, APIKey: "key_test_not_real_xxxxxxxx", BridgeJS: bridge}
+	job, err := r.StartJob("ask_agent", nil, "вопрос", "")
+	if err != nil {
+		t.Fatal(err)
+	}
+	got := waitJob(t, r, job.ID, "error")
+	if !strings.Contains(got.Error, "облако не приняло ключ") {
+		t.Fatalf("error=%q", got.Error)
+	}
+	if strings.Contains(got.Error, "Invalid User API Key") || strings.Contains(got.Error, "exit status") {
+		t.Fatalf("raw bridge error leaked: %q", got.Error)
+	}
+}
+
+func TestAskAgentConsoleTokenRejected(t *testing.T) {
+	home := t.TempDir()
+	st := store.New(home)
+	_ = st.AppendThread(store.ThreadMsg{MessageID: 1, Direction: "in", Text: "x", FromUser: "u"})
+	t.Setenv("INTAKE_CONSOLE_TOKEN", "same-console-token")
+	t.Setenv("CURSOR_API_KEY", "")
+	r := &Runner{Store: st, Workspace: home, APIKey: "same-console-token"}
+	job, err := r.StartJob("ask_agent", nil, "вопрос", "")
+	if err != nil {
+		t.Fatal(err)
+	}
+	got := waitJob(t, r, job.ID, "error")
+	if !strings.Contains(got.Error, "совпадает с токеном консоли") {
+		t.Fatalf("error=%q", got.Error)
+	}
+}
+
 func TestKnowledgePackFailIsError(t *testing.T) {
 	t.Parallel()
 	home := t.TempDir()
 	st := store.New(home)
 	r := &Runner{
-		Store: st,
+		Store:     st,
 		Workspace: home,
 		KnowledgePack: func(string) (string, error) {
 			return "", os.ErrNotExist

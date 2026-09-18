@@ -32,8 +32,10 @@ Same for the shell: `VedAppShell.tsx` is live, `AppShell.tsx` is the Lovable ref
 Nav lives in `nav-config.ts` (`Документы` is first under `Справочники`, matching Lovable).
 
 Ported through `f0da0692`: feature-flags section + nav/shell gating, mobile create sheet/menu,
-AppShell synced with process-roles / feature-flags. Platform-only `ManagerRouteHintPanel` /
-`manager-route-hint` kept on disk (excluded from delete); re-wire into `form-detail-page` if needed.
+AppShell synced with process-roles / feature-flags. Platform-only mounts listed in
+`vdp/scripts/check-platform-mounts.sh` MUST stay wired into the live host after any UI sync.
+A file on disk without the JSX mount is a red `make platform-mounts-check`, not a later chore.
+Current mount: `ManagerRouteHintPanel` in `form-detail-page` (`data-testid="manager-route-hint"`).
 Root routes remain thin wrappers; `VedAppShell` is live, `AppShell` is Lovable reference.
 
 ## Demo vs app capability boundary (not 100% parity)

@@ -1,0 +1,21 @@
+---
+description: Platform-only widgets must stay mounted in the live host; a file on disk without JSX is a defect.
+alwaysApply: true
+---
+
+# FE: обязательные platform-mounts
+
+Класс ошибки **orphan mount**: компонент и unit на диске, живой экран без вставки. Дешёвые тесты зелёные, пользователь и длинный браузерный сценарий — нет.
+
+Инцидент: коммит `7e8b3ed0` снял `ManagerRouteHintPanel` с карточки заявки и оставил мягкое «вставим потом». Это дефект процесса, не отложенная задача.
+
+## MUST
+
+- Видимые platform-only виджеты из реестра `vdp/scripts/check-platform-mounts.sh` остаются в live host (`form-detail-page` и далее по реестру).
+- Sync / правка layout может менять вёрстку, но **не** снимает mount. «Файл есть, JSX нет» — красный `make platform-mounts-check`, не TODO в `AGENTS.md`.
+- Новая такая панель: строка в реестре скрипта в том же diff, что и вставка. Не ослабляй E2E, который ждёт `data-testid`.
+- Перед «готово» по карточке заявки / Pilot: из `vdp` сначала `make check-env-parity`, затем `make platform-mounts-check`. Публикация и «CI ok» — только после зелёного `make ci-pr-pilot`.
+
+## Вне scope
+
+Не подменяй этим правилом статусную машину, ActionPanel и process-roles. Панель — подсказка, не источник статуса.

@@ -161,3 +161,39 @@ func TestPullMediaOnPhotoWithoutTriggerGoesToThreadOnly(t *testing.T) {
 		t.Fatalf("inbox should stay empty without trigger, got %d", len(inbox))
 	}
 }
+
+func TestIngestConsoleMirrorDoesNotDuplicate(t *testing.T) {
+	t.Parallel()
+	home := t.TempDir()
+	fm := &fakeMsg{}
+	p := &Pipeline{
+		Store:     store.New(home),
+		Messenger: fm,
+		ChatIDs:   map[int64]struct{}{-100: {}},
+		BotUser:   "vedy_bot",
+	}
+	_, err := p.IngestConsole(context.Background(), ConsoleIngest{
+		Text:       "привет из консоли",
+		MirrorToTG: true,
+		FromUser:   "console",
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(fm.texts) != 1 {
+		t.Fatalf("sends=%v", fm.texts)
+	}
+	thread, err := p.Store.ListThreadRecent(10)
+	if err != nil {
+		t.Fatal(err)
+	}
+	outs := 0
+	for _, m := range thread {
+		if m.Direction == "out" && strings.Contains(m.Text, "привет из консоли") {
+			outs++
+		}
+	}
+	if outs != 1 {
+		t.Fatalf("want one outbound thread line, got %d (%+v)", outs, thread)
+	}
+}

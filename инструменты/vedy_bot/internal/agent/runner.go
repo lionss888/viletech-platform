@@ -15,16 +15,16 @@ import (
 
 // Job is an async agent request.
 type Job struct {
-	ID         string   `json:"id"`
-	Status     string   `json:"status"` // queued|running|done|error
-	Mode       string   `json:"mode"`   // analyze_selected|analyze_chat|ask_agent|local_analyze
-	Prompt     string   `json:"prompt"`
-	MessageIDs []string `json:"message_ids,omitempty"`
-	Result     string   `json:"result,omitempty"`
-	Error      string   `json:"error,omitempty"`
-	CreatedAt  string   `json:"created_at"`
-	UpdatedAt  string   `json:"updated_at"`
-	UseKnowledge bool   `json:"use_knowledge,omitempty"`
+	ID           string   `json:"id"`
+	Status       string   `json:"status"` // queued|running|done|error
+	Mode         string   `json:"mode"`   // analyze_selected|analyze_chat|ask_agent|local_analyze
+	Prompt       string   `json:"prompt"`
+	MessageIDs   []string `json:"message_ids,omitempty"`
+	Result       string   `json:"result,omitempty"`
+	Error        string   `json:"error,omitempty"`
+	CreatedAt    string   `json:"created_at"`
+	UpdatedAt    string   `json:"updated_at"`
+	UseKnowledge bool     `json:"use_knowledge,omitempty"`
 }
 
 // Runner executes agent jobs (Cursor SDK bridge; local_analyze is explicit stub).
@@ -70,7 +70,7 @@ func (r *Runner) StartJobOpts(mode string, msgIDs []string, extra, apiKeyOverrid
 		msgs = all
 	}
 	if looksLikeAPIKey(extra) {
-		return nil, fmt.Errorf("в поле вопроса похож на API-ключ — вставь ключ в CURSOR_API_KEY / поле «Ключ агента», а сюда — текст вопроса")
+		return nil, fmt.Errorf("в поле вопроса похож на API-ключ — вставь ключ в поле «Ключ агента», а сюда — текст вопроса")
 	}
 	prompt := buildPrompt(mode, msgs, extra)
 	now := time.Now().UTC().Format(time.RFC3339)
@@ -119,9 +119,20 @@ func looksLikeAPIKey(s string) bool {
 	if s == "" || strings.Contains(s, " ") || strings.Contains(s, "\n") {
 		return false
 	}
-	low := strings.ToLower(s)
-	return strings.HasPrefix(low, "key_") || strings.HasPrefix(low, "crsr_") ||
+	return hasAgentKeyPrefix(s) ||
 		(len(s) >= 24 && len(s) <= 128 && !strings.ContainsAny(s, ".,;:!?"))
+}
+
+const (
+	agentKeyPrefixCanonical = "crsr_"
+	agentKeyPrefixLegacy    = "key_"
+	agentKeyCloudRejected   = "облако не приняло ключ — вставь полный User API Key из раздела API (crsr_…)"
+	agentKeySameAsConsole   = "ключ агента совпадает с токеном консоли — нужен отдельный ключ агента"
+)
+
+func hasAgentKeyPrefix(s string) bool {
+	low := strings.ToLower(strings.TrimSpace(s))
+	return strings.HasPrefix(low, agentKeyPrefixCanonical) || strings.HasPrefix(low, agentKeyPrefixLegacy)
 }
 
 func (r *Runner) run(job *Job, apiKeyOverride string) {
@@ -163,7 +174,19 @@ func (r *Runner) run(job *Job, apiKeyOverride string) {
 	_ = r.mirrorAgentReply(job)
 }
 
+// publicAgentError maps bridge failures to operator-facing text without vendor names.
+func publicAgentError(err error) error {
+	if err == nil {
+		return nil
+	}
+	if strings.Contains(strings.ToLower(err.Error()), "invalid user api key") {
+		return fmt.Errorf("%s", agentKeyCloudRejected)
+	}
+	return err
+}
+
 func (r *Runner) failJob(job *Job, err error) {
+	err = publicAgentError(err)
 	job.Status = "error"
 	job.Error = err.Error()
 	job.Result = ""
@@ -200,7 +223,10 @@ func (r *Runner) runCursorAgent(ctx context.Context, prompt, apiKeyOverride stri
 		key = strings.TrimSpace(os.Getenv("CURSOR_API_KEY"))
 	}
 	if key == "" {
-		return "", fmt.Errorf("нет CURSOR_API_KEY — вставь ключ в поле «Ключ агента» или в ~/.vedy_bot/env")
+		return "", fmt.Errorf("нет ключа агента — вставь ключ в поле «Ключ агента» или в ~/.vedy_bot/env")
+	}
+	if consoleTok := strings.TrimSpace(os.Getenv("INTAKE_CONSOLE_TOKEN")); consoleTok != "" && key == consoleTok {
+		return "", fmt.Errorf("%s", agentKeySameAsConsole)
 	}
 	bridge := r.BridgeJS
 	if bridge == "" {
@@ -339,7 +365,7 @@ func localAnalyze(prompt string) string {
 	b.WriteString("\nРекомендации:\n")
 	b.WriteString("1. Уточнить у менеджера ожидаемый исход, если есть расхождения.\n")
 	b.WriteString("2. Вынести в карточку HITL только то, что требует согласования.\n")
-	b.WriteString("3. Для ответа агента IDE задайте CURSOR_API_KEY и режим analyze/ask (не local_analyze).\n")
+	b.WriteString("3. Для ответа агента задайте ключ агента и режим analyze/ask (не local_analyze).\n")
 	return b.String()
 }
 

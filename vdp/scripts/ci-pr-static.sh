@@ -42,6 +42,7 @@ run_bg "check-deploy-secrets" make check-deploy-secrets
 run_bg "test-adapters" make test-adapters
 run_bg "lovable-seed-check" make lovable-seed-check
 run_bg "pilot-matrix-stale" bash scripts/check-pilot-matrix-stale.sh
+run_bg "platform-mounts" bash scripts/check-platform-mounts.sh
 
 # FE unit
 run_bg "fe-npm-test" sh -c "cd fe && npm test"

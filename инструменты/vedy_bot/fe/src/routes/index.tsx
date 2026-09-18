@@ -1,5 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Composer } from "@/components/console/Composer";
 import { ConsoleHeader } from "@/components/console/ConsoleHeader";
@@ -16,6 +17,8 @@ import {
 import {
   checkAuth,
   deleteTgMessage,
+  formatAgentError,
+  formatHitlError,
   fetchCards,
   fetchThread,
   getToken,
@@ -144,11 +147,11 @@ function Index() {
       const job = await startAgent({ mode, messageIds: ids, prompt });
       const done = await waitAgentJob(job.id);
       if (done.status === "error") {
-        setAgentError(done.error || "ошибка агента");
+        setAgentError(formatAgentError(done.error || "ошибка агента"));
       }
       await refresh();
     } catch (e) {
-      setAgentError(e instanceof Error ? e.message : String(e));
+      setAgentError(formatAgentError(e instanceof Error ? e.message : String(e)));
     } finally {
       setBusy(false);
     }
@@ -322,8 +325,10 @@ function Index() {
           setBusy(true);
           try {
             await hitlDecide(id, true);
-            await refresh();
+          } catch (e) {
+            toast.error(formatHitlError(e));
           } finally {
+            await refresh();
             setBusy(false);
           }
         }}
@@ -331,8 +336,10 @@ function Index() {
           setBusy(true);
           try {
             await hitlDecide(id, false);
-            await refresh();
+          } catch (e) {
+            toast.error(formatHitlError(e));
           } finally {
+            await refresh();
             setBusy(false);
           }
         }}

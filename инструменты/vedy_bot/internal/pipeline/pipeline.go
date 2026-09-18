@@ -258,6 +258,10 @@ func (p *Pipeline) HandleUpdate(ctx context.Context, u telegram.Update) (bool, e
 }
 
 func (p *Pipeline) sendAndMirror(ctx context.Context, chatID, replyTo int64, kind, text string) (int64, error) {
+	return p.sendAndMirrorRecord(ctx, chatID, replyTo, kind, text, true)
+}
+
+func (p *Pipeline) sendAndMirrorRecord(ctx context.Context, chatID, replyTo int64, kind, text string, recordThread bool) (int64, error) {
 	if p.Messenger == nil {
 		return 0, fmt.Errorf("messenger nil")
 	}
@@ -273,15 +277,17 @@ func (p *Pipeline) sendAndMirror(ctx context.Context, chatID, replyTo int64, kin
 	if err != nil {
 		return 0, err
 	}
-	_ = p.Store.AppendThread(store.ThreadMsg{
-		MessageID: id,
-		ChatID:    target,
-		Channel:   string(channel),
-		FromUser:  p.BotUser,
-		Direction: "out",
-		Text:      text,
-		Kind:      "bot",
-	})
+	if recordThread && p.Store != nil {
+		_ = p.Store.AppendThread(store.ThreadMsg{
+			MessageID: id,
+			ChatID:    target,
+			Channel:   string(channel),
+			FromUser:  p.BotUser,
+			Direction: "out",
+			Text:      text,
+			Kind:      "bot",
+		})
+	}
 	return id, nil
 }
 
@@ -389,7 +395,8 @@ func (p *Pipeline) IngestConsole(ctx context.Context, in ConsoleIngest) (Console
 		if ch == string(router.ChannelOperator) {
 			kind = "operator_prompt"
 		}
-		id, err := p.sendAndMirror(ctx, chatID, 0, kind, body)
+		recordBot := strings.TrimSpace(body) != strings.TrimSpace(redacted)
+		id, err := p.sendAndMirrorRecord(ctx, chatID, 0, kind, body, recordBot)
 		if err != nil {
 			return ConsoleResult{Record: rec, Ack: ack, CardID: cardID}, err
 		}
