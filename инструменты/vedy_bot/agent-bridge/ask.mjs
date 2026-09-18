@@ -2,6 +2,7 @@
 /**
  * One-shot Cursor SDK bridge for intake console.
  * Env: CURSOR_API_KEY, INTAKE_WORKSPACE, INTAKE_AGENT_PROMPT
+ * INTAKE_AGENT_CLOUD=1 → cloud; otherwise local cwd.
  * Prints final assistant text to stdout.
  */
 import { Agent, CursorAgentError } from "@cursor/sdk";
@@ -19,7 +20,9 @@ if (!prompt.trim()) {
   process.exit(1);
 }
 
-const useCloud = process.env.INTAKE_AGENT_CLOUD === "1" || process.env.INTAKE_AGENT_CLOUD === "true";
+const useCloud =
+  process.env.INTAKE_AGENT_CLOUD === "1" ||
+  process.env.INTAKE_AGENT_CLOUD === "true";
 const opts = {
   apiKey,
   model: { id: process.env.INTAKE_AGENT_MODEL || "composer-2.5" },
@@ -33,7 +36,12 @@ if (useCloud) {
 try {
   const result = await Agent.prompt(prompt, opts);
   if (result.status === "error") {
-    console.error("run failed", result.id);
+    console.error(
+      useCloud
+        ? "cloud run failed"
+        : "local run failed (OOM/timeout/resources?) — try INTAKE_AGENT_CLOUD=1",
+      result.id || "",
+    );
     process.exit(2);
   }
   const text = result.result ?? result.text ?? JSON.stringify(result);
@@ -43,6 +51,11 @@ try {
     console.error("startup failed:", err.message);
     process.exit(1);
   }
-  console.error(err?.message || err);
+  const msg = err?.message || String(err);
+  if (!useCloud && /ENOMEM|out of memory|timeout|ENOSPC/i.test(msg)) {
+    console.error("local resource failure:", msg);
+    process.exit(3);
+  }
+  console.error(msg);
   process.exit(1);
 }

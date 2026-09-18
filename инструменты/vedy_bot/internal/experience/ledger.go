@@ -12,11 +12,13 @@ import (
 type Event struct {
 	At             string   `json:"at"`
 	CardID         string   `json:"card_id"`
-	Kind           string   `json:"kind"` // approve|decline|stale|conflict|clarify|proposal
+	Kind           string   `json:"kind"` // approve|decline|stale|conflict|clarify|proposal|agent|fallback
 	Class          string   `json:"class,omitempty"`
 	TimelinePhrase string   `json:"timeline_phrase,omitempty"`
 	Conflicts      []string `json:"conflicts,omitempty"`
 	ReminderCount  int      `json:"reminder_count,omitempty"`
+	Mode           string   `json:"mode,omitempty"`            // rules|cursor|hybrid
+	FallbackReason string   `json:"fallback_reason,omitempty"` // sdk_error|no_key|parse|kb
 }
 
 var mu sync.Mutex

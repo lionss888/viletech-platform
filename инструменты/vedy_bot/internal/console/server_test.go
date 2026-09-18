@@ -149,7 +149,7 @@ func TestConsoleThreadAndMessage(t *testing.T) {
 		t.Fatalf("path=%v", out)
 	}
 
-	body, _ = json.Marshal(map[string]any{"mode": "analyze_chat", "message_ids": []string{}})
+	body, _ = json.Marshal(map[string]any{"mode": "local_analyze", "message_ids": []string{}})
 	req = httptest.NewRequest(http.MethodPost, "/api/agent", bytes.NewReader(body))
 	req.Header.Set("Authorization", "Bearer secret")
 	req.Header.Set("Content-Type", "application/json")
@@ -175,6 +175,9 @@ func TestConsoleThreadAndMessage(t *testing.T) {
 				t.Fatal("empty result")
 			}
 			return
+		}
+		if job.Status == "error" {
+			t.Fatalf("unexpected error job: %+v", job)
 		}
 		time.Sleep(50 * time.Millisecond)
 	}

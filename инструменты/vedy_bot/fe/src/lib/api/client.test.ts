@@ -17,17 +17,17 @@ describe("mapThreadMsg", () => {
     expect(actual.channel).toBe("telegram");
   });
 
-  it("splits agent footer note", () => {
+  it("maps agent error text", () => {
     const actual = mapThreadMsg({
       id: "a",
       direction: "agent",
       from_user: "agent",
-      text: "Агент IDE: bad key\n\n---\nЛокальный разбор\nРекомендации:\n1. Fix key",
+      text: "Ошибка агента: нет CURSOR_API_KEY",
       at: "2026-09-11T10:00:00Z",
-      kind: "ask_agent",
+      kind: "ask_agent_error",
     });
     expect(actual.direction).toBe("agent");
-    expect(actual.note).toContain("bad key");
+    expect(actual.summary).toContain("Ошибка агента");
   });
 });
 

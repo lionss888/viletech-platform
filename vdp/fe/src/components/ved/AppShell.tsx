@@ -35,10 +35,11 @@ const REFERENCES: NavItem[] = [
   { to: "/currencies", label: "Валюты", roles: ["manager", "root"] },
   { to: "/compliance-tools", label: "Инструменты комплаенс", roles: ["root"] },
   { to: "/admin", label: "Пользователи", roles: ["root"] },
+  { to: "/process-roles", label: "Роли процесса", roles: ["root"] },
+  { to: "/feature-flags", label: "Разрешения разделов", roles: ["root"] },
   { to: "/countries", label: "Страны и риски", roles: ["root"] },
 ];
 
-const CAN_CREATE: VedRole[] = ["user", "manager", "root"];
 
 
 const allowed = (items: NavItem[], role: VedRole | undefined) =>
@@ -91,7 +92,7 @@ export function AppShell({ children, title, subtitle }: { children: ReactNode; t
           <span className="text-sm font-semibold tracking-tight">{BRAND_NAME}</span>
         </Link>
 
-        {role && CAN_CREATE.includes(role) && (
+        {role && (
           <div className="mt-5">
             <DropdownMenu>
               <DropdownMenuTrigger className="w-full rounded-md bg-primary px-3 py-2 text-sm font-semibold text-primary-foreground">
@@ -184,6 +185,22 @@ export function AppShell({ children, title, subtitle }: { children: ReactNode; t
             {subtitle && <p className="truncate text-xs text-muted-foreground">{subtitle}</p>}
           </div>
           <div className="flex items-center gap-3">
+            {role && (
+              <DropdownMenu>
+                <DropdownMenuTrigger className="rounded-md bg-primary px-3 py-1.5 text-sm font-semibold text-primary-foreground lg:hidden">
+                  Создать
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-56">
+                  <DropdownMenuLabel>Что нужно создать?</DropdownMenuLabel>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem onSelect={() => navigate({ to: "/forms/new" })}>Новая заявка</DropdownMenuItem>
+                  <DropdownMenuItem onSelect={() => navigate({ to: "/documents" })}>Добавить документ</DropdownMenuItem>
+                  <DropdownMenuItem onSelect={() => navigate({ to: "/counterparties" })}>Добавить компанию</DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem onSelect={() => setSupportOpen(true)}>Поддержка и консультация</DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            )}
             <div className="hidden text-right sm:block">
               <p className="text-xs font-semibold">{session?.name}</p>
               <p className="font-mono text-[11px] text-muted-foreground">{session?.email}</p>

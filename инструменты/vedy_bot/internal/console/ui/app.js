@@ -233,12 +233,15 @@
       const job = await api("/api/agent/" + encodeURIComponent(id));
       if (job.status === "done" || job.status === "error") {
         const err = job.error || "";
-        const body = job.result || err || job.status;
-        resultEl.textContent = body;
-        if (/Invalid User API Key/i.test(body) || /Invalid User API Key/i.test(err)) {
-          setStatus("ключ агента отклонён Cursor — нужен User API Key (key_…) из dashboard");
+        if (job.status === "error") {
+          resultEl.textContent = err || "ошибка агента";
+          setStatus("ошибка агента");
         } else {
-          setStatus(job.status === "done" && !err ? "ответ готов" : "ошибка агента");
+          resultEl.textContent = job.result || job.status;
+          setStatus("ответ готов");
+        }
+        if (/Invalid User API Key/i.test(err) || /Invalid User API Key/i.test(job.result || "")) {
+          setStatus("ключ агента отклонён Cursor — нужен User API Key (key_…) из dashboard");
         }
         await refresh();
         return;

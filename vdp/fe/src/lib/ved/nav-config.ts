@@ -23,6 +23,7 @@ export const REFERENCE_NAV: NavItem[] = [
   { segment: "/compliance-tools", label: "Инструменты комплаенс", roles: ["root"] },
   { segment: "/admin", label: "Пользователи", roles: ["root"] },
   { segment: "/process-roles", label: "Роли процесса", roles: ["root"] },
+  { segment: "/feature-flags", label: "Разрешения разделов", roles: ["root"] },
   { segment: "/countries", label: "Страны и риски", roles: ["root"] },
   { segment: "/testing", label: "Проверка сценариев", roles: ["root"] },
 ];

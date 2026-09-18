@@ -6,23 +6,23 @@ todos:
     content: Согласовать карту этапов P0–P5, RAG-подход, порядок cutover HITL
     status: completed
   - id: exec-p0
-    content: "Исполнить P0 (cloud agent honesty)"
-    status: pending
+    content: Исполнить P0 (cloud agent honesty)
+    status: completed
   - id: exec-p1
-    content: "Исполнить P1 (knowledge RAG + cloud embeddings)"
-    status: pending
+    content: Исполнить P1 (knowledge RAG + cloud embeddings)
+    status: completed
   - id: exec-p2
-    content: "Исполнить P2 (TG intake → Cursor + knowledge)"
-    status: pending
+    content: Исполнить P2 (TG intake → Cursor + knowledge)
+    status: completed
   - id: exec-p3
-    content: "Исполнить P3 (HITL primary = Cursor+KB, hybrid fallback)"
-    status: pending
+    content: Исполнить P3 (HITL primary = Cursor+KB, hybrid fallback)
+    status: completed
   - id: exec-p4
-    content: "Исполнить P4 (local Cursor Agent dual-mode)"
-    status: pending
+    content: Исполнить P4 (local Cursor Agent dual-mode)
+    status: completed
   - id: exec-p5
-    content: "Исполнить P5 (alpha stand tests; start operator-only)"
-    status: pending
+    content: Исполнить P5 (alpha stand tests; start operator-only)
+    status: completed
 isProject: false
 ---
 

@@ -21,8 +21,10 @@ import (
 	"github.com/viletech/tools/vedy_bot/internal/agent"
 	"github.com/viletech/tools/vedy_bot/internal/card"
 	"github.com/viletech/tools/vedy_bot/internal/comms"
+	"github.com/viletech/tools/vedy_bot/internal/knowledge"
 	"github.com/viletech/tools/vedy_bot/internal/pipeline"
 	"github.com/viletech/tools/vedy_bot/internal/planfile"
+	"github.com/viletech/tools/vedy_bot/internal/stand"
 	"github.com/viletech/tools/vedy_bot/internal/store"
 )
 
@@ -34,6 +36,9 @@ type Server struct {
 	Store       *store.Store
 	Cards       *card.Store
 	Agent       *agent.Runner
+	Knowledge   *knowledge.Service
+	Retriever   knowledge.Retriever
+	Stand       *stand.Runner
 	Workspace   string
 	Log         *slog.Logger
 	UI          fs.FS
@@ -78,6 +83,11 @@ func (s *Server) Start() error {
 	mux.HandleFunc("GET /api/plans", s.auth(s.handlePlansList))
 	mux.HandleFunc("GET /api/plans/", s.auth(s.handlePlanGet))
 	mux.HandleFunc("PUT /api/plans/", s.auth(s.handlePlanPut))
+	mux.HandleFunc("POST /api/knowledge/ingest", s.auth(s.handleKnowledgeIngest))
+	mux.HandleFunc("POST /api/knowledge/search", s.auth(s.handleKnowledgeSearch))
+	mux.HandleFunc("POST /api/stand/start", s.auth(s.handleStandStart))
+	mux.HandleFunc("GET /api/stand/", s.auth(s.handleStandGet))
+	mux.HandleFunc("GET /api/stand-actions", s.auth(s.handleStandActions))
 	mux.HandleFunc("GET /api/media/", s.auth(s.handleMediaGet))
 	mux.HandleFunc("GET /api/status", s.auth(s.handleStatus))
 	if err := s.mountUI(mux); err != nil {
@@ -359,10 +369,11 @@ func (s *Server) handleToCursor(w http.ResponseWriter, r *http.Request) {
 }
 
 type agentReq struct {
-	Mode       string   `json:"mode"` // analyze_selected|analyze_chat|ask_agent
-	MessageIDs []string `json:"message_ids"`
-	Prompt     string   `json:"prompt"`
-	APIKey     string   `json:"api_key,omitempty"`
+	Mode         string   `json:"mode"` // analyze_selected|analyze_chat|ask_agent|local_analyze
+	MessageIDs   []string `json:"message_ids"`
+	Prompt       string   `json:"prompt"`
+	APIKey       string   `json:"api_key,omitempty"`
+	UseKnowledge bool     `json:"use_knowledge,omitempty"`
 }
 
 func (s *Server) handleAgentStart(w http.ResponseWriter, r *http.Request) {
@@ -380,12 +391,12 @@ func (s *Server) handleAgentStart(w http.ResponseWriter, r *http.Request) {
 		mode = "analyze_selected"
 	}
 	switch mode {
-	case "analyze_selected", "analyze_chat", "ask_agent":
+	case "analyze_selected", "analyze_chat", "ask_agent", "local_analyze":
 	default:
 		http.Error(w, "unknown mode", http.StatusBadRequest)
 		return
 	}
-	job, err := s.Agent.StartJob(mode, req.MessageIDs, req.Prompt, req.APIKey)
+	job, err := s.Agent.StartJobOpts(mode, req.MessageIDs, req.Prompt, req.APIKey, req.UseKnowledge)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
@@ -590,8 +601,35 @@ func (s *Server) handleStatus(w http.ResponseWriter, _ *http.Request) {
 		"console_auth":     true,
 		"workspace_set":    s.Workspace != "",
 		"operator_chats":   opConfigured,
-		"agent_configured": s.Agent != nil,
+		"agent_configured": s.Agent != nil && s.Agent.Configured(),
+		"agent_bridge":     s.Agent != nil && s.Agent.BridgeReady(),
+		"agent_runtime":    agentRuntimeLabel(s.Agent),
+		"hitl_mode":        hitlModeLabel(s.Pipeline),
 	})
+}
+
+func agentRuntimeLabel(r *agent.Runner) string {
+	if r == nil {
+		return "off"
+	}
+	cloud := strings.TrimSpace(os.Getenv("INTAKE_AGENT_CLOUD"))
+	if cloud == "" && r.CloudDefault != "" {
+		cloud = r.CloudDefault
+	}
+	if cloud == "0" || strings.EqualFold(cloud, "false") {
+		return "local"
+	}
+	return "cloud"
+}
+
+func hitlModeLabel(p *pipeline.Pipeline) string {
+	if p == nil {
+		return "rules"
+	}
+	if p.HITLMode != "" {
+		return p.HITLMode
+	}
+	return "rules"
 }
 
 func (s *Server) handleMediaGet(w http.ResponseWriter, r *http.Request) {
@@ -641,6 +679,118 @@ func writeJSON(w http.ResponseWriter, code int, v any) {
 	w.Header().Set("Content-Type", "application/json; charset=utf-8")
 	w.WriteHeader(code)
 	_ = json.NewEncoder(w).Encode(v)
+}
+
+func (s *Server) handleKnowledgeIngest(w http.ResponseWriter, r *http.Request) {
+	if s.Knowledge == nil {
+		http.Error(w, "knowledge not configured", http.StatusServiceUnavailable)
+		return
+	}
+	var req struct {
+		Source string `json:"source"`
+		Title  string `json:"title"`
+		Body   string `json:"body"`
+		Path   string `json:"path"`
+	}
+	if err := json.NewDecoder(io.LimitReader(r.Body, 4<<20)).Decode(&req); err != nil {
+		http.Error(w, "bad json", http.StatusBadRequest)
+		return
+	}
+	ctx := r.Context()
+	var doc knowledge.Document
+	var err error
+	if strings.TrimSpace(req.Path) != "" {
+		doc, err = s.Knowledge.IngestFile(ctx, req.Path)
+	} else {
+		src := req.Source
+		if src == "" {
+			src = "console"
+		}
+		doc, err = s.Knowledge.IngestText(ctx, src, req.Title, req.Body)
+	}
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+	writeJSON(w, http.StatusOK, doc)
+}
+
+func (s *Server) handleKnowledgeSearch(w http.ResponseWriter, r *http.Request) {
+	if s.Retriever == nil {
+		http.Error(w, "retriever not configured", http.StatusServiceUnavailable)
+		return
+	}
+	var req struct {
+		Query string `json:"query"`
+		TopN  int    `json:"top_n"`
+	}
+	if err := json.NewDecoder(io.LimitReader(r.Body, 1<<20)).Decode(&req); err != nil {
+		http.Error(w, "bad json", http.StatusBadRequest)
+		return
+	}
+	pack, err := s.Retriever.Search(r.Context(), req.Query, req.TopN)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+	writeJSON(w, http.StatusOK, map[string]any{
+		"summary":   pack.Summary,
+		"citations": pack.Citations,
+		"scores":    pack.Scores,
+		"chunks":    pack.Chunks,
+		"formatted": pack.Format(),
+	})
+}
+
+func (s *Server) handleStandActions(w http.ResponseWriter, _ *http.Request) {
+	acts := stand.AllowedActions()
+	out := make([]string, len(acts))
+	for i, a := range acts {
+		out[i] = string(a)
+	}
+	writeJSON(w, http.StatusOK, map[string]any{"actions": out})
+}
+
+func (s *Server) handleStandStart(w http.ResponseWriter, r *http.Request) {
+	if s.Stand == nil {
+		http.Error(w, "stand runner not configured", http.StatusServiceUnavailable)
+		return
+	}
+	var req struct {
+		Action string `json:"action"`
+	}
+	if err := json.NewDecoder(io.LimitReader(r.Body, 1<<20)).Decode(&req); err != nil {
+		http.Error(w, "bad json", http.StatusBadRequest)
+		return
+	}
+	job, err := s.Stand.Start(stand.Action(strings.TrimSpace(req.Action)))
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+	writeJSON(w, http.StatusAccepted, job)
+}
+
+func (s *Server) handleStandGet(w http.ResponseWriter, r *http.Request) {
+	if s.Stand == nil {
+		http.Error(w, "stand runner not configured", http.StatusServiceUnavailable)
+		return
+	}
+	id := strings.TrimPrefix(r.URL.Path, "/api/stand/")
+	id = strings.Trim(id, "/")
+	if id == "" || id == "start" {
+		http.Error(w, "job id required", http.StatusBadRequest)
+		return
+	}
+	job, err := s.Stand.Get(id)
+	if err != nil {
+		http.Error(w, "not found", http.StatusNotFound)
+		return
+	}
+	writeJSON(w, http.StatusOK, map[string]any{
+		"job":             job,
+		"manager_status":  stand.ManagerStatus(job),
+	})
 }
 
 func isAllowedConsoleHost(host string) bool {

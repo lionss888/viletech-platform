@@ -15,29 +15,41 @@ import (
 
 // Job is an async agent request.
 type Job struct {
-	ID        string            `json:"id"`
-	Status    string            `json:"status"` // queued|running|done|error
-	Mode      string            `json:"mode"`   // analyze_selected|analyze_chat|ask_agent
-	Prompt    string            `json:"prompt"`
-	MessageIDs []string         `json:"message_ids,omitempty"`
-	Result    string            `json:"result,omitempty"`
-	Error     string            `json:"error,omitempty"`
-	CreatedAt string            `json:"created_at"`
-	UpdatedAt string            `json:"updated_at"`
+	ID         string   `json:"id"`
+	Status     string   `json:"status"` // queued|running|done|error
+	Mode       string   `json:"mode"`   // analyze_selected|analyze_chat|ask_agent|local_analyze
+	Prompt     string   `json:"prompt"`
+	MessageIDs []string `json:"message_ids,omitempty"`
+	Result     string   `json:"result,omitempty"`
+	Error      string   `json:"error,omitempty"`
+	CreatedAt  string   `json:"created_at"`
+	UpdatedAt  string   `json:"updated_at"`
+	UseKnowledge bool   `json:"use_knowledge,omitempty"`
 }
 
-// Runner executes agent jobs (local rule analyze and/or Cursor SDK bridge).
+// Runner executes agent jobs (Cursor SDK bridge; local_analyze is explicit stub).
 type Runner struct {
 	Store     *store.Store
 	Workspace string
 	APIKey    string
 	BridgeJS  string // path to ask.mjs; empty = auto near module
 	NodeBin   string
+	// KnowledgePack optionally prepends retrieved context (P1). Nil = skip.
+	KnowledgePack func(query string) (string, error)
+	// CloudDefault when empty env: "1" means cloud.
+	CloudDefault string
+	// LocalFallbackCloud retries cloud when local fails (P4).
+	LocalFallbackCloud bool
 }
 
 // StartJob creates and runs a job in background.
-// apiKeyOverride is used for ask_agent when set (from console UI); otherwise Runner.APIKey / env.
+// apiKeyOverride is used when set (from console UI); otherwise Runner.APIKey / env.
 func (r *Runner) StartJob(mode string, msgIDs []string, extra, apiKeyOverride string) (*Job, error) {
+	return r.StartJobOpts(mode, msgIDs, extra, apiKeyOverride, false)
+}
+
+// StartJobOpts is StartJob with optional knowledge pack.
+func (r *Runner) StartJobOpts(mode string, msgIDs []string, extra, apiKeyOverride string, useKnowledge bool) (*Job, error) {
 	id := fmt.Sprintf("job-%d", time.Now().UnixNano())
 	msgs, err := r.Store.GetThreadByIDs(msgIDs)
 	if err != nil {
@@ -50,7 +62,7 @@ func (r *Runner) StartJob(mode string, msgIDs []string, extra, apiKeyOverride st
 		}
 		msgs = all
 	}
-	if mode == "ask_agent" && len(msgs) == 0 {
+	if (mode == "ask_agent" || mode == "analyze_selected" || mode == "analyze_chat") && len(msgs) == 0 {
 		all, err := r.Store.ListThreadRecent(80)
 		if err != nil {
 			return nil, err
@@ -63,18 +75,42 @@ func (r *Runner) StartJob(mode string, msgIDs []string, extra, apiKeyOverride st
 	prompt := buildPrompt(mode, msgs, extra)
 	now := time.Now().UTC().Format(time.RFC3339)
 	job := &Job{
-		ID:         id,
-		Status:     "queued",
-		Mode:       mode,
-		Prompt:     prompt,
-		MessageIDs: msgIDs,
-		CreatedAt:  now,
-		UpdatedAt:  now,
+		ID:           id,
+		Status:       "queued",
+		Mode:         mode,
+		Prompt:       prompt,
+		MessageIDs:   msgIDs,
+		CreatedAt:    now,
+		UpdatedAt:    now,
+		UseKnowledge: useKnowledge,
 	}
 	if err := r.Store.SaveAgentJob(id, job); err != nil {
 		return nil, err
 	}
 	go r.run(job, strings.TrimSpace(apiKeyOverride))
+	return job, nil
+}
+
+// StartRawPrompt runs a job with a fully built prompt (TG auto path).
+func (r *Runner) StartRawPrompt(mode, prompt string, useKnowledge bool) (*Job, error) {
+	id := fmt.Sprintf("job-%d", time.Now().UnixNano())
+	now := time.Now().UTC().Format(time.RFC3339)
+	if mode == "" {
+		mode = "ask_agent"
+	}
+	job := &Job{
+		ID:           id,
+		Status:       "queued",
+		Mode:         mode,
+		Prompt:       prompt,
+		CreatedAt:    now,
+		UpdatedAt:    now,
+		UseKnowledge: useKnowledge,
+	}
+	if err := r.Store.SaveAgentJob(id, job); err != nil {
+		return nil, err
+	}
+	go r.run(job, "")
 	return job, nil
 }
 
@@ -93,30 +129,53 @@ func (r *Runner) run(job *Job, apiKeyOverride string) {
 	job.UpdatedAt = time.Now().UTC().Format(time.RFC3339)
 	_ = r.Store.SaveAgentJob(job.ID, job)
 
+	prompt := job.Prompt
+	if job.UseKnowledge && r.KnowledgePack != nil {
+		pack, err := r.KnowledgePack(prompt)
+		if err != nil {
+			r.failJob(job, fmt.Errorf("knowledge: %w", err))
+			return
+		}
+		if strings.TrimSpace(pack) != "" {
+			prompt = "Контекст из базы знаний:\n" + pack + "\n\n---\n\n" + prompt
+		}
+	}
+
 	var result string
 	var err error
 	switch job.Mode {
-	case "ask_agent":
-		result, err = r.runCursorAgent(context.Background(), job.Prompt, apiKeyOverride)
-		if err != nil {
-			// Fallback local analysis so UI always gets something useful.
-			fallback := localAnalyze(job.Prompt)
-			job.Status = "done"
-			job.Error = err.Error()
-			job.Result = "Агент IDE: " + err.Error() + "\n\n---\n" + fallback
-			job.UpdatedAt = time.Now().UTC().Format(time.RFC3339)
-			_ = r.Store.SaveAgentJob(job.ID, job)
-			_ = r.mirrorAgentReply(job)
-			return
-		}
+	case "local_analyze":
+		result = localAnalyze(prompt)
+	case "ask_agent", "analyze_selected", "analyze_chat":
+		result, err = r.runCursorAgent(context.Background(), prompt, apiKeyOverride)
 	default:
-		result = localAnalyze(job.Prompt)
+		err = fmt.Errorf("unknown mode %q", job.Mode)
+	}
+	if err != nil {
+		r.failJob(job, err)
+		return
 	}
 	job.Status = "done"
 	job.Result = result
+	job.Error = ""
 	job.UpdatedAt = time.Now().UTC().Format(time.RFC3339)
 	_ = r.Store.SaveAgentJob(job.ID, job)
 	_ = r.mirrorAgentReply(job)
+}
+
+func (r *Runner) failJob(job *Job, err error) {
+	job.Status = "error"
+	job.Error = err.Error()
+	job.Result = ""
+	job.UpdatedAt = time.Now().UTC().Format(time.RFC3339)
+	_ = r.Store.SaveAgentJob(job.ID, job)
+	_ = r.Store.AppendThread(store.ThreadMsg{
+		MessageID: time.Now().UnixNano(),
+		Direction: "agent",
+		FromUser:  "agent",
+		Text:      "Ошибка агента: " + err.Error(),
+		Kind:      job.Mode + "_error",
+	})
 }
 
 func (r *Runner) mirrorAgentReply(job *Job) error {
@@ -158,6 +217,25 @@ func (r *Runner) runCursorAgent(ctx context.Context, prompt, apiKeyOverride stri
 	if cwd == "" {
 		cwd = "."
 	}
+	cloudFlag := strings.TrimSpace(os.Getenv("INTAKE_AGENT_CLOUD"))
+	if cloudFlag == "" {
+		cloudFlag = strings.TrimSpace(r.CloudDefault)
+	}
+	if cloudFlag == "" {
+		cloudFlag = "1"
+	}
+	out, err := r.execBridge(ctx, node, bridge, cwd, key, prompt, cloudFlag)
+	if err != nil && cloudFlag != "1" && cloudFlag != "true" && r.LocalFallbackCloud {
+		out, err = r.execBridge(ctx, node, bridge, cwd, key, prompt, "1")
+		if err != nil {
+			return "", fmt.Errorf("local fail, cloud retry fail: %w", err)
+		}
+		return out, nil
+	}
+	return out, err
+}
+
+func (r *Runner) execBridge(ctx context.Context, node, bridge, cwd, key, prompt, cloudFlag string) (string, error) {
 	ctx, cancel := context.WithTimeout(ctx, 8*time.Minute)
 	defer cancel()
 	cmd := exec.CommandContext(ctx, node, bridge)
@@ -166,10 +244,8 @@ func (r *Runner) runCursorAgent(ctx context.Context, prompt, apiKeyOverride stri
 		"CURSOR_API_KEY="+key,
 		"INTAKE_WORKSPACE="+cwd,
 		"INTAKE_AGENT_PROMPT="+prompt,
+		"INTAKE_AGENT_CLOUD="+cloudFlag,
 	)
-	if cloud := strings.TrimSpace(os.Getenv("INTAKE_AGENT_CLOUD")); cloud != "" {
-		cmd.Env = append(cmd.Env, "INTAKE_AGENT_CLOUD="+cloud)
-	}
 	var stdout, stderr bytes.Buffer
 	cmd.Stdout = &stdout
 	cmd.Stderr = &stderr
@@ -219,6 +295,8 @@ func buildPrompt(mode string, msgs []store.ThreadMsg, extra string) string {
 		b.WriteString("Проанализируй выбранные сообщения из рабочего Telegram-чата. Дай: краткую суть, риски, вопросы менеджеру, следующий шаг.\n\n")
 	case "analyze_chat":
 		b.WriteString("Проанализируй фрагмент рабочего Telegram-чата. Дай: темы, открытые вопросы, решения, что требует действий.\n\n")
+	case "local_analyze":
+		b.WriteString("Локальный rule-based разбор (без IDE).\n\n")
 	default:
 		b.WriteString("Запрос оператора к агенту по сообщениям рабочего чата.\n\n")
 	}
@@ -261,7 +339,7 @@ func localAnalyze(prompt string) string {
 	b.WriteString("\nРекомендации:\n")
 	b.WriteString("1. Уточнить у менеджера ожидаемый исход, если есть расхождения.\n")
 	b.WriteString("2. Вынести в карточку HITL только то, что требует согласования.\n")
-	b.WriteString("3. Для ответа агента IDE задайте CURSOR_API_KEY и повторите «Спросить у агента».\n")
+	b.WriteString("3. Для ответа агента IDE задайте CURSOR_API_KEY и режим analyze/ask (не local_analyze).\n")
 	return b.String()
 }
 
@@ -279,4 +357,21 @@ func (r *Runner) GetJob(id string) (*Job, error) {
 		return nil, err
 	}
 	return &job, nil
+}
+
+// Configured reports whether a Cursor key is available (env or runner field).
+func (r *Runner) Configured() bool {
+	if strings.TrimSpace(r.APIKey) != "" {
+		return true
+	}
+	return strings.TrimSpace(os.Getenv("CURSOR_API_KEY")) != ""
+}
+
+// BridgeReady reports whether ask.mjs is resolvable.
+func (r *Runner) BridgeReady() bool {
+	if r.BridgeJS != "" {
+		st, err := os.Stat(r.BridgeJS)
+		return err == nil && !st.IsDir()
+	}
+	return findBridge() != ""
 }

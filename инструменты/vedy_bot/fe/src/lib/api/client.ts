@@ -189,6 +189,7 @@ export async function startAgent(input: {
   messageIds: string[];
   prompt?: string;
   apiKey?: string;
+  useKnowledge?: boolean;
 }): Promise<AgentJob> {
   return api("/api/agent", {
     method: "POST",
@@ -197,6 +198,7 @@ export async function startAgent(input: {
       message_ids: input.messageIds,
       prompt: input.prompt || "",
       api_key: input.apiKey || getAgentKey(),
+      use_knowledge: !!input.useKnowledge,
     }),
   });
 }

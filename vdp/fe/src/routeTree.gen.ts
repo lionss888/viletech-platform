@@ -19,6 +19,7 @@ import { Route as CountriesRouteImport } from './routes/countries'
 import { Route as CurrenciesRouteImport } from './routes/currencies'
 import { Route as DashboardRouteImport } from './routes/dashboard'
 import { Route as DocumentsRouteImport } from './routes/documents'
+import { Route as FeatureFlagsRouteImport } from './routes/feature-flags'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as McpRouteImport } from './routes/mcp'
 import { Route as OrganizationsRouteImport } from './routes/organizations'
@@ -39,6 +40,7 @@ import { Route as DemoCountriesRouteImport } from './routes/demo/countries'
 import { Route as DemoCurrenciesRouteImport } from './routes/demo/currencies'
 import { Route as DemoDashboardRouteImport } from './routes/demo/dashboard'
 import { Route as DemoDocumentsRouteImport } from './routes/demo/documents'
+import { Route as DemoFeatureFlagsRouteImport } from './routes/demo/feature-flags'
 import { Route as DemoLoginRouteImport } from './routes/demo/login'
 import { Route as DemoOrganizationsRouteImport } from './routes/demo/organizations'
 import { Route as DemoProcessRolesRouteImport } from './routes/demo/process-roles'
@@ -103,6 +105,11 @@ const DashboardRoute = DashboardRouteImport.update({
 const DocumentsRoute = DocumentsRouteImport.update({
   id: '/documents',
   path: '/documents',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const FeatureFlagsRoute = FeatureFlagsRouteImport.update({
+  id: '/feature-flags',
+  path: '/feature-flags',
   getParentRoute: () => rootRouteImport,
 } as any)
 const LoginRoute = LoginRouteImport.update({
@@ -207,6 +214,11 @@ const DemoDocumentsRoute = DemoDocumentsRouteImport.update({
   path: '/demo/documents',
   getParentRoute: () => rootRouteImport,
 } as any)
+const DemoFeatureFlagsRoute = DemoFeatureFlagsRouteImport.update({
+  id: '/demo/feature-flags',
+  path: '/demo/feature-flags',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const DemoLoginRoute = DemoLoginRouteImport.update({
   id: '/demo/login',
   path: '/demo/login',
@@ -295,6 +307,7 @@ export interface FileRoutesByFullPath {
   '/currencies': typeof CurrenciesRoute
   '/dashboard': typeof DashboardRoute
   '/documents': typeof DocumentsRoute
+  '/feature-flags': typeof FeatureFlagsRoute
   '/login': typeof LoginRoute
   '/mcp': typeof McpRoute
   '/organizations': typeof OrganizationsRoute
@@ -314,6 +327,7 @@ export interface FileRoutesByFullPath {
   '/demo/currencies': typeof DemoCurrenciesRoute
   '/demo/dashboard': typeof DemoDashboardRoute
   '/demo/documents': typeof DemoDocumentsRoute
+  '/demo/feature-flags': typeof DemoFeatureFlagsRoute
   '/demo/login': typeof DemoLoginRoute
   '/demo/organizations': typeof DemoOrganizationsRoute
   '/demo/process-roles': typeof DemoProcessRolesRoute
@@ -342,6 +356,7 @@ export interface FileRoutesByTo {
   '/currencies': typeof CurrenciesRoute
   '/dashboard': typeof DashboardRoute
   '/documents': typeof DocumentsRoute
+  '/feature-flags': typeof FeatureFlagsRoute
   '/login': typeof LoginRoute
   '/mcp': typeof McpRoute
   '/organizations': typeof OrganizationsRoute
@@ -361,6 +376,7 @@ export interface FileRoutesByTo {
   '/demo/currencies': typeof DemoCurrenciesRoute
   '/demo/dashboard': typeof DemoDashboardRoute
   '/demo/documents': typeof DemoDocumentsRoute
+  '/demo/feature-flags': typeof DemoFeatureFlagsRoute
   '/demo/login': typeof DemoLoginRoute
   '/demo/organizations': typeof DemoOrganizationsRoute
   '/demo/process-roles': typeof DemoProcessRolesRoute
@@ -390,6 +406,7 @@ export interface FileRoutesById {
   '/currencies': typeof CurrenciesRoute
   '/dashboard': typeof DashboardRoute
   '/documents': typeof DocumentsRoute
+  '/feature-flags': typeof FeatureFlagsRoute
   '/login': typeof LoginRoute
   '/mcp': typeof McpRoute
   '/organizations': typeof OrganizationsRoute
@@ -409,6 +426,7 @@ export interface FileRoutesById {
   '/demo/currencies': typeof DemoCurrenciesRoute
   '/demo/dashboard': typeof DemoDashboardRoute
   '/demo/documents': typeof DemoDocumentsRoute
+  '/demo/feature-flags': typeof DemoFeatureFlagsRoute
   '/demo/login': typeof DemoLoginRoute
   '/demo/organizations': typeof DemoOrganizationsRoute
   '/demo/process-roles': typeof DemoProcessRolesRoute
@@ -439,6 +457,7 @@ export interface FileRouteTypes {
     | '/currencies'
     | '/dashboard'
     | '/documents'
+    | '/feature-flags'
     | '/login'
     | '/mcp'
     | '/organizations'
@@ -458,6 +477,7 @@ export interface FileRouteTypes {
     | '/demo/currencies'
     | '/demo/dashboard'
     | '/demo/documents'
+    | '/demo/feature-flags'
     | '/demo/login'
     | '/demo/organizations'
     | '/demo/process-roles'
@@ -486,6 +506,7 @@ export interface FileRouteTypes {
     | '/currencies'
     | '/dashboard'
     | '/documents'
+    | '/feature-flags'
     | '/login'
     | '/mcp'
     | '/organizations'
@@ -505,6 +526,7 @@ export interface FileRouteTypes {
     | '/demo/currencies'
     | '/demo/dashboard'
     | '/demo/documents'
+    | '/demo/feature-flags'
     | '/demo/login'
     | '/demo/organizations'
     | '/demo/process-roles'
@@ -533,6 +555,7 @@ export interface FileRouteTypes {
     | '/currencies'
     | '/dashboard'
     | '/documents'
+    | '/feature-flags'
     | '/login'
     | '/mcp'
     | '/organizations'
@@ -552,6 +575,7 @@ export interface FileRouteTypes {
     | '/demo/currencies'
     | '/demo/dashboard'
     | '/demo/documents'
+    | '/demo/feature-flags'
     | '/demo/login'
     | '/demo/organizations'
     | '/demo/process-roles'
@@ -581,6 +605,7 @@ export interface RootRouteChildren {
   CurrenciesRoute: typeof CurrenciesRoute
   DashboardRoute: typeof DashboardRoute
   DocumentsRoute: typeof DocumentsRoute
+  FeatureFlagsRoute: typeof FeatureFlagsRoute
   LoginRoute: typeof LoginRoute
   McpRoute: typeof McpRoute
   OrganizationsRoute: typeof OrganizationsRoute
@@ -600,6 +625,7 @@ export interface RootRouteChildren {
   DemoCurrenciesRoute: typeof DemoCurrenciesRoute
   DemoDashboardRoute: typeof DemoDashboardRoute
   DemoDocumentsRoute: typeof DemoDocumentsRoute
+  DemoFeatureFlagsRoute: typeof DemoFeatureFlagsRoute
   DemoLoginRoute: typeof DemoLoginRoute
   DemoOrganizationsRoute: typeof DemoOrganizationsRoute
   DemoProcessRolesRoute: typeof DemoProcessRolesRoute
@@ -688,6 +714,13 @@ declare module '@tanstack/react-router' {
       path: '/documents'
       fullPath: '/documents'
       preLoaderRoute: typeof DocumentsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/feature-flags': {
+      id: '/feature-flags'
+      path: '/feature-flags'
+      fullPath: '/feature-flags'
+      preLoaderRoute: typeof FeatureFlagsRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/login': {
@@ -830,6 +863,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DemoDocumentsRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/demo/feature-flags': {
+      id: '/demo/feature-flags'
+      path: '/demo/feature-flags'
+      fullPath: '/demo/feature-flags'
+      preLoaderRoute: typeof DemoFeatureFlagsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/demo/login': {
       id: '/demo/login'
       path: '/demo/login'
@@ -949,6 +989,7 @@ const rootRouteChildren: RootRouteChildren = {
   CurrenciesRoute: CurrenciesRoute,
   DashboardRoute: DashboardRoute,
   DocumentsRoute: DocumentsRoute,
+  FeatureFlagsRoute: FeatureFlagsRoute,
   LoginRoute: LoginRoute,
   McpRoute: McpRoute,
   OrganizationsRoute: OrganizationsRoute,
@@ -969,6 +1010,7 @@ const rootRouteChildren: RootRouteChildren = {
   DemoCurrenciesRoute: DemoCurrenciesRoute,
   DemoDashboardRoute: DemoDashboardRoute,
   DemoDocumentsRoute: DemoDocumentsRoute,
+  DemoFeatureFlagsRoute: DemoFeatureFlagsRoute,
   DemoLoginRoute: DemoLoginRoute,
   DemoOrganizationsRoute: DemoOrganizationsRoute,
   DemoProcessRolesRoute: DemoProcessRolesRoute,

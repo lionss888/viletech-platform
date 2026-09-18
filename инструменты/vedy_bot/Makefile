@@ -3,7 +3,7 @@ ROOT := $(abspath ../..)
 export INTAKE_WORKSPACE_HOST ?= $(ROOT)
 export INTAKE_WORKSPACE ?= /workspace
 
-.PHONY: up down logs restart ps build test console-url fe-sync fe-dev fe-build fe-test smoke
+.PHONY: up down logs restart ps build test console-url fe-sync fe-dev fe-build fe-test smoke bridge-npm-install migrate-env
 
 up: fe-build
 	docker compose up -d --build
@@ -43,6 +43,15 @@ ifeq ($(CI),true)
 else
 	cd fe && npm install
 endif
+
+# Host `go run` needs agent-bridge/node_modules (@cursor/sdk). Docker image installs this in build.
+bridge-npm-install:
+	cd agent-bridge && npm install --omit=dev
+
+# Copy legacy ~/.vdp-intake/env → ~/.vedy_bot/env when primary missing (chmod 600).
+migrate-env:
+	chmod +x scripts/migrate-env.sh
+	./scripts/migrate-env.sh
 
 fe-dev: fe-npm-install
 	cd fe && npm run dev -- --port 5174 --host 127.0.0.1

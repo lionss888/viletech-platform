@@ -45,19 +45,6 @@ export function hidesPaymentStartForImportAdvance(input: ImportAdvanceGateInput)
   return isImportAdvanceCoverageGate(input);
 }
 
-/**
- * Treasurer confirm on payment_processing is export-only (→ payment_sent_treasurer).
- * Import advance already confirmed on payment_received; re-showing the CTA would 409.
- */
-export function hidesTreasurerConfirmOnProcessingForImport(input: ImportAdvanceGateInput): boolean {
-  if (input.actionId !== "treas_confirm_payment") return false;
-  if (input.status !== "payment_processing") return false;
-  const direction = (input.direction ?? "import").toLowerCase();
-  if (direction === "export") return false;
-  if ((input.paymentMethod ?? "").trim() === "PAY_FROM_EXPORT") return false;
-  return true;
-}
-
 /** Guided note when manager waits for treasurer on import advance. */
 export const IMPORT_ADVANCE_AWAITS_TREASURER =
   "Рублёвое покрытие подтверждает казначей — после этого заявка перейдёт в исполнение.";

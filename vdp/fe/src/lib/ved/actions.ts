@@ -210,17 +210,6 @@ const MATRIX: Record<VedRole, Record<string, FormAction[]>> = {
         // nextStatus depends on payment route: advance → payment_processing, RATE_ON_PP → report_waiting (§10.2/10.3)
       },
     ],
-    // Export PAY_FROM_EXPORT: manager payment_start first, then treasurer → payment_sent_treasurer.
-    // Import UI hides this CTA via hidesTreasurerConfirmOnProcessingForImport.
-    payment_processing: [
-      {
-        id: "treas_confirm_payment",
-        label: "Подтвердить покрытие",
-        tone: "accent",
-        confirm: "Подтвердить покрытие и передать в казначейское поручение?",
-        nextStatus: "payment_sent_treasurer",
-      },
-    ],
     payment_sent_treasurer: [
       {
         id: "treas_signing",

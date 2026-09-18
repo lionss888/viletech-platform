@@ -1,53 +1,56 @@
 Конструктор сценариев — проверка среды
-Дата: 2026-09-17
+Дата: 2026-09-18 (CS-R1, повтор после 2026-09-17)
 Контур: продукт кабинетов (vdp), localhost
 Вид работы: запуск / проверка среды
-Итог: частично прошло (среда и рычаги ролей — да; живые CTA на заявках — нет данных)
+Итог: прошло
 
 ────────────────────────────────────────
 Сводка
 
-Статус: частично прошло
-Стек кабинетов поднят. Пилотные роли ICO/ECO выключены. Менеджер не может менять process-roles (403). Живых заявок в API нет — ветки corrections / refund / shipment и денежные маршруты на CTA в браузере в этом прогоне не проверены (опора: доменный документ + код лестниц).
+Статус: прошло
+Стек поднят (make compose-up). Пилот ICO/ECO выключены. Менеджер не меняет process-roles (403).
+Живые заявки созданы через API (seed-учётки *@vdp.local). Проверены денежные маршруты advance / post_payment+POSTPAY_RATE_ON_PP / export PAY_FROM_EXPORT, ветки corrections / refund / shipment, mid-flight process-roles.
 
 ────────────────────────────────────────
 Чеклист
 
 1. Среда поднята
 Результат: прошло
-Смотреть: docker — vdp-fe, vdp-core, hub, postgres и смежные сервисы healthy; FE http://localhost:5173 → 200; core /api/v1/health → 200; страница входа /login → 200; /process-roles → 200 (HTML).
+Смотреть: docker compose fe/core/hub/postgres healthy; FE http://localhost:5173 → 200; core /api/v1/health → 200.
 
 2. Пилот: ICO и ECO выключены
 Результат: прошло
-Смотреть: GET /api/v1/process-roles под root — internal_compliance_officer enabled=false; compliance_officer enabled=false; version=28. Обязательные actor-роли user/manager/provider на месте.
+Смотреть: GET /api/v1/process-roles под root — internal_compliance_officer enabled=false; compliance_officer enabled=false (version stamp 34→36 в ходе mid-flight).
 
 3. process-roles: только root меняет слоты
 Результат: прошло
-Смотреть: PUT /api/v1/admin/process-roles/internal_compliance_officer под manager@vdp.local → 403 Forbidden. Менеджер сделки слоты не переключает.
+Смотреть: PUT /api/v1/admin/process-roles/sales под manager → 403 Forbidden.
 
 4. Денежные маршруты в рамках готовых лестниц
-Результат: не проверено на живой заявке (нет forms в API: user и manager — пустые списки)
-Смотреть при появлении данных: создание/выбор advance, post_payment / POSTPAY_RATE_ON_PP, export PAY_FROM_EXPORT.
-Канон в коде/доках: vdp/docs/domain/form-lifecycle.md (лестницы описаны и покрыты тестами).
+Результат: прошло
+Смотреть (живые id на момент прогона):
+- advance (пустой method / import MVP) → payment_received: 6473a705-66ef-d09f-b1e5-270b5c7f9151
+- import + payment_method=post_payment → form_accepted, platform_postpay_mode=POSTPAY_RATE_ON_PP: ce8f71a3-3de5-97be-6c57-18e15b02bc41
+- export + PAY_FROM_EXPORT → form_accepted: 98b7ee54-7fed-7111-e995-6d491c9f02e9
 
 5. Ветки corrections / refund / shipment — CTA и допустимый переход
-Результат: не проверено на живой заявке (нет forms)
-Смотреть при появлении данных: reject → corrections; refund CTA при FundsHeld; shipment опционально.
-Канон: тот же form-lifecycle.md + ActionPanel / pilot-matrix specs.
+Результат: прошло
+Смотреть:
+- corrections: manager_form_reject с form_accepted → form_waiting_corrections (0b1c90f0-4701-6760-ba03-4decf0176ec7)
+- refund: POST /api/v1/manager/form-payment/{id}/refund/init с payment_received → payment_refund_waiting (отдельная заявка CSR1b-rf-…; не через /actions/mgr_refund_init — тот путь даёт 403)
+- shipment: POST /api/v1/manager/form-payment/{id}/shipment/waiting с payment_sent → shipment_waiting (d6aba69a-626a-2b35-2ba7-24132cea9adc). После report accept → completed ветка отгрузки уже недоступна (ожидаемо).
 
 6. Mid-flight: смена process-roles не мигрирует статусы идущих заявок
-Результат: не проверено на живой заявке (нет forms); инвариант version stamp — по исследованию и домену
-Смотреть: после смены конфига root’ом статус существующей заявки не прыгает «сам».
+Результат: прошло
+Смотреть: заявка export 98b7ee54-… в form_accepted; root toggle sales enabled; статус остался form_accepted; version process-roles 34→36; sales возвращён.
 
 ────────────────────────────────────────
 Что смотреть дальше
 
-- Посеять или создать хотя бы одну заявку на localhost и повторить пункты 4–6 руками.
-- Не трактовать пустую очередь как «рычагов нет» — рычаги ролей и AuthZ уже подтверждены.
-- Браузерный логин root в этом прогоне не использовался (достаточно API); UI process-roles открывается по URL.
+- UI-жест кнопок в браузере — в CS-R2 (E2E manager-route-hint) и pilot-matrix; этот прогон — API-допустимость переходов на живых заявках.
+- Не путать POST /forms/{id}/actions/mgr_refund_init с nest refund/init — кабинет ходит через refund API / action-bridge.
 
 ────────────────────────────────────────
 Вывод для программы
 
-Среда пригодна для этапа 1 по ролям процесса и границе прав менеджера.
-Полный прогон операционных веток и лестниц на CTA — отложен до появления заявок в среде.
+Среда пригодна для этапа 1: роли процесса, денежные лестницы и ветки corrections/refund/shipment на живых заявках подтверждены; mid-flight смена process-roles статус заявки не двигает.

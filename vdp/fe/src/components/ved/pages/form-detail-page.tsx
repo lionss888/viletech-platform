@@ -17,7 +17,6 @@ import { OrganizationPickDialog } from "@/components/ved/OrganizationPickDialog"
 import { FormParamsEditDialog } from "@/components/ved/FormParamsEditDialog";
 import { ActionPanel } from "@/components/ved/ActionPanel";
 import { DocumentList } from "@/components/ved/DocumentViewer";
-import { ManagerRouteHintPanel } from "@/components/ved/ManagerRouteHintPanel";
 import { RateCommissionPanel } from "@/components/ved/RateCommissionPanel";
 import { RefundPanel } from "@/components/ved/RefundPanel";
 import { ShipmentPanel } from "@/components/ved/ShipmentPanel";
@@ -294,8 +293,6 @@ export function FormDetail() {
           <StageStepper status={form.status} processRoles={processRoles} />
         </div>
       </div>
-
-      <ManagerRouteHintPanel role={role} />
 
       {(form.rejectText || form.rejectMark) && (
         <div className="mt-4 rounded-lg bg-return-soft p-4" data-testid="return-banner">
