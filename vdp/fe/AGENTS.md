@@ -20,7 +20,7 @@ Lovable sync must **not** remove or replace these without re-running `make integ
 
 Demo contour (`/demo/*`, `ved-demo-state-v2`) is isolated from JWT app. Seed logins: app `*@vdp.local`, demo `*@demo.vdp.local`.
 
-Last UI sync from `lovable-vdp` (`lionss888/vdp@dev0` / `8a9cc023`). Remote fetch may need credentials; local ref is the sync baseline. Guard: `make lovable-seed-check`.
+Last UI sync from `lovable-vdp` (`lionss888/vdp@dev0` / `f0da0692`). Remote fetch may need credentials; local ref is the sync baseline. Guard: `make lovable-seed-check`.
 
 ## Where the live UI lives
 
@@ -31,9 +31,12 @@ ported into the page components, otherwise `/dashboard` and `/forms` keep the pr
 Same for the shell: `VedAppShell.tsx` is live, `AppShell.tsx` is the Lovable reference copy.
 Nav lives in `nav-config.ts` (`Документы` is first under `Справочники`, matching Lovable).
 
-Ported through `8a9cc023`: empty-state / registry copy, organizations bank-client wording, login
-placeholder (seed hint removed), form-detail query keys, treasurer empty-state line. Page components
-stay live; root routes remain thin wrappers; `VedAppShell` is live, `AppShell` is Lovable reference.
+Ported through `f0da0692`: feature-flags section + nav/shell gating, mobile create sheet/menu,
+AppShell synced with process-roles / feature-flags. Platform-only mounts listed in
+`vdp/scripts/check-platform-mounts.sh` MUST stay wired into the live host after any UI sync.
+A file on disk without the JSX mount is a red `make platform-mounts-check`, not a later chore.
+Current mount: `ManagerRouteHintPanel` in `form-detail-page` (`data-testid="manager-route-hint"`).
+Root routes remain thin wrappers; `VedAppShell` is live, `AppShell` is Lovable reference.
 
 ## Demo vs app capability boundary (not 100% parity)
 

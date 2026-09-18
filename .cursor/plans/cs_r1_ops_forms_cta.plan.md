@@ -3,20 +3,20 @@ name: CS-R1 ops forms CTA
 overview: "Дозакрыть проверку-среды на живых заявках: лестницы оплаты и ветки CTA; обновить проверку-среды.txt. Без смены домена."
 todos:
   - id: r1-env-up
-    content: "Убедиться что localhost compose fe/core healthy"
-    status: pending
+    content: Убедиться что localhost compose fe/core healthy
+    status: completed
   - id: r1-seed-forms
-    content: "Создать или посеять заявки под advance / postpay / export и ветки"
-    status: pending
+    content: Создать или посеять заявки под advance / postpay / export и ветки
+    status: completed
   - id: r1-cta-ladders
-    content: "Пройти CTA денежных лестниц и corrections/refund/shipment где доступно"
-    status: pending
+    content: Пройти CTA денежных лестниц и corrections/refund/shipment где доступно
+    status: completed
   - id: r1-midflight-roles
     content: "Проверить mid-flight: смена process-roles root не мигрирует статус заявки"
-    status: pending
+    status: completed
   - id: r1-update-report
-    content: "Обновить заметки/конструктор-сценариев/проверка-среды.txt — прошло / не прошло"
-    status: pending
+    content: Обновить заметки/конструктор-сценариев/проверка-среды.txt — прошло / не прошло
+    status: completed
 isProject: false
 ---
 

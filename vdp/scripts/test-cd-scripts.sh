@@ -30,6 +30,7 @@ for script in \
   scripts/precommit-mgmt-notify.sh \
   scripts/configure-gitlab-mirror.sh \
   scripts/check-pilot-matrix-stale.sh \
+  scripts/check-platform-mounts.sh \
   scripts/perf-gate.sh; do
   [ -f "$script" ] || fail "missing $script"
   bash -n "$script"
@@ -39,6 +40,10 @@ done
 echo "== check-pilot-matrix-stale on current specs =="
 bash scripts/check-pilot-matrix-stale.sh
 grep -q 'check-pilot-matrix-stale' scripts/ci-pr-static.sh || fail "ci-pr-static must run check-pilot-matrix-stale.sh"
+
+echo "== check-platform-mounts on current tree =="
+bash scripts/check-platform-mounts.sh
+grep -q 'check-platform-mounts' scripts/ci-pr-static.sh || fail "ci-pr-static must run check-platform-mounts.sh"
 
 echo "== mgmt-notify-sanitize self-test =="
 python3 scripts/mgmt-notify-sanitize.py --self-test

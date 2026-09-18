@@ -4,13 +4,13 @@ overview: "Playwright: manager видит manager-route-hint на form detail; �
 todos:
   - id: r2-spec
     content: "Добавить e2e spec: manager login → form detail → getByTestId manager-route-hint visible"
-    status: pending
+    status: completed
   - id: r2-negative
     content: "Проверка: user или provider не видят manager-route-hint на своей карточке"
-    status: pending
+    status: completed
   - id: r2-gate
-    content: "cd vdp && make check-env-parity && make ci-pr-pilot"
-    status: pending
+    content: cd vdp && make check-env-parity && make ci-pr-pilot
+    status: completed
 isProject: false
 ---
 

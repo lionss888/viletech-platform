@@ -5,6 +5,7 @@ import { Input } from "@/components/ui/input";
 import {
   agentKeyPresent,
   consoleKeyPresent,
+  hasAgentKeyPrefix,
   getAgentKey,
   getToken,
   setAgentKey,
@@ -71,11 +72,11 @@ export function ConsoleHeader({
               консоль {consoleOk ? "токен ок" : "нет Bearer"}
             </span>
             <span aria-hidden>·</span>
-            <span className="inline-flex items-center gap-1.5" title="CURSOR_API_KEY (key_…)">
+            <span className="inline-flex items-center gap-1.5" title="Ключ агента">
               <span
                 className={`size-1.5 rounded-full ${agentOk ? "bg-success" : "bg-muted-foreground"}`}
               />
-              агент {agentOk ? "ключ задан" : "без key_…"}
+              агент {agentOk ? "ключ введён" : "без ключа"}
             </span>
             <span aria-hidden>·</span>
             <span>{messageCount} сообщений</span>
@@ -163,9 +164,7 @@ export function ConsoleHeader({
                   setToken(token);
                   setAgentKey(agentKey);
                   setConsoleOk(token.trim().length > 0);
-                  setAgentOk(
-                    agentKey.trim().startsWith("key_") || agentKey.trim().startsWith("crsr_"),
-                  );
+                  setAgentOk(hasAgentKeyPrefix(agentKey));
                   onSignIn(token.trim());
                 }}
               >
@@ -176,7 +175,7 @@ export function ConsoleHeader({
               type="password"
               value={agentKey}
               onChange={(e) => setLocalAgentKey(e.target.value)}
-              placeholder="CURSOR_API_KEY (key_…) — отдельно от Bearer консоли"
+              placeholder="Ключ агента (crsr_…) — отдельно от Bearer консоли"
               className="h-9 border-border bg-background font-mono text-xs"
             />
           </div>

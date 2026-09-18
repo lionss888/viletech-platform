@@ -20,6 +20,7 @@ const (
 	StatusDraft           Status = "draft"
 	StatusAwaitingClarify Status = "awaiting_clarify"
 	StatusAwaitingApprove Status = "awaiting_approve"
+	StatusAwaitingAgent   Status = "awaiting_agent"
 	StatusApproved        Status = "approved"
 	StatusDeclined        Status = "declined"
 	StatusStale           Status = "stale"
@@ -43,6 +44,9 @@ type Card struct {
 	LastAskAt       time.Time         `json:"last_ask_at"`
 	CreatedAt       time.Time         `json:"created_at"`
 	UpdatedAt       time.Time         `json:"updated_at"`
+	AgentJobID      string            `json:"agent_job_id,omitempty"`
+	HITLMode        string            `json:"hitl_mode,omitempty"`
+	FallbackReason  string            `json:"fallback_reason,omitempty"`
 }
 
 // Store persists cards under ~/.vedy_bot/cards.
@@ -122,7 +126,7 @@ func (s *Store) ListOpenInChat(chatID int64) ([]*Card, error) {
 		if c.ChatID != chatID {
 			continue
 		}
-		if c.Status == StatusAwaitingApprove || c.Status == StatusAwaitingClarify {
+		if c.Status == StatusAwaitingApprove || c.Status == StatusAwaitingClarify || c.Status == StatusAwaitingAgent {
 			out = append(out, c)
 		}
 	}

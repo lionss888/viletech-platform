@@ -1,4 +1,4 @@
-.PHONY: deps test test-integration test-adapters build db-setup db-migrate compose-db-migrate run-hub run-core run smoke staging-smoke stop compose-up compose-up-prod compose-down compose-ps compose-e2e compose-fe-smoke compose-fe-refresh compose-fe-prod-smoke compose-playwright lovable-seed-check integration-gate playwright-e2e playwright-pilot playwright-pilot-matrix robot-matrix-check docs-format-check check-deploy-secrets release-gate image-build image-push image-build-push compose-release-config-check compose-release-up deploy-alpha deploy-beta deploy-gamma rollback-alpha rollback-beta rollback-gamma rollback-rehearsal-local test-cd-scripts notify-mgmt core-seed-reset install-git-hooks precommit-gate prepush-gate ci-pr-fast ci-pr ci-pr-pilot perf-gate
+.PHONY: deps test test-integration test-adapters build db-setup db-migrate compose-db-migrate run-hub run-core run smoke staging-smoke stop compose-up compose-up-prod compose-down compose-ps compose-e2e compose-fe-smoke compose-fe-refresh compose-fe-prod-smoke compose-playwright lovable-seed-check platform-mounts-check integration-gate playwright-e2e playwright-pilot playwright-pilot-matrix robot-matrix-check docs-format-check check-deploy-secrets release-gate image-build image-push image-build-push compose-release-config-check compose-release-up deploy-alpha deploy-beta deploy-gamma rollback-alpha rollback-beta rollback-gamma rollback-rehearsal-local test-cd-scripts notify-mgmt core-seed-reset install-git-hooks precommit-gate prepush-gate ci-pr-fast ci-pr ci-pr-pilot perf-gate
 
 CORE_DIR := core
 HUB_DIR := hub
@@ -229,6 +229,11 @@ ci-pr-pilot: ci-pr
 lovable-seed-check:
 	@chmod +x scripts/lovable-seed-check.sh
 	@./scripts/lovable-seed-check.sh
+
+# Platform-only widgets must stay mounted in the live host (not "file on disk, re-wire later").
+platform-mounts-check:
+	@chmod +x scripts/check-platform-mounts.sh
+	@./scripts/check-platform-mounts.sh
 
 # RD11: browser E2E via Docker (Linux browsers; works when host `playwright install` is unsupported).
 compose-playwright:

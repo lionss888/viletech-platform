@@ -1,16 +1,16 @@
 ---
 name: CS-R4 stage2 vedy gate
-overview: "Текстовый чеклист перехода к этапу 2 (vedy_bot). Без кода статусной машины VDP и без runtime-подмены ботом."
+overview: Текстовый чеклист перехода к этапу 2 (vedy_bot). Без кода статусной машины VDP и без runtime-подмены ботом.
 todos:
   - id: r4-checklist-file
-    content: "Создать заметки/конструктор-сценариев/чеклист-этап-2.txt"
-    status: pending
+    content: Создать заметки/конструктор-сценариев/чеклист-этап-2.txt
+    status: completed
   - id: r4-link-master
-    content: "Ссылка на vedy_bot_master + оглавление папки конструктора"
-    status: pending
+    content: Ссылка на vedy_bot_master + оглавление папки конструктора
+    status: completed
   - id: r4-human-accept
-    content: "Приёмка человеком текста чеклиста (ок / правки)"
-    status: pending
+    content: Приёмка человеком текста чеклиста (ок / правки)
+    status: completed
 isProject: false
 ---
 

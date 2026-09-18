@@ -12,8 +12,19 @@ TELEGRAM_OPERATOR_CHAT_IDS=-200…        # optional operator chat/DM
 INTAKE_CONSOLE_TOKEN=long-random
 INTAKE_CONSOLE=1
 INTAKE_CONSOLE_ADDR=127.0.0.1:8787
+CURSOR_API_KEY=crsr_…                # User API Key from API settings; key_… still accepted
+INTAKE_AGENT_CLOUD=1                 # 0 = local cwd agent (P4)
+# INTAKE_EMBEDDING_URL=https://api.openai.com/v1
+# INTAKE_EMBEDDING_API_KEY=…
+# INTAKE_EMBEDDING_MODEL=text-embedding-3-small
+# INTAKE_TG_CURSOR=1                 # TG intake → Cursor (P2)
+# INTAKE_HITL_MODE=hybrid            # rules|cursor|hybrid (P3)
+# INTAKE_STAND_DRY_RUN=1             # stand jobs without real make (P5)
+# INTAKE_VDP_ROOT=/path/to/vdp
 
 cd инструменты/vedy_bot
+make migrate-env          # ~/.vdp-intake/env → ~/.vedy_bot/env if needed
+make bridge-npm-install   # host go run needs agent-bridge/node_modules
 go run ./cmd/vedy_bot -hitl
 ```
 
@@ -104,7 +115,7 @@ Optional demo mocks: `VITE_INTAKE_DEMO=1` (default is live Go API).
 - Selective publish of selected text to manager or operator chat (sanitize)
 - Delete a Telegram message by id
 - Manager-safe "done" template (`comms.ManagerDone`) mirrored to the chat
-- Header shows console Bearer vs agent `key_…` separately
+- Header shows console Bearer vs agent key (`crsr_…`, legacy `key_…`) separately
 
 ## Analytics boundary
 
@@ -129,6 +140,11 @@ In-process package `internal/analytics`: one `Bundle` DTO (class, confidence, su
 
 ## Honesty gaps
 
+- Agent analyze/ask without CURSOR_API_KEY (or SDK failure) returns `status=error` — never `done` with a local stub as success.
+- Mode `local_analyze` is the only intentional rule-based stub for offline/unit.
+- RAG claim requires cloud embeddings (`INTAKE_EMBEDDING_*`); without API key ingest/search fail explicitly (no silent keyword-only «успех»).
+- TG auto Cursor (`INTAKE_TG_CURSOR=1`) needs key + bridge; otherwise hybrid falls back to rules or cursor-only tells manager that ops will handle.
+- Stand start is operator console / operator TG only; manager sees sanitized status text without commands/paths.
 - Lovable preview alone is not the live console until `fe/src/lib/api` is wired and vedy_bot is running — preview mocks ≠ production thread.
 - Embed vanilla UI under `internal/console/ui/` is fallback only when SPA upstream/static is absent.
 - Stickers/voice are not ingested.
@@ -138,3 +154,4 @@ In-process package `internal/analytics`: one `Bundle` DTO (class, confidence, su
 - Plans are Cursor frontmatter/todos parity, not full CreatePlan MCP / auto-run from TG.
 - Not full parity of all Telegram update types.
 - Do not claim full Lovable-preview ↔ prod parity without smoke: SPA HTML from :8787 and `GET /api/thread` with token.
+- Rule-HITL packages remain as fallback (P3 hybrid); not hard-deleted.

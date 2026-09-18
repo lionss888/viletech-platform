@@ -171,8 +171,8 @@ export function SelectionBar({
         )}
 
         <p className="mt-2 font-mono text-[10px] leading-relaxed text-muted-foreground">
-          «Разобрать» — локально. «Спросить у агента» — нужен key_…. Отправка в TG проходит
-          sanitize.
+          «Разобрать» / «Спросить у агента» — нужен ключ агента.
+          Ошибка агента показывается явно, без подмены локальным stub.
         </p>
       </div>
     </div>

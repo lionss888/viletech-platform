@@ -1,5 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Composer } from "@/components/console/Composer";
 import { ConsoleHeader } from "@/components/console/ConsoleHeader";
@@ -16,6 +17,8 @@ import {
 import {
   checkAuth,
   deleteTgMessage,
+  formatAgentError,
+  formatHitlError,
   fetchCards,
   fetchThread,
   getToken,
@@ -62,6 +65,7 @@ function Index() {
   const [cards, setCards] = useState<HitlCard[]>(demo ? demoCards : []);
   const [signedIn, setSignedIn] = useState(demo);
   const [busy, setBusy] = useState(false);
+  const [agentError, setAgentError] = useState<string | null>(null);
   const [channelFilter, setChannelFilter] = useState<"all" | "manager" | "operator">("all");
 
   const refresh = useCallback(async () => {
@@ -138,10 +142,16 @@ function Index() {
     prompt: string,
   ) {
     setBusy(true);
+    setAgentError(null);
     try {
       const job = await startAgent({ mode, messageIds: ids, prompt });
-      await waitAgentJob(job.id);
+      const done = await waitAgentJob(job.id);
+      if (done.status === "error") {
+        setAgentError(formatAgentError(done.error || "ошибка агента"));
+      }
       await refresh();
+    } catch (e) {
+      setAgentError(formatAgentError(e instanceof Error ? e.message : String(e)));
     } finally {
       setBusy(false);
     }
@@ -167,6 +177,21 @@ function Index() {
 
       <main className="console-scroll min-h-0 flex-1 overflow-y-auto">
         <div className="mx-auto w-full max-w-4xl px-4 py-5">
+          {agentError ? (
+            <div
+              className="mb-3 rounded-md border border-destructive/40 bg-destructive/10 px-3 py-2 text-[12px] text-destructive"
+              role="alert"
+            >
+              Ошибка агента: {agentError}
+              <button
+                type="button"
+                className="ml-2 underline"
+                onClick={() => setAgentError(null)}
+              >
+                скрыть
+              </button>
+            </div>
+          ) : null}
           <div className="flex flex-wrap items-center justify-between gap-2 pb-3">
             <p className="text-[12px] text-muted-foreground">
               Здесь видна вся переписка из Telegram — сообщения появляются автоматически
@@ -300,8 +325,10 @@ function Index() {
           setBusy(true);
           try {
             await hitlDecide(id, true);
-            await refresh();
+          } catch (e) {
+            toast.error(formatHitlError(e));
           } finally {
+            await refresh();
             setBusy(false);
           }
         }}
@@ -309,8 +336,10 @@ function Index() {
           setBusy(true);
           try {
             await hitlDecide(id, false);
-            await refresh();
+          } catch (e) {
+            toast.error(formatHitlError(e));
           } finally {
+            await refresh();
             setBusy(false);
           }
         }}

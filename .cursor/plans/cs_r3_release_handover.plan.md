@@ -3,14 +3,14 @@ name: CS-R3 release handover
 overview: "Полная приёмка перед передачей: make release-gate; при продуктовом done — notify-mgmt без жаргона BPM."
 todos:
   - id: r3-precheck
-    content: "Убедиться CS-R1 отчёт закрыт и CS-R2 ci-pr-pilot зелёный"
-    status: pending
+    content: Убедиться CS-R1 отчёт закрыт и CS-R2 ci-pr-pilot зелёный
+    status: completed
   - id: r3-release-gate
-    content: "cd vdp && make check-env-parity && make release-gate"
-    status: pending
+    content: cd vdp && make check-env-parity && make release-gate
+    status: completed
   - id: r3-notify
     content: "При закрытии волны: notify-mgmt kind=done (сборка маршрута из рычагов)"
-    status: pending
+    status: completed
 isProject: false
 ---
 

@@ -58,7 +58,22 @@ type Pipeline struct {
 	ReminderInterval time.Duration
 	MaxReminders     int
 	MaxMediaBytes    int64
-	now              func() time.Time
+	// HITLMode: rules|cursor|hybrid (P3). Empty = rules.
+	HITLMode string
+	// TGCursor enables auto Cursor agent on manager intake (P2).
+	TGCursor bool
+	// StartAgent starts an async agent job; optional (nil = skip auto path).
+	StartAgent func(mode, prompt string, useKnowledge bool) (jobID string, err error)
+	// WaitAgentJob blocks until job done|error; optional for TG finalize.
+	WaitAgentJob func(jobID string) (result string, err error)
+	// BuildKnowledgePack returns context for Cursor; optional.
+	BuildKnowledgePack func(query string) (string, error)
+	// Stand starts allowlisted stand jobs (P5); optional.
+	Stand interface {
+		StartAction(action string) (jobID string, err error)
+		ManagerLine(jobID string) (string, error)
+	}
+	now func() time.Time
 }
 
 const helpText = `Шаблон ввода (отметьте бота @… или /vvod):
@@ -165,6 +180,10 @@ func (p *Pipeline) HandleUpdate(ctx context.Context, u telegram.Update) (bool, e
 		if trig == normalize.TriggerHelp {
 			_, _ = p.sendAndMirror(ctx, msg.Chat.ID, msg.MessageID, "help", comms.SanitizeManager(helpText))
 		}
+		if handled := p.tryOperatorStand(ctx, msg); handled {
+			_ = p.Store.MarkSeen(u.UpdateID)
+			return false, nil
+		}
 		_ = p.Store.MarkSeen(u.UpdateID)
 		return false, nil
 	}
@@ -239,6 +258,10 @@ func (p *Pipeline) HandleUpdate(ctx context.Context, u telegram.Update) (bool, e
 }
 
 func (p *Pipeline) sendAndMirror(ctx context.Context, chatID, replyTo int64, kind, text string) (int64, error) {
+	return p.sendAndMirrorRecord(ctx, chatID, replyTo, kind, text, true)
+}
+
+func (p *Pipeline) sendAndMirrorRecord(ctx context.Context, chatID, replyTo int64, kind, text string, recordThread bool) (int64, error) {
 	if p.Messenger == nil {
 		return 0, fmt.Errorf("messenger nil")
 	}
@@ -254,15 +277,17 @@ func (p *Pipeline) sendAndMirror(ctx context.Context, chatID, replyTo int64, kin
 	if err != nil {
 		return 0, err
 	}
-	_ = p.Store.AppendThread(store.ThreadMsg{
-		MessageID: id,
-		ChatID:    target,
-		Channel:   string(channel),
-		FromUser:  p.BotUser,
-		Direction: "out",
-		Text:      text,
-		Kind:      "bot",
-	})
+	if recordThread && p.Store != nil {
+		_ = p.Store.AppendThread(store.ThreadMsg{
+			MessageID: id,
+			ChatID:    target,
+			Channel:   string(channel),
+			FromUser:  p.BotUser,
+			Direction: "out",
+			Text:      text,
+			Kind:      "bot",
+		})
+	}
 	return id, nil
 }
 
@@ -370,7 +395,8 @@ func (p *Pipeline) IngestConsole(ctx context.Context, in ConsoleIngest) (Console
 		if ch == string(router.ChannelOperator) {
 			kind = "operator_prompt"
 		}
-		id, err := p.sendAndMirror(ctx, chatID, 0, kind, body)
+		recordBot := strings.TrimSpace(body) != strings.TrimSpace(redacted)
+		id, err := p.sendAndMirrorRecord(ctx, chatID, 0, kind, body, recordBot)
 		if err != nil {
 			return ConsoleResult{Record: rec, Ack: ack, CardID: cardID}, err
 		}
@@ -587,7 +613,7 @@ func (p *Pipeline) tryHITLDecision(ctx context.Context, msg *telegram.Message, f
 	}
 }
 
-func (p *Pipeline) handleHITLIntake(_ context.Context, msg *telegram.Message, fromUser, redacted string, bundle analytics.Bundle) (string, error) {
+func (p *Pipeline) handleHITLIntake(ctx context.Context, msg *telegram.Message, fromUser, redacted string, bundle analytics.Bundle) (string, error) {
 	now := p.clock()
 	id := card.NewID(msg.Chat.ID, msg.MessageID)
 	analysis := bundle.AnalyzeResult()
@@ -607,14 +633,38 @@ func (p *Pipeline) handleHITLIntake(_ context.Context, msg *telegram.Message, fr
 		CreatedAt:     now,
 		UpdatedAt:     now,
 		LastAskAt:     now,
+		HITLMode:      p.EffectiveHITLMode(),
 	}
+	if p.wantCursorIntake() {
+		ack, err := p.tryCursorIntake(ctx, msg, fromUser, redacted, c)
+		if err == nil {
+			return ack, nil
+		}
+		c.FallbackReason = err.Error()
+		_ = experience.Append(p.StoreHome(), experience.Event{
+			CardID: id, Kind: "fallback", Class: analysis.Class, Mode: p.EffectiveHITLMode(), FallbackReason: err.Error(),
+		})
+		if p.EffectiveHITLMode() == "cursor" {
+			c.Status = card.StatusAwaitingClarify
+			_ = p.Cards.Save(c)
+			return "Принято. Авторазбор временно недоступен — оператор разберёт вручную.", nil
+		}
+		// hybrid → fall through to rules
+	}
+	return p.handleHITLIntakeRules(ctx, msg, fromUser, redacted, bundle, c)
+}
+
+func (p *Pipeline) handleHITLIntakeRules(_ context.Context, msg *telegram.Message, fromUser, redacted string, bundle analytics.Bundle, c *card.Card) (string, error) {
+	analysis := bundle.AnalyzeResult()
+	conflictPlains := bundle.ConflictPlains()
 	rawText := msg.PrimaryText()
+	id := c.ID
 	if analysis.Confidence == analyze.ConfidenceLow && len(bundle.Conflicts) == 0 {
 		c.Status = card.StatusAwaitingClarify
 		if err := p.Cards.Save(c); err != nil {
 			return "", err
 		}
-		_ = experience.Append(p.StoreHome(), experience.Event{CardID: id, Kind: "clarify", Class: analysis.Class})
+		_ = experience.Append(p.StoreHome(), experience.Event{CardID: id, Kind: "clarify", Class: analysis.Class, Mode: "rules"})
 		q := analysis.Question
 		if q == "" {
 			q = "Уточните, пожалуйста, одним предложением: это ошибка, доработка, вопрос по удобству или проверка связи?"
@@ -627,7 +677,7 @@ func (p *Pipeline) handleHITLIntake(_ context.Context, msg *telegram.Message, fr
 			return "", err
 		}
 		_ = experience.Append(p.StoreHome(), experience.Event{
-			CardID: id, Kind: "conflict", Class: analysis.Class, Conflicts: conflictPlains,
+			CardID: id, Kind: "conflict", Class: analysis.Class, Conflicts: conflictPlains, Mode: "rules",
 		})
 		f := bundle.Conflicts[0]
 		return comms.ConflictWarn(f.Plain, f.Question), nil
@@ -657,7 +707,7 @@ func (p *Pipeline) handleHITLIntake(_ context.Context, msg *telegram.Message, fr
 		}
 	}
 	_ = experience.Append(p.StoreHome(), experience.Event{
-		CardID: id, Kind: "proposal", Class: analysis.Class, TimelinePhrase: bundle.Estimate.ManagerPhrase,
+		CardID: id, Kind: "proposal", Class: analysis.Class, TimelinePhrase: bundle.Estimate.ManagerPhrase, Mode: "rules",
 	})
 	return comms.Proposal(prop, bundle.Estimate.ManagerPhrase), nil
 }
