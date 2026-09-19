@@ -100,6 +100,25 @@ func TestOrganizationListFilteredByRating(t *testing.T) {
 	}
 }
 
+func TestManagerCanApproveOrganizationUserCannot(t *testing.T) {
+	t.Parallel()
+	store := repository.NewStore()
+	seed.MustDev(t, store)
+	orgs := service.NewOrganizationService(store)
+	manager := authz.Principal{AccountID: seed.ManagerID, Role: domain.RoleManager}
+	user := authz.Principal{AccountID: seed.UserID, Role: domain.RoleUser}
+	org, err := orgs.Approve(context.Background(), manager, seed.OrgID)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if org.Status != domain.OrgApproved {
+		t.Fatalf("manager approve status=%s", org.Status)
+	}
+	if _, err := orgs.Approve(context.Background(), user, seed.OrgID); err == nil {
+		t.Fatal("user must not approve organization")
+	}
+}
+
 func TestAccountRBACAdminCreateForbiddenForUser(t *testing.T) {
 	t.Parallel()
 	store := repository.NewStore()

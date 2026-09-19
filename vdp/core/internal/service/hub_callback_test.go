@@ -2,6 +2,7 @@ package service_test
 
 import (
 	"context"
+	"encoding/json"
 	"testing"
 
 	"github.com/viletech/vdp/core/internal/authz"
@@ -58,6 +59,14 @@ func TestApplyHubCallbackOCRAndOneCNoAutoPay(t *testing.T) {
 	parsed, ok := extraction.ParseFromInvoiceJSON(form2.InvoiceJSON)
 	if !ok || !parsed.Meta.Confirmed {
 		t.Fatalf("confirm %#v", form2)
+	}
+	var saved map[string]any
+	if err := json.Unmarshal([]byte(form2.InvoiceJSON), &saved); err != nil {
+		t.Fatal(err)
+	}
+	codes, _ := saved["hs_codes"].([]any)
+	if len(codes) == 0 || codes[0] != "847130" {
+		t.Fatalf("card hs_codes=%v json=%s", saved["hs_codes"], form2.InvoiceJSON)
 	}
 	prov := authz.Principal{AccountID: "p1", Role: domain.RoleProvider}
 	if _, err := svc.ConfirmExtraction(ctx, prov, form.ID, r); err == nil {

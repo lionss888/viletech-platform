@@ -89,7 +89,35 @@ export function extractionPanelMode(input: {
   return "idle";
 }
 
-/** Whether role may start/cancel/confirm extraction controls. */
+function asNumber(raw: string | undefined): number | undefined {
+  if (!raw?.trim()) return undefined;
+  const value = Number(raw.replace(/\s/g, "").replace(",", "."));
+  return Number.isNaN(value) ? undefined : value;
+}
+
+/** Visible before confirm when header and lines do not agree. Does not pick a second total. */
+export function extractionAmountWarnings(result: ExtractionResult): string[] {
+  const warnings: string[] = [];
+  const header = asNumber(result.header.invoice_amount);
+  let lineSum = 0;
+  let hasLineAmount = false;
+  result.line_items.forEach((line, index) => {
+    const qty = asNumber(line.qty);
+    const price = asNumber(line.unit_price);
+    const amount = asNumber(line.line_amount);
+    if (qty !== undefined && price !== undefined && amount !== undefined && Math.abs(qty * price - amount) > 0.01) {
+      warnings.push(`Строка ${index + 1}: количество × цена не равно сумме строки.`);
+    }
+    if (amount !== undefined) {
+      lineSum += amount;
+      hasLineAmount = true;
+    }
+  });
+  if (header !== undefined && hasLineAmount && Math.abs(header - lineSum) > 0.01) {
+    warnings.push("Сумма в шапке не равна сумме строк. В заявку попадёт сумма шапки — сверьте её до подтверждения.");
+  }
+  return warnings;
+}
 export function canControlExtraction(role: string, status?: string): boolean {
   if (role !== "user" && role !== "manager" && role !== "root") return false;
   const st = status ?? "";

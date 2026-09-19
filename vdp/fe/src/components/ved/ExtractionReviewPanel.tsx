@@ -6,11 +6,52 @@ import {
   type ExtractionLineItem,
   type ExtractionResult,
   canControlExtraction,
+  extractionAmountWarnings,
   extractionPanelMode,
   isLowConfidence,
   parseExtractionResult,
 } from "@/lib/ved/extraction";
 import { cn } from "@/lib/utils";
+
+function fieldMark(current: string, origin: string | undefined): string {
+  return current.trim() === (origin ?? "").trim() ? "распознано" : "изменено";
+}
+
+function CatalogPick({
+  value,
+  options,
+  disabled,
+  onChange,
+}: {
+  value: string;
+  options: { value: string; label: string }[];
+  disabled: boolean;
+  onChange: (value: string) => void;
+}) {
+  const known = options.some((option) => option.value === value);
+  return (
+    <span className="mt-1 block min-w-0">
+      {!known && value ? (
+        <span className="mb-1 block text-[11px] text-amber-700">
+          Распознано «{value}» — нет в справочнике. Выберите ближайшее значение, код не сбрасывается сам.
+        </span>
+      ) : null}
+      <select
+        className="w-full min-w-0 rounded-md border border-border bg-background px-2 py-1.5 text-sm"
+        value={known ? value : ""}
+        disabled={disabled}
+        onChange={(event) => onChange(event.target.value)}
+      >
+        <option value="">{known ? "Не выбрано" : "Выберите из справочника"}</option>
+        {options.map((option) => (
+          <option key={option.value} value={option.value}>
+            {option.label}
+          </option>
+        ))}
+      </select>
+    </span>
+  );
+}
 
 export type ExtractionReviewPanelProps = {
   formId: string;
@@ -24,6 +65,8 @@ export type ExtractionReviewPanelProps = {
   embedded?: boolean;
   /** Called after successful confirm (e.g. close dialog). */
   onConfirmed?: () => void;
+  currencyOptions?: { value: string; label: string }[];
+  hsOptions?: { value: string; label: string }[];
 };
 
 /**
@@ -40,14 +83,19 @@ export function ExtractionReviewPanel({
   canConfirm = true,
   embedded = false,
   onConfirmed,
+  currencyOptions = [],
+  hsOptions = [],
 }: ExtractionReviewPanelProps) {
   const qc = useQueryClient();
   const parsed = parseExtractionResult(invoiceJson);
   const [draft, setDraft] = useState<ExtractionResult | null>(parsed);
+  const [origin, setOrigin] = useState<ExtractionResult | null>(parsed);
   const [savedNote, setSavedNote] = useState<string | null>(null);
   const [controlError, setControlError] = useState<string | null>(null);
   useEffect(() => {
-    setDraft(parseExtractionResult(invoiceJson));
+    const next = parseExtractionResult(invoiceJson);
+    setDraft(next);
+    setOrigin(next);
   }, [invoiceJson]);
 
   const mutation = useMutation({
@@ -166,7 +214,7 @@ export function ExtractionReviewPanel({
   };
 
   return (
-    <div className={shellClass} data-testid="extraction-review">
+    <div className={cn(shellClass, "min-w-0 max-w-full overflow-hidden")} data-testid="extraction-review">
       <div className="flex flex-wrap items-baseline justify-between gap-2">
         {!embedded ? <h2 className="text-sm font-semibold text-foreground">Распознанные данные</h2> : null}
         <p className="text-xs text-muted-foreground">
@@ -175,8 +223,8 @@ export function ExtractionReviewPanel({
       </div>
       {controlBar}
       <p className="text-xs text-muted-foreground">
-        Подтверждение переносит сумму, валюту и номера договора/инвойса в параметры заявки. Это не отправка
-        заявки на проверку — статус заявки не меняется.
+        Поле без правки помечено «распознано». Если значение изменили — «изменено». Цвет строки с низкой уверенностью
+        это не заменяет.
       </p>
       {!canConfirm && !confirmed ? (
         <p className="text-xs text-muted-foreground">
@@ -194,13 +242,13 @@ export function ExtractionReviewPanel({
             disabled={!editable}
           />
         </label>
-        <label className="text-xs text-muted-foreground">
-          Валюта
-          <input
-            className="mt-1 w-full rounded-md border border-border bg-background px-2 py-1.5 text-sm"
+        <label className="min-w-0 text-xs text-muted-foreground">
+          Валюта · {fieldMark(draft.header.currency ?? "", origin?.header.currency)}
+          <CatalogPick
             value={draft.header.currency ?? ""}
-            onChange={(e) => updateHeader("currency", e.target.value)}
+            options={currencyOptions}
             disabled={!editable}
+            onChange={(value) => updateHeader("currency", value)}
           />
         </label>
         <label className="text-xs text-muted-foreground">
@@ -248,28 +296,22 @@ export function ExtractionReviewPanel({
             disabled={!editable}
           />
         </label>
-        <label className="text-xs text-muted-foreground">
-          Коды ТН ВЭД (через запятую)
-          <input
-            className="mt-1 w-full rounded-md border border-border bg-background px-2 py-1.5 text-sm"
-            value={(draft.header.hs_codes ?? []).join(", ")}
-            onChange={(e) =>
+        <label className="min-w-0 text-xs text-muted-foreground">
+          Код ТН ВЭД · {fieldMark((draft.header.hs_codes ?? []).join(","), (origin?.header.hs_codes ?? []).join(","))}
+          <CatalogPick
+            value={draft.header.hs_codes?.[0] ?? ""}
+            options={hsOptions}
+            disabled={!editable}
+            onChange={(value) =>
               setDraft({
                 ...draft,
-                header: {
-                  ...draft.header,
-                  hs_codes: e.target.value
-                    .split(",")
-                    .map((code) => code.trim())
-                    .filter(Boolean),
-                },
+                header: { ...draft.header, hs_codes: value ? [value] : [] },
               })
             }
-            disabled={!editable}
           />
         </label>
       </div>
-      <div className="overflow-x-auto">
+      <div className="min-w-0 max-w-full overflow-x-auto">
         <table className="w-full min-w-[44rem] text-left text-sm" data-testid="extraction-line-items">
           <thead>
             <tr className="border-b border-border text-xs text-muted-foreground">
@@ -331,20 +373,26 @@ export function ExtractionReviewPanel({
                   />
                 </td>
                 <td className="py-1 pr-2">
-                  <input
-                    className="w-20 rounded border border-border bg-background px-1 py-0.5"
+                  <CatalogPick
                     value={row.currency ?? ""}
+                    options={currencyOptions}
                     disabled={!editable}
-                    onChange={(e) => updateLine(idx, { currency: e.target.value })}
+                    onChange={(value) => updateLine(idx, { currency: value })}
                   />
+                  <span className="block text-[10px] text-muted-foreground">
+                    {fieldMark(row.currency ?? "", origin?.line_items[idx]?.currency)}
+                  </span>
                 </td>
                 <td className="py-1">
-                  <input
-                    className="w-24 rounded border border-border bg-background px-1 py-0.5"
+                  <CatalogPick
                     value={row.hs_code ?? ""}
+                    options={hsOptions}
                     disabled={!editable}
-                    onChange={(e) => updateLine(idx, { hs_code: e.target.value })}
+                    onChange={(value) => updateLine(idx, { hs_code: value })}
                   />
+                  <span className="block text-[10px] text-muted-foreground">
+                    {fieldMark(row.hs_code ?? "", origin?.line_items[idx]?.hs_code)}
+                  </span>
                 </td>
               </tr>
             ))}
@@ -371,6 +419,13 @@ export function ExtractionReviewPanel({
           </ul>
         ) : null}
       </div>
+      {extractionAmountWarnings(draft).length > 0 ? (
+        <ul className="list-disc space-y-0.5 pl-4 text-xs text-amber-700" data-testid="extraction-amount-mismatch">
+          {extractionAmountWarnings(draft).map((warning) => (
+            <li key={warning}>{warning}</li>
+          ))}
+        </ul>
+      ) : null}
       {!confirmed && canConfirm ? (
         <button
           type="button"

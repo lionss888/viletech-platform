@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 
+import { ManagerRouteHintPanel } from "@/components/ved/ManagerRouteHintPanel";
 import { VedAppShell } from "@/components/ved/VedAppShell";
 import {
   findCapabilityLabel,
@@ -144,6 +145,7 @@ export function ProcessRolesPage() {
   return (
     <VedAppShell title="Роли процесса">
       <div className="space-y-4">
+        <ManagerRouteHintPanel role="root" />
         <div className="panel space-y-2 p-4 text-sm">
           <p className="font-semibold text-foreground">Участие ролей в фиксированном процессе</p>
           <p className="text-muted-foreground">

@@ -1,5 +1,6 @@
 /** Логика представления для ролей комплаенс: проверка заявки и проверка участников. */
 
+import { counterpartySubjectDetail, innLine } from "./party-requisites";
 import type { ComplianceToolRecord } from "./reference";
 import type { Counterparty, Organization, PaymentForm, VedRole } from "./types";
 
@@ -9,6 +10,36 @@ export const COMPLIANCE_ROLES: VedRole[] = ["internal_compliance_officer", "comp
 /** True for internal/external compliance officer roles. */
 export function isComplianceRole(role: VedRole | undefined): boolean {
   return !!role && COMPLIANCE_ROLES.includes(role);
+}
+
+/** Roles who see subject-review buttons and may persist «Проверен». User and provider cannot. */
+export function canPersistSubjectApproval(role: VedRole | undefined): boolean {
+  return isComplianceRole(role) || role === "manager" || role === "root";
+}
+
+const CURRENT_VERDICT_REASON: Record<string, string> = {
+  approved: "Уже проверен",
+  waiting_verification: "Сведения уже запрошены",
+  blocked: "Уже заблокирован",
+};
+
+/**
+ * Reason the matching verdict button must stay closed.
+ * `not_approved` matches no button, so «Проверен» stays available.
+ */
+export function currentSubjectVerdictReason(status: string, verdict: string): string | undefined {
+  if (status !== verdict) return undefined;
+  return CURRENT_VERDICT_REASON[verdict];
+}
+
+/** True when a counterparty status write must hit the approval API, not a catalog patch. */
+export function shouldSetCounterpartyApproval(
+  role: VedRole | undefined,
+  status: string,
+  hasExistingId: boolean,
+): boolean {
+  if (!hasExistingId || !canPersistSubjectApproval(role)) return false;
+  return status === "approved" || status === "not_approved";
 }
 
 export type ReviewScope = "form" | "organization";
@@ -57,7 +88,7 @@ export function subjectsOf(
       id: org.id,
       kind: "Организация клиента",
       name: org.name,
-      detail: `ИНН ${org.inn}`,
+      detail: innLine(org.inn),
       status: org.status,
       note: raw["complianceNote"],
       mark: raw["complianceMark"],
@@ -70,7 +101,7 @@ export function subjectsOf(
       id: cp.id,
       kind: "Контрагент",
       name: cp.name,
-      detail: `${cp.country} · SWIFT ${cp.swift}`,
+      detail: counterpartySubjectDetail(cp.country, cp.bank, cp.swift),
       status: cp.status,
       note: raw["complianceNote"],
       mark: raw["complianceMark"],

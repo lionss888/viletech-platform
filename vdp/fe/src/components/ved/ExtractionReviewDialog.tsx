@@ -21,6 +21,8 @@ export type ExtractionReviewDialogProps = {
   canConfirm?: boolean;
   /** Test override for viewport branching. */
   forceMobile?: boolean;
+  currencyOptions?: { value: string; label: string }[];
+  hsOptions?: { value: string; label: string }[];
 };
 
 /**
@@ -37,6 +39,8 @@ export function ExtractionReviewDialog({
   hasDocuments = false,
   canConfirm = true,
   forceMobile,
+  currencyOptions,
+  hsOptions,
 }: ExtractionReviewDialogProps) {
   const mobileHook = useIsMobileViewport(open);
   const isMobile = forceMobile ?? mobileHook;
@@ -64,6 +68,8 @@ export function ExtractionReviewDialog({
       noDocuments={noDocuments}
       hasDocuments={hasDocuments}
       canConfirm={canConfirm}
+      currencyOptions={currencyOptions}
+      hsOptions={hsOptions}
       embedded
       onConfirmed={() => onOpenChange(false)}
     />

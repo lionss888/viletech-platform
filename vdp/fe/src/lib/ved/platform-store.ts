@@ -20,7 +20,7 @@ import {
   updateOrganization,
 } from "@/lib/api/catalog-mutations";
 import { banksDraftToPayload, type BankDraftRow } from "@/components/ved/BanksEditor";
-import { isComplianceRole } from "@/lib/ved/compliance";
+import { canPersistSubjectApproval, isComplianceRole, shouldSetCounterpartyApproval } from "@/lib/ved/compliance";
 import {
   listAdminAccounts,
   listAgents,
@@ -66,7 +66,7 @@ import {
   patchForm,
   transitionForm,
 } from "@/lib/api/forms";
-import { mapCoreFormToPaymentForm } from "@/lib/api/mappers";
+import { mapCoreFormToPaymentForm, resolveClientName } from "@/lib/api/mappers";
 import { useAuth } from "@/lib/auth/session";
 import { resolveDemoAction } from "@/lib/ved/action-bridge";
 import { staticCatalogSeed } from "@/lib/ved/catalog-source";
@@ -145,10 +145,19 @@ function useApiPlatformStore(): VedStore {
     [auth.role, auth.displayName, auth.email],
   );
 
-  const forms = useMemo(
-    () => (formsQuery.data ?? []).map((f) => mapCoreFormToPaymentForm(f, auth.displayName)),
-    [formsQuery.data, auth.displayName],
-  );
+  const forms = useMemo(() => {
+    const accounts = (usersQuery.data ?? []).map(mapCoreAdminAccount);
+    return (formsQuery.data ?? []).map((form) => {
+      const mapped = mapCoreFormToPaymentForm(form);
+      return {
+        ...mapped,
+        ownerName: resolveClientName(form.account_id, accounts, {
+          role: auth.role ?? undefined,
+          name: auth.displayName,
+        }),
+      };
+    });
+  }, [formsQuery.data, usersQuery.data, auth.role, auth.displayName]);
 
   const organizations = useMemo(() => (orgsQuery.data ?? []).map(mapCoreOrganization), [orgsQuery.data]);
   const counterparties = useMemo(() => (cpQuery.data ?? []).map(mapCoreCounterparty), [cpQuery.data]);
@@ -502,7 +511,7 @@ function useApiPlatformStore(): VedStore {
       }
       if (key === "counterparties") {
         const status = String(record.status ?? "");
-        const canSetApproval = isComplianceRole(session?.role) || session?.role === "root";
+        const canSetApproval = shouldSetCounterpartyApproval(session?.role, status, Boolean(originalId));
         const country = String(record.country ?? record.countryCode ?? "");
         const bankRows = Array.isArray(record.banks) ? (record.banks as BankDraftRow[]) : [];
         const banksPayload = banksDraftToPayload(bankRows);
@@ -512,7 +521,7 @@ function useApiPlatformStore(): VedStore {
           inn: String(record.inn ?? ""),
           banks: banksPayload,
         };
-        if (originalId && canSetApproval && (status === "approved" || status === "not_approved")) {
+        if (canSetApproval && originalId) {
           await setCounterpartyApproval(
             originalId,
             status === "approved" ? "approved" : "rejected",
@@ -522,7 +531,10 @@ function useApiPlatformStore(): VedStore {
           await updateCounterparty(originalId, catalog);
         } else {
           const created = await createCounterparty(catalog);
-          if (canSetApproval && (status === "approved" || status === "not_approved")) {
+          if (
+            canPersistSubjectApproval(session?.role) &&
+            (status === "approved" || status === "not_approved")
+          ) {
             await setCounterpartyApproval(
               created.id,
               status === "approved" ? "approved" : "rejected",

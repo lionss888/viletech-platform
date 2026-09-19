@@ -11,7 +11,7 @@ fail() {
   FAILED=1
 }
 
-HOST="$ROOT/fe/src/components/ved/pages/form-detail-page.tsx"
+HOST="$ROOT/fe/src/components/ved/pages/process-roles-page.tsx"
 PANEL="$ROOT/fe/src/components/ved/ManagerRouteHintPanel.tsx"
 AGENTS="$ROOT/fe/AGENTS.md"
 
@@ -20,7 +20,7 @@ AGENTS="$ROOT/fe/AGENTS.md"
 [ -f "$AGENTS" ] || fail "missing $AGENTS"
 
 if [ -f "$HOST" ] && ! grep -q 'ManagerRouteHintPanel' "$HOST"; then
-  fail "form-detail-page.tsx must mount ManagerRouteHintPanel (orphan mount)"
+  fail "process-roles-page.tsx must mount ManagerRouteHintPanel (orphan mount)"
 fi
 
 if [ -f "$PANEL" ] && ! grep -q 'data-testid="manager-route-hint"' "$PANEL"; then

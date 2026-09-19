@@ -43,7 +43,7 @@ export const STATUS_META: Record<string, StatusMeta> = {
     tone: "return",
     stage: "form_verification",
   },
-  form_accepted: { label: "Заявка подтверждена", short: "Подтверждена", tone: "done", stage: "form_verification" },
+  form_accepted: { label: "Заявка подтверждена", short: "Подтверждена", tone: "done", stage: "agency_contract" },
 
   contract_waiting: {
     label: "Ожидает подписанный агентский договор",

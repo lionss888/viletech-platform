@@ -3,9 +3,9 @@
  * Source: заметки/конструктор-сценариев (approved wording).
  */
 
-/** Roles that see the route-assembly hint on form detail. */
+/** Route-assembly hint is for root on the process-roles screen, not the form card. */
 export function shouldShowManagerRouteHint(role: string): boolean {
-  return role === "manager" || role === "root";
+  return role === "root";
 }
 
 export const MANAGER_ROUTE_HINT_TITLE = "Как собрать путь заявки";

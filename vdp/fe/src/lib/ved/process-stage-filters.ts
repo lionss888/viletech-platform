@@ -112,7 +112,7 @@ export function statusMetaForProcess(
 
 /**
  * Lifecycle rail for the current process config.
- * Hides disabled ICO stage; renames ECO → «Проверка».
+ * Organization stays its own step. Renames ECO review → «Проверка».
  * Omits «Отгрузка» unless status is already in shipment_* (optional Nest branch).
  */
 export function stagesForProcess(
@@ -122,16 +122,14 @@ export function stagesForProcess(
   const includeShipment = status !== undefined && statusMeta(status).stage === "shipment";
   const base = includeShipment ? insertShipmentStage(STAGES) : STAGES;
   if (!roles?.length) return base;
-  const icoOff = isProcessSlotDisabled(roles, "internal_compliance_officer");
   const ecoOff = isProcessSlotDisabled(roles, "compliance_officer");
   return base
-    .filter((stage) => {
-      if (stage.id === "organization_verification" && icoOff) return false;
-      return true;
-    })
     .map((stage) => {
       if (stage.id === "form_verification" && ecoOff) {
         return { ...stage, label: "Проверка" };
+      }
+      if (stage.id === "organization_verification") {
+        return { ...stage, label: "Организация" };
       }
       return stage;
     });
@@ -145,17 +143,9 @@ function insertShipmentStage(
   return [...stages.slice(0, completedIdx), SHIPMENT_STAGE, ...stages.slice(completedIdx)];
 }
 
-/** Stage id used by the stepper after collapsing disabled ICO into «Проверка». */
-export function displayStageId(status: FormStatus, roles: ProcessRoleRow[] | undefined): StageId {
-  const stage = statusMeta(status).stage;
-  if (!roles?.length) return stage;
-  if (
-    stage === "organization_verification" &&
-    isProcessSlotDisabled(roles, "internal_compliance_officer")
-  ) {
-    return "form_verification";
-  }
-  return stage;
+/** Stage shown on the lifecycle rail. Organization stays its own step; a confirmed form is on the contract stage. */
+export function displayStageId(status: FormStatus, _roles: ProcessRoleRow[] | undefined): StageId {
+  return statusMeta(status).stage;
 }
 
 /** VED helper: stageIndexForProcess. */

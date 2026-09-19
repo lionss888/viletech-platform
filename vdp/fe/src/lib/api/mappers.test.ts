@@ -6,6 +6,11 @@ import {
   nextStepHint,
   normalizeFormId,
   parseDocsJson,
+  assignedManagerLabel,
+  assignedProviderLabel,
+  rejectFromHistory,
+  resolveClientName,
+  showReturnBanner,
   waitingActorLabel,
 } from "./mappers";
 import type { CoreForm } from "./forms";
@@ -274,5 +279,81 @@ describe("waitingActorLabel", () => {
     const label = waitingActorLabel("organization_waiting_verification");
     expect(label).toBeTruthy();
     expect(label!.toLowerCase()).toMatch(/комплаенс|вко|внутренн/);
+  });
+});
+
+describe("card facts from extraction", () => {
+  it("reads header.hs_codes and keeps invoice distinct from the contract", () => {
+    const form = {
+      id: "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee",
+      account_id: "11111111-1111-1111-1111-111111111111",
+      organization_id: "o1",
+      status: "form_waiting_verification",
+      direction: "import",
+      kind: "good",
+      invoice_amount: "1000",
+      currency: "USD",
+      contract_number: "OCR-aaaaaaaa",
+      invoice_json: JSON.stringify({
+        schema_version: "v1",
+        header: { invoice_number: "INV-aaaaaaaa", hs_codes: ["847130"], invoice_amount: "1000" },
+        line_items: [],
+      }),
+      created_at: "2026-01-01T00:00:00Z",
+      updated_at: "2026-01-01T00:00:00Z",
+    } as CoreForm;
+    const mapped = mapCoreFormToPaymentForm(form, "Root Admin");
+    expect(mapped.hsCode).toBe("847130");
+    expect(mapped.invoiceNumber).toBe("INV-aaaaaaaa");
+    expect(mapped.invoiceNumber).not.toBe(mapped.contractNumber);
+    expect(mapped.contractNumber).toBe("OCR-aaaaaaaa");
+    expect(mapped.providerName).toBeUndefined();
+  });
+
+  it("does not treat extraction_started as a return reason off correction", () => {
+    const history = [
+      {
+        id: "h1",
+        form_payment_id: "f1",
+        actor_id: "a1",
+        from_status: "form_waiting_corrections",
+        to_status: "form_waiting_corrections",
+        comment: "extraction_started",
+        created_at: "2026-01-01T00:00:00Z",
+      },
+    ];
+    expect(rejectFromHistory(history).rejectText).toBeUndefined();
+    expect(showReturnBanner("form_waiting_verification", rejectFromHistory(history).rejectText)).toBe(false);
+  });
+
+  it("keeps a human return comment while the form is on correction", () => {
+    const history = [
+      {
+        id: "h1",
+        form_payment_id: "f1",
+        actor_id: "a1",
+        from_status: "form_verification",
+        to_status: "form_waiting_corrections",
+        comment: "Нет инвойса",
+        created_at: "2026-01-01T00:00:00Z",
+      },
+    ];
+    expect(rejectFromHistory(history).rejectText).toBe("Нет инвойса");
+    expect(showReturnBanner("form_waiting_corrections", "Нет инвойса")).toBe(true);
+  });
+
+  it("does not call the signed-in root the client", () => {
+    expect(
+      resolveClientName("11111111-1111-1111-1111-111111111111", [
+        { id: "11111111-1111-1111-1111-111111111111", name: "Ivan Petrov", role: "user" },
+        { id: "root", name: "Root Admin", role: "root" },
+      ], { role: "root", name: "Root Admin" }),
+    ).toBe("Ivan Petrov");
+    expect(assignedProviderLabel("55555555-5555-5555-5555-555555555555", [], "55555555-5555-5555-5555-555555555555")).toBe(
+      "не назначен",
+    );
+    expect(assignedManagerLabel("22222222-2222-2222-2222-222222222222", [{ id: "22222222-2222-2222-2222-222222222222", name: "Manager Seed" }])).toBe(
+      "Manager Seed",
+    );
   });
 });

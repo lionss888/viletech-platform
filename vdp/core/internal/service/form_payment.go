@@ -231,11 +231,8 @@ func (s *FormPaymentService) TransitionWithComment(ctx context.Context, principa
 	if err != nil {
 		return formpayment.Form{}, err
 	}
-	// Continuity take: claim manager assignment when manager closes a disabled ICO/ECO slot.
-	if principal.Role == domain.RoleManager &&
-		policy != nil &&
-		formpayment.CanAdvanceDisabledSlot(principal.Role, action, policy) &&
-		next.ManagerID == "" {
+	// Claim the manager who takes or confirms the form, not only a disabled compliance slot.
+	if principal.Role == domain.RoleManager && next.ManagerID == "" {
 		next.ManagerID = principal.AccountID
 	}
 	next.PackDocsJSON()

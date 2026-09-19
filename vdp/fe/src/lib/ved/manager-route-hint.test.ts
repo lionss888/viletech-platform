@@ -8,9 +8,9 @@ import {
 } from "./manager-route-hint";
 
 describe("manager route hint", () => {
-  it("shows for manager and root only", () => {
-    expect(shouldShowManagerRouteHint("manager")).toBe(true);
+  it("shows for root on the process-roles screen, not for the manager on a form", () => {
     expect(shouldShowManagerRouteHint("root")).toBe(true);
+    expect(shouldShowManagerRouteHint("manager")).toBe(false);
     expect(shouldShowManagerRouteHint("user")).toBe(false);
     expect(shouldShowManagerRouteHint("provider")).toBe(false);
     expect(shouldShowManagerRouteHint("internal_compliance_officer")).toBe(false);

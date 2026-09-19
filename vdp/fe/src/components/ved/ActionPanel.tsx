@@ -58,6 +58,8 @@ export function ActionPanel({
   lockAcceptNote,
   note,
   onEditForm,
+  surface = "all",
+  focusFacts,
 }: {
   form: PaymentForm;
   title?: string;
@@ -67,6 +69,9 @@ export function ActionPanel({
   lockAcceptNote?: string | undefined;
   /** Opens whole-form edit when draft/corrections. */
   onEditForm?: (() => void) | undefined;
+  /** focus: decision CTA only. rest: secondary actions. all: current list. */
+  surface?: "all" | "focus" | "rest";
+  focusFacts?: [string, string][] | undefined;
 }) {
   const { session, applyAction, complianceTools, paymentAgents, users } = usePlatformStore();
   const processRoles = useProcessRolesRows();
@@ -176,7 +181,21 @@ export function ActionPanel({
     const operationalActions = actions.filter((a) => a.id !== "root_cancel_form");
     return { operationalActions, rootCancelAction };
   }, [actions, role]);
+  const isDecisionAction = (action: FormAction) => action.id.endsWith("_accept");
+  const visibleActions =
+    surface === "focus"
+      ? operationalActions.filter(isDecisionAction)
+      : surface === "rest"
+        ? operationalActions.filter((action) => !isDecisionAction(action))
+        : operationalActions;
   const marks = marksFor(complianceTools, "form");
+
+  if (surface === "rest" && visibleActions.length === 0 && !rootCancelAction) {
+    return null;
+  }
+  if (surface === "focus" && visibleActions.length === 0) {
+    return null;
+  }
 
   if (actions.length === 0) {
     const waiting = waitingActorLabel(form.status, processRoles);
@@ -333,7 +352,17 @@ export function ActionPanel({
   return (
     <div className="panel p-4">
       <p className="label-caps">{title}</p>
-      {role === "root" && operationalActions.length > 0 && (
+      {surface === "focus" && focusFacts && focusFacts.length > 0 ? (
+        <dl className="mt-3 grid gap-2 sm:grid-cols-2" data-testid="next-step-facts">
+          {focusFacts.map(([label, value]) => (
+            <div key={label}>
+              <dt className="label-caps">{label}</dt>
+              <dd className="text-sm font-medium">{value}</dd>
+            </div>
+          ))}
+        </dl>
+      ) : null}
+      {role === "root" && operationalActions.length > 0 && surface !== "focus" && (
         <p className="mt-2 text-xs text-muted-foreground">Доступны действия всех ролей на текущем статусе.</p>
       )}
       {lockNote && <p className="mt-2 rounded-md bg-destructive-soft px-2 py-1.5 text-xs text-destructive">{lockNote}</p>}
@@ -370,7 +399,7 @@ export function ActionPanel({
             Редактировать заявку
           </button>
         )}
-        {operationalActions.map(renderActionButton)}
+        {visibleActions.map(renderActionButton)}
       </div>
       {rootCancelAction && (
         <div className="mt-4 border-t border-border pt-3">
