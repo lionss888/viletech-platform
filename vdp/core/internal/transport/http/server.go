@@ -153,6 +153,9 @@ func (s *Server) handleGetForm(w http.ResponseWriter, r *http.Request, principal
 		writeJSON(w, http.StatusOK, formpayment.ScrubFormForProvider(form))
 		return
 	}
+	if principal.Role == domain.RoleUser {
+		form.ReturnEpisode = form.ReturnEpisode.VisibleTo(principal.Role)
+	}
 	writeJSON(w, http.StatusOK, form)
 }
 

@@ -1,6 +1,10 @@
 package formpayment
 
-import "strings"
+import (
+	"strings"
+
+	"github.com/viletech/vdp/core/internal/domain"
+)
 
 // IsAgencyContractDocKind reports docs that must not be shown to provider.
 func IsAgencyContractDocKind(kind, label string) bool {
@@ -57,5 +61,6 @@ func ScrubFormForProvider(form Form) Form {
 	out := form
 	out.DocsJSON = ScrubDocsJSONForProvider(form.DocsJSON)
 	out.InvoiceJSON = ""
+	out.ReturnEpisode = form.ReturnEpisode.VisibleTo(domain.RoleProvider)
 	return out
 }

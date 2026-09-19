@@ -21,6 +21,8 @@ import { ManagerRouteHintPanel } from "@/components/ved/ManagerRouteHintPanel";
 import { RateCommissionPanel } from "@/components/ved/RateCommissionPanel";
 import { RefundPanel } from "@/components/ved/RefundPanel";
 import { ShipmentPanel } from "@/components/ved/ShipmentPanel";
+import { ProviderReturnReportPanel } from "@/components/ved/ProviderReturnReportPanel";
+import { ManagerReturnFactPanel } from "@/components/ved/ManagerReturnFactPanel";
 import { DirectionTag, StatusBadge } from "@/components/ved/StatusBadge";
 import { ChannelBadge } from "@/components/ved/ChannelBadge";
 import { StageStepper } from "@/components/ved/StageStepper";
@@ -86,6 +88,15 @@ export function FormDetail() {
   const diadocQuery = useQuery({
     queryKey: ["form-diadoc", formId],
     queryFn: () => getFormDiadocStatus(formId),
+    enabled: mode === "app" && Boolean(formId),
+  });
+  
+  const returnEpisodeQuery = useQuery({
+    queryKey: ["return-episode", formId],
+    queryFn: async () => {
+      const { getReturnEpisode } = await import("@/lib/api/return");
+      return getReturnEpisode(formId);
+    },
     enabled: mode === "app" && Boolean(formId),
   });
 
@@ -571,6 +582,27 @@ export function FormDetail() {
               )}
               {!isProvider && <RefundPanel form={form} />}
               {!isProvider && <ShipmentPanel form={form} />}
+              
+              {/* Return Episode - Stage 1: Provider reports return */}
+              {isProvider && (
+                <ProviderReturnReportPanel
+                  formId={form.id}
+                  currency={form.currency}
+                  returnEpisode={returnEpisodeQuery.data}
+                  onSuccess={() => {
+                    formQuery.refetch();
+                    returnEpisodeQuery.refetch();
+                  }}
+                />
+              )}
+              
+              {/* Return Episode - Manager sees fact */}
+              {!isProvider && returnEpisodeQuery.data?.active && (
+                <ManagerReturnFactPanel
+                  returnEpisode={returnEpisodeQuery.data}
+                  currency={form.currency}
+                />
+              )}
             </>
           )}
 

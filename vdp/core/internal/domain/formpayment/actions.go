@@ -74,6 +74,16 @@ const (
 	ActionRefundStop        Action = "refund_stop"
 	ActionRefundSent        Action = "refund_sent"
 	ActionRefundCancel      Action = "refund_cancel"
+	// Return episode (новый контур возврата после исполнения).
+	ActionProvReturnReport            Action = "prov_return_report"
+	ActionMgrReturnClarify            Action = "mgr_return_clarify"
+	ActionClientReturnClarifyReply    Action = "client_return_clarify_reply"
+	ActionMgrReturnToClientRate       Action = "mgr_return_to_client_rate"
+	ActionClientReturnConsent         Action = "client_return_consent"
+	ActionClientReturnRefuse          Action = "client_return_refuse"
+	ActionMgrReturnToClientExecute    Action = "mgr_return_to_client_execute"
+	ActionMgrReturnRepeat             Action = "mgr_return_repeat"
+	ActionProvReturnRepeatExecute     Action = "prov_return_repeat_execute"
 	ActionComplete          Action = "complete"
 	ActionTreasurerConfirm  Action = "treasurer_confirm"
 	ActionTreasurerSigning  Action = "treasurer_signing"
@@ -115,6 +125,24 @@ func RolesForAction(action Action) []domain.Role {
 		return []domain.Role{domain.RoleComplianceOfficer, domain.RoleRoot}
 	case ActionProviderStart, ActionProviderSent, ActionProviderReturn:
 		return []domain.Role{domain.RoleProvider, domain.RoleSeniorProvider, domain.RoleManager, domain.RoleRoot}
+	case ActionProvReturnReport:
+		return []domain.Role{domain.RoleProvider, domain.RoleSeniorProvider, domain.RoleRoot}
+	case ActionMgrReturnClarify:
+		return []domain.Role{domain.RoleManager, domain.RoleRoot}
+	case ActionClientReturnClarifyReply:
+		return []domain.Role{domain.RoleUser, domain.RoleRoot}
+	case ActionMgrReturnToClientRate:
+		return []domain.Role{domain.RoleManager, domain.RoleRoot}
+	case ActionClientReturnConsent:
+		return []domain.Role{domain.RoleUser, domain.RoleRoot}
+	case ActionClientReturnRefuse:
+		return []domain.Role{domain.RoleUser, domain.RoleRoot}
+	case ActionMgrReturnToClientExecute:
+		return []domain.Role{domain.RoleManager, domain.RoleRoot}
+	case ActionMgrReturnRepeat:
+		return []domain.Role{domain.RoleManager, domain.RoleRoot}
+	case ActionProvReturnRepeatExecute:
+		return []domain.Role{domain.RoleProvider, domain.RoleSeniorProvider, domain.RoleRoot}
 	case ActionTreasurerConfirm, ActionTreasurerSigning, ActionTreasurerReturn, ActionTreasurerCorrection, ActionTreasurerComplete, ActionTreasurerBackToSigning:
 		return []domain.Role{domain.RoleTreasurer, domain.RoleRoot}
 	case ActionInternalCallback:
@@ -207,6 +235,24 @@ func TargetStatus(form Form, action Action, orgApproved bool) (Status, error) {
 		return StatusSigningOrderAccepted, nil
 	case ActionProviderReturn:
 		return StatusManagerChecking, nil
+	case ActionProvReturnReport:
+		return StatusReturnReported, nil
+	case ActionMgrReturnClarify:
+		return StatusReturnAwaitingClientClarify, nil
+	case ActionClientReturnClarifyReply:
+		return StatusReturnMgrDecision, nil
+	case ActionMgrReturnToClientRate:
+		return StatusClientReturnConsentPending, nil
+	case ActionClientReturnConsent:
+		return StatusMgrReturnToClientReadyExecute, nil
+	case ActionClientReturnRefuse:
+		return StatusReturnMgrDecision, nil
+	case ActionMgrReturnToClientExecute:
+		return StatusReturnToClientClosed, nil
+	case ActionMgrReturnRepeat:
+		return StatusProvReturnRepeatExecuting, nil
+	case ActionProvReturnRepeatExecute:
+		return StatusReturnRepeatClosed, nil
 	case ActionReportSigning:
 		return StatusReportWaiting, nil
 	case ActionReportDiadoc:

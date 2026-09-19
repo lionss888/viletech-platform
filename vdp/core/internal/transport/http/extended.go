@@ -20,6 +20,7 @@ func (s *Server) registerExtendedRoutes() {
 	s.registerContractRoutes()
 	s.registerMultiOrderRoutes()
 	s.registerRefundRoutes()
+	s.registerReturnRoutes()
 	s.registerR9ExtendedRoutes()
 	s.registerBankRoutes()
 	s.registerNotificationRoutes()
