@@ -128,6 +128,10 @@ export type PaymentForm = {
   counterpartyId: string;
   hsCode: string;
   invoiceNumber: string;
+  /** Contract number from the form. Shown as «Договор», never as the invoice. */
+  contractNumber?: string | undefined;
+  /** Owner account id. Display name is resolved separately. */
+  ownerAccountId?: string | undefined;
   ownerName: string;
   /** Assigned manager account id from core (not display name). */
   managerId?: string | undefined;

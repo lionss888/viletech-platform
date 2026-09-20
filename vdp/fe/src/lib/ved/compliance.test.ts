@@ -1,8 +1,10 @@
 import { describe, expect, it } from "vitest";
 
 import {
+  currentSubjectVerdictReason,
   orgBlocksApproval,
   orgPendingIco,
+  shouldSetCounterpartyApproval,
   subjectsCleared,
   subjectsPendingReview,
   subjectState,
@@ -54,5 +56,23 @@ describe("compliance gating", () => {
     expect(subjectsPendingReview([org("approved"), cp("approved")])).toBe(false);
     expect(subjectsPendingReview([org("waiting_verification")])).toBe(true);
     expect(subjectsPendingReview([org("blocked")])).toBe(false);
+  });
+
+  it("does not reopen the current verdict", () => {
+    expect(currentSubjectVerdictReason("approved", "approved")).toBe("Уже проверен");
+    expect(currentSubjectVerdictReason("waiting_verification", "waiting_verification")).toBe(
+      "Сведения уже запрошены",
+    );
+    expect(currentSubjectVerdictReason("blocked", "blocked")).toBe("Уже заблокирован");
+    expect(currentSubjectVerdictReason("not_approved", "approved")).toBeUndefined();
+    expect(currentSubjectVerdictReason("approved", "blocked")).toBeUndefined();
+  });
+
+  it("sends manager approval through the approval API, not a catalog patch", () => {
+    expect(shouldSetCounterpartyApproval("manager", "approved", true)).toBe(true);
+    expect(shouldSetCounterpartyApproval("root", "approved", true)).toBe(true);
+    expect(shouldSetCounterpartyApproval("user", "approved", true)).toBe(false);
+    expect(shouldSetCounterpartyApproval("provider", "approved", true)).toBe(false);
+    expect(shouldSetCounterpartyApproval("manager", "approved", false)).toBe(false);
   });
 });

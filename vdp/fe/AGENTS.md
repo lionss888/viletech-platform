@@ -35,7 +35,7 @@ Ported through `f0da0692`: feature-flags section + nav/shell gating, mobile crea
 AppShell synced with process-roles / feature-flags. Platform-only mounts listed in
 `vdp/scripts/check-platform-mounts.sh` MUST stay wired into the live host after any UI sync.
 A file on disk without the JSX mount is a red `make platform-mounts-check`, not a later chore.
-Current mount: `ManagerRouteHintPanel` in `form-detail-page` (`data-testid="manager-route-hint"`).
+Current mount: `ManagerRouteHintPanel` in `process-roles-page` (`data-testid="manager-route-hint"`).
 Root routes remain thin wrappers; `VedAppShell` is live, `AppShell` is Lovable reference.
 
 ## Demo vs app capability boundary (not 100% parity)

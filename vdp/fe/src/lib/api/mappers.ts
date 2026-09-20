@@ -24,20 +24,97 @@ function parseAmountMinor(raw: string | undefined): number {
   return Math.round(value * 100);
 }
 
-/** First HS code from invoice_json.hs_codes, or "—". */
+function stringCodes(value: unknown): string[] {
+  if (!Array.isArray(value)) return [];
+  return value
+    .filter((code): code is string => typeof code === "string" && code.trim().length > 0)
+    .map((code) => code.trim());
+}
+
+/** HS codes from the catalog key, extraction header, or line items. Several codes joined by comma. */
 export function hsCodeFromInvoiceJson(invoiceJson: string | undefined): string {
   if (!invoiceJson?.trim()) return "—";
   try {
-    const parsed = JSON.parse(invoiceJson) as { hs_codes?: unknown };
-    const codes = parsed.hs_codes;
-    if (Array.isArray(codes) && codes.length > 0) {
-      const first = codes.find((c) => typeof c === "string" && c.trim());
-      if (typeof first === "string") return first.trim();
-    }
+    const parsed = JSON.parse(invoiceJson) as {
+      hs_codes?: unknown;
+      header?: { hs_codes?: unknown };
+      line_items?: { hs_code?: unknown }[];
+    };
+    const fromLines = (parsed.line_items ?? []).flatMap((line) =>
+      typeof line.hs_code === "string" && line.hs_code.trim() ? [line.hs_code.trim()] : [],
+    );
+    const unique = [...new Set([...stringCodes(parsed.hs_codes), ...stringCodes(parsed.header?.hs_codes), ...fromLines])];
+    return unique.length > 0 ? unique.join(", ") : "—";
   } catch {
     return "—";
   }
-  return "—";
+}
+
+/** Invoice number from extraction JSON. Never the contract number. */
+export function invoiceNumberFromInvoiceJson(invoiceJson: string | undefined): string | undefined {
+  if (!invoiceJson?.trim()) return undefined;
+  try {
+    const parsed = JSON.parse(invoiceJson) as { header?: { invoice_number?: string }; invoice_number?: string };
+    const value = (parsed.header?.invoice_number ?? parsed.invoice_number ?? "").trim();
+    return value || undefined;
+  } catch {
+    return undefined;
+  }
+}
+
+const MACHINE_HISTORY_COMMENTS = new Set(["extraction_started", "extraction_confirmed", "resolve_contract_branch"]);
+
+/** Human timeline suffix. Machine comments are not shown as raw function names. */
+export function humanHistoryComment(comment: string | undefined): string | undefined {
+  const text = comment?.trim() ?? "";
+  if (!text || text === "extraction_started" || text === "extraction_confirmed") return undefined;
+  if (text === "resolve_contract_branch") return "ожидает подписанный агентский договор";
+  return text;
+}
+
+const ACCOUNT_UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+/** True when a label is a raw account id, not a person name. */
+export function isAccountUuid(value: string | undefined): boolean {
+  return Boolean(value && ACCOUNT_UUID.test(value.trim()));
+}
+
+type NamedAccount = { id: string; name: string; role?: string };
+
+/**
+ * Client column: the user-role owner of the form.
+ * Never the signed-in root, manager, or provider. User viewer may keep their own name so the list filter still matches.
+ */
+export function resolveClientName(
+  accountId: string | undefined,
+  users: NamedAccount[],
+  viewer?: { role?: string; name?: string },
+): string {
+  const owner = users.find((user) => user.id === accountId && user.role === "user");
+  if (owner?.name && !isAccountUuid(owner.name)) return owner.name;
+  if (viewer?.role === "user" && viewer.name && !isAccountUuid(viewer.name)) return viewer.name;
+  return "Клиент не найден";
+}
+
+/** Assigned person. Missing id is «не назначен». A set id without a name is not a UUID and not «не назначен». */
+export function assignedManagerLabel(accountId: string | undefined, users: NamedAccount[], knownName?: string): string {
+  if (!accountId) return "не назначен";
+  const name = users.find((user) => user.id === accountId)?.name ?? knownName;
+  if (name && !isAccountUuid(name)) return name;
+  return "имя не найдено";
+}
+
+/** Provider line. Never a UUID. */
+export function assignedProviderLabel(accountId: string | undefined, users: NamedAccount[], knownName?: string): string {
+  if (!accountId) return "не назначен";
+  const name = users.find((user) => user.id === accountId)?.name ?? knownName;
+  if (name && !isAccountUuid(name)) return name;
+  return "не назначен";
+}
+
+/** Red return banner only while the form is actually on correction and the reason is human. */
+export function showReturnBanner(status: string, rejectText?: string, rejectMark?: string): boolean {
+  return status.includes("correction") && Boolean(rejectText || rejectMark);
 }
 
 function mapDirection(value: string): FormDirection {
@@ -111,7 +188,9 @@ export function mapComplianceHistory(
     const actor = users.find((u) => u.id === entry.actor_id);
     return {
       id: entry.id,
-      title: entry.comment ? `${transition}: ${entry.comment}` : transition,
+      title: humanHistoryComment(entry.comment)
+        ? `${transition}: ${humanHistoryComment(entry.comment)}`
+        : transition,
       at: entry.created_at,
       actorRole: actor?.role ?? inferTimelineActor(entry.from_status),
       actorName: actor?.name,
@@ -193,9 +272,11 @@ export function rejectFromHistory(entries: ComplianceHistoryEntry[]): {
   rejectText?: string;
   rejectMark?: string;
 } {
-  const last = [...entries]
-    .reverse()
-    .find((entry) => entry.to_status.includes("corrections") || entry.to_status.includes("correction"));
+  const last = [...entries].reverse().find((entry) => {
+    const onCorrection = entry.to_status.includes("corrections") || entry.to_status.includes("correction");
+    const comment = entry.comment?.trim() ?? "";
+    return onCorrection && comment.length > 0 && !MACHINE_HISTORY_COMMENTS.has(comment);
+  });
   if (!last?.comment?.trim()) return {};
   const parts = last.comment.split(" · ").map((p) => p.trim()).filter(Boolean);
   if (parts.length >= 2) {
@@ -231,12 +312,14 @@ export function mapCoreFormToPaymentForm(
     organizationId: form.organization_id || "—",
     counterpartyId: form.counterparty_id || "—",
     hsCode: hsCodeFromInvoiceJson(form.invoice_json),
-    invoiceNumber: form.contract_number || "—",
+    invoiceNumber: invoiceNumberFromInvoiceJson(form.invoice_json) ?? "—",
+    contractNumber: form.contract_number || undefined,
+    ownerAccountId: form.account_id || undefined,
     ownerName,
     managerId: form.manager_id || undefined,
     managerName: undefined,
     providerId: form.provider_id || undefined,
-    providerName: form.provider_id || undefined,
+    providerName: undefined,
     channel: form.channel === "bank" ? "bank" : form.channel === "ui" ? "ui" : undefined,
     correlationId: form.correlation_id || undefined,
     agentId: form.agent_id || undefined,
@@ -290,6 +373,15 @@ export function nextStepHint(
   const myActions = role ? actionsFor(role, formStatus, processRoles) : [];
   if (myActions.length > 0) {
     return `Следующий шаг: ${myActions[0]!.label}.`;
+  }
+  if (status === "form_accepted") {
+    return "Заявка подтверждена. Дальше менеджер назначает платёжного агента и готовит договор.";
+  }
+  if (
+    role === "user" &&
+    (status === "organization_waiting_verification" || status === "organization_verification")
+  ) {
+    return "Сейчас проверяют организацию. Это не проверка заявки — дождитесь решения по организации.";
   }
   const waiting = waitingActorLabel(formStatus, processRoles);
   if (waiting) {

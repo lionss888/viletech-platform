@@ -1,7 +1,7 @@
 import { useState } from "react";
 
 import { Modal, ModalButton } from "@/components/ved/Modal";
-import { marksFor, subjectState, type ReviewSubject } from "@/lib/ved/compliance";
+import { marksFor, currentSubjectVerdictReason, subjectState, type ReviewSubject } from "@/lib/ved/compliance";
 import { usePlatformStore } from "@/lib/ved/platform-store";
 import { cn } from "@/lib/utils";
 
@@ -43,27 +43,38 @@ export function SubjectReview({
   const [pending, setPending] = useState<{ subject: ReviewSubject; verdict: Verdict } | null>(null);
   const [mark, setMark] = useState("");
   const [note, setNote] = useState("");
+  const [saveError, setSaveError] = useState<string | null>(null);
+  const [saving, setSaving] = useState(false);
 
   function close() {
     setPending(null);
     setMark("");
     setNote("");
+    setSaveError(null);
+    setSaving(false);
   }
 
-  function confirm() {
-    if (!pending) return;
+  async function confirm() {
+    if (!pending || saving) return;
     const { subject, verdict } = pending;
-    saveRefRecord(
-      subject.key,
-      {
-        id: subject.id,
-        status: verdict,
-        complianceMark: verdict === "approved" ? "" : mark,
-        complianceNote: verdict === "approved" ? "" : note,
-      },
-      subject.id,
-    );
-    close();
+    setSaving(true);
+    setSaveError(null);
+    try {
+      await saveRefRecord(
+        subject.key,
+        {
+          id: subject.id,
+          status: verdict,
+          complianceMark: verdict === "approved" ? "" : mark,
+          complianceNote: verdict === "approved" ? "" : note,
+        },
+        subject.id,
+      );
+      close();
+    } catch (err) {
+      setSaveError(err instanceof Error ? err.message : "Не удалось сохранить статус");
+      setSaving(false);
+    }
   }
 
   const meta = pending ? VERDICT[pending.verdict] : null;
@@ -96,23 +107,30 @@ export function SubjectReview({
               )}
               {!readOnly && (
                 <div className="mt-2 flex flex-wrap gap-2">
-                  {(Object.keys(VERDICT) as Verdict[]).map((verdict) => (
-                    <button
-                      key={verdict}
-                      type="button"
-                      onClick={() => {
-                        setMark("");
-                        setNote("");
-                        setPending({ subject, verdict });
-                      }}
-                      className={cn(
-                        "rounded-md px-2.5 py-1.5 text-xs font-semibold transition-opacity hover:opacity-90",
-                        VERDICT[verdict].tone,
-                      )}
-                    >
-                      {VERDICT[verdict].label}
-                    </button>
-                  ))}
+                  {(Object.keys(VERDICT) as Verdict[]).map((verdict) => {
+                    const lockedReason = currentSubjectVerdictReason(subject.status, verdict);
+                    return (
+                      <button
+                        key={verdict}
+                        type="button"
+                        disabled={Boolean(lockedReason)}
+                        title={lockedReason}
+                        onClick={() => {
+                          if (lockedReason) return;
+                          setMark("");
+                          setNote("");
+                          setSaveError(null);
+                          setPending({ subject, verdict });
+                        }}
+                        className={cn(
+                          "rounded-md px-2.5 py-1.5 text-xs font-semibold transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50",
+                          VERDICT[verdict].tone,
+                        )}
+                      >
+                        {lockedReason ?? VERDICT[verdict].label}
+                      </button>
+                    );
+                  })}
                 </div>
               )}
             </li>
@@ -134,13 +152,14 @@ export function SubjectReview({
             <ModalButton
               variant={pending?.verdict === "blocked" ? "danger" : "primary"}
               onClick={confirm}
-              disabled={blocked}
+              disabled={blocked || saving}
             >
-              Подтвердить
+              {saving ? "Сохраняем…" : "Подтвердить"}
             </ModalButton>
           </>
         }
       >
+        {saveError ? <p className="mb-3 text-sm text-destructive">{saveError}</p> : null}
         {meta?.needsMark && (
           <div className="space-y-3">
             <label className="block">

@@ -29,7 +29,9 @@ export function Modal({
 }) {
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className={wide ? "sm:max-w-2xl" : "sm:max-w-md"}>
+      <DialogContent
+        className={`${wide ? "sm:max-w-2xl" : "sm:max-w-md"} max-w-[calc(100vw-2rem)] overflow-x-hidden`}
+      >
         <DialogHeader>
           <DialogTitle className="text-base">{title}</DialogTitle>
           {description && <DialogDescription>{description}</DialogDescription>}

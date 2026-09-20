@@ -68,23 +68,24 @@ describe("process-stage-filters", () => {
     expect(review.short).toBe("Рассмотрение");
   });
 
-  it("renames lifecycle stage and hides organization when ICO/ECO off", () => {
+  it("keeps organization as its own step and renames review when ECO is off", () => {
     const stages = stagesForProcess(continuityRoles());
-    expect(stages.some((s) => s.id === "organization_verification")).toBe(false);
+    expect(stages.some((s) => s.id === "organization_verification")).toBe(true);
     const review = stages.find((s) => s.id === "form_verification");
     expect(review?.label).toBe("Проверка");
     expect(review?.label).not.toMatch(/Комплаенс/);
     expect(displayStageId("form_verification", continuityRoles())).toBe("form_verification");
     expect(displayStageId("organization_waiting_verification", continuityRoles())).toBe(
-      "form_verification",
+      "organization_verification",
     );
+    expect(displayStageId("form_accepted", continuityRoles())).toBe("agency_contract");
   });
 
   it("omits Отгрузка from happy-path rail (report → completed)", () => {
     expect(stagesForProcess(undefined).some((s) => s.id === "shipment")).toBe(false);
     expect(stagesForProcess(continuityRoles()).some((s) => s.id === "shipment")).toBe(false);
     const labels = stagesForProcess(continuityRoles()).map((s) => s.label);
-    expect(labels).toEqual(["Новая", "Проверка", "Договор", "Поручение", "Платёж", "Отчёт", "Завершено"]);
+    expect(labels).toEqual(["Новая", "Организация", "Проверка", "Договор", "Поручение", "Платёж", "Отчёт", "Завершено"]);
   });
 
   it("inserts Отгрузка only when status is already in shipment_*", () => {

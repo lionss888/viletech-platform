@@ -150,3 +150,29 @@ func TestDiskBlobSurvivesCatalogRestart(t *testing.T) {
 	}
 }
 
+func TestManagerCanSetCounterpartyApprovalUserCannot(t *testing.T) {
+	t.Parallel()
+	store := repository.NewMemoryStore()
+	ids := 0
+	catalog := service.NewCatalogService(store, outbox.NewMemoryStore(), func() string {
+		ids++
+		return fmt.Sprintf("cp%d", ids)
+	})
+	user := authz.Principal{AccountID: "u1", Role: domain.RoleUser}
+	manager := authz.Principal{AccountID: "m1", Role: domain.RoleManager}
+	cp, err := catalog.CreateCounterparty(context.Background(), user, "Test reel", "RU", "1", "[]")
+	if err != nil {
+		t.Fatal(err)
+	}
+	approved, err := catalog.SetCounterpartyApproval(context.Background(), manager, cp.ID, domain.CounterpartyApprovalApproved, "ok")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if approved.LastApprovalStatus != domain.CounterpartyApprovalApproved {
+		t.Fatalf("status=%s", approved.LastApprovalStatus)
+	}
+	if _, err := catalog.SetCounterpartyApproval(context.Background(), user, cp.ID, domain.CounterpartyApprovalApproved, "no"); err == nil {
+		t.Fatal("user must not set counterparty approval")
+	}
+}
+

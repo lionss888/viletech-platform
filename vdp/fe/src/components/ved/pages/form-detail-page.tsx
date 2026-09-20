@@ -5,10 +5,14 @@ import { useMemo, useState } from "react";
 import { getComplianceHistory, getForm, startExtraction } from "@/lib/api/forms";
 import { getFormDiadocStatus } from "@/lib/api/notifications";
 import {
+  assignedManagerLabel,
+  assignedProviderLabel,
   mapComplianceHistory,
   mapCoreFormToPaymentForm,
   nextStepHint,
   rejectFromHistory,
+  resolveClientName,
+  showReturnBanner,
 } from "@/lib/api/mappers";
 import { ExtractionReviewDialog } from "@/components/ved/ExtractionReviewDialog";
 import { CorrectionGuidancePanel } from "@/components/ved/CorrectionGuidancePanel";
@@ -17,10 +21,11 @@ import { OrganizationPickDialog } from "@/components/ved/OrganizationPickDialog"
 import { FormParamsEditDialog } from "@/components/ved/FormParamsEditDialog";
 import { ActionPanel } from "@/components/ved/ActionPanel";
 import { DocumentList } from "@/components/ved/DocumentViewer";
-import { ManagerRouteHintPanel } from "@/components/ved/ManagerRouteHintPanel";
 import { RateCommissionPanel } from "@/components/ved/RateCommissionPanel";
 import { RefundPanel } from "@/components/ved/RefundPanel";
 import { ShipmentPanel } from "@/components/ved/ShipmentPanel";
+import { ProviderReturnReportPanel } from "@/components/ved/ProviderReturnReportPanel";
+import { ManagerReturnFactPanel } from "@/components/ved/ManagerReturnFactPanel";
 import { DirectionTag, StatusBadge } from "@/components/ved/StatusBadge";
 import { ChannelBadge } from "@/components/ved/ChannelBadge";
 import { StageStepper } from "@/components/ved/StageStepper";
@@ -39,6 +44,7 @@ import {
 } from "@/lib/ved/compliance";
 import {
   canControlExtraction,
+  extractionAmountWarnings,
   extractionPanelMode,
   extractionTriggerLabel,
   parseExtractionResult,
@@ -53,6 +59,14 @@ import {
   providerPaymentRequisites,
   providerVisibleDocuments,
 } from "@/lib/ved/provider-acl";
+import {
+  counterpartyGapLine,
+  counterpartyPlaceLine,
+  counterpartySwiftLine,
+  innLine,
+  organizationAddressLine,
+} from "@/lib/ved/party-requisites";
+import { reviewChecklist } from "@/lib/ved/review-checklist";
 import { roleTitle } from "@/lib/ved/roles";
 import { statusMetaForProcess } from "@/lib/ved/process-stage-filters";
 import { useProcessRolesRows } from "@/lib/ved/use-process-roles-snapshot";
@@ -64,7 +78,7 @@ export function FormDetail() {
   const formId = id ?? "";
   const mode = usePlatformMode();
   const auth = useAuth();
-  const { forms, session, organizations, counterparties, users, addDocuments, deleteDocument } =
+  const { forms, session, organizations, counterparties, users, currencies, hsCodes, addDocuments, deleteDocument } =
     usePlatformStore();
   const processRoles = useProcessRolesRows();
   const [cpDialogOpen, setCpDialogOpen] = useState(false);
@@ -88,6 +102,15 @@ export function FormDetail() {
     queryFn: () => getFormDiadocStatus(formId),
     enabled: mode === "app" && Boolean(formId),
   });
+  
+  const returnEpisodeQuery = useQuery({
+    queryKey: ["return-episode", formId],
+    queryFn: async () => {
+      const { getReturnEpisode } = await import("@/lib/api/return");
+      return getReturnEpisode(formId);
+    },
+    enabled: mode === "app" && Boolean(formId),
+  });
 
   const form = useMemo(() => {
     const fromStore = forms.find((f) => f.id === formId);
@@ -96,13 +119,17 @@ export function FormDetail() {
       : [];
     const reject = historyQuery.data ? rejectFromHistory(historyQuery.data) : {};
     if (mode === "app" && formQuery.data) {
-      const mapped = mapCoreFormToPaymentForm(formQuery.data, auth.displayName, timeline);
+      const mapped = mapCoreFormToPaymentForm(formQuery.data, undefined, timeline);
       const storeDocs = fromStore?.documents ?? [];
       const apiDocs = mapped.documents ?? [];
       const preferApi =
         apiDocs.some((d) => d.fileId) || storeDocs.every((d) => !d.fileId);
       return {
         ...mapped,
+        ownerName: resolveClientName(formQuery.data.account_id, users, {
+          role: auth.role ?? undefined,
+          name: auth.displayName,
+        }),
         documents: preferApi && apiDocs.length > 0 ? apiDocs : storeDocs.length > 0 ? storeDocs : apiDocs,
         ...reject,
       };
@@ -111,7 +138,7 @@ export function FormDetail() {
       return { ...fromStore, ...(timeline.length > 0 ? { timeline } : {}), ...reject };
     }
     if (formQuery.data) {
-      return { ...mapCoreFormToPaymentForm(formQuery.data, auth.displayName, timeline), ...reject };
+      return { ...mapCoreFormToPaymentForm(formQuery.data, undefined, timeline), ...reject };
     }
     return undefined;
   }, [forms, formId, formQuery.data, historyQuery.data, auth.displayName, users, mode, processRoles]);
@@ -196,10 +223,8 @@ export function FormDetail() {
         (canUploadDocs && (role === "user" || role === "root"))),
   );
   const canReviewSubjects = compliance || role === "manager" || role === "root";
-  const providerLabel =
-    users.find((u) => u.id === form.providerId)?.name ?? form.providerName ?? "не назначен";
-  const managerLabel =
-    users.find((u) => u.id === form.managerId)?.name ?? form.managerName ?? "не назначен";
+  const providerLabel = assignedProviderLabel(form.providerId, users, form.providerName);
+  const managerLabel = assignedManagerLabel(form.managerId, users, form.managerName);
   const icoOrgStage =
     role === "internal_compliance_officer" && String(form.status).startsWith("organization");
   const actionLock = hasBlocked
@@ -222,6 +247,7 @@ export function FormDetail() {
         ["Условие оплаты", form.condition === "advance" ? "Аванс" : "Постоплата"],
         ["Код ТН ВЭД", form.hsCode],
         ["Инвойс", form.invoiceNumber],
+        ...(form.contractNumber ? [["Договор", form.contractNumber] as [string, string]] : []),
         ["Сумма", money(form.amountMinor, form.currency)],
         ...(form.clientCurrency ? [["Валюта клиента", form.clientCurrency] as [string, string]] : []),
         ...(form.counterpartyCurrency
@@ -233,6 +259,24 @@ export function FormDetail() {
       ];
   const paymentRequisites = isProvider ? providerPaymentRequisites(form, org, cp) : [];
   const visibleDocuments = isProvider ? providerVisibleDocuments(form) : form.documents;
+  const reviewWork = form.status === "form_verification" || form.status === "organization_verification";
+  const waitingTake =
+    form.status === "form_waiting_verification" || form.status === "organization_waiting_verification";
+  const canLeadReview = role === "manager" || role === "root" || compliance;
+  const focusFacts: [string, string][] = [
+    ["Сумма", money(form.amountMinor, form.currency)],
+    ["Направление", form.direction === "import" ? "Импорт" : "Экспорт"],
+    ["Контрагент", cp?.name ?? "не указан"],
+    ["Условие оплаты", form.condition === "advance" ? "Аванс" : "Постоплата"],
+  ];
+  const parsedExtraction = parseExtractionResult(form.invoiceJson);
+  const checks = reviewChecklist({
+    documents: form.documents,
+    hsCode: form.hsCode,
+    counterpartyName: cp?.name,
+    counterpartyStatus: cp?.status,
+    amountWarnings: parsedExtraction ? extractionAmountWarnings(parsedExtraction) : [],
+  });
   const invoiceJson = form.invoiceJson ?? formQuery.data?.invoice_json;
   const extractionMode =
     mode === "app" && !isProvider
@@ -295,9 +339,7 @@ export function FormDetail() {
         </div>
       </div>
 
-      <ManagerRouteHintPanel role={role} />
-
-      {(form.rejectText || form.rejectMark) && (
+      {(showReturnBanner(form.status, form.rejectText, form.rejectMark)) && (
         <div className="mt-4 rounded-lg bg-return-soft p-4" data-testid="return-banner">
           <p className="label-caps text-return">Возврат на доработку</p>
           {form.rejectMark && (
@@ -414,8 +456,8 @@ export function FormDetail() {
               <div className="panel p-4" data-testid="organization-block">
                 <p className="label-caps">Организация клиента</p>
                 <p className="mt-2 text-sm font-semibold">{org?.name ?? form.organizationId}</p>
-                <p className="font-mono text-xs text-muted-foreground">ИНН {org?.inn ?? "—"}</p>
-                <p className="mt-1 text-xs text-muted-foreground">{org?.legalAddress ?? "—"}</p>
+                <p className="font-mono text-xs text-muted-foreground">{innLine(org?.inn)}</p>
+                <p className="mt-1 text-xs text-muted-foreground">{organizationAddressLine(org?.legalAddress)}</p>
                 {canChangeParties && (
                   <button
                     type="button"
@@ -432,10 +474,15 @@ export function FormDetail() {
                 {cp && form.counterpartyId && form.counterpartyId !== "—" ? (
                   <>
                     <p className="mt-2 text-sm font-semibold">{cp.name}</p>
-                    <p className="text-xs text-muted-foreground">
-                      {cp.country ?? "—"} · {cp.bank ?? "—"}
-                    </p>
-                    <p className="font-mono text-xs text-muted-foreground">SWIFT {cp.swift ?? "—"}</p>
+                    {counterpartyPlaceLine(cp.country, cp.bank) ? (
+                      <p className="text-xs text-muted-foreground">{counterpartyPlaceLine(cp.country, cp.bank)}</p>
+                    ) : null}
+                    {counterpartySwiftLine(cp.swift) ? (
+                      <p className="font-mono text-xs text-muted-foreground">{counterpartySwiftLine(cp.swift)}</p>
+                    ) : null}
+                    {counterpartyGapLine(cp.bank, cp.swift) ? (
+                      <p className="text-xs text-muted-foreground">{counterpartyGapLine(cp.bank, cp.swift)}</p>
+                    ) : null}
                     {canChangeParties && (
                       <button
                         type="button"
@@ -531,21 +578,41 @@ export function FormDetail() {
         </div>
 
         <div className="space-y-4">
-          <div className="panel p-4">
-            <p className="label-caps">Следующий шаг</p>
-            <p className="mt-2 text-sm">
-              {nextStepHint(form.status, role, processRoles, {
-                condition: form.condition,
-                direction: form.direction,
-              })}
-            </p>
-          </div>
+          {waitingTake && canLeadReview ? (
+            <div className="panel p-4" data-testid="review-checklist">
+              <p className="label-caps">Следующий шаг</p>
+              <ul className="mt-2 list-disc space-y-1 pl-4 text-sm">
+                {checks.map((line) => (
+                  <li key={line}>{line}</li>
+                ))}
+              </ul>
+            </div>
+          ) : reviewWork && canLeadReview ? (
+            <ActionPanel
+              form={form}
+              title="Следующий шаг"
+              surface="focus"
+              focusFacts={focusFacts}
+              {...(compliance ? actionLock : {})}
+            />
+          ) : (
+            <div className="panel p-4">
+              <p className="label-caps">Следующий шаг</p>
+              <p className="mt-2 text-sm">
+                {nextStepHint(form.status, role, processRoles, {
+                  condition: form.condition,
+                  direction: form.direction,
+                })}
+              </p>
+            </div>
+          )}
 
           {compliance ? (
             <>
               <ActionPanel
                 form={form}
                 title="Рассмотрение заявки"
+                surface={reviewWork && canLeadReview ? "rest" : "all"}
                 onEditForm={canEditParams ? () => setEditOpen(true) : undefined}
                 {...actionLock}
               />
@@ -555,6 +622,7 @@ export function FormDetail() {
             <>
               <ActionPanel
                 form={form}
+                surface={reviewWork && canLeadReview ? "rest" : "all"}
                 onEditForm={canEditParams ? () => setEditOpen(true) : undefined}
               />
               {showRateCommission && (
@@ -571,6 +639,27 @@ export function FormDetail() {
               )}
               {!isProvider && <RefundPanel form={form} />}
               {!isProvider && <ShipmentPanel form={form} />}
+              
+              {/* Return Episode - Stage 1: Provider reports return */}
+              {isProvider && (
+                <ProviderReturnReportPanel
+                  formId={form.id}
+                  currency={form.currency}
+                  returnEpisode={returnEpisodeQuery.data}
+                  onSuccess={() => {
+                    formQuery.refetch();
+                    returnEpisodeQuery.refetch();
+                  }}
+                />
+              )}
+              
+              {/* Return Episode - Manager sees fact */}
+              {!isProvider && returnEpisodeQuery.data?.active && (
+                <ManagerReturnFactPanel
+                  returnEpisode={returnEpisodeQuery.data}
+                  currency={form.currency}
+                />
+              )}
             </>
           )}
 
@@ -621,7 +710,7 @@ export function FormDetail() {
           hsCode={form.hsCode}
           direction={form.direction}
           kind={form.kind}
-          contractNumber={form.invoiceNumber}
+          contractNumber={form.contractNumber ?? ""}
           contractDate={form.shipmentDate}
           onChangeOrg={() => {
             setEditOpen(false);
@@ -645,6 +734,8 @@ export function FormDetail() {
           noDocuments={Boolean(form.noDocuments)}
           hasDocuments={visibleDocuments.length > 0}
           canConfirm={role === "user" || role === "manager" || role === "root"}
+          currencyOptions={currencies.map((item) => ({ value: item.code, label: `${item.code} — ${item.title}` }))}
+          hsOptions={hsCodes.map((item) => ({ value: item.code, label: `${item.code} — ${item.title}` }))}
         />
       )}
     </VedAppShell>

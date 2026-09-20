@@ -8,7 +8,7 @@ import {
 import { waitForFormDetail } from "./helpers/form-detail";
 
 /**
- * CS-R2: manager/root see route-assembly hint; other roles do not.
+ * Route-assembly hint stays on process roles (root), not on the form card.
  * Tag @pilot-matrix so make ci-pr-pilot runs this with the pilot ladder job.
  */
 test.describe("Manager route hint @pilot-matrix", () => {
@@ -16,11 +16,17 @@ test.describe("Manager route hint @pilot-matrix", () => {
     await assertCoreHealthy();
   });
 
-  test("manager sees manager-route-hint on form detail", async ({ page, loginAs }) => {
+  test("manager does not see manager-route-hint on form detail", async ({ page, loginAs }) => {
     const tokens = await loginAllRoles();
     const formId = await createFormAccepted(tokens, `route-hint-mgr-${Date.now()}`);
     await loginAs("manager");
     await waitForFormDetail(page, formId);
+    await expect(page.getByTestId("manager-route-hint")).toHaveCount(0);
+  });
+
+  test("root sees manager-route-hint on process roles", async ({ page, loginAs }) => {
+    await loginAs("root");
+    await page.goto("/process-roles");
     await expect(page.getByTestId("manager-route-hint")).toBeVisible({ timeout: 15_000 });
     await expect(page.getByTestId("manager-route-hint")).toContainText(/Как собрать путь заявки/i);
   });

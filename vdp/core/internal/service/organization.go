@@ -152,7 +152,7 @@ func (s *OrganizationService) ListAwaiting(ctx context.Context, principal authz.
 }
 
 func (s *OrganizationService) Approve(ctx context.Context, principal authz.Principal, id string) (domain.Organization, error) {
-	if err := authz.AuthorizeRoles(principal, domain.RoleInternalComplianceOfficer); err != nil {
+	if err := authz.AuthorizeRoles(principal, domain.RoleInternalComplianceOfficer, domain.RoleComplianceOfficer, domain.RoleManager, domain.RoleRoot); err != nil {
 		return domain.Organization{}, err
 	}
 	org, err := s.store.OrganizationByID(ctx, id)
@@ -175,7 +175,7 @@ func (s *OrganizationService) Approve(ctx context.Context, principal authz.Princ
 }
 
 func (s *OrganizationService) UnApprove(ctx context.Context, principal authz.Principal, id string) (domain.Organization, error) {
-	if err := authz.AuthorizeRoles(principal, domain.RoleInternalComplianceOfficer); err != nil {
+	if err := authz.AuthorizeRoles(principal, domain.RoleInternalComplianceOfficer, domain.RoleComplianceOfficer, domain.RoleManager, domain.RoleRoot); err != nil {
 		return domain.Organization{}, err
 	}
 	org, err := s.store.OrganizationByID(ctx, id)
@@ -189,7 +189,7 @@ func (s *OrganizationService) UnApprove(ctx context.Context, principal authz.Pri
 }
 
 func (s *OrganizationService) Block(ctx context.Context, principal authz.Principal, id string) (domain.Organization, error) {
-	if err := authz.AuthorizeRoles(principal, domain.RoleInternalComplianceOfficer, domain.RoleManager); err != nil {
+	if err := authz.AuthorizeRoles(principal, domain.RoleInternalComplianceOfficer, domain.RoleComplianceOfficer, domain.RoleManager, domain.RoleRoot); err != nil {
 		return domain.Organization{}, err
 	}
 	org, err := s.store.OrganizationByID(ctx, id)

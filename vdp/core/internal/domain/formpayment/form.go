@@ -80,6 +80,8 @@ type Form struct {
 	RefundFileID          string `json:"refund_file_id,omitempty"`
 	RefundInitiatedBy     string `json:"refund_initiated_by,omitempty"`
 	RefundConfirmedBy     string `json:"refund_confirmed_by,omitempty"`
+	// Return episode (новый контур возврата после исполнения, этап 1).
+	ReturnEpisode         ReturnEpisode `json:"return_episode,omitempty"`
 	Rate                  Rate       `json:"rate"`
 	Commission            Commission `json:"commission"`
 	InvoiceAmount         string     `json:"invoice_amount,omitempty"`

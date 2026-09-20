@@ -595,7 +595,7 @@ func (s *CatalogService) CounterpartyCanSkipCompliance(ctx context.Context, prin
 }
 
 func (s *CatalogService) SetCounterpartyApproval(ctx context.Context, principal authz.Principal, id string, status domain.CounterpartyApprovalStatus, comment string) (domain.Counterparty, error) {
-	if err := authz.AuthorizeRoles(principal, domain.RoleComplianceOfficer, domain.RoleInternalComplianceOfficer, domain.RoleRoot); err != nil {
+	if err := authz.AuthorizeRoles(principal, domain.RoleComplianceOfficer, domain.RoleInternalComplianceOfficer, domain.RoleManager, domain.RoleRoot); err != nil {
 		return domain.Counterparty{}, err
 	}
 	c, err := s.store.CounterpartyByID(ctx, id)

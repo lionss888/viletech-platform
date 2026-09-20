@@ -66,7 +66,7 @@ func (s *FormPaymentService) ConfirmExtraction(ctx context.Context, principal au
 		return formpayment.Form{}, apperrors.New(apperrors.ErrCodeValidation, err.Error())
 	}
 	form.UnpackDocsJSON()
-	form.InvoiceJSON = extraction.ToInvoiceJSON(human)
+	form.InvoiceJSON = withTopLevelHsCodes(extraction.ToInvoiceJSON(human))
 	if human.Header.ContractNumber != "" {
 		form.ContractNumber = human.Header.ContractNumber
 	}
@@ -176,4 +176,54 @@ func (s *FormPaymentService) postGoldHuman(formID string, human extraction.Resul
 		return
 	}
 	_ = res.Body.Close()
+}
+
+// withTopLevelHsCodes copies header and line codes onto invoice_json.hs_codes so the form card can read them.
+func withTopLevelHsCodes(raw string) string {
+	var doc map[string]any
+	if err := json.Unmarshal([]byte(raw), &doc); err != nil {
+		return raw
+	}
+	seen := map[string]struct{}{}
+	var codes []string
+	add := func(code string) {
+		code = strings.TrimSpace(code)
+		if code == "" {
+			return
+		}
+		if _, ok := seen[code]; ok {
+			return
+		}
+		seen[code] = struct{}{}
+		codes = append(codes, code)
+	}
+	if header, ok := doc["header"].(map[string]any); ok {
+		if list, ok := header["hs_codes"].([]any); ok {
+			for _, item := range list {
+				if code, ok := item.(string); ok {
+					add(code)
+				}
+			}
+		}
+	}
+	if lines, ok := doc["line_items"].([]any); ok {
+		for _, line := range lines {
+			row, ok := line.(map[string]any)
+			if !ok {
+				continue
+			}
+			if code, ok := row["hs_code"].(string); ok {
+				add(code)
+			}
+		}
+	}
+	if len(codes) == 0 {
+		return raw
+	}
+	doc["hs_codes"] = codes
+	out, err := json.Marshal(doc)
+	if err != nil {
+		return raw
+	}
+	return string(out)
 }
