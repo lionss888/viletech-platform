@@ -398,6 +398,7 @@ grep -q 'robot-matrix-check' Makefile || fail "Makefile missing robot-matrix-che
 grep -q '^ci-pr:' Makefile || fail "Makefile missing ci-pr target"
 grep -q '^ci-pr-fast:' Makefile || fail "Makefile missing ci-pr-fast target"
 grep -q '^ci-pr-pilot:' Makefile || fail "Makefile missing ci-pr-pilot target"
+grep -q '^ci-main:' Makefile || fail "Makefile missing ci-main target"
 grep -q '^perf-gate:' Makefile || fail "Makefile missing perf-gate"
 [ -f scripts/perf-gate.sh ] || fail "missing scripts/perf-gate.sh"
 bash -n scripts/perf-gate.sh || fail "perf-gate.sh syntax"
@@ -410,10 +411,14 @@ grep -q 'pilot-matrix-paths-match.sh' ../.github/workflows/vdp-ci.yml \
 [ -f scripts/pilot-matrix-paths.grep ] || fail "missing scripts/pilot-matrix-paths.grep"
 [ -f scripts/pilot-matrix-paths-match.sh ] || fail "missing scripts/pilot-matrix-paths-match.sh"
 [ -f scripts/prepush-gate.sh ] || fail "missing scripts/prepush-gate.sh"
+[ -f scripts/main-full-e2e-paths-match.sh ] || fail "missing scripts/main-full-e2e-paths-match.sh"
 bash -n scripts/pilot-matrix-paths-match.sh || fail "pilot-matrix-paths-match.sh syntax"
+bash -n scripts/main-full-e2e-paths-match.sh || fail "main-full-e2e-paths-match.sh syntax"
 bash -n scripts/prepush-gate.sh || fail "prepush-gate.sh syntax"
 grep -q '^prepush-gate:' Makefile || fail "Makefile missing prepush-gate target"
 grep -q 'prepush-gate' ../.githooks/pre-push || fail ".githooks/pre-push must call prepush-gate"
+grep -q 'main-full-e2e-paths-match' scripts/prepush-gate.sh \
+  || fail "prepush-gate must use main-full-e2e-paths-match for full suite escalation"
 # Shared path pattern must still cover canonical ladder surfaces
 for needle in 'vdp/fe/e2e/' 'ActionPanel' 'formpayment' 'manager-payment'; do
   grep -q "$needle" scripts/pilot-matrix-paths.grep \
@@ -424,6 +429,15 @@ printf 'vdp/fe/e2e/foo.spec.ts\n' | bash scripts/pilot-matrix-paths-match.sh \
   || fail "pilot-matrix-paths-match must match e2e path"
 if printf 'README.md\n' | bash scripts/pilot-matrix-paths-match.sh; then
   fail "pilot-matrix-paths-match must not match README.md"
+fi
+# Full-e2e matcher: non-smoke e2e escalates; narrow smoke does not
+printf 'vdp/fe/e2e/return-episode-e2e-journeys.spec.ts\n' | bash scripts/main-full-e2e-paths-match.sh \
+  || fail "main-full-e2e-paths-match must match return-episode e2e"
+if printf 'vdp/fe/e2e/login-form.spec.ts\n' | bash scripts/main-full-e2e-paths-match.sh; then
+  fail "main-full-e2e-paths-match must not match narrow smoke login-form"
+fi
+if printf 'README.md\n' | bash scripts/main-full-e2e-paths-match.sh; then
+  fail "main-full-e2e-paths-match must not match README.md"
 fi
 grep -q 'VDP_ROBOT_FIXTURES_ROOT' scripts/compose-playwright.sh \
   || fail "compose-playwright must mount robot fixtures root"

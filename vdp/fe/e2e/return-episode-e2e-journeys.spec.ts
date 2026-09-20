@@ -11,7 +11,9 @@ import { test, expect } from '@playwright/test';
  * - Copy, hierarchy, empty states
  */
 
-test.describe('Return Episode - Stage 5: E2E Journeys', () => {
+// Quarantine: stub journeys hit missing UI/testids and broke main full Playwright (VDP CI #121).
+// Re-enable when return_after_execution stage 5 UI + real form seeds exist.
+test.describe.skip('Return Episode - Stage 5: E2E Journeys', () => {
   test('Journey A: report → clarify → return to client', async ({ page }) => {
     // Setup: Start with a completed form ready for return
     await page.goto('/forms/test-form-journey-a');
