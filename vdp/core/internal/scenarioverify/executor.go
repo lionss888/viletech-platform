@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"mime/multipart"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -349,6 +350,42 @@ func (e *Executor) createProbeForm(tok tokens, suffix string) (string, error) {
 	return id, nil
 }
 
+func (e *Executor) attachInvoice(tok, id string) error {
+	var buf bytes.Buffer
+	writer := multipart.NewWriter(&buf)
+	_ = writer.WriteField("form_id", id)
+	part, err := writer.CreateFormFile("file", "invoice.pdf")
+	if err != nil {
+		return err
+	}
+	if _, err := part.Write([]byte("%PDF-1.4 invoice")); err != nil {
+		return err
+	}
+	if err := writer.Close(); err != nil {
+		return err
+	}
+	req := httptest.NewRequest(http.MethodPost, "/api/v1/file-store/upload", &buf)
+	req.Header.Set("Authorization", "Bearer "+tok)
+	req.Header.Set("Content-Type", writer.FormDataContentType())
+	res := httptest.NewRecorder()
+	e.Loopback.Handler.ServeHTTP(res, req)
+	if res.Code != http.StatusCreated {
+		return fmt.Errorf("не удалось приложить инвойс")
+	}
+	var meta map[string]any
+	if err := json.Unmarshal(res.Body.Bytes(), &meta); err != nil {
+		return err
+	}
+	fileID, _ := meta["id"].(string)
+	if fileID == "" {
+		return fmt.Errorf("не удалось приложить инвойс")
+	}
+	_, err = e.post(tok, "/api/v1/forms/"+id+"/docs/attach", map[string]any{
+		"file_id": fileID, "kind": "invoice", "label": "invoice.pdf",
+	})
+	return err
+}
+
 func (e *Executor) advanceCompliance(tok tokens, id string) error {
 	st, err := e.getStatus(tok.user, "/api/v1/site/form-payment/"+id)
 	if err != nil {
@@ -371,6 +408,9 @@ func (e *Executor) advanceCompliance(tok tokens, id string) error {
 	st, _ = e.getStatus(tok.user, "/api/v1/site/form-payment/"+id)
 	if st == "form_accepted" {
 		return nil
+	}
+	if err := e.attachInvoice(tok.user, id); err != nil {
+		return err
 	}
 	if err := e.put(tok.eco, "/api/v1/eco/form-payment/"+id+"/form/start", map[string]any{}); err != nil {
 		if _, err2 := e.post(tok.manager, "/api/v1/forms/"+id+"/actions/eco_start", map[string]any{}); err2 != nil {

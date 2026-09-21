@@ -6,6 +6,7 @@ import {
   createPaymentAgentApi,
   loginAllRoles,
   purgeDemoMockCounterparties,
+  uploadAndAttachInvoice,
 } from "./helpers/api";
 import { expectFormStatus } from "./helpers/status";
 import { waitForFormDetail } from "./helpers/form-detail";
@@ -71,6 +72,7 @@ test.describe("Pilot robot matrix full UI ladder @pilot-matrix", () => {
       contract_number: `${pack.deal_fields.contract_number}-${Date.now()}`,
       contract_date: pack.deal_fields.contract_date,
     });
+    await uploadAndAttachInvoice(tokens.user, formId);
 
     // 1. User submit
     await loginAs("user");

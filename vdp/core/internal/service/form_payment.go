@@ -215,6 +215,9 @@ func (s *FormPaymentService) TransitionWithComment(ctx context.Context, principa
 	if err != nil {
 		return formpayment.Form{}, err
 	}
+	if err := s.guardBeforeApply(ctx, principal, &form, action); err != nil {
+		return formpayment.Form{}, err
+	}
 	var policy *formpayment.ProcessPolicySnapshot
 	if s.roles != nil {
 		if snap, err := s.roles.GetSnapshot(ctx); err == nil {
@@ -281,6 +284,83 @@ func (s *FormPaymentService) TransitionWithComment(ctx context.Context, principa
 	s.maybeEnqueueBankWebhook(ctx, next, payload)
 	s.emitManagerOps(ctx, principal, next, action, history.ID)
 	return next, nil
+}
+
+// guardBeforeApply enforces policy that is not a status-graph edge: invoice on confirm,
+// one accepted agency contract per organization, and creating that contract from the uploaded file.
+func (s *FormPaymentService) guardBeforeApply(ctx context.Context, principal authz.Principal, form *formpayment.Form, action formpayment.Action) error {
+	switch action {
+	case formpayment.ActionECOAccept, formpayment.ActionManagerFormAccept:
+		if form.Status == formpayment.StatusFormAccepted {
+			return nil
+		}
+		if !form.HasInvoiceDocument() {
+			return apperrors.New(apperrors.ErrCodeConflict, "invoice document is required")
+		}
+	case formpayment.ActionUserUploadContract:
+		if form.Status == formpayment.StatusContractWaitingCorrection {
+			return nil
+		}
+		accepted, err := s.orgHasAcceptedAgencyContract(ctx, form.OrganizationID)
+		if err != nil {
+			return err
+		}
+		if accepted {
+			return apperrors.New(apperrors.ErrCodeConflict, "organization already has an accepted agency contract")
+		}
+	case formpayment.ActionManagerSendOrder:
+		if form.ContractID != "" || form.Status != formpayment.StatusContractVerification {
+			return nil
+		}
+		fileID := form.ContractFileID()
+		if fileID == "" {
+			return apperrors.New(apperrors.ErrCodeConflict, "contract file is required")
+		}
+		contractID, err := s.saveAcceptedAgencyContract(ctx, principal, *form, fileID)
+		if err != nil {
+			return err
+		}
+		form.ContractID = contractID
+	}
+	return nil
+}
+
+func (s *FormPaymentService) orgHasAcceptedAgencyContract(ctx context.Context, orgID string) (bool, error) {
+	if strings.TrimSpace(orgID) == "" {
+		return false, nil
+	}
+	rows, err := s.store.ListContractsByOrg(ctx, orgID)
+	if err != nil {
+		return false, err
+	}
+	for _, row := range rows {
+		if row.Status != domain.ContractStatusAccepted {
+			continue
+		}
+		if row.Type == domain.ContractTypeAgency || row.Type == domain.ContractTypeSubagency {
+			return true, nil
+		}
+	}
+	return false, nil
+}
+
+func (s *FormPaymentService) saveAcceptedAgencyContract(ctx context.Context, principal authz.Principal, form formpayment.Form, fileID string) (string, error) {
+	now := time.Now().UTC()
+	contract := domain.Contract{
+		ID:             s.newID(),
+		Type:           domain.ContractTypeAgency,
+		OrganizationID: form.OrganizationID,
+		AgentID:        form.AgentID,
+		Status:         domain.ContractStatusAccepted,
+		UploadedBy:     principal.AccountID,
+		FileID:         fileID,
+		CreatedAt:      now,
+		UpdatedAt:      now,
+	}
+	if err := s.store.SaveContract(ctx, contract); err != nil {
+		return "", err
+	}
+	return contract.ID, nil
 }
 
 func (s *FormPaymentService) afterStatusChanged(ctx context.Context, prev, next formpayment.Form, action formpayment.Action, payload map[string]any) error {

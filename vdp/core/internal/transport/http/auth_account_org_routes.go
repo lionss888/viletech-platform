@@ -34,6 +34,7 @@ func (s *Server) registerAuthAccountOrgRoutes() {
 	s.mux.HandleFunc("GET /api/v1/compliance-officer/account/{id}", s.withAuth(s.handleAccountByID))
 	s.mux.HandleFunc("GET /api/v1/treasurer/account/{id}", s.withAuth(s.handleAccountByID))
 	s.mux.HandleFunc("GET /api/v1/admin/account", s.withAuth(s.handleAdminAccountList))
+	s.mux.HandleFunc("GET /api/v1/accounts/execution-providers", s.withAuth(s.handleExecutionProviders))
 	s.mux.HandleFunc("GET /api/v1/admin/account/count", s.withAuth(s.handleAdminAccountCount))
 	s.mux.HandleFunc("POST /api/v1/admin/account", s.withAuth(s.handleAdminAccountCreate))
 	s.mux.HandleFunc("GET /api/v1/admin/account/{id}", s.withAuth(s.handleAccountByID))
@@ -217,6 +218,15 @@ func (s *Server) handleAccountByID(w http.ResponseWriter, r *http.Request, princ
 
 func (s *Server) handleAdminAccountList(w http.ResponseWriter, r *http.Request, principal authz.Principal) {
 	items, err := s.accounts.List(r.Context(), principal)
+	if err != nil {
+		writeError(w, err)
+		return
+	}
+	writeJSON(w, http.StatusOK, items)
+}
+
+func (s *Server) handleExecutionProviders(w http.ResponseWriter, r *http.Request, principal authz.Principal) {
+	items, err := s.accounts.ListExecutionProviders(r.Context(), principal)
 	if err != nil {
 		writeError(w, err)
 		return

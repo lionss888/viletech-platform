@@ -1,5 +1,5 @@
 import { test, expect } from "./fixtures/auth.fixture";
-import { assertCoreHealthy, createDraftForm, createFormAccepted, loginAllRoles } from "./helpers/api";
+import { assertCoreHealthy, createDraftForm, createFormAccepted, loginAllRoles, uploadAndAttachInvoice } from "./helpers/api";
 import { expectFormStatus } from "./helpers/status";
 import { waitForFormDetail } from "./helpers/form-detail";
 
@@ -22,6 +22,7 @@ test.describe("Happy path (app UI)", () => {
   }) => {
     const tokens = await loginAllRoles();
     const formId = await createDraftForm(tokens, `happy-${Date.now()}`);
+    await uploadAndAttachInvoice(tokens.user, formId);
 
     await loginAs("user");
     await waitForFormDetail(page, formId);

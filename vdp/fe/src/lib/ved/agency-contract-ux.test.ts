@@ -13,6 +13,15 @@ describe("agency-contract-ux", () => {
     ).toBe(false);
   });
 
+  it("still asks for a file while the contract is waiting for correction", () => {
+    expect(
+      shouldOfferAgencyContractUpload({
+        status: "contract_waiting_correction",
+        orgHasAcceptedAgency: true,
+      }),
+    ).toBe(true);
+  });
+
   it("offers upload on first deal waiting without accepted agency", () => {
     expect(
       shouldOfferAgencyContractUpload({

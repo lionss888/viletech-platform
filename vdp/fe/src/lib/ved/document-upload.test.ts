@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { buildAttachedDocuments, documentExt, documentSize } from "./document-upload";
+import { buildAttachedDocuments, documentExt, documentSize, kindForCardUpload } from "./document-upload";
 
 describe("documentExt", () => {
   it("maps known extensions to badge groups", () => {
@@ -51,5 +51,17 @@ describe("buildAttachedDocuments", () => {
 
   it("returns an empty list when nothing was selected", () => {
     expect(buildAttachedDocuments({ formId: "form-1", files: [], kind: "other", at })).toEqual([]);
+  });
+
+  it("defaults a nameless file to invoice and keeps an explicit contract name", () => {
+    expect(kindForCardUpload("scan.pdf")).toBe("invoice");
+    expect(kindForCardUpload("договор-1.pdf")).toBe("contract");
+    expect(kindForCardUpload("scan.pdf", "payment")).toBe("payment");
+    const actual = buildAttachedDocuments({
+      formId: "form-1",
+      files: [{ name: "scan.pdf", size: 1024 }],
+      at,
+    });
+    expect(actual[0]?.kind).toBe("invoice");
   });
 });

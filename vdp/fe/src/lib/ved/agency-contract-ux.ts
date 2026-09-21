@@ -8,6 +8,9 @@ export function shouldOfferAgencyContractUpload(input: {
   if (st !== "contract_waiting" && st !== "contract_waiting_correction") {
     return false;
   }
+  if (st === "contract_waiting_correction") {
+    return true;
+  }
   if (input.orgHasAcceptedAgency) {
     return false;
   }

@@ -48,6 +48,7 @@ func TestMultiOrderMainAndAdvanceActiveForProvider(t *testing.T) {
 	mustTrans(user, formpayment.ActionRecognizeComplete)
 	mustTrans(user, formpayment.ActionSubmit)
 	mustTrans(eco, formpayment.ActionECOStart)
+	stampInvoice(t, store, ctx, form.ID)
 	mustTrans(eco, formpayment.ActionECOAccept)
 	mustTrans(manager, formpayment.ActionOrderSigning)
 	mustTrans(user, formpayment.ActionUserUploadOrder)

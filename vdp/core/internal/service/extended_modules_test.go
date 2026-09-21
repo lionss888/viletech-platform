@@ -166,6 +166,7 @@ func TestR9TreasurerTaskAgentHsAndMailSSE(t *testing.T) {
 	org.IsActive = true
 	_ = store.SaveOrganization(ctx, org)
 	eco := authz.Principal{AccountID: seed.ECOID, Role: domain.RoleComplianceOfficer}
+	stampInvoice(t, store, ctx, form.ID)
 	_, err = forms.Transition(ctx, eco, form.ID, formpayment.ActionECOAccept)
 	if err != nil {
 		t.Fatal(err)

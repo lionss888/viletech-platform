@@ -113,6 +113,7 @@ func TestExportHappyPathHTTP(t *testing.T) {
 	}
 
 	// 5. ECO accepts
+	mustAttachInvoice(t, core, user, formID)
 	req = httptest.NewRequest(http.MethodPut, "/api/v1/eco/form-payment/"+formID+"/form/accept", nil)
 	req.Header.Set("Authorization", "Bearer "+eco)
 	rr = httptest.NewRecorder()
@@ -339,6 +340,7 @@ func createExportFormAtStatus(t *testing.T, core http.Handler, targetStatus form
 
 	// Continue to FORM_VERIFICATION -> FORM_ACCEPTED
 	mustOK(t, core, eco, http.MethodPut, "/api/v1/eco/form-payment/"+formID+"/form/start", nil)
+	mustAttachInvoice(t, core, user, formID)
 	mustOK(t, core, eco, http.MethodPut, "/api/v1/eco/form-payment/"+formID+"/form/accept", nil)
 
 	if targetStatus == formpayment.StatusFormAccepted {

@@ -77,6 +77,7 @@ import type { VedStore } from "@/lib/ved/store";
 import { useVed } from "@/lib/ved/store";
 import { getPostCreateTransition } from "@/lib/ved/platform-create";
 import { usePlatformMode } from "@/lib/ved/platform-mode";
+import { kindForCardUpload } from "@/lib/ved/document-upload";
 import { planContractConfirm } from "@/lib/ved/manager-contract";
 import { PAYMENT_START_PROVIDER_LOCK } from "@/lib/ved/manager-payment";
 
@@ -230,9 +231,8 @@ function useApiPlatformStore(): VedStore {
       }
       switch (resolved.kind) {
         case "assign_provider": {
-          const providerId = extra.providerId ?? providers[0]?.id;
-          if (!providerId) throw new Error("Выберите провайдера");
-          await assignProvider(formId, providerId, true);
+          if (!extra.providerId) throw new Error("Выберите провайдера");
+          await assignProvider(formId, extra.providerId, true);
           break;
         }
         case "assign_agent": {
@@ -370,7 +370,7 @@ function useApiPlatformStore(): VedStore {
         await queryClient.invalidateQueries({ queryKey: ["refund", formId] });
       }
     },
-    [invalidateForms, paymentAgents, providers, queryClient],
+    [invalidateForms, paymentAgents, queryClient],
   );
 
   const applyBulk = useCallback(
@@ -438,13 +438,13 @@ function useApiPlatformStore(): VedStore {
   );
 
   const addDocuments = useCallback(
-    async (formId: string, files: { name: string; size: number }[], kind: string) => {
+    async (formId: string, files: { name: string; size: number }[], kind?: string) => {
       for (const candidate of files) {
         if (!(candidate instanceof File)) {
           throw new Error("Загрузка в боевом контуре требует выбранный файл");
         }
         const uploaded = await uploadFile(formId, candidate);
-        await attachDocToForm(formId, uploaded.id, kind, candidate.name);
+        await attachDocToForm(formId, uploaded.id, kindForCardUpload(candidate.name, kind), candidate.name);
       }
       await invalidateForms();
       await queryClient.invalidateQueries({ queryKey: ["form", formId] });

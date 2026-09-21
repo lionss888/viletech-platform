@@ -27,6 +27,23 @@ form_status() {
     | python3 -c 'import sys,json; print(json.load(sys.stdin)["status"])'
 }
 
+# Card confirm requires an invoice file even when the form was created with no_documents.
+attach_invoice() {
+  local id="$1" tmp upload file_id
+  tmp=$(mktemp)
+  printf '%%PDF-1.4 invoice\n' > "$tmp"
+  upload=$(curl -sf -X POST "$BASE/api/v1/file-store/upload" \
+    -H "Authorization: Bearer $USER_T" \
+    -F "form_id=$id" \
+    -F "file=@${tmp};filename=invoice.pdf;type=application/pdf")
+  rm -f "$tmp"
+  file_id=$(printf '%s' "$upload" | python3 -c 'import sys,json; print(json.load(sys.stdin)["id"])')
+  if ! try_post "$USER_T" "/api/v1/forms/$id/docs/attach" "{\"file_id\":\"$file_id\",\"kind\":\"invoice\",\"label\":\"invoice.pdf\"}"; then
+    echo "FAIL attach invoice for form=$id" >&2
+    exit 1
+  fi
+}
+
 # Advance form to form_accepted. Prefer ICO/ECO role routes; on 403 (slot off) use manager continuity.
 advance_compliance() {
   local id="$1"
@@ -54,6 +71,7 @@ advance_compliance() {
   if [[ "$st" == "form_accepted" ]]; then
     return 0
   fi
+  attach_invoice "$id"
   if ! try_put "$ECO_T" "/api/v1/eco/form-payment/$id/form/start"; then
     if ! try_post "$MGR_T" "/api/v1/forms/$id/actions/eco_start" '{}'; then
       echo "FAIL eco_start continuity for form=$id" >&2

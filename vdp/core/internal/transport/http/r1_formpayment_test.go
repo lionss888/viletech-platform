@@ -3,6 +3,7 @@ package httpapi_test
 import (
 	"bytes"
 	"encoding/json"
+	"mime/multipart"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -33,6 +34,7 @@ func TestR1SmokeCreateDraftICOECOManagerOrder(t *testing.T) {
 	mustOK(t, core, user, http.MethodPost, "/api/v1/forms/"+id+"/actions/recognize_complete", nil)
 	mustStatus(t, core, user, http.MethodPut, "/api/v1/site/form-payment/"+id+"/form/accept", nil, 200)
 	mustOK(t, core, eco, http.MethodPut, "/api/v1/eco/form-payment/"+id+"/form/start", nil)
+	mustAttachInvoice(t, core, user, id)
 	mustOK(t, core, eco, http.MethodPut, "/api/v1/eco/form-payment/"+id+"/form/accept", nil)
 	mustOK(t, core, manager, http.MethodPut, "/api/v1/manager/form-payment/"+id+"/order/signing", nil)
 	mustOK(t, core, user, http.MethodPut, "/api/v1/site/form-payment/"+id+"/order", nil)
@@ -72,6 +74,7 @@ func TestR1ForbiddenRoleAndConflictTransition(t *testing.T) {
 
 	// wrong role on nest path → 403
 	res = httptest.NewRecorder()
+	mustAttachInvoice(t, core, user, id)
 	preq := httptest.NewRequest(http.MethodPut, "/api/v1/eco/form-payment/"+id+"/form/accept", bytes.NewReader([]byte("{}")))
 	preq.Header.Set("Authorization", "Bearer "+provider)
 	preq.Header.Set("Content-Type", "application/json")
@@ -94,6 +97,40 @@ func TestR1ForbiddenRoleAndConflictTransition(t *testing.T) {
 func mustOK(t *testing.T, h http.Handler, token, method, path string, body any) {
 	t.Helper()
 	mustStatus(t, h, token, method, path, body, 200)
+}
+
+func mustAttachInvoice(t *testing.T, h http.Handler, token, formID string) {
+	t.Helper()
+	var buf bytes.Buffer
+	mw := multipart.NewWriter(&buf)
+	_ = mw.WriteField("form_id", formID)
+	part, err := mw.CreateFormFile("file", "invoice.pdf")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := part.Write([]byte("%PDF-1.4 invoice")); err != nil {
+		t.Fatal(err)
+	}
+	if err := mw.Close(); err != nil {
+		t.Fatal(err)
+	}
+	res := httptest.NewRecorder()
+	req := httptest.NewRequest(http.MethodPost, "/api/v1/file-store/upload", &buf)
+	req.Header.Set("Authorization", "Bearer "+token)
+	req.Header.Set("Content-Type", mw.FormDataContentType())
+	h.ServeHTTP(res, req)
+	if res.Code != http.StatusCreated {
+		t.Fatalf("invoice upload %d %s", res.Code, res.Body.String())
+	}
+	var meta map[string]any
+	_ = json.Unmarshal(res.Body.Bytes(), &meta)
+	fileID, _ := meta["id"].(string)
+	if fileID == "" {
+		t.Fatal("invoice file id")
+	}
+	mustOK(t, h, token, http.MethodPost, "/api/v1/forms/"+formID+"/docs/attach", map[string]string{
+		"file_id": fileID, "kind": "invoice", "label": "invoice.pdf",
+	})
 }
 
 func mustStatus(t *testing.T, h http.Handler, token, method, path string, body any, want int) {

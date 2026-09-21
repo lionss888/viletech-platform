@@ -110,6 +110,26 @@ func (f *Form) UnpackDocsJSON() {
 	f.DocsJSON = string(raw)
 }
 
+// HasInvoiceDocument reports whether docs include a file of kind invoice.
+func (f Form) HasInvoiceDocument() bool {
+	for _, ref := range ParseDocRefs(f.DocsJSON) {
+		if strings.EqualFold(strings.TrimSpace(ref.Kind), "invoice") && strings.TrimSpace(ref.FileID) != "" {
+			return true
+		}
+	}
+	return false
+}
+
+// ContractFileID returns the first attached contract file id.
+func (f Form) ContractFileID() string {
+	for _, ref := range ParseDocRefs(f.DocsJSON) {
+		if strings.EqualFold(strings.TrimSpace(ref.Kind), "contract") && strings.TrimSpace(ref.FileID) != "" {
+			return ref.FileID
+		}
+	}
+	return ""
+}
+
 // ParseDocRefs reads file refs from DocsJSON (object bundle or legacy bare array).
 func ParseDocRefs(raw string) []DocFileRef {
 	raw = strings.TrimSpace(raw)

@@ -16,7 +16,7 @@ export const MAIN_NAV: NavItem[] = [
 export const REFERENCE_NAV: NavItem[] = [
   { segment: "/documents", label: "Документы", roles: ["user", "manager", "provider", "root"] },
   { segment: "/organizations", label: "Организации", roles: ["manager", "root"] },
-  { segment: "/providers", label: "Провайдеры", roles: ["manager", "root"] },
+  { segment: "/providers", label: "Платёжные агенты", roles: ["manager", "root"] },
   { segment: "/counterparties", label: "Контрагенты", roles: ["user", "manager", "root"] },
   { segment: "/codes", label: "Коды ТН ВЭД", roles: ["manager", "root"] },
   { segment: "/currencies", label: "Валюты", roles: ["manager", "root"] },

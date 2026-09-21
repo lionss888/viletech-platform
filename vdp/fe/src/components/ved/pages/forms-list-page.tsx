@@ -1,4 +1,5 @@
 import { useSearch } from "@tanstack/react-router";
+import { useQuery } from "@tanstack/react-query";
 import { useMemo, useState } from "react";
 
 import { VedAppShell } from "@/components/ved/VedAppShell";
@@ -6,7 +7,10 @@ import { VedFormLink, VedLink } from "@/components/ved/VedLink";
 import { Modal, ModalButton } from "@/components/ved/Modal";
 import { DirectionTag, StatusBadge } from "@/components/ved/StatusBadge";
 import { ChannelBadge } from "@/components/ved/ChannelBadge";
+import { listOrgContracts, orgHasAcceptedAgencyContract } from "@/lib/api/contract";
 import { actionsFor } from "@/lib/ved/actions";
+import { filterAgencyContractActions } from "@/lib/ved/agency-contract-ux";
+import { withoutAssignedProviderAction } from "@/lib/ved/manager-payment";
 import { money } from "@/lib/ved/format";
 import { daysIdle, stuckForms } from "@/lib/ved/health";
 import type { FormsSearch } from "@/lib/ved/forms-search";
@@ -74,6 +78,19 @@ export function FormsList() {
     return sortRowsBy(filtered, (form) => formSortValue(form, sortKey, counterparties), sortDir);
   }, [filtered, sortKey, sortDir, counterparties]);
 
+  const contractOrgId = rows.find(
+    (form) =>
+      selected.includes(form.id) &&
+      (form.status === "contract_waiting" || form.status === "contract_waiting_correction") &&
+      form.organizationId &&
+      form.organizationId !== "—",
+  )?.organizationId;
+  const orgAgencyQuery = useQuery({
+    queryKey: ["org-contracts", contractOrgId],
+    queryFn: async () => orgHasAcceptedAgencyContract(await listOrgContracts(contractOrgId ?? "")),
+    enabled: Boolean(contractOrgId),
+  });
+
   function onSort(next: FormsSortKey) {
     setSortDir(nextSortDirection(sortKey, next, sortDir));
     setSortKey(next);
@@ -84,9 +101,14 @@ export function FormsList() {
     if (chosen.length === 0) return [];
     const first = actionsFor(role, chosen[0]!.status, processRoles);
     return first.filter((a) =>
-      chosen.every((f) => actionsFor(role, f.status, processRoles).some((x) => x.id === a.id)),
+      chosen.every((f) =>
+        filterAgencyContractActions(
+          withoutAssignedProviderAction(actionsFor(role, f.status, processRoles), f.providerId),
+          { status: f.status, contractId: f.contractId, orgHasAcceptedAgency: orgAgencyQuery.data },
+        ).some((x) => x.id === a.id),
+      ),
     );
-  }, [rows, selected, role, processRoles]);
+  }, [rows, selected, role, processRoles, orgAgencyQuery.data]);
 
   const counters = useMemo(() => {
     const map = new Map<string, number>();

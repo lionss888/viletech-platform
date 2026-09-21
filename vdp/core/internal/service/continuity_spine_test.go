@@ -68,6 +68,7 @@ func TestContinuitySpineUMP(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+	stampInvoice(t, store, ctx, form.ID)
 	form, err = svc.Transition(ctx, manager, form.ID, formpayment.ActionManagerFormAccept)
 	if err != nil {
 		t.Fatal(err)

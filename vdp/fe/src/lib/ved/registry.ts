@@ -96,9 +96,9 @@ export const REGISTRIES: Record<RegistryKey, RegistryDef> = {
   },
   providers: {
     key: "providers",
-    title: "Провайдеры платежей",
-    subtitle: "Партнёры, исполняющие платежи в валютных коридорах",
-    singular: "провайдера",
+    title: "Платёжные агенты",
+    subtitle: "Агенты, через которых заключается агентский договор",
+    singular: "платёжного агента",
     idField: "id",
     autoId: true,
     fields: [

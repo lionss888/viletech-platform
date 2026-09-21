@@ -34,6 +34,7 @@ func TestNestRoleFormActionAndParityEndpoints(t *testing.T) {
 	postJSON(t, core, token, "/api/v1/forms/"+id+"/actions/submit", nil)
 	eco := login(t, core, "eco@vdp.local", "eco")
 	putNest(t, core, eco, "/api/v1/eco/form-payment/"+id+"/form/start")
+	mustAttachInvoice(t, core, token, id)
 	putNest(t, core, eco, "/api/v1/eco/form-payment/"+id+"/form/accept")
 	agents := postJSON(t, core, manager, "/api/v1/agents", map[string]string{"name": "Agent", "inn": "1"})
 	_ = agents
