@@ -1,4 +1,4 @@
-.PHONY: deps test test-integration test-adapters build db-setup db-migrate compose-db-migrate run-hub run-core run smoke staging-smoke stop compose-up compose-up-prod compose-down compose-ps compose-e2e compose-fe-smoke compose-fe-refresh compose-fe-prod-smoke compose-playwright lovable-seed-check platform-mounts-check integration-gate playwright-e2e playwright-pilot playwright-pilot-matrix robot-matrix-check docs-format-check check-deploy-secrets release-gate image-build image-push image-build-push compose-release-config-check compose-release-up deploy-alpha deploy-beta deploy-gamma rollback-alpha rollback-beta rollback-gamma rollback-rehearsal-local test-cd-scripts notify-mgmt core-seed-reset install-git-hooks precommit-gate prepush-gate ci-pr-fast ci-pr ci-pr-pilot perf-gate
+.PHONY: deps test test-integration test-adapters build db-setup db-migrate compose-db-migrate run-hub run-core run smoke staging-smoke stop compose-up compose-up-prod compose-down compose-ps compose-e2e compose-fe-smoke compose-fe-refresh compose-fe-prod-smoke compose-playwright lovable-seed-check platform-mounts-check integration-gate playwright-e2e playwright-pilot playwright-pilot-matrix robot-matrix-check docs-format-check check-deploy-secrets release-gate image-build image-push image-build-push compose-release-config-check compose-release-up deploy-alpha deploy-beta deploy-gamma rollback-alpha rollback-beta rollback-gamma rollback-rehearsal-local test-cd-scripts notify-mgmt core-seed-reset install-git-hooks precommit-gate prepush-gate ci-pr-fast ci-pr ci-pr-pilot ci-main perf-gate
 
 CORE_DIR := core
 HUB_DIR := hub
@@ -225,6 +225,14 @@ ci-pr-pilot: ci-pr
 	$(MAKE) playwright-pilot-matrix
 	@echo "ci-pr-pilot green"
 
+# Main-push browser parity: ci-pr-fast + full Playwright (empty PLAYWRIGHT_ARGS), same as vdp-ci.yml on push to main.
+# Does not replace release-gate (no postgres integration / no forced second pilot-matrix pass).
+ci-main: ci-pr-fast
+	@echo "ci-main: pause 65s for gateway rate-limit window before full browser E2E"
+	@sleep 65
+	PLAYWRIGHT_ARGS= $(MAKE) playwright-e2e
+	@echo "ci-main green (local insurance for VDP CI playwright on main push)"
+
 # Keep fe/src/lib/ved/mock.ts byte-identical to lovable-vdp/dev0; demo patches → demo-seed-overlay.ts.
 lovable-seed-check:
 	@chmod +x scripts/lovable-seed-check.sh
@@ -368,15 +376,16 @@ precommit-gate:
 	@chmod +x scripts/precommit-mgmt-notify.sh
 	./scripts/precommit-mgmt-notify.sh
 
-# Path-aware PR gate for push (ci-pr or ci-pr-pilot). Used by .githooks/pre-push.
+# Path-aware PR/main gate for push (ci-main / ci-pr-pilot / ci-pr). Used by .githooks/pre-push.
 # Bypass: SKIP_PREPUSH_GATE=1
 prepush-gate:
-	@chmod +x scripts/prepush-gate.sh scripts/pilot-matrix-paths-match.sh
+	@chmod +x scripts/prepush-gate.sh scripts/pilot-matrix-paths-match.sh scripts/main-full-e2e-paths-match.sh
 	./scripts/prepush-gate.sh
 
 # From repo root: make -C vdp install-git-hooks
 install-git-hooks:
 	@git -C .. config core.hooksPath .githooks
 	@chmod +x ../.githooks/pre-commit ../.githooks/pre-push ../.githooks/post-commit ../.githooks/post-merge \
-		scripts/precommit-mgmt-notify.sh scripts/prepush-gate.sh scripts/pilot-matrix-paths-match.sh
+		scripts/precommit-mgmt-notify.sh scripts/prepush-gate.sh scripts/pilot-matrix-paths-match.sh \
+		scripts/main-full-e2e-paths-match.sh
 	@echo "git hooksPath=.githooks (pre-commit → precommit-gate; pre-push → prepush-gate)"

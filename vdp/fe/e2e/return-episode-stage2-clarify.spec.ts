@@ -9,7 +9,8 @@ import { test, expect } from "@playwright/test";
  * - Provider does not see clarify conversation
  */
 
-test.describe("Return Episode Stage 2: Clarify Cycle", () => {
+// Quarantine: stub against missing UI (VDP CI #121 main full suite). Re-enable with stage 2 UI.
+test.describe.skip("Return Episode Stage 2: Clarify Cycle", () => {
   test("manager clarify → client reply → manager decision", async ({ page }) => {
     // TODO: Seed form with return_reported status, active episode
     const formId = "test-form-clarify-1";

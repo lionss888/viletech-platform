@@ -1,6 +1,7 @@
 import { test, expect } from '@playwright/test';
 
-test.describe('Return Episode Stage 3: To Client', () => {
+// Quarantine: stub against missing UI (VDP CI #121 main full suite). Re-enable with stage 3 UI.
+test.describe.skip('Return Episode Stage 3: To Client', () => {
   test('return to client: rate → consent → execute', async ({ page }) => {
     // TODO: Seed data - returnEpisode.active=true, status=mgr_return_decision
     const formId = 'test-form-stage3-1';

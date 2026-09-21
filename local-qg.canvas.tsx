@@ -19,11 +19,13 @@ const RUN =
 
 const PRECOMMIT_PROMPT = `${RUN} Команда (ровно одна): cd vdp && make precommit-gate. Это тот же слой, что GitHub Desktop при Commit и .githooks/pre-commit: версии программ, оформление текстов, автоматические проверки кода.`;
 
-const PREPUSH_PROMPT = `${RUN} Команда (ровно одна): cd vdp && make prepush-gate. Это тот же слой, что GitHub Desktop при Push и .githooks/pre-push: path-aware — при касании лестницы заявки гоняет ci-pr-pilot, иначе ci-pr. Аварийный обход только SKIP_PREPUSH_GATE=1 (не рекомендуй без крайней нужды). Не коммить и не пушь сам.`;
+const PREPUSH_PROMPT = `${RUN} Команда (ровно одна): cd vdp && make prepush-gate. Это тот же слой, что GitHub Desktop при Push и .githooks/pre-push: path-aware — e2e вне узкого smoke → ci-main; лестница заявки → ci-pr-pilot; иначе ci-pr. Аварийный обход только SKIP_PREPUSH_GATE=1 (не рекомендуй без крайней нужды). Не коммить и не пушь сам.`;
 
-const PILOT_PROMPT = `${RUN} Команда (ровно одна): cd vdp && make ci-pr-pilot. Это проверка перед публикацией на GitHub: код, тексты, поднятие локальной среды и проход сценариев в браузере по заявке (включая длинную лестницу ролей и Pilot Robot Matrix). Тот же уровень, что pre-push при касании ladder paths.`;
+const PILOT_PROMPT = `${RUN} Команда (ровно одна): cd vdp && make ci-pr-pilot. Это проверка перед публикацией на GitHub: код, тексты, поднятие локальной среды и проход сценариев в браузере по заявке (включая длинную лестницу ролей и Pilot Robot Matrix). Тот же уровень, что pre-push при касании ladder paths без e2e вне smoke.`;
 
-const SMOKE_PROMPT = `${RUN} Команда (ровно одна): cd vdp && make ci-pr. Это короткая проверка с браузером (несколько ключевых сценариев). Если меняли экраны заявки, кнопки ролей или файлы e2e — этого мало, нужен ci-pr-pilot. Тот же уровень, что pre-push без ladder paths.`;
+const SMOKE_PROMPT = `${RUN} Команда (ровно одна): cd vdp && make ci-pr. Это короткая проверка с браузером (несколько ключевых сценариев). Если меняли экраны заявки, кнопки ролей или файлы e2e — этого мало: лестница → ci-pr-pilot; e2e вне smoke → ci-main.`;
+
+const MAIN_PROMPT = `${RUN} Команда (ровно одна): cd vdp && make ci-main. Паритет полного Playwright как на push в main (все e2e без узкого фильтра). Долго. Нужно перед merge/после правок e2e вне smoke, чтобы не повторить красный VDP CI на main. Не путать с ci-pr-pilot и с release-gate.`;
 
 const ALPHA_STATUS_PROMPT = `${RUN} Диагностика цепочки до alpha. Не коммить и не пушь. Не запускай compose-fe-refresh.
 
@@ -80,8 +82,9 @@ const TRIAGE_PROMPT = `Local QG — подскажи проверку. Не за
 
 По git status и git diff скажи простым языком:
 1. Что менялось (экраны, правила заявки, тексты, только план).
-2. Какую кнопку нажать в Local QG (перед коммитом / перед Push / лестница / без браузера / с браузером / До alpha / документация создать или тест / производительность / Pilot Robot Matrix).
+2. Какую кнопку нажать в Local QG (перед коммитом / перед Push / лестница / Main push полный браузер / без браузера / с браузером / До alpha / документация создать или тест / производительность / Pilot Robot Matrix).
 3. Почему именно её, одной фразой.
+Если в diff есть vdp/fe/e2e/** вне login-form, user-submit, provider-acl, reject-path — рекомендуй «Main push (полный браузер)» (ci-main), не только лестницу.
 Не коммить. Не пушь. Не запускай make.`;
 
 export default function LocalQG() {
@@ -100,10 +103,10 @@ export default function LocalQG() {
 
       <Callout tone="info" title="Commit короткий · Push = gate · alpha отдельно">
         GitHub Desktop при Commit гоняет короткий слой (как кнопка ниже). При
-        Push — path-aware gate: лестница (ci-pr-pilot) или короткий браузерный
-        (ci-pr). Это паритет PR на GitHub, не гарантия уже выкатанной alpha.
-        После merge смотрите «До alpha»: CI → Images → Deploy. Обход Push только
-        SKIP_PREPUSH_GATE=1.
+        Push — path-aware: e2e вне smoke → ci-main; лестница → ci-pr-pilot;
+        иначе ci-pr. Это паритет PR/main на GitHub, не гарантия уже выкатанной
+        alpha. После merge смотрите «До alpha»: CI → Images → Deploy. Обход
+        Push только SKIP_PREPUSH_GATE=1.
       </Callout>
 
       <Stack gap={8}>
@@ -127,9 +130,9 @@ export default function LocalQG() {
       <Stack gap={8}>
         <H2>2. Перед Push на GitHub</H2>
         <Text tone="secondary" size="small">
-          То же, что .githooks/pre-push: сам выбирает ci-pr или ci-pr-pilot по
-          путям (как detect-pilot-matrix на PR). Нажмите до Push в Desktop, чтобы
-          ошибка была в чате. ~15–25 мин при лестнице, меньше без неё.
+          То же, что .githooks/pre-push: сам выбирает ci-main / ci-pr-pilot /
+          ci-pr по путям. Нажмите до Push в Desktop, чтобы ошибка была в чате.
+          ~15–40 мин при полном браузере или лестнице, меньше без них.
         </Text>
         <Button
           onClick={() =>
@@ -141,6 +144,13 @@ export default function LocalQG() {
         <Text tone="tertiary" size="small">
           Явно выбрать уровень:
         </Text>
+        <Button
+          onClick={() =>
+            dispatch({ type: "newComposerChat", userPrompt: MAIN_PROMPT })
+          }
+        >
+          Main push (полный браузер)
+        </Button>
         <Button
           onClick={() =>
             dispatch({ type: "newComposerChat", userPrompt: PILOT_PROMPT })
