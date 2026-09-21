@@ -44,6 +44,7 @@ func TestRefundServiceHappyPathBlockCancelAndFile(t *testing.T) {
 	trans(user, formpayment.ActionRecognizeComplete)
 	trans(user, formpayment.ActionSubmit)
 	trans(eco, formpayment.ActionECOStart)
+	stampInvoice(t, store, ctx, form.ID)
 	trans(eco, formpayment.ActionECOAccept)
 	trans(manager, formpayment.ActionOrderSigning)
 	trans(user, formpayment.ActionUserUploadOrder)

@@ -13,6 +13,22 @@ export function blocksPaymentStartWithoutProvider(
 export const PAYMENT_START_PROVIDER_LOCK =
   "Назначьте провайдера исполнения — без этого платёж провайдеру не передать.";
 
+/** Assigned provider stays; the assign action leaves the card and the queue. */
+export function withoutAssignedProviderAction<T extends { id: string }>(
+  actions: T[],
+  providerId?: string,
+): T[] {
+  if (!providerId) return actions;
+  return actions.filter((action) => action.id !== "mgr_assign_provider");
+}
+
+/** Option label. Omits an empty country so the row is not «Name · —». */
+export function partyOptionLabel(name: string, country?: string): string {
+  const trimmed = country?.trim() ?? "";
+  if (!trimmed || trimmed === "—") return name;
+  return `${name} · ${trimmed}`;
+}
+
 type ImportAdvanceGateInput = {
   status: string;
   actionId: string;

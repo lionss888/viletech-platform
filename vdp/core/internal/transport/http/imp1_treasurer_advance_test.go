@@ -35,6 +35,7 @@ func TestIMP1TreasurerConfirmImportAdvance(t *testing.T) {
 	mustOK(t, core, user, http.MethodPost, "/api/v1/forms/"+id+"/actions/recognize_complete", nil)
 	mustOK(t, core, user, http.MethodPut, "/api/v1/site/form-payment/"+id+"/form/accept", nil)
 	mustOK(t, core, eco, http.MethodPut, "/api/v1/eco/form-payment/"+id+"/form/start", nil)
+	mustAttachInvoice(t, core, user, id)
 	mustOK(t, core, eco, http.MethodPut, "/api/v1/eco/form-payment/"+id+"/form/accept", nil)
 	mustOK(t, core, manager, http.MethodPatch, "/api/v1/manager/form-payment/"+id, map[string]string{
 		"payment_method": "advance",
@@ -77,6 +78,7 @@ func TestIMP1TreasurerConfirmForbiddenForManager(t *testing.T) {
 	mustOK(t, core, user, http.MethodPost, "/api/v1/forms/"+id+"/actions/recognize_complete", nil)
 	mustOK(t, core, user, http.MethodPut, "/api/v1/site/form-payment/"+id+"/form/accept", nil)
 	mustOK(t, core, eco, http.MethodPut, "/api/v1/eco/form-payment/"+id+"/form/start", nil)
+	mustAttachInvoice(t, core, user, id)
 	mustOK(t, core, eco, http.MethodPut, "/api/v1/eco/form-payment/"+id+"/form/accept", nil)
 	mustOK(t, core, manager, http.MethodPatch, "/api/v1/manager/form-payment/"+id, map[string]string{"payment_method": "advance"})
 	mustOK(t, core, manager, http.MethodPut, "/api/v1/manager/form-payment/"+id+"/order/signing", nil)
@@ -108,6 +110,7 @@ func TestIMP1TreasurerConfirmExportUnchanged(t *testing.T) {
 	mustOK(t, core, user, http.MethodPost, "/api/v1/forms/"+id+"/actions/recognize_complete", nil)
 	mustOK(t, core, user, http.MethodPut, "/api/v1/site/form-payment/"+id+"/form/accept", nil)
 	mustOK(t, core, eco, http.MethodPut, "/api/v1/eco/form-payment/"+id+"/form/start", nil)
+	mustAttachInvoice(t, core, user, id)
 	mustOK(t, core, eco, http.MethodPut, "/api/v1/eco/form-payment/"+id+"/form/accept", nil)
 	mustOK(t, core, manager, http.MethodPatch, "/api/v1/manager/form-payment/"+id, map[string]string{
 		"payment_method": "PAY_FROM_EXPORT",

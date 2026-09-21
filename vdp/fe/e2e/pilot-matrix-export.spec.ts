@@ -5,6 +5,7 @@ import {
   authPost,
   loginAllRoles,
   purgeDemoMockCounterparties,
+  uploadAndAttachInvoice,
 } from "./helpers/api";
 import { expectFormStatus } from "./helpers/status";
 import { waitForFormDetail } from "./helpers/form-detail";
@@ -83,6 +84,7 @@ test.describe("Pilot robot matrix export treasurer flow @pilot-matrix", () => {
       pack.deal_fields.currency,
       pack.deal_fields.contract_date,
     );
+    await uploadAndAttachInvoice(tokens.user, formId);
 
     // 1. User submit
     await loginAs("user");

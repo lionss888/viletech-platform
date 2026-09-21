@@ -111,6 +111,11 @@ export function listHsCodes(): Promise<CoreHsCode[]> {
   return apiFetch<CoreHsCode[]>("/api/v1/hs-codes");
 }
 
+/** GET /api/v1/accounts/execution-providers — id and name only. */
+export function listExecutionProviders(): Promise<{ id: string; name: string }[]> {
+  return apiFetch<{ id: string; name: string }[]>("/api/v1/accounts/execution-providers");
+}
+
 /** GET /api/v1/admin/account. */
 export function listAdminAccounts(): Promise<CoreAdminAccount[]> {
   return apiFetch<CoreAdminAccount[]>("/api/v1/admin/account");

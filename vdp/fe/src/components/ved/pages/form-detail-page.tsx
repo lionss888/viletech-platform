@@ -3,6 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import { useMemo, useState } from "react";
 
 import { getComplianceHistory, getForm, startExtraction } from "@/lib/api/forms";
+import { listExecutionProviders } from "@/lib/api/catalog";
 import { getFormDiadocStatus } from "@/lib/api/notifications";
 import {
   assignedManagerLabel,
@@ -78,6 +79,11 @@ export function FormDetail() {
   const formId = id ?? "";
   const mode = usePlatformMode();
   const auth = useAuth();
+  const executionQuery = useQuery({
+    queryKey: ["execution-providers"],
+    queryFn: listExecutionProviders,
+    enabled: mode === "app" && (auth.role === "manager" || auth.role === "root"),
+  });
   const { forms, session, organizations, counterparties, users, currencies, hsCodes, addDocuments, deleteDocument } =
     usePlatformStore();
   const processRoles = useProcessRolesRows();
@@ -223,7 +229,11 @@ export function FormDetail() {
         (canUploadDocs && (role === "user" || role === "root"))),
   );
   const canReviewSubjects = compliance || role === "manager" || role === "root";
-  const providerLabel = assignedProviderLabel(form.providerId, users, form.providerName);
+  const providerAccounts = [
+    ...users,
+    ...(executionQuery.data ?? []).map((row) => ({ id: row.id, name: row.name, role: "provider" as const })),
+  ];
+  const providerLabel = assignedProviderLabel(form.providerId, providerAccounts, form.providerName);
   const managerLabel = assignedManagerLabel(form.managerId, users, form.managerName);
   const icoOrgStage =
     role === "internal_compliance_officer" && String(form.status).startsWith("organization");

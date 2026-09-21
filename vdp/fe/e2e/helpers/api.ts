@@ -118,6 +118,7 @@ async function advanceCompliance(tokens: ApiTokens, formId: string): Promise<voi
   }
   const after = await formStatus(tokens.user, `/api/v1/site/form-payment/${formId}`);
   if (after === "form_accepted") return;
+  await uploadAndAttachInvoice(tokens.user, formId);
   if (!(await tryPut(tokens.eco, `/api/v1/eco/form-payment/${formId}/form/start`))) {
     await authPost(tokens.manager, `/api/v1/forms/${formId}/actions/eco_start`, {});
   }

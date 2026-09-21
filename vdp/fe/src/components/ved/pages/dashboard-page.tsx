@@ -7,6 +7,7 @@ import { VedFormLink, VedLink } from "@/components/ved/VedLink";
 import { StatusBadge } from "@/components/ved/StatusBadge";
 import { fetchPlatformHealth } from "@/lib/api/platform-health";
 import { actionsFor } from "@/lib/ved/actions";
+import { withoutAssignedProviderAction } from "@/lib/ved/manager-payment";
 import { isComplianceRole, subjectState } from "@/lib/ved/compliance";
 import { workTotalsByCurrency } from "@/lib/ved/dashboard-totals";
 import { money, relative } from "@/lib/ved/format";
@@ -370,7 +371,7 @@ function RoleDashboard() {
                   </span>
                   <span className="shrink-0 font-mono text-xs whitespace-nowrap">{money(form.amountMinor, form.currency)}</span>
                   <span className="basis-full text-[11px] text-muted-foreground sm:basis-auto sm:shrink-0 sm:truncate">
-                    {actionsFor(role, form.status, processRoles)[0]?.label}
+                    {withoutAssignedProviderAction(actionsFor(role, form.status, processRoles), form.providerId)[0]?.label}
                   </span>
                 </li>
               ))}

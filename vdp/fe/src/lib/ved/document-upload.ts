@@ -40,6 +40,22 @@ export function detectDocumentKind(name: string): AttachedDocument["kind"] {
   return "other";
 }
 
+/** Card upload: an explicit kind wins; a recognized name keeps its kind; everything else is an invoice. */
+export function kindForCardUpload(name: string, explicit?: string): AttachedDocument["kind"] {
+  if (
+    explicit === "invoice" ||
+    explicit === "contract" ||
+    explicit === "order" ||
+    explicit === "payment" ||
+    explicit === "report" ||
+    explicit === "shipment"
+  ) {
+    return explicit;
+  }
+  const detected = detectDocumentKind(name);
+  return detected === "other" ? "invoice" : detected;
+}
+
 /** Builds document rows for the demo contour (no backend, ids derived locally). */
 export function buildAttachedDocuments({
   formId,
@@ -60,6 +76,6 @@ export function buildAttachedDocuments({
     ext: documentExt(file.name),
     size: documentSize(file.size),
     uploadedAt: at,
-    kind: kind ?? detectDocumentKind(file.name),
+    kind: kind ?? kindForCardUpload(file.name),
   }));
 }

@@ -25,7 +25,7 @@ test.describe("API Core UX fixes (journeys)", () => {
     await expect(page.getByRole("button", { name: /Добавить/i })).toBeVisible();
 
     await page.goto("/providers");
-    await expect(page.getByRole("heading", { name: /Провайдеры/i })).toBeVisible();
+    await expect(page.getByRole("heading", { name: /Платёжные агенты/i })).toBeVisible();
     await expect(page.getByRole("button", { name: /Добавить/i })).toBeVisible();
 
     await page.goto("/organizations");

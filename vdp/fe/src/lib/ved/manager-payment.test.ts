@@ -6,6 +6,8 @@ import { appActionsFor } from "./app-actions";
 import {
   ADVANCE_SIGNING_NEEDS_RATE,
   blocksAdvanceSigningWithoutRate,
+  partyOptionLabel,
+  withoutAssignedProviderAction,
   blocksPaymentStartWithoutProvider,
   hidesFormAcceptedActionForDirection,
   hidesPaymentStartForImportAdvance,
@@ -16,6 +18,25 @@ import {
   isRateEmpty,
   PAYMENT_START_PROVIDER_LOCK,
 } from "./manager-payment";
+
+describe("provider assign list", () => {
+  it("drops assign when a provider is already set", () => {
+    const actions = [{ id: "mgr_assign_provider" }, { id: "mgr_payment_start" }];
+    expect(withoutAssignedProviderAction(actions, "prov-1").map((action) => action.id)).toEqual([
+      "mgr_payment_start",
+    ]);
+    expect(withoutAssignedProviderAction(actions).map((action) => action.id)).toEqual([
+      "mgr_assign_provider",
+      "mgr_payment_start",
+    ]);
+  });
+
+  it("omits an empty country instead of a dash", () => {
+    expect(partyOptionLabel("For test", "—")).toBe("For test");
+    expect(partyOptionLabel("For test", "")).toBe("For test");
+    expect(partyOptionLabel("North", "DE")).toBe("North · DE");
+  });
+});
 
 describe("blocksPaymentStartWithoutProvider", () => {
   it("blocks payment_start on payment_received without provider", () => {

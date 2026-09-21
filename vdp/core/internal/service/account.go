@@ -4,6 +4,7 @@ import (
 	"context"
 	"crypto/rand"
 	"encoding/hex"
+	"strings"
 
 	"github.com/viletech/vdp/core/internal/authz"
 	"github.com/viletech/vdp/core/internal/domain"
@@ -176,6 +177,38 @@ func (s *AccountService) Count(ctx context.Context, principal authz.Principal) (
 		return 0, err
 	}
 	return len(items), nil
+}
+
+// ExecutionProvider is the narrow assign-list row: id and display name, no email or other PII.
+type ExecutionProvider struct {
+	ID   string `json:"id"`
+	Name string `json:"name"`
+}
+
+// ListExecutionProviders returns active provider cabinet accounts for manager and root.
+func (s *AccountService) ListExecutionProviders(ctx context.Context, principal authz.Principal) ([]ExecutionProvider, error) {
+	if err := authz.AuthorizeRoles(principal, domain.RoleManager, domain.RoleRoot); err != nil {
+		return nil, err
+	}
+	items, err := s.store.ListAccounts(ctx)
+	if err != nil {
+		return nil, err
+	}
+	out := make([]ExecutionProvider, 0)
+	for _, account := range items {
+		if account.Blocked || !account.Active {
+			continue
+		}
+		if account.Role != domain.RoleProvider && account.Role != domain.RoleSeniorProvider {
+			continue
+		}
+		name := strings.TrimSpace(account.FullName)
+		if name == "" {
+			name = "Провайдер"
+		}
+		out = append(out, ExecutionProvider{ID: account.ID, Name: name})
+	}
+	return out, nil
 }
 
 type AccountCreateInput struct {

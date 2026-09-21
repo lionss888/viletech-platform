@@ -12,6 +12,9 @@ import {
 import { assertFileSize, UploadError } from "@/lib/api/files";
 import { marksFor } from "@/lib/ved/compliance";
 import { filterAgencyContractActions } from "@/lib/ved/agency-contract-ux";
+import { hasInvoiceDocument, INVOICE_REQUIRED_LOCK, isFormConfirmAction } from "@/lib/ved/invoice-accept";
+import { listExecutionProviders } from "@/lib/api/catalog";
+import { usePlatformMode } from "@/lib/ved/platform-mode";
 import {
   ADVANCE_SIGNING_NEEDS_RATE,
   blocksAdvanceSigningWithoutRate,
@@ -22,9 +25,10 @@ import {
   IMPORT_ADVANCE_AWAITS_TREASURER,
   isImportAdvanceCoverageGate,
   isPostpayRateOnPP,
+  partyOptionLabel,
   PAYMENT_START_PROVIDER_LOCK,
+  withoutAssignedProviderAction,
 } from "@/lib/ved/manager-payment";
-import { APP_SEED_ACCOUNTS } from "@/lib/ved/app-seed-accounts";
 import { usePlatformStore } from "@/lib/ved/platform-store";
 import { useProcessRolesRows } from "@/lib/ved/use-process-roles-snapshot";
 import type { ActionTone, FormAction, PaymentForm } from "@/lib/ved/types";
@@ -74,6 +78,7 @@ export function ActionPanel({
   focusFacts?: [string, string][] | undefined;
 }) {
   const { session, applyAction, complianceTools, paymentAgents, users } = usePlatformStore();
+  const mode = usePlatformMode();
   const processRoles = useProcessRolesRows();
   const [pending, setPending] = useState<FormAction | null>(null);
   const [reason, setReason] = useState("");
@@ -110,22 +115,19 @@ export function ActionPanel({
     }
   }, [orgContractsQuery.data]);
 
-  const executionProviders = users.filter((u) => u.role === "provider" && !u.blocked);
-  const seedExecutionProviders = APP_SEED_ACCOUNTS.filter((account) => account.role === "provider").map(
-    (account) => ({
-      id: account.accountId,
-      name: account.personName,
-      country: "—",
-    }),
+  const executionProviders = users.filter(
+    (u) => (u.role === "provider" || (u.role as string) === "senior_provider") && !u.blocked,
   );
+  const executionQuery = useQuery({
+    queryKey: ["execution-providers"],
+    queryFn: listExecutionProviders,
+    enabled: mode === "app" && (session?.role === "manager" || session?.role === "root"),
+  });
   const providerOptions =
-    executionProviders.length > 0
-      ? executionProviders.map((u) => ({
-          id: u.id,
-          name: u.name,
-          country: u.organization ?? "—",
-        }))
-      : seedExecutionProviders;
+    mode === "app"
+      ? (executionQuery.data ?? []).map((row) => ({ id: row.id, name: row.name }))
+      : executionProviders.map((user) => ({ id: user.id, name: user.name }));
+  const hasInvoice = hasInvoiceDocument(form.documents);
 
   const role = session?.role ?? "user";
   const rawActions = filterAgencyContractActions(actionsFor(role, form.status, processRoles), {
@@ -156,6 +158,10 @@ export function ActionPanel({
       ),
     [rawActions, form.status, form.condition, form.direction],
   );
+  const actionsWithoutProvider = useMemo(
+    () => withoutAssignedProviderAction(actions, form.providerId),
+    [actions, form.providerId],
+  );
   const awaitsTreasurer =
     form.status === "payment_received" &&
     isImportAdvanceCoverageGate({ condition: form.condition, direction: form.direction }) &&
@@ -175,12 +181,12 @@ export function ActionPanel({
     });
   const { operationalActions, rootCancelAction } = useMemo(() => {
     if (role !== "root") {
-      return { operationalActions: actions, rootCancelAction: null as FormAction | null };
+      return { operationalActions: actionsWithoutProvider, rootCancelAction: null as FormAction | null };
     }
-    const rootCancelAction = actions.find((a) => a.id === "root_cancel_form") ?? null;
-    const operationalActions = actions.filter((a) => a.id !== "root_cancel_form");
+    const rootCancelAction = actionsWithoutProvider.find((a) => a.id === "root_cancel_form") ?? null;
+    const operationalActions = actionsWithoutProvider.filter((a) => a.id !== "root_cancel_form");
     return { operationalActions, rootCancelAction };
-  }, [actions, role]);
+  }, [actionsWithoutProvider, role]);
   const isDecisionAction = (action: FormAction) => action.id.endsWith("_accept");
   const visibleActions =
     surface === "focus"
@@ -315,6 +321,7 @@ export function ActionPanel({
     const hardDisabled = !!lockNote && isApproval(action);
     const softDisabled = !lockNote && !!lockAcceptNote && isAcceptOnly(action);
     const providerGate = blocksPaymentStartWithoutProvider(form.status, action.id, form.providerId);
+    const invoiceGate = isFormConfirmAction(action.id) && !hasInvoice;
     const rateGate = blocksAdvanceSigningWithoutRate({
       status: form.status,
       actionId: action.id,
@@ -322,16 +329,18 @@ export function ActionPanel({
       rateOnProvider: form.rateOnProvider,
       rate: form.rate,
     });
-    const disabled = hardDisabled || softDisabled || providerGate || rateGate || busy;
+    const disabled = hardDisabled || softDisabled || providerGate || invoiceGate || rateGate || busy;
     const tip = hardDisabled
       ? lockNote
       : softDisabled
         ? lockAcceptNote
         : providerGate
           ? PAYMENT_START_PROVIDER_LOCK
-          : rateGate
-            ? ADVANCE_SIGNING_NEEDS_RATE
-            : action.label;
+          : invoiceGate
+            ? INVOICE_REQUIRED_LOCK
+            : rateGate
+              ? ADVANCE_SIGNING_NEEDS_RATE
+              : action.label;
     return (
       <button
         key={action.id}
@@ -380,6 +389,11 @@ export function ActionPanel({
       {needsRateForAdvance && (
         <p className="mt-2 rounded-md bg-wait-soft px-2 py-1.5 text-xs text-wait" data-testid="needs-rate-advance">
           {ADVANCE_SIGNING_NEEDS_RATE}
+        </p>
+      )}
+      {!hasInvoice && visibleActions.some((action) => isFormConfirmAction(action.id)) && (
+        <p className="mt-2 rounded-md bg-wait-soft px-2 py-1.5 text-xs text-wait" data-testid="invoice-required-lock">
+          {INVOICE_REQUIRED_LOCK}
         </p>
       )}
       {form.status === "payment_received" && !form.providerId && (
@@ -432,14 +446,18 @@ export function ActionPanel({
         {pending?.id === "mgr_assign_provider" && (
           <label className="block">
             <span className="label-caps">Провайдер исполнения</span>
-            <select value={providerId} onChange={(e) => setProviderId(e.target.value)} className="field mt-1">
-              <option value="">Выберите провайдера</option>
-              {providerOptions.map((p) => (
-                <option key={p.id} value={p.id}>
-                  {p.name} · {p.country}
-                </option>
-              ))}
-            </select>
+            {providerOptions.length === 0 ? (
+              <p className="mt-1 text-sm text-muted-foreground">нет активных провайдеров</p>
+            ) : (
+              <select value={providerId} onChange={(e) => setProviderId(e.target.value)} className="field mt-1">
+                <option value="">Выберите провайдера</option>
+                {providerOptions.map((p) => (
+                  <option key={p.id} value={p.id}>
+                    {p.name}
+                  </option>
+                ))}
+              </select>
+            )}
           </label>
         )}
         {pending?.id === "mgr_assign_agent" && (
@@ -449,7 +467,7 @@ export function ActionPanel({
               <option value="">Выберите агента</option>
               {paymentAgents.map((p) => (
                 <option key={p.id} value={p.id}>
-                  {p.name} · {p.country}
+                  {partyOptionLabel(p.name, p.country)}
                 </option>
               ))}
             </select>

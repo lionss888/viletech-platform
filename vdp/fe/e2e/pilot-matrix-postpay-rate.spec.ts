@@ -1,5 +1,5 @@
 import { test, expect } from "./fixtures/auth.fixture";
-import { assertCoreHealthy } from "./helpers/api";
+import { assertCoreHealthy, loginAllRoles, uploadAndAttachInvoice } from "./helpers/api";
 import { expectFormStatus } from "./helpers/status";
 import { waitForFormDetail } from "./helpers/form-detail";
 import { finishTermsAndReview, saveWizardDraft } from "./helpers/wizard";
@@ -78,6 +78,8 @@ test.describe("Pilot matrix POSTPAY_RATE_ON_PP @pilot-matrix", () => {
     const url = page.url();
     const formId = url.split("/forms/")[1]?.split(/[?#]/)[0];
     expect(formId).toBeTruthy();
+    const tokens = await loginAllRoles();
+    await uploadAndAttachInvoice(tokens.user, formId!);
 
     // 2. User: no-doc form auto-lands on draft; submit
     await expectFormStatus(page, "draft", { timeout: 30_000 });

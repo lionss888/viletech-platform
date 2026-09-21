@@ -11,6 +11,7 @@ import {
   validate,
   type RefRecord,
   type RegistryDef,
+  type RegistryField,
 } from "@/lib/ved/registry";
 import { usePlatformStore } from "@/lib/ved/platform-store";
 import { nextSortDirection, sortRowsBy, type SortDirection } from "@/lib/ved/table-sort";
@@ -34,6 +35,17 @@ function banksFromRecord(record: RefRecord): BankDraftRow[] {
 }
 
 type Extra = { label: string; value: (record: RefRecord) => string };
+
+const AGENT_EMPTY_FIELDS = new Set(["country", "corridors", "contact"]);
+
+/** Agent table: empty country, corridors and contact read as «не указано», not a dash. */
+function registryCell(def: RegistryDef, field: RegistryField, value: unknown): string {
+  const text = labelFor(field, value);
+  if (def.key === "providers" && AGENT_EMPTY_FIELDS.has(field.key) && (text === "—" || text.trim() === "")) {
+    return "не указано";
+  }
+  return text;
+}
 
 /** Универсальная таблица справочника: поиск, создание, редактирование, удаление и импорт. */
 export function RegistryManager({
@@ -296,7 +308,7 @@ export function RegistryManager({
                             {mark.text}
                           </span>
                         ) : (
-                          labelFor(field, record[field.key])
+                          registryCell(def, field, record[field.key])
                         )}
                       </td>
                     ))}
