@@ -71,7 +71,7 @@ notify_deploy() {
 }
 
 on_deploy_err() {
-  notify_deploy failed "Выкат или дымовые проверки на среде не прошли. Стенд мог остаться на прошлой ревизии."
+  notify_deploy failed "Выкат или проверки на среде не прошли. Стенд мог остаться на прошлой ревизии."
 }
 trap on_deploy_err ERR
 
@@ -179,11 +179,13 @@ ssh "${SSH_OPTS[@]}" "$REMOTE" \
 
 trap - ERR
 
-SMOKE_BODY="Среда обновлена. Дымовые проверки прошли."
+# Product-language top checks from staging-smoke.sh (management TG, no eng jargon).
 if [ "$ENVIRONMENT" = "gamma" ] || [ "$SKIP_SMOKE" = "1" ]; then
-  SMOKE_BODY="Среда обновлена. Дымовые по политике среды не гонялись."
+  SMOKE_BODY="Среда обновлена. Проверки на среде по политике не запускались."
 elif [ "$ENVIRONMENT" = "alpha" ]; then
-  SMOKE_BODY="Среда alpha обновлена. Дымовые проверки прошли — вход и API доступны."
+  SMOKE_BODY="$(printf '%s\nПроверено:\n1. Платформа отвечает\n2. Связанные сервисы отвечают\n3. Вход в кабинет\n4. Генерация документов\n5. Почтовые уведомления' 'Среда alpha обновлена.')"
+else
+  SMOKE_BODY="$(printf '%s\nПроверено:\n1. Платформа отвечает\n2. Связанные сервисы отвечают\n3. Вход в кабинет\n4. Генерация документов\n5. Почтовые уведомления' 'Среда обновлена.')"
 fi
 notify_deploy success "$SMOKE_BODY"
 

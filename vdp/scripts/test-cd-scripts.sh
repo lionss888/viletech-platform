@@ -94,11 +94,13 @@ echo "$GATE_PILOT" | grep -qiE 'playwright|pilot-matrix' && fail "notify must no
 echo "== ci-mgmt-notify deploy-ok / deploy-fail dry-run =="
 DEPLOY_OK="$(
   MGMT_CI_ENV=alpha MGMT_CI_REVISION=abc1234deadbeef \
-  MGMT_CI_BODY='дымовые на среде: ок' \
   bash scripts/ci-mgmt-notify.sh dry-run deploy-ok 2>&1
 )"
 echo "$DEPLOY_OK" | grep -qi 'kind=promote' || fail "deploy-ok should dry-run kind=promote"
 echo "$DEPLOY_OK" | grep -qiE 'localhost|vitest|playwright|github' && fail "deploy-ok banned token"
+echo "$DEPLOY_OK" | grep -qi 'дымов' && fail "deploy-ok must not say дымовые"
+echo "$DEPLOY_OK" | grep -q 'Вход в кабинет' || fail "deploy-ok should list top checks for management"
+echo "$DEPLOY_OK" | grep -q 'Генерация документов' || fail "deploy-ok should list docs check"
 
 DEPLOY_FAIL="$(
   MGMT_CI_ENV=alpha MGMT_CI_REVISION=abc1234deadbeef \
@@ -106,6 +108,7 @@ DEPLOY_FAIL="$(
 )"
 echo "$DEPLOY_FAIL" | grep -qi 'kind=promote' || fail "deploy-fail should dry-run kind=promote"
 echo "$DEPLOY_FAIL" | grep -qi 'kind=pipeline' || fail "deploy-fail should also dry-run kind=pipeline"
+echo "$DEPLOY_FAIL" | grep -qi 'дымов' && fail "deploy-fail must not say дымовые"
 
 echo "== ci-mgmt-notify pre-images-gate dry-run =="
 PRE_IMG="$(
