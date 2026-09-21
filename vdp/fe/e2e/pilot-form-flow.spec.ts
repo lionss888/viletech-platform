@@ -82,11 +82,14 @@ test.describe("Pilot form flow @pilot-flow", () => {
     await page.getByRole("button", { name: "Подтвердить" }).click();
     await expectFormStatus(page, "form_waiting_corrections", { timeout: 20_000 });
 
-    // 3. User corrections: upload CTA + resubmit
+    // 3. User corrections: attach invoice + resubmit (confirm requires invoice)
     await logout();
     await loginAs("user");
     await waitForFormDetail(page, formId);
     await expect(page.getByTestId("form-doc-upload")).toBeAttached({ timeout: 20_000 });
+    await uploadAndAttachInvoice(tokens.user, formId);
+    await page.reload();
+    await waitForFormDetail(page, formId);
     await expect(page.getByRole("button", { name: "Отправить исправления" })).toBeVisible();
     await page.getByRole("button", { name: "Отправить исправления" }).click();
     await expectFormStatus(page, AFTER_RESUBMIT, { timeout: 20_000 });
@@ -153,7 +156,7 @@ test.describe("Pilot form flow @pilot-flow", () => {
     await expect(page.getByRole("button", { name: /Добавить/i })).toBeVisible();
 
     await page.goto("/providers");
-    await expect(page.getByRole("heading", { name: /Провайдеры/i })).toBeVisible();
+    await expect(page.getByRole("heading", { name: /Платёжные агенты/i })).toBeVisible();
     await expect(page.getByRole("button", { name: /Добавить/i })).toBeVisible();
 
     await page.goto("/organizations");

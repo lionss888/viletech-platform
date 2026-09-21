@@ -6,6 +6,7 @@ import { VedAppShell } from "@/components/ved/VedAppShell";
 import { useAuth } from "@/lib/auth/session";
 import { linkTelegram, patchNotifyPrefs, unlinkTelegram } from "@/lib/api/notifications";
 import { usePlatformMode } from "@/lib/ved/platform-mode";
+import { buildRootProfileCard } from "@/lib/ved/root-profile-card";
 
 export function ProfilePage() {
   const mode = usePlatformMode();
@@ -17,6 +18,12 @@ export function ProfilePage() {
   const linked = Boolean(auth.account?.telegram_linked);
   const smsOn = Boolean(auth.account?.sms_notify_enabled);
   const isApp = mode === "app";
+  const rootCard = buildRootProfileCard({
+    role: auth.role,
+    fullName: auth.account?.full_name,
+    email: auth.account?.email ?? auth.email,
+  });
+  const pageSubtitle = rootCard ? "Суперадмин" : "Привязка Telegram и уведомления";
 
   const linkMut = useMutation({
     mutationFn: linkTelegram,
@@ -46,8 +53,33 @@ export function ProfilePage() {
   });
 
   return (
-    <VedAppShell title="Профиль" subtitle="Привязка Telegram и уведомления">
+    <VedAppShell title="Профиль" subtitle={pageSubtitle}>
       <div className="grid gap-4 lg:max-w-xl">
+        {rootCard && (
+          <section className="panel p-4" data-testid="root-profile-card">
+            <p className="label-caps">Личность</p>
+            <dl className="mt-3 grid gap-3">
+              <div>
+                <dt className="label-caps">Имя</dt>
+                <dd className="text-sm font-semibold">{rootCard.fullName}</dd>
+              </div>
+              <div>
+                <dt className="label-caps">Роль</dt>
+                <dd className="text-sm font-semibold">{rootCard.roleLabel}</dd>
+              </div>
+              <div>
+                <dt className="label-caps">Email</dt>
+                <dd className="font-mono text-sm">{rootCard.email}</dd>
+              </div>
+              <div>
+                <dt className="label-caps">Место в системе</dt>
+                <dd className="text-sm font-semibold" data-testid="root-profile-place">
+                  {rootCard.placeLine}
+                </dd>
+              </div>
+            </dl>
+          </section>
+        )}
         <section className="panel p-4">
           <p className="label-caps">Telegram</p>
           <p className="mt-2 text-sm text-muted-foreground">
