@@ -1,6 +1,8 @@
 import type { ComplianceHistoryEntry, CoreForm } from "./forms";
 import { actionsFor } from "@/lib/ved/actions";
 import { IMPORT_ADVANCE_AWAITS_TREASURER, isImportAdvanceCoverageGate } from "@/lib/ved/manager-payment";
+import { effectiveActionsFor, effectiveActionsFormCtx } from "@/lib/ved/effective-actions";
+import { documentSize } from "@/lib/ved/document-upload";
 import { roleTitle } from "@/lib/ved/roles";
 import { statusMetaForProcess } from "@/lib/ved/process-stage-filters";
 import { paymentMethodToCondition } from "@/lib/ved/wizard-steps";
@@ -33,7 +35,7 @@ function stringCodes(value: unknown): string[] {
 
 /** HS codes from the catalog key, extraction header, or line items. Several codes joined by comma. */
 export function hsCodeFromInvoiceJson(invoiceJson: string | undefined): string {
-  if (!invoiceJson?.trim()) return "—";
+  if (!invoiceJson?.trim()) return "";
   try {
     const parsed = JSON.parse(invoiceJson) as {
       hs_codes?: unknown;
@@ -44,9 +46,9 @@ export function hsCodeFromInvoiceJson(invoiceJson: string | undefined): string {
       typeof line.hs_code === "string" && line.hs_code.trim() ? [line.hs_code.trim()] : [],
     );
     const unique = [...new Set([...stringCodes(parsed.hs_codes), ...stringCodes(parsed.header?.hs_codes), ...fromLines])];
-    return unique.length > 0 ? unique.join(", ") : "—";
+    return unique.length > 0 ? unique.join(", ") : "";
   } catch {
-    return "—";
+    return "";
   }
 }
 
@@ -132,6 +134,8 @@ type DocsJsonItem = {
   label?: string;
   name?: string;
   mime?: string;
+  bytes?: number;
+  size?: number;
 };
 
 function docKind(raw: string | undefined): AttachedDocument["kind"] {
@@ -159,15 +163,20 @@ export function parseDocsJson(raw: string | undefined, formId: string): Attached
   try {
     const parsed = JSON.parse(raw) as DocsJsonItem[] | { files?: DocsJsonItem[] };
     const items = Array.isArray(parsed) ? parsed : (parsed.files ?? []);
-    return items.map((item, index) => ({
-      id: item.id ?? item.file_id ?? `${formId}-doc-${index}`,
-      fileId: item.file_id ?? item.id,
-      title: item.label ?? item.name ?? item.kind ?? "Документ",
-      ext: extFromMime(item.mime),
-      size: "—",
-      uploadedAt: new Date().toISOString(),
-      kind: docKind(item.kind),
-    }));
+    return items.map((item, index) => {
+      const byteCount = item.bytes ?? item.size;
+      const sizeLabel =
+        typeof byteCount === "number" && byteCount > 0 ? documentSize(byteCount) : "";
+      return {
+        id: item.id ?? item.file_id ?? `${formId}-doc-${index}`,
+        fileId: item.file_id ?? item.id,
+        title: item.label ?? item.name ?? item.kind ?? "Документ",
+        ext: extFromMime(item.mime),
+        size: sizeLabel,
+        uploadedAt: new Date().toISOString(),
+        kind: docKind(item.kind),
+      };
+    });
   } catch {
     return [];
   }
@@ -245,7 +254,17 @@ function inferTimelineActor(fromStatus: string): VedRole {
  * Role(s) that currently own CTAs on this status (for guided next-step copy).
  * Excludes root union. Pass processRoles so disabled ICO/ECO transfer to manager.
  */
-export function waitingActorRoles(status: FormStatus, processRoles?: ProcessRoleRow[]): VedRole[] {
+export function waitingActorRoles(
+  status: FormStatus,
+  processRoles?: ProcessRoleRow[],
+  formCtx?: {
+    condition?: string;
+    direction?: string;
+    paymentMethod?: string;
+    contractId?: string;
+    providerId?: string;
+  },
+): VedRole[] {
   const roles: VedRole[] = [
     "user",
     "internal_compliance_officer",
@@ -254,12 +273,30 @@ export function waitingActorRoles(status: FormStatus, processRoles?: ProcessRole
     "treasurer",
     "provider",
   ];
-  return roles.filter((role) => actionsFor(role, status, processRoles).length > 0);
+  const ctx = effectiveActionsFormCtx({
+    status,
+    direction: formCtx?.direction === "export" ? "export" : formCtx?.direction === "import" ? "import" : undefined,
+    condition: formCtx?.condition === "postPayment" ? "postPayment" : formCtx?.condition === "advance" ? "advance" : undefined,
+    paymentMethod: formCtx?.paymentMethod,
+    contractId: formCtx?.contractId,
+    providerId: formCtx?.providerId,
+  });
+  return roles.filter((role) => effectiveActionsFor(role, ctx, processRoles).length > 0);
 }
 
 /** Human label for who should act next on this status. */
-export function waitingActorLabel(status: FormStatus, processRoles?: ProcessRoleRow[]): string | null {
-  const roles = waitingActorRoles(status, processRoles);
+export function waitingActorLabel(
+  status: FormStatus,
+  processRoles?: ProcessRoleRow[],
+  formCtx?: {
+    condition?: string;
+    direction?: string;
+    paymentMethod?: string;
+    contractId?: string;
+    providerId?: string;
+  },
+): string | null {
+  const roles = waitingActorRoles(status, processRoles, formCtx);
   if (roles.length === 0) return null;
   return roles.map((r) => roleTitle(r)).join(", ");
 }
@@ -311,8 +348,11 @@ export function mapCoreFormToPaymentForm(
     currency: form.currency || "USD",
     organizationId: form.organization_id || "—",
     counterpartyId: form.counterparty_id || "—",
-    hsCode: hsCodeFromInvoiceJson(form.invoice_json),
-    invoiceNumber: invoiceNumberFromInvoiceJson(form.invoice_json) ?? "—",
+    hsCode: hsCodeFromInvoiceJson(form.invoice_json) || "—",
+    invoiceNumber: invoiceNumberFromInvoiceJson(form.invoice_json) ?? "",
+    pogStatus: form.pog_status || undefined,
+    pogFileId: form.pog_file_id || undefined,
+    pogKind: form.pog_kind || undefined,
     contractNumber: form.contract_number || undefined,
     ownerAccountId: form.account_id || undefined,
     ownerName,
@@ -357,7 +397,13 @@ export function nextStepHint(
   status: string,
   role?: VedRole,
   processRoles?: ProcessRoleRow[],
-  formCtx?: { condition?: string; direction?: string },
+  formCtx?: {
+    condition?: string;
+    direction?: string;
+    paymentMethod?: string;
+    contractId?: string;
+    providerId?: string;
+  },
 ): string {
   const formStatus = status as FormStatus;
   if (
@@ -366,11 +412,27 @@ export function nextStepHint(
     isImportAdvanceCoverageGate({
       condition: formCtx?.condition,
       direction: formCtx?.direction,
+      paymentMethod: formCtx?.paymentMethod,
     })
   ) {
     return `Следующий шаг: казначей подтверждает покрытие. ${IMPORT_ADVANCE_AWAITS_TREASURER}`;
   }
-  const myActions = role ? actionsFor(role, formStatus, processRoles) : [];
+  const ctx = role
+    ? effectiveActionsFormCtx({
+        status: formStatus,
+        direction: formCtx?.direction === "export" ? "export" : formCtx?.direction === "import" ? "import" : undefined,
+        condition:
+          formCtx?.condition === "postPayment"
+            ? "postPayment"
+            : formCtx?.condition === "advance"
+              ? "advance"
+              : undefined,
+        paymentMethod: formCtx?.paymentMethod,
+        contractId: formCtx?.contractId,
+        providerId: formCtx?.providerId,
+      })
+    : null;
+  const myActions = role && ctx ? effectiveActionsFor(role, ctx, processRoles) : [];
   if (myActions.length > 0) {
     return `Следующий шаг: ${myActions[0]!.label}.`;
   }
@@ -383,7 +445,7 @@ export function nextStepHint(
   ) {
     return "Сейчас проверяют организацию. Это не проверка заявки — дождитесь решения по организации.";
   }
-  const waiting = waitingActorLabel(formStatus, processRoles);
+  const waiting = waitingActorLabel(formStatus, processRoles, formCtx);
   if (waiting) {
     return `Сейчас действует: ${waiting}. Для вашей роли действий нет — дождитесь их решения.`;
   }

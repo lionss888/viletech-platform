@@ -9,6 +9,7 @@ import {
   extractionAmountWarnings,
   extractionPanelMode,
   isLowConfidence,
+  orderExtractionWarnings,
   parseExtractionResult,
 } from "@/lib/ved/extraction";
 import { cn } from "@/lib/utils";
@@ -67,6 +68,9 @@ export type ExtractionReviewPanelProps = {
   onConfirmed?: () => void;
   currencyOptions?: { value: string; label: string }[];
   hsOptions?: { value: string; label: string }[];
+  formAmountMinor?: number;
+  formCurrency?: string;
+  documentKind?: string;
 };
 
 /**
@@ -85,6 +89,9 @@ export function ExtractionReviewPanel({
   onConfirmed,
   currencyOptions = [],
   hsOptions = [],
+  formAmountMinor,
+  formCurrency,
+  documentKind,
 }: ExtractionReviewPanelProps) {
   const qc = useQueryClient();
   const parsed = parseExtractionResult(invoiceJson);
@@ -156,6 +163,19 @@ export function ExtractionReviewPanel({
   const shellClass = embedded ? "space-y-3" : "panel space-y-3 p-4";
   const idleShellClass = embedded ? "space-y-2" : "panel space-y-2 p-4";
 
+  const requestStartExtraction = () => {
+    const needsConfirm = Boolean(draft?.meta.confirmed);
+    if (
+      needsConfirm &&
+      !window.confirm(
+        "Перезапуск заменит подтверждённые распознанные данные. Продолжить?",
+      )
+    ) {
+      return;
+    }
+    startMut.mutate();
+  };
+
   const controlBar =
     showControls ? (
       <div className="space-y-1.5" data-testid="extraction-controls">
@@ -164,7 +184,7 @@ export function ExtractionReviewPanel({
             type="button"
             className="rounded-md bg-primary px-3 py-1.5 text-xs font-semibold text-primary-foreground disabled:opacity-50"
             disabled={startMut.isPending}
-            onClick={() => startMut.mutate()}
+            onClick={requestStartExtraction}
           >
             {draft ? "Перезапустить распознавание" : "Запустить распознавание"}
           </button>
@@ -179,11 +199,17 @@ export function ExtractionReviewPanel({
             </button>
           ) : null}
         </div>
-        <p className="text-xs text-muted-foreground" data-testid="extraction-help">
-          Распознавание читает загруженные документы и подставляет сумму, валюту, реквизиты и позиции в
-          форму. Заявка при этом никуда не отправляется — вы сможете проверить и исправить каждое поле до
-          подтверждения. Перезапуск заменит текущие распознанные данные новыми.
-        </p>
+        {!draft?.meta.confirmed ? (
+          <p className="text-xs text-muted-foreground" data-testid="extraction-help">
+            Распознавание читает загруженные документы и подставляет сумму, валюту, реквизиты и позиции в
+            форму. Заявка при этом никуда не отправляется — вы сможете проверить и исправить каждое поле до
+            подтверждения. Перезапуск заменит текущие распознанные данные новыми.
+          </p>
+        ) : (
+          <p className="text-xs text-muted-foreground" data-testid="extraction-help">
+            Распознавание подтверждено — поля только для просмотра. Перезапуск потребует подтверждения.
+          </p>
+        )}
       </div>
     ) : null;
 
@@ -221,7 +247,7 @@ export function ExtractionReviewPanel({
           {draft.meta.engine_id ?? "engine"} · проверьте позиции перед подтверждением
         </p>
       </div>
-      {controlBar}
+      {!confirmed ? controlBar : null}
       <p className="text-xs text-muted-foreground">
         Поле без правки помечено «распознано». Если значение изменили — «изменено». Цвет строки с низкой уверенностью
         это не заменяет.
@@ -419,9 +445,15 @@ export function ExtractionReviewPanel({
           </ul>
         ) : null}
       </div>
-      {extractionAmountWarnings(draft).length > 0 ? (
+      {(documentKind === "order"
+        ? orderExtractionWarnings(draft, formAmountMinor, formCurrency)
+        : extractionAmountWarnings(draft)
+      ).length > 0 ? (
         <ul className="list-disc space-y-0.5 pl-4 text-xs text-amber-700" data-testid="extraction-amount-mismatch">
-          {extractionAmountWarnings(draft).map((warning) => (
+          {(documentKind === "order"
+            ? orderExtractionWarnings(draft, formAmountMinor, formCurrency)
+            : extractionAmountWarnings(draft)
+          ).map((warning) => (
             <li key={warning}>{warning}</li>
           ))}
         </ul>
@@ -436,7 +468,19 @@ export function ExtractionReviewPanel({
           {mutation.isPending ? "Сохранение…" : "Подтвердить распознавание"}
         </button>
       ) : confirmed ? (
-        <p className="text-xs text-muted-foreground">Распознавание подтверждено — данные в gold для обучения.</p>
+        <div className="space-y-2">
+          <p className="text-xs text-muted-foreground">Распознавание подтверждено — данные в gold для обучения.</p>
+          {showControls ? (
+            <button
+              type="button"
+              className="rounded-md border border-border px-3 py-1.5 text-xs font-semibold text-foreground disabled:opacity-50"
+              disabled={startMut.isPending}
+              onClick={requestStartExtraction}
+            >
+              Перезапустить распознавание
+            </button>
+          ) : null}
+        </div>
       ) : null}
       {savedNote ? (
         <p className="text-xs font-medium text-accent" data-testid="extraction-saved">

@@ -8,9 +8,8 @@ import { Modal, ModalButton } from "@/components/ved/Modal";
 import { DirectionTag, StatusBadge } from "@/components/ved/StatusBadge";
 import { ChannelBadge } from "@/components/ved/ChannelBadge";
 import { listOrgContracts, orgHasAcceptedAgencyContract } from "@/lib/api/contract";
-import { actionsFor } from "@/lib/ved/actions";
-import { filterAgencyContractActions } from "@/lib/ved/agency-contract-ux";
-import { withoutAssignedProviderAction } from "@/lib/ved/manager-payment";
+import { effectiveActionsFor, effectiveActionsFormCtx } from "@/lib/ved/effective-actions";
+import { readinessChips } from "@/lib/ved/form-readiness";
 import { money } from "@/lib/ved/format";
 import { daysIdle, stuckForms } from "@/lib/ved/health";
 import type { FormsSearch } from "@/lib/ved/forms-search";
@@ -59,7 +58,9 @@ export function FormsList() {
         const stage = displayStageId(form.status, processRoles);
         if (stage !== "organization_verification" && stage !== "form_verification") return false;
       } else if (stageFilter && displayStageId(form.status, processRoles) !== stageFilter) return false;
-      if (onlyMine && actionsFor(role, form.status, processRoles).length === 0) return false;
+      if (onlyMine && effectiveActionsFor(role, effectiveActionsFormCtx(form), processRoles).length === 0) {
+        return false;
+      }
       if (onlyStuck && !stuckIds.has(form.id)) return false;
       if (query) {
         const cpName = cpByIdFrom(counterparties, form.counterpartyId)?.name ?? "";
@@ -99,12 +100,13 @@ export function FormsList() {
   const bulkActions = useMemo(() => {
     const chosen = rows.filter((f) => selected.includes(f.id));
     if (chosen.length === 0) return [];
-    const first = actionsFor(role, chosen[0]!.status, processRoles);
+    const first = effectiveActionsFor(role, effectiveActionsFormCtx(chosen[0]!), processRoles);
     return first.filter((a) =>
       chosen.every((f) =>
-        filterAgencyContractActions(
-          withoutAssignedProviderAction(actionsFor(role, f.status, processRoles), f.providerId),
-          { status: f.status, contractId: f.contractId, orgHasAcceptedAgency: orgAgencyQuery.data },
+        effectiveActionsFor(
+          role,
+          { ...effectiveActionsFormCtx(f), orgHasAcceptedAgency: orgAgencyQuery.data },
+          processRoles,
         ).some((x) => x.id === a.id),
       ),
     );
@@ -132,7 +134,8 @@ export function FormsList() {
               }
             : {
                 label: "Требуют моего действия",
-                value: scoped.filter((f) => actionsFor(role, f.status, processRoles).length > 0).length,
+                value: scoped.filter((f) => effectiveActionsFor(role, effectiveActionsFormCtx(f), processRoles).length > 0)
+                  .length,
                 active: onlyMine,
                 onClick: () => setOnlyMine((v) => !v),
               },
@@ -288,6 +291,7 @@ export function FormsList() {
                     </VedFormLink>
                     <StatusBadge status={form.status} processRoles={processRoles} viewerRole={role} />
                   </div>
+                  <FormReadinessChips form={form} role={role} processRoles={processRoles} />
                   <p className="mt-1 truncate text-xs">{cpByIdFrom(counterparties, form.counterpartyId)?.name}</p>
                   <div className="mt-1 flex flex-wrap items-baseline justify-between gap-x-2 gap-y-0.5">
                     <span className="font-mono text-xs font-semibold">{money(form.amountMinor, form.currency)}</span>
@@ -385,6 +389,7 @@ export function FormsList() {
                   </td>
                   <td className="py-2 pr-4">
                     <StatusBadge status={form.status} processRoles={processRoles} viewerRole={role} />
+                    <FormReadinessChips form={form} role={role} processRoles={processRoles} className="mt-1" />
                   </td>
                   <td className="py-2 pr-4">
                     <span className="block max-w-[180px] truncate text-xs">{cpByIdFrom(counterparties, form.counterpartyId)?.name}</span>
@@ -563,6 +568,40 @@ function formsToCsv(
     return cells.map((v) => escape(String(v ?? ""))).join(";");
   });
   return [header.map(escape).join(";"), ...lines].join("\n");
+}
+
+const CHIP_TONE: Record<string, string> = {
+  wait: "bg-wait-soft text-wait",
+  work: "bg-work-soft text-work",
+  return: "bg-return-soft text-return",
+  neutral: "bg-muted text-muted-foreground",
+};
+
+function FormReadinessChips({
+  form,
+  role,
+  processRoles,
+  className,
+}: {
+  form: PaymentForm;
+  role: VedRole;
+  processRoles: ProcessRoleRow[];
+  className?: string;
+}) {
+  const chips = readinessChips(form, role, processRoles);
+  if (chips.length === 0) return null;
+  return (
+    <div className={cn("flex flex-wrap gap-1", className)}>
+      {chips.map((chip) => (
+        <span
+          key={chip.id}
+          className={cn("rounded-full px-2 py-0.5 text-[10px] font-semibold", CHIP_TONE[chip.tone])}
+        >
+          {chip.label}
+        </span>
+      ))}
+    </div>
+  );
 }
 
 function downloadCsv(text: string, name: string) {

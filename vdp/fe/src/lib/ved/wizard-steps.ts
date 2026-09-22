@@ -6,7 +6,8 @@ export const WIZARD_STEPS = ["Документы", "Направление", "С
 
 /** Пояснения к каждому шагу мастера — отрабатывают ожидания пользователя. */
 export const WIZARD_STEP_CAPTIONS: Record<(typeof WIZARD_STEPS)[number], string> = {
-  Документы: "Полезно:\u00a0вы можете продолжить без документов или загрузите инвойс и контракт — реквизиты подставятся автоматически.",
+  Документы:
+    "Сначала загрузите инвойс — реквизиты подставятся автоматически. Контракт можно добавить сразу или позже; без файлов укажите номер и дату договора вручную.",
   Направление: "Укажите, вы отправляете платёж за рубеж или получаете оплату из-за рубежа.",
   Стороны: "Выберите вашу организацию и иностранного контрагента — или создайте новых прямо здесь.",
   Условия: "Сумма и валюта платежа, код ТН ВЭД, дата отгрузки и условие оплаты.",
@@ -87,6 +88,34 @@ export function mergeExtractionPrefill(
 }
 
 /** RU label for document step given direction/kind. */
+export type DocsStepInput = {
+  noDocuments: boolean;
+  invoiceFile?: File | null;
+  contractNumber?: string;
+  contractDate?: string;
+  /** Demo contour may skip mandatory invoice upload. */
+  skipInvoiceRequirement?: boolean;
+};
+
+/** Validates the documents wizard step (invoice-first or manual contract fields). */
+export function validateDocsStep(input: DocsStepInput): { message: string; fields: string[] } | null {
+  const fields: string[] = [];
+  const messages: string[] = [];
+  if (!input.noDocuments && !input.skipInvoiceRequirement && !input.invoiceFile) {
+    fields.push("invoiceFile");
+    messages.push("Загрузите инвойс или выберите «У меня нет документов»");
+  }
+  if (input.noDocuments) {
+    if (!input.contractNumber?.trim()) fields.push("contractNumber");
+    if (!input.contractDate?.trim()) fields.push("contractDate");
+    if (fields.length > 0) {
+      messages.push("Без документов укажите номер и дату контракта вручную");
+    }
+  }
+  if (messages.length === 0) return null;
+  return { message: messages.join(". "), fields };
+}
+
 export function documentsLabel(noDocuments: boolean, hasInvoice: boolean, hasContract: boolean): string {
   if (noDocuments) return "Без файлов (ручной контракт)";
   if (hasInvoice && hasContract) return "Инвойс + контракт";

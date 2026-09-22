@@ -16,6 +16,7 @@ import {
   showReturnBanner,
 } from "@/lib/api/mappers";
 import { ExtractionReviewDialog } from "@/components/ved/ExtractionReviewDialog";
+import { PogStatusPanel } from "@/components/ved/pog-status-panel";
 import { CorrectionGuidancePanel } from "@/components/ved/CorrectionGuidancePanel";
 import { CounterpartyPickDialog } from "@/components/ved/CounterpartyPickDialog";
 import { OrganizationPickDialog } from "@/components/ved/OrganizationPickDialog";
@@ -48,6 +49,7 @@ import {
   extractionAmountWarnings,
   extractionPanelMode,
   extractionTriggerLabel,
+  orderExtractionWarnings,
   parseExtractionResult,
 } from "@/lib/ved/extraction";
 import { canProviderDeleteDocuments, canUploadDocuments } from "@/lib/ved/doc-upload-policy";
@@ -66,8 +68,14 @@ import {
   counterpartySwiftLine,
   innLine,
   organizationAddressLine,
+  presentValue,
 } from "@/lib/ved/party-requisites";
-import { reviewChecklist } from "@/lib/ved/review-checklist";
+import {
+  isOrderWaitingTake,
+  isWaitingTakeStatus,
+  orderReviewChecklist,
+  reviewChecklist,
+} from "@/lib/ved/review-checklist";
 import { roleTitle } from "@/lib/ved/roles";
 import { statusMetaForProcess } from "@/lib/ved/process-stage-filters";
 import { useProcessRolesRows } from "@/lib/ved/use-process-roles-snapshot";
@@ -255,8 +263,8 @@ export function FormDetail() {
         ["Направление", form.direction === "import" ? "Импорт" : "Экспорт"],
         ["Предмет", form.kind === "good" ? "Товар" : "Услуга"],
         ["Условие оплаты", form.condition === "advance" ? "Аванс" : "Постоплата"],
-        ["Код ТН ВЭД", form.hsCode],
-        ["Инвойс", form.invoiceNumber],
+        ["Код ТН ВЭД", presentValue(form.hsCode) ?? "не указан"],
+        ["Инвойс", presentValue(form.invoiceNumber) ?? "не указан"],
         ...(form.contractNumber ? [["Договор", form.contractNumber] as [string, string]] : []),
         ["Сумма", money(form.amountMinor, form.currency)],
         ...(form.clientCurrency ? [["Валюта клиента", form.clientCurrency] as [string, string]] : []),
@@ -270,8 +278,7 @@ export function FormDetail() {
   const paymentRequisites = isProvider ? providerPaymentRequisites(form, org, cp) : [];
   const visibleDocuments = isProvider ? providerVisibleDocuments(form) : form.documents;
   const reviewWork = form.status === "form_verification" || form.status === "organization_verification";
-  const waitingTake =
-    form.status === "form_waiting_verification" || form.status === "organization_waiting_verification";
+  const waitingTake = isWaitingTakeStatus(form.status) || isOrderWaitingTake(form.status);
   const canLeadReview = role === "manager" || role === "root" || compliance;
   const focusFacts: [string, string][] = [
     ["Сумма", money(form.amountMinor, form.currency)],
@@ -280,13 +287,25 @@ export function FormDetail() {
     ["Условие оплаты", form.condition === "advance" ? "Аванс" : "Постоплата"],
   ];
   const parsedExtraction = parseExtractionResult(form.invoiceJson);
-  const checks = reviewChecklist({
-    documents: form.documents,
-    hsCode: form.hsCode,
-    counterpartyName: cp?.name,
-    counterpartyStatus: cp?.status,
-    amountWarnings: parsedExtraction ? extractionAmountWarnings(parsedExtraction) : [],
-  });
+  const amountWarnings = parsedExtraction
+    ? isOrderWaitingTake(form.status)
+      ? orderExtractionWarnings(parsedExtraction, form.amountMinor, form.currency)
+      : extractionAmountWarnings(parsedExtraction)
+    : [];
+  const checks = isOrderWaitingTake(form.status)
+    ? orderReviewChecklist({
+        documents: form.documents,
+        hsCode: form.hsCode,
+        amountWarnings,
+      })
+    : reviewChecklist({
+        documents: form.documents,
+        hsCode: form.hsCode,
+        counterpartyName: cp?.name,
+        counterpartyStatus: cp?.status,
+        amountWarnings,
+      });
+  const orderStageHighlight = form.status.includes("signing_order") ? "order" : undefined;
   const invoiceJson = form.invoiceJson ?? formQuery.data?.invoice_json;
   const extractionMode =
     mode === "app" && !isProvider
@@ -421,6 +440,7 @@ export function FormDetail() {
               <DocumentList
                 documents={visibleDocuments}
                 formId={formId}
+                highlightKind={orderStageHighlight}
                 canDelete={canDeleteDocs}
                 onDelete={
                   canDeleteDocs
@@ -612,6 +632,9 @@ export function FormDetail() {
                 {nextStepHint(form.status, role, processRoles, {
                   condition: form.condition,
                   direction: form.direction,
+                  paymentMethod: form.paymentMethod,
+                  contractId: form.contractId,
+                  providerId: form.providerId,
                 })}
               </p>
             </div>
@@ -647,6 +670,9 @@ export function FormDetail() {
                   currency={form.currency}
                 />
               )}
+              {(role === "manager" || role === "root") && form.status.includes("signing_order") ? (
+                <PogStatusPanel form={form} />
+              ) : null}
               {!isProvider && <RefundPanel form={form} />}
               {!isProvider && <ShipmentPanel form={form} />}
               
@@ -673,9 +699,13 @@ export function FormDetail() {
             </>
           )}
 
-          {!compliance && !isProvider && canReviewSubjects && <SubjectReview subjects={subjects} />}
           {!compliance &&
             !isProvider &&
+            !form.status.startsWith("payment") &&
+            canReviewSubjects && <SubjectReview subjects={subjects} />}
+          {!compliance &&
+            !isProvider &&
+            !form.status.startsWith("payment") &&
             !canReviewSubjects &&
             subjects.some((s) => !subjectState(s.status).ok) && (
               <SubjectReview subjects={subjects} readOnly />
@@ -685,7 +715,7 @@ export function FormDetail() {
             <div className="panel p-4">
               <p className="label-caps">Участники</p>
               <ul className="mt-2 space-y-1 text-sm">
-                <li>Клиент: {form.ownerName}</li>
+                <li>Клиент: {presentValue(form.ownerName) ?? "не указан"}</li>
                 <li>Назначенный менеджер: {managerLabel}</li>
                 <li>Провайдер: {providerLabel}</li>
               </ul>
@@ -746,6 +776,9 @@ export function FormDetail() {
           canConfirm={role === "user" || role === "manager" || role === "root"}
           currencyOptions={currencies.map((item) => ({ value: item.code, label: `${item.code} — ${item.title}` }))}
           hsOptions={hsCodes.map((item) => ({ value: item.code, label: `${item.code} — ${item.title}` }))}
+          formAmountMinor={form.amountMinor}
+          formCurrency={form.currency}
+          documentKind={visibleDocuments.some((d) => d.kind === "order") ? "order" : undefined}
         />
       )}
     </VedAppShell>

@@ -236,21 +236,29 @@ send_gate_summary() {
   run_notify gate --status passed --title "$label" --branch "$BRANCH" --revision "$REVISION"
 }
 
+# Product-language top checks from staging-smoke.sh (management TG, no eng jargon).
+deploy_ok_body() {
+  local env_l="${1:-среда}"
+  local prefix
+  case "$env_l" in
+    alpha) prefix="Среда alpha обновлена." ;;
+    *) prefix="Среда обновлена." ;;
+  esac
+  printf '%s\nПроверено:\n1. Платформа отвечает\n2. Связанные сервисы отвечают\n3. Вход в кабинет\n4. Генерация документов\n5. Почтовые уведомления' "$prefix"
+}
+
 send_deploy_ok() {
   local env_l="${ENV_NAME:-среда}"
   local body="${EXTRA_BODY:-}"
   if [ -z "$body" ]; then
-    case "$env_l" in
-      alpha) body="Среда alpha обновлена. Дымовые проверки прошли — вход и API доступны." ;;
-      *) body="Среда обновлена. Дымовые проверки прошли." ;;
-    esac
+    body="$(deploy_ok_body "$env_l")"
   fi
   run_notify promote --env "$env_l" --status success --revision "$REVISION" --body "$body"
 }
 
 send_deploy_fail() {
   local env_l="${ENV_NAME:-среда}"
-  local body="${EXTRA_BODY:-Выкат или дымовые проверки на среде не прошли. Стенд мог остаться на прошлой ревизии.}"
+  local body="${EXTRA_BODY:-Выкат или проверки на среде не прошли. Стенд мог остаться на прошлой ревизии.}"
   run_notify promote --env "$env_l" --status failed --revision "$REVISION" --body "$body"
   run_notify pipeline --status failed --title "выкат" --branch "${ENV_NAME:-$BRANCH}" --revision "$REVISION"
 }

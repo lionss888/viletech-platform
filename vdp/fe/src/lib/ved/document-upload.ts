@@ -26,7 +26,8 @@ export function documentSize(bytes: number): string {
 const KIND_PATTERNS: [AttachedDocument["kind"], RegExp][] = [
   ["invoice", /инвойс|invoice|сч[её]т[-_\s]?фактур|^inv[-_.\s\d]/i],
   ["contract", /контракт|договор|contract|agreement|соглашени/i],
-  ["payment", /плат[её]ж|поручени|payment|swift|mt103|выписк/i],
+  ["order", /подписанн.*поручен|signed.*order|поручени.*принципал|поручение[-_\s]?принципал/i],
+  ["payment", /плат[её]жн|плат[её]ж|payment|swift|mt103|выписк/i],
   ["report", /отч[её]т|report|акт[-_.\s]|спецификац/i],
   ["shipment", /отгрузк|shipment|накладн|коносамент|cmr|packing|упаковочн|гтд|декларац/i],
 ];

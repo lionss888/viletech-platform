@@ -6,6 +6,8 @@ import {
   documentsLabel,
   mergeExtractionPrefill,
   paymentMethodToCondition,
+  validateDocsStep,
+  WIZARD_STEP_CAPTIONS,
   WIZARD_STEPS,
   WIZARD_STEP,
 } from "./wizard-steps";
@@ -65,5 +67,17 @@ describe("wizard-steps", () => {
   it("labels documents for invoice-only", () => {
     expect(documentsLabel(false, true, false)).toBe("Только инвойс");
     expect(documentsLabel(false, true, true)).toBe("Инвойс + контракт");
+  });
+
+  it("documents caption is invoice-first", () => {
+    expect(WIZARD_STEP_CAPTIONS.Документы).toContain("инвойс");
+  });
+
+  it("validateDocsStep requires invoice or no-docs contract fields", () => {
+    expect(validateDocsStep({ noDocuments: false, invoiceFile: null })).not.toBeNull();
+    expect(
+      validateDocsStep({ noDocuments: true, contractNumber: "C-1", contractDate: "2026-01-01" }),
+    ).toBeNull();
+    expect(validateDocsStep({ noDocuments: true, contractNumber: "", contractDate: "" })).not.toBeNull();
   });
 });

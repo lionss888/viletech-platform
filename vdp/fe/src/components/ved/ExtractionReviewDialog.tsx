@@ -23,6 +23,9 @@ export type ExtractionReviewDialogProps = {
   forceMobile?: boolean;
   currencyOptions?: { value: string; label: string }[];
   hsOptions?: { value: string; label: string }[];
+  formAmountMinor?: number;
+  formCurrency?: string;
+  documentKind?: string;
 };
 
 /**
@@ -41,6 +44,9 @@ export function ExtractionReviewDialog({
   forceMobile,
   currencyOptions,
   hsOptions,
+  formAmountMinor,
+  formCurrency,
+  documentKind,
 }: ExtractionReviewDialogProps) {
   const mobileHook = useIsMobileViewport(open);
   const isMobile = forceMobile ?? mobileHook;
@@ -70,6 +76,9 @@ export function ExtractionReviewDialog({
       canConfirm={canConfirm}
       currencyOptions={currencyOptions}
       hsOptions={hsOptions}
+      formAmountMinor={formAmountMinor}
+      formCurrency={formCurrency}
+      documentKind={documentKind}
       embedded
       onConfirmed={() => onOpenChange(false)}
     />
