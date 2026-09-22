@@ -281,6 +281,15 @@ func (s *FormPaymentService) TransitionWithComment(ctx context.Context, principa
 	if err := s.afterStatusChanged(ctx, form, next, action, payload); err != nil {
 		return formpayment.Form{}, err
 	}
+	if action == formpayment.ActionManagerSendOrder {
+		if err := s.RequestPaymentOrderGeneration(ctx, principal, next.ID, pogKindForDirection(next.Direction)); err != nil {
+			return formpayment.Form{}, err
+		}
+		if reloaded, err := s.store.FormByID(ctx, next.ID); err == nil {
+			reloaded.UnpackDocsJSON()
+			next = reloaded
+		}
+	}
 	s.maybeEnqueueBankWebhook(ctx, next, payload)
 	s.emitManagerOps(ctx, principal, next, action, history.ID)
 	return next, nil

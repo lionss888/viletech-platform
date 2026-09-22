@@ -42,6 +42,9 @@ export type CoreForm = {
   confirmation_file_id?: string;
   rate?: CoreRate;
   commission?: CoreCommission;
+  pog_status?: string;
+  pog_file_id?: string;
+  pog_kind?: string;
   created_at: string;
   updated_at: string;
 };

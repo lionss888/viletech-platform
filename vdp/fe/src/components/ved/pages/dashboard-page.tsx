@@ -6,8 +6,7 @@ import { VedAppShell } from "@/components/ved/VedAppShell";
 import { VedFormLink, VedLink } from "@/components/ved/VedLink";
 import { StatusBadge } from "@/components/ved/StatusBadge";
 import { fetchPlatformHealth } from "@/lib/api/platform-health";
-import { actionsFor } from "@/lib/ved/actions";
-import { withoutAssignedProviderAction } from "@/lib/ved/manager-payment";
+import { effectiveActionsFor, effectiveActionsFormCtx } from "@/lib/ved/effective-actions";
 import { isComplianceRole, subjectState } from "@/lib/ved/compliance";
 import { workTotalsByCurrency } from "@/lib/ved/dashboard-totals";
 import { money, relative } from "@/lib/ved/format";
@@ -270,7 +269,7 @@ function RoleDashboard() {
   const scoped = visibleForms(forms, role, session?.name);
 
   const todo = useMemo(
-    () => scoped.filter((f) => actionsFor(role, f.status, processRoles).length > 0),
+    () => scoped.filter((f) => effectiveActionsFor(role, effectiveActionsFormCtx(f), processRoles).length > 0),
     [scoped, role, processRoles],
   );
 
@@ -367,11 +366,11 @@ function RoleDashboard() {
                     <StatusBadge status={form.status} processRoles={processRoles} viewerRole={role} />
                   </span>
                   <span className="min-w-0 flex-1 basis-28 truncate text-xs text-muted-foreground">
-                    {cpByIdFrom(counterparties, form.counterpartyId)?.name ?? "—"}
+                    {cpByIdFrom(counterparties, form.counterpartyId)?.name ?? "контрагент не указан"}
                   </span>
                   <span className="shrink-0 font-mono text-xs whitespace-nowrap">{money(form.amountMinor, form.currency)}</span>
                   <span className="basis-full text-[11px] text-muted-foreground sm:basis-auto sm:shrink-0 sm:truncate">
-                    {withoutAssignedProviderAction(actionsFor(role, form.status, processRoles), form.providerId)[0]?.label}
+                    {effectiveActionsFor(role, effectiveActionsFormCtx(form), processRoles)[0]?.label}
                   </span>
                 </li>
               ))}
@@ -414,7 +413,7 @@ function RoleDashboard() {
                 <StatusBadge status={form.status} processRoles={processRoles} viewerRole={role} />
               </span>
               <span className="col-span-2 min-w-0 truncate text-xs text-muted-foreground sm:order-none sm:col-span-1 sm:flex-1">
-                {cpByIdFrom(counterparties, form.counterpartyId)?.name ?? "—"}
+                {cpByIdFrom(counterparties, form.counterpartyId)?.name ?? "контрагент не указан"}
               </span>
               <span className="font-mono text-xs whitespace-nowrap">{money(form.amountMinor, form.currency)}</span>
               <span className="justify-self-end text-[11px] whitespace-nowrap text-muted-foreground">{relative(form.updatedAt)}</span>

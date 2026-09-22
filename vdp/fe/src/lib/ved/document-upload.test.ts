@@ -1,6 +1,12 @@
 import { describe, expect, it } from "vitest";
 
-import { buildAttachedDocuments, documentExt, documentSize, kindForCardUpload } from "./document-upload";
+import {
+  buildAttachedDocuments,
+  detectDocumentKind,
+  documentExt,
+  documentSize,
+  kindForCardUpload,
+} from "./document-upload";
 
 describe("documentExt", () => {
   it("maps known extensions to badge groups", () => {
@@ -63,5 +69,11 @@ describe("buildAttachedDocuments", () => {
       at,
     });
     expect(actual[0]?.kind).toBe("invoice");
+  });
+
+  it("detects order before payment from filename", () => {
+    expect(detectDocumentKind("signed-import-order.pdf")).toBe("order");
+    expect(detectDocumentKind("payment-confirmation.pdf")).toBe("payment");
+    expect(kindForCardUpload("поручение-принципал.pdf")).toBe("order");
   });
 });

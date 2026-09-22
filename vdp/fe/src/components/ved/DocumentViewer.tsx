@@ -5,6 +5,7 @@ import { Modal, ModalButton } from "@/components/ved/Modal";
 import { usePlatformMode } from "@/lib/ved/platform-mode";
 import { dateTime } from "@/lib/ved/format";
 import type { AttachedDocument } from "@/lib/ved/types";
+import { cn } from "@/lib/utils";
 
 export const KIND_LABEL: Record<AttachedDocument["kind"], string> = {
   invoice: "Инвойс",
@@ -27,10 +28,18 @@ type DocumentListProps = {
   formId?: string;
   canDelete?: boolean;
   onDelete?: (doc: AttachedDocument) => void | Promise<void>;
+  /** Highlights rows of this kind (e.g. order on signing queue). */
+  highlightKind?: AttachedDocument["kind"];
 };
 
 /** Document list with preview/download in app mode when fileId is present. */
-export function DocumentList({ documents, formId: _formId, canDelete = false, onDelete }: DocumentListProps) {
+export function DocumentList({
+  documents,
+  formId: _formId,
+  canDelete = false,
+  onDelete,
+  highlightKind,
+}: DocumentListProps) {
   const mode = usePlatformMode();
   const [open, setOpen] = useState<AttachedDocument | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
@@ -92,14 +101,20 @@ export function DocumentList({ documents, formId: _formId, canDelete = false, on
       )}
       <ul className="mt-3 divide-y divide-border">
         {documents.map((d) => (
-          <li key={d.id} className="flex items-center gap-3 py-3">
+          <li
+            key={d.id}
+            className={cn(
+              "flex items-center gap-3 py-3",
+              highlightKind && d.kind === highlightKind && "rounded-md bg-wait-soft/40 px-2 -mx-2",
+            )}
+          >
             <span className="grid h-8 w-10 shrink-0 place-items-center rounded-md bg-muted font-mono text-[10px] font-semibold uppercase text-muted-foreground">
               {d.ext}
             </span>
             <span className="min-w-0 flex-1">
               <span className="block truncate text-sm font-medium">{d.title}</span>
               <span className="mt-0.5 block truncate font-mono text-[11px] text-muted-foreground">
-                {[KIND_LABEL[d.kind], d.size, dateTime(d.uploadedAt)].filter(Boolean).join(" · ")}
+                {[KIND_LABEL[d.kind], d.size || undefined, dateTime(d.uploadedAt)].filter(Boolean).join(" · ")}
               </span>
             </span>
             {mode === "app" && d.fileId ? (

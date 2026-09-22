@@ -118,6 +118,31 @@ export function extractionAmountWarnings(result: ExtractionResult): string[] {
   }
   return warnings;
 }
+
+/** Warnings when confirming OCR on a signed order document (amount vs form). */
+export function orderExtractionWarnings(
+  result: ExtractionResult,
+  formAmountMinor?: number,
+  formCurrency?: string,
+): string[] {
+  const warnings = extractionAmountWarnings(result);
+  const headerAmount = asNumber(result.header.invoice_amount);
+  if (headerAmount !== undefined && formAmountMinor !== undefined && formAmountMinor > 0) {
+    const formMajor = formAmountMinor / 100;
+    if (Math.abs(headerAmount - formMajor) > 0.01) {
+      warnings.push(
+        `Сумма в распознанном документе (${headerAmount}) не совпадает с заявкой (${formMajor}).`,
+      );
+    }
+  }
+  const headerCurrency = result.header.currency?.trim().toUpperCase();
+  const expected = formCurrency?.trim().toUpperCase();
+  if (headerCurrency && expected && headerCurrency !== expected) {
+    warnings.push(`Валюта в документе (${headerCurrency}) отличается от валюты заявки (${expected}).`);
+  }
+  return warnings;
+}
+
 export function canControlExtraction(role: string, status?: string): boolean {
   if (role !== "user" && role !== "manager" && role !== "root") return false;
   const st = status ?? "";

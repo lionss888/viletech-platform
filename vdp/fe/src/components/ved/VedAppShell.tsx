@@ -2,25 +2,16 @@ import { Link, Navigate, useNavigate, useRouterState } from "@tanstack/react-rou
 import { useState, type ReactNode } from "react";
 
 import {
-  Sheet,
-  SheetContent,
-  SheetDescription,
-  SheetHeader,
-  SheetTitle,
-} from "@/components/ui/sheet";
-import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Modal, ModalButton } from "@/components/ved/Modal";
 import { RowNavContextMenu } from "@/components/ved/RowNavContextMenu";
 import { useAuth } from "@/lib/auth/session";
 import { BRAND_MARK, BRAND_NAME } from "@/lib/brand";
-import { actionsFor } from "@/lib/ved/actions";
+import { effectiveActionsFor, effectiveActionsFormCtx } from "@/lib/ved/effective-actions";
 import { filterNav, MAIN_NAV, REFERENCE_NAV } from "@/lib/ved/nav-config";
 import { readRefsOpen, writeRefsOpen } from "@/lib/ved/nav-refs-open";
 import { isFeatureDisabled, useFeatureFlags } from "@/lib/ved/feature-flags";
@@ -64,7 +55,6 @@ export function VedAppShell({ children, title, subtitle }: { children: ReactNode
 
   const [refsOpen, setRefsOpenState] = useState(() => readRefsOpen(false));
   const [supportOpen, setSupportOpen] = useState(false);
-  const [createOpen, setCreateOpen] = useState(false);
   const processRoles = useProcessRolesRows();
   const flags = useFeatureFlags();
 
@@ -91,7 +81,9 @@ export function VedAppShell({ children, title, subtitle }: { children: ReactNode
   }
 
   const mine = visibleForms(store.forms, role, displayName);
-  const todo = mine.filter((f) => actionsFor(role ?? "user", f.status, processRoles).length > 0).length;
+  const todo = mine.filter(
+    (f) => effectiveActionsFor(role ?? "user", effectiveActionsFormCtx(f), processRoles).length > 0,
+  ).length;
 
   const mainNav = filterNav(MAIN_NAV, role).filter(
     (item) => item.segment !== "/forms/new" && !isFeatureDisabled(flags, item.segment, role),
@@ -139,20 +131,14 @@ export function VedAppShell({ children, title, subtitle }: { children: ReactNode
 
         {role && (
           <div className="mt-5">
-            <DropdownMenu>
-              <DropdownMenuTrigger className="w-full rounded-md bg-primary px-3 py-2 text-sm font-semibold text-primary-foreground">
-                Создать
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="start" className="w-56">
-                <DropdownMenuLabel>Что нужно создать?</DropdownMenuLabel>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem onSelect={() => navigate({ to: formsNewTo })}>Новая заявка</DropdownMenuItem>
-                <DropdownMenuItem onSelect={() => navigate({ to: documentsTo })}>Добавить документ</DropdownMenuItem>
-                <DropdownMenuItem onSelect={() => navigate({ to: counterpartiesTo })}>Добавить компанию</DropdownMenuItem>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem onSelect={() => setSupportOpen(true)}>Поддержка и консультация</DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
+            <button
+              type="button"
+              data-testid="create-form-cta"
+              className="w-full rounded-md bg-primary px-3 py-2 text-sm font-semibold text-primary-foreground"
+              onClick={() => navigate({ to: formsNewTo })}
+            >
+              Создать заявку
+            </button>
           </div>
         )}
 
@@ -333,11 +319,11 @@ export function VedAppShell({ children, title, subtitle }: { children: ReactNode
           <div className="shrink-0 border-t border-border bg-card px-4 pt-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] lg:hidden">
             <button
               type="button"
-              onClick={() => setCreateOpen(true)}
+              onClick={() => navigate({ to: formsNewTo })}
               className="w-full rounded-md bg-primary px-4 py-3 text-sm font-semibold text-primary-foreground"
               data-testid="create-fab"
             >
-              Создать
+              Создать заявку
             </button>
           </div>
         )}
@@ -346,57 +332,6 @@ export function VedAppShell({ children, title, subtitle }: { children: ReactNode
           {footerText}
         </footer>
       </div>
-
-      <Sheet open={createOpen} onOpenChange={setCreateOpen}>
-        <SheetContent side="bottom" className="rounded-t-xl">
-          <SheetHeader>
-            <SheetTitle>Что нужно создать?</SheetTitle>
-            <SheetDescription>Выберите действие — откроется нужный раздел.</SheetDescription>
-          </SheetHeader>
-          <div className="flex flex-col gap-2 px-4 pb-[max(1rem,env(safe-area-inset-bottom))]">
-            <button
-              type="button"
-              className="w-full rounded-md bg-primary px-4 py-3 text-sm font-semibold text-primary-foreground"
-              onClick={() => {
-                setCreateOpen(false);
-                void navigate({ to: formsNewTo });
-              }}
-            >
-              Новая заявка
-            </button>
-            <button
-              type="button"
-              className="w-full rounded-md border border-border px-4 py-3 text-sm font-medium"
-              onClick={() => {
-                setCreateOpen(false);
-                void navigate({ to: documentsTo });
-              }}
-            >
-              Добавить документ
-            </button>
-            <button
-              type="button"
-              className="w-full rounded-md border border-border px-4 py-3 text-sm font-medium"
-              onClick={() => {
-                setCreateOpen(false);
-                void navigate({ to: counterpartiesTo });
-              }}
-            >
-              Добавить компанию
-            </button>
-            <button
-              type="button"
-              className="w-full rounded-md px-4 py-3 text-sm font-medium text-muted-foreground"
-              onClick={() => {
-                setCreateOpen(false);
-                setSupportOpen(true);
-              }}
-            >
-              Поддержка и консультация
-            </button>
-          </div>
-        </SheetContent>
-      </Sheet>
 
       <Modal
         open={supportOpen}

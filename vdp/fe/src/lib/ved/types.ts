@@ -153,6 +153,9 @@ export type PaymentForm = {
   rateOnProvider?: boolean | undefined;
   rate?: FormRate | undefined;
   commission?: FormCommission | undefined;
+  pogStatus?: string | undefined;
+  pogFileId?: string | undefined;
+  pogKind?: string | undefined;
   rejectText?: string | undefined;
   /** Код отметки комплаенс при возврате на доработку. */
   rejectMark?: string | undefined;

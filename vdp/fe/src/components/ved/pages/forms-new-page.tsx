@@ -29,6 +29,7 @@ import {
   WIZARD_STEP,
   WIZARD_STEP_CAPTIONS,
   WIZARD_STEPS,
+  validateDocsStep,
   type WizardTouched,
 } from "@/lib/ved/wizard-steps";
 import { cn } from "@/lib/utils";
@@ -195,16 +196,18 @@ export function NewForm() {
   function validateStep(): { message: string; fields: string[] } | null {
     const fields: string[] = [];
     const messages: string[] = [];
-    if (step === WIZARD_STEP.docs && !draft.noDocuments) {
-      if (!draft.invoiceFile && mode === "app") {
-        fields.push("invoiceFile");
-        messages.push("Загрузите инвойс или выберите «У меня нет документов»");
+    if (step === WIZARD_STEP.docs) {
+      const docsErr = validateDocsStep({
+        noDocuments: draft.noDocuments,
+        invoiceFile: draft.invoiceFile,
+        contractNumber: draft.contractNumber,
+        contractDate: draft.contractDate,
+        skipInvoiceRequirement: mode !== "app",
+      });
+      if (docsErr) {
+        fields.push(...docsErr.fields);
+        messages.push(docsErr.message);
       }
-    }
-    if (step === WIZARD_STEP.docs && draft.noDocuments) {
-      if (!draft.contractNumber.trim()) fields.push("contractNumber");
-      if (!draft.contractDate.trim()) fields.push("contractDate");
-      if (fields.length > 0) messages.push("Без документов укажите номер и дату контракта вручную");
     }
     if (step === WIZARD_STEP.parties) {
       if (!hasClientOrg || !draft.organizationId) {

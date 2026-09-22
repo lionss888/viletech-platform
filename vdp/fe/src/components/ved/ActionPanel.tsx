@@ -2,8 +2,8 @@ import { useEffect, useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 
 import { Modal, ModalButton } from "@/components/ved/Modal";
-import { actionsFor } from "@/lib/ved/actions";
 import { waitingActorLabel } from "@/lib/api/mappers";
+import { FilePickButton } from "@/components/ved/file-pick-button";
 import {
   listOrgContracts,
   orgHasAcceptedAgencyContract,
@@ -11,7 +11,7 @@ import {
 } from "@/lib/api/contract";
 import { assertFileSize, UploadError } from "@/lib/api/files";
 import { marksFor } from "@/lib/ved/compliance";
-import { filterAgencyContractActions } from "@/lib/ved/agency-contract-ux";
+import { effectiveActionsFor, effectiveActionsFormCtx } from "@/lib/ved/effective-actions";
 import { hasInvoiceDocument, INVOICE_REQUIRED_LOCK, isFormConfirmAction } from "@/lib/ved/invoice-accept";
 import { listExecutionProviders } from "@/lib/api/catalog";
 import { usePlatformMode } from "@/lib/ved/platform-mode";
@@ -19,15 +19,11 @@ import {
   ADVANCE_SIGNING_NEEDS_RATE,
   blocksAdvanceSigningWithoutRate,
   blocksPaymentStartWithoutProvider,
-  hidesFormAcceptedActionForDirection,
-  hidesPaymentStartForImportAdvance,
-  hidesTreasurerConfirmOnProcessingForImport,
   IMPORT_ADVANCE_AWAITS_TREASURER,
   isImportAdvanceCoverageGate,
   isPostpayRateOnPP,
   partyOptionLabel,
   PAYMENT_START_PROVIDER_LOCK,
-  withoutAssignedProviderAction,
 } from "@/lib/ved/manager-payment";
 import { usePlatformStore } from "@/lib/ved/platform-store";
 import { useProcessRolesRows } from "@/lib/ved/use-process-roles-snapshot";
@@ -130,38 +126,18 @@ export function ActionPanel({
   const hasInvoice = hasInvoiceDocument(form.documents);
 
   const role = session?.role ?? "user";
-  const rawActions = filterAgencyContractActions(actionsFor(role, form.status, processRoles), {
-    status: form.status,
-    contractId: form.contractId,
-    orgHasAcceptedAgency,
-  });
+  const formCtx = useMemo(
+    () => ({
+      ...effectiveActionsFormCtx(form),
+      orgHasAcceptedAgency,
+    }),
+    [form, orgHasAcceptedAgency],
+  );
   const actions = useMemo(
-    () =>
-      rawActions.filter(
-        (action) =>
-          !hidesPaymentStartForImportAdvance({
-            status: form.status,
-            actionId: action.id,
-            condition: form.condition,
-            direction: form.direction,
-          }) &&
-          !hidesTreasurerConfirmOnProcessingForImport({
-            status: form.status,
-            actionId: action.id,
-            direction: form.direction,
-          }) &&
-          !hidesFormAcceptedActionForDirection({
-            status: form.status,
-            actionId: action.id,
-            direction: form.direction,
-          }),
-      ),
-    [rawActions, form.status, form.condition, form.direction],
+    () => effectiveActionsFor(role, formCtx, processRoles),
+    [role, formCtx, processRoles],
   );
-  const actionsWithoutProvider = useMemo(
-    () => withoutAssignedProviderAction(actions, form.providerId),
-    [actions, form.providerId],
-  );
+  const actionsWithoutProvider = actions;
   const awaitsTreasurer =
     form.status === "payment_received" &&
     isImportAdvanceCoverageGate({ condition: form.condition, direction: form.direction }) &&
@@ -204,7 +180,13 @@ export function ActionPanel({
   }
 
   if (actions.length === 0) {
-    const waiting = waitingActorLabel(form.status, processRoles);
+    const waiting = waitingActorLabel(form.status, processRoles, {
+      condition: form.condition,
+      direction: form.direction,
+      paymentMethod: form.paymentMethod,
+      contractId: form.contractId,
+      providerId: form.providerId,
+    });
     return (
       <div className="panel p-4">
         <p className="label-caps">{title}</p>
@@ -429,9 +411,11 @@ export function ActionPanel({
         description={pending?.confirm ?? `Заявка ${form.number}. Подтвердите действие.`}
         footer={
           <>
-            <ModalButton variant="quiet" onClick={close} disabled={busy}>
-              Отмена
-            </ModalButton>
+            {!pending?.requiresFile ? (
+              <ModalButton variant="quiet" onClick={close} disabled={busy}>
+                Отмена
+              </ModalButton>
+            ) : null}
             <ModalButton
               variant={pending?.tone === "danger" ? "danger" : "primary"}
               onClick={confirm}
@@ -559,14 +543,14 @@ export function ActionPanel({
           </label>
         )}
         {(pending?.requiresFile || pending?.id === "prov_attach_proof") && (
-          <label className="block">
+          <div className="block">
             <span className="label-caps">Документ</span>
-            <input
-              type="file"
-              data-testid="action-modal-file"
+            <FilePickButton
+              testId="action-modal-file"
+              pickLabel="Выбрать файл"
               accept=".pdf,application/pdf,image/*"
-              onChange={(e) => {
-                const picked = e.target.files?.[0] ?? null;
+              file={file}
+              onPick={(picked) => {
                 if (!picked) {
                   setFile(null);
                   setFileName("");
@@ -577,6 +561,7 @@ export function ActionPanel({
                   assertFileSize(picked);
                   setFile(picked);
                   setFileName(picked.name);
+                  setError(null);
                   if (pending?.id === "prov_attach_proof") {
                     setPaymentWarn(
                       "Проверьте, что сумма и валюта в платёжке совпадают с заявкой — расхождение не блокирует отправку.",
@@ -589,13 +574,12 @@ export function ActionPanel({
                   setError(err instanceof UploadError ? err.message : "Недопустимый файл");
                 }
               }}
-              className="mt-1 block w-full text-xs text-muted-foreground"
             />
             {fileName && <span className="mt-1 block font-mono text-[11px] text-muted-foreground">{fileName}</span>}
             {paymentWarn && (
               <span className="mt-2 block rounded-md bg-wait-soft px-2 py-1 text-xs text-wait">{paymentWarn}</span>
             )}
-          </label>
+          </div>
         )}
       </Modal>
     </div>
