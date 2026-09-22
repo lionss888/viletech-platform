@@ -11,6 +11,9 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AdminRouteImport } from './routes/admin'
+import { Route as AgentOrganizationRouteImport } from './routes/agent-organization'
+import { Route as AgentReportsRouteImport } from './routes/agent-reports'
+import { Route as BankCertificateRouteImport } from './routes/bank-certificate'
 import { Route as ChatsRouteImport } from './routes/chats'
 import { Route as CodesRouteImport } from './routes/codes'
 import { Route as ComplianceToolsRouteImport } from './routes/compliance-tools'
@@ -23,8 +26,10 @@ import { Route as FeatureFlagsRouteImport } from './routes/feature-flags'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as McpRouteImport } from './routes/mcp'
 import { Route as OrganizationsRouteImport } from './routes/organizations'
+import { Route as PaymentOrdersRouteImport } from './routes/payment-orders'
 import { Route as ProcessRolesRouteImport } from './routes/process-roles'
 import { Route as ProfileRouteImport } from './routes/profile'
+import { Route as ProviderOrganizationsRouteImport } from './routes/provider-organizations'
 import { Route as ProvidersRouteImport } from './routes/providers'
 import { Route as StartRouteImport } from './routes/start'
 import { Route as TestingRouteImport } from './routes/testing'
@@ -32,6 +37,9 @@ import { Route as Char91DotmcpChar93ListToolsRouteImport } from './routes/[.mcp]
 import { Route as Char91DotwellKnownChar93OauthProtectedResourceRouteImport } from './routes/[.well-known]/oauth-protected-resource'
 import { Route as DemoIndexRouteImport } from './routes/demo/index'
 import { Route as DemoAdminRouteImport } from './routes/demo/admin'
+import { Route as DemoAgentOrganizationRouteImport } from './routes/demo/agent-organization'
+import { Route as DemoAgentReportsRouteImport } from './routes/demo/agent-reports'
+import { Route as DemoBankCertificateRouteImport } from './routes/demo/bank-certificate'
 import { Route as DemoChatsRouteImport } from './routes/demo/chats'
 import { Route as DemoCodesRouteImport } from './routes/demo/codes'
 import { Route as DemoComplianceToolsRouteImport } from './routes/demo/compliance-tools'
@@ -43,8 +51,10 @@ import { Route as DemoDocumentsRouteImport } from './routes/demo/documents'
 import { Route as DemoFeatureFlagsRouteImport } from './routes/demo/feature-flags'
 import { Route as DemoLoginRouteImport } from './routes/demo/login'
 import { Route as DemoOrganizationsRouteImport } from './routes/demo/organizations'
+import { Route as DemoPaymentOrdersRouteImport } from './routes/demo/payment-orders'
 import { Route as DemoProcessRolesRouteImport } from './routes/demo/process-roles'
 import { Route as DemoProfileRouteImport } from './routes/demo/profile'
+import { Route as DemoProviderOrganizationsRouteImport } from './routes/demo/provider-organizations'
 import { Route as DemoProvidersRouteImport } from './routes/demo/providers'
 import { Route as DemoStartRouteImport } from './routes/demo/start'
 import { Route as DemoTestingRouteImport } from './routes/demo/testing'
@@ -65,6 +75,21 @@ const IndexRoute = IndexRouteImport.update({
 const AdminRoute = AdminRouteImport.update({
   id: '/admin',
   path: '/admin',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AgentOrganizationRoute = AgentOrganizationRouteImport.update({
+  id: '/agent-organization',
+  path: '/agent-organization',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AgentReportsRoute = AgentReportsRouteImport.update({
+  id: '/agent-reports',
+  path: '/agent-reports',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const BankCertificateRoute = BankCertificateRouteImport.update({
+  id: '/bank-certificate',
+  path: '/bank-certificate',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ChatsRoute = ChatsRouteImport.update({
@@ -127,6 +152,11 @@ const OrganizationsRoute = OrganizationsRouteImport.update({
   path: '/organizations',
   getParentRoute: () => rootRouteImport,
 } as any)
+const PaymentOrdersRoute = PaymentOrdersRouteImport.update({
+  id: '/payment-orders',
+  path: '/payment-orders',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ProcessRolesRoute = ProcessRolesRouteImport.update({
   id: '/process-roles',
   path: '/process-roles',
@@ -135,6 +165,11 @@ const ProcessRolesRoute = ProcessRolesRouteImport.update({
 const ProfileRoute = ProfileRouteImport.update({
   id: '/profile',
   path: '/profile',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ProviderOrganizationsRoute = ProviderOrganizationsRouteImport.update({
+  id: '/provider-organizations',
+  path: '/provider-organizations',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ProvidersRoute = ProvidersRouteImport.update({
@@ -172,6 +207,21 @@ const DemoIndexRoute = DemoIndexRouteImport.update({
 const DemoAdminRoute = DemoAdminRouteImport.update({
   id: '/demo/admin',
   path: '/demo/admin',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const DemoAgentOrganizationRoute = DemoAgentOrganizationRouteImport.update({
+  id: '/demo/agent-organization',
+  path: '/demo/agent-organization',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const DemoAgentReportsRoute = DemoAgentReportsRouteImport.update({
+  id: '/demo/agent-reports',
+  path: '/demo/agent-reports',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const DemoBankCertificateRoute = DemoBankCertificateRouteImport.update({
+  id: '/demo/bank-certificate',
+  path: '/demo/bank-certificate',
   getParentRoute: () => rootRouteImport,
 } as any)
 const DemoChatsRoute = DemoChatsRouteImport.update({
@@ -229,6 +279,11 @@ const DemoOrganizationsRoute = DemoOrganizationsRouteImport.update({
   path: '/demo/organizations',
   getParentRoute: () => rootRouteImport,
 } as any)
+const DemoPaymentOrdersRoute = DemoPaymentOrdersRouteImport.update({
+  id: '/demo/payment-orders',
+  path: '/demo/payment-orders',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const DemoProcessRolesRoute = DemoProcessRolesRouteImport.update({
   id: '/demo/process-roles',
   path: '/demo/process-roles',
@@ -239,6 +294,12 @@ const DemoProfileRoute = DemoProfileRouteImport.update({
   path: '/demo/profile',
   getParentRoute: () => rootRouteImport,
 } as any)
+const DemoProviderOrganizationsRoute =
+  DemoProviderOrganizationsRouteImport.update({
+    id: '/demo/provider-organizations',
+    path: '/demo/provider-organizations',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 const DemoProvidersRoute = DemoProvidersRouteImport.update({
   id: '/demo/providers',
   path: '/demo/providers',
@@ -299,6 +360,9 @@ const DemoFormsNewRoute = DemoFormsNewRouteImport.update({
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/admin': typeof AdminRoute
+  '/agent-organization': typeof AgentOrganizationRoute
+  '/agent-reports': typeof AgentReportsRoute
+  '/bank-certificate': typeof BankCertificateRoute
   '/chats': typeof ChatsRoute
   '/codes': typeof CodesRoute
   '/compliance-tools': typeof ComplianceToolsRoute
@@ -311,14 +375,19 @@ export interface FileRoutesByFullPath {
   '/login': typeof LoginRoute
   '/mcp': typeof McpRoute
   '/organizations': typeof OrganizationsRoute
+  '/payment-orders': typeof PaymentOrdersRoute
   '/process-roles': typeof ProcessRolesRoute
   '/profile': typeof ProfileRoute
+  '/provider-organizations': typeof ProviderOrganizationsRoute
   '/providers': typeof ProvidersRoute
   '/start': typeof StartRoute
   '/testing': typeof TestingRoute
   '/.mcp/list-tools': typeof Char91DotmcpChar93ListToolsRoute
   '/.well-known/oauth-protected-resource': typeof Char91DotwellKnownChar93OauthProtectedResourceRoute
   '/demo/admin': typeof DemoAdminRoute
+  '/demo/agent-organization': typeof DemoAgentOrganizationRoute
+  '/demo/agent-reports': typeof DemoAgentReportsRoute
+  '/demo/bank-certificate': typeof DemoBankCertificateRoute
   '/demo/chats': typeof DemoChatsRoute
   '/demo/codes': typeof DemoCodesRoute
   '/demo/compliance-tools': typeof DemoComplianceToolsRoute
@@ -330,8 +399,10 @@ export interface FileRoutesByFullPath {
   '/demo/feature-flags': typeof DemoFeatureFlagsRoute
   '/demo/login': typeof DemoLoginRoute
   '/demo/organizations': typeof DemoOrganizationsRoute
+  '/demo/payment-orders': typeof DemoPaymentOrdersRoute
   '/demo/process-roles': typeof DemoProcessRolesRoute
   '/demo/profile': typeof DemoProfileRoute
+  '/demo/provider-organizations': typeof DemoProviderOrganizationsRoute
   '/demo/providers': typeof DemoProvidersRoute
   '/demo/start': typeof DemoStartRoute
   '/demo/testing': typeof DemoTestingRoute
@@ -348,6 +419,9 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/admin': typeof AdminRoute
+  '/agent-organization': typeof AgentOrganizationRoute
+  '/agent-reports': typeof AgentReportsRoute
+  '/bank-certificate': typeof BankCertificateRoute
   '/chats': typeof ChatsRoute
   '/codes': typeof CodesRoute
   '/compliance-tools': typeof ComplianceToolsRoute
@@ -360,14 +434,19 @@ export interface FileRoutesByTo {
   '/login': typeof LoginRoute
   '/mcp': typeof McpRoute
   '/organizations': typeof OrganizationsRoute
+  '/payment-orders': typeof PaymentOrdersRoute
   '/process-roles': typeof ProcessRolesRoute
   '/profile': typeof ProfileRoute
+  '/provider-organizations': typeof ProviderOrganizationsRoute
   '/providers': typeof ProvidersRoute
   '/start': typeof StartRoute
   '/testing': typeof TestingRoute
   '/.mcp/list-tools': typeof Char91DotmcpChar93ListToolsRoute
   '/.well-known/oauth-protected-resource': typeof Char91DotwellKnownChar93OauthProtectedResourceRoute
   '/demo/admin': typeof DemoAdminRoute
+  '/demo/agent-organization': typeof DemoAgentOrganizationRoute
+  '/demo/agent-reports': typeof DemoAgentReportsRoute
+  '/demo/bank-certificate': typeof DemoBankCertificateRoute
   '/demo/chats': typeof DemoChatsRoute
   '/demo/codes': typeof DemoCodesRoute
   '/demo/compliance-tools': typeof DemoComplianceToolsRoute
@@ -379,8 +458,10 @@ export interface FileRoutesByTo {
   '/demo/feature-flags': typeof DemoFeatureFlagsRoute
   '/demo/login': typeof DemoLoginRoute
   '/demo/organizations': typeof DemoOrganizationsRoute
+  '/demo/payment-orders': typeof DemoPaymentOrdersRoute
   '/demo/process-roles': typeof DemoProcessRolesRoute
   '/demo/profile': typeof DemoProfileRoute
+  '/demo/provider-organizations': typeof DemoProviderOrganizationsRoute
   '/demo/providers': typeof DemoProvidersRoute
   '/demo/start': typeof DemoStartRoute
   '/demo/testing': typeof DemoTestingRoute
@@ -398,6 +479,9 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/admin': typeof AdminRoute
+  '/agent-organization': typeof AgentOrganizationRoute
+  '/agent-reports': typeof AgentReportsRoute
+  '/bank-certificate': typeof BankCertificateRoute
   '/chats': typeof ChatsRoute
   '/codes': typeof CodesRoute
   '/compliance-tools': typeof ComplianceToolsRoute
@@ -410,14 +494,19 @@ export interface FileRoutesById {
   '/login': typeof LoginRoute
   '/mcp': typeof McpRoute
   '/organizations': typeof OrganizationsRoute
+  '/payment-orders': typeof PaymentOrdersRoute
   '/process-roles': typeof ProcessRolesRoute
   '/profile': typeof ProfileRoute
+  '/provider-organizations': typeof ProviderOrganizationsRoute
   '/providers': typeof ProvidersRoute
   '/start': typeof StartRoute
   '/testing': typeof TestingRoute
   '/.mcp/list-tools': typeof Char91DotmcpChar93ListToolsRoute
   '/.well-known/oauth-protected-resource': typeof Char91DotwellKnownChar93OauthProtectedResourceRoute
   '/demo/admin': typeof DemoAdminRoute
+  '/demo/agent-organization': typeof DemoAgentOrganizationRoute
+  '/demo/agent-reports': typeof DemoAgentReportsRoute
+  '/demo/bank-certificate': typeof DemoBankCertificateRoute
   '/demo/chats': typeof DemoChatsRoute
   '/demo/codes': typeof DemoCodesRoute
   '/demo/compliance-tools': typeof DemoComplianceToolsRoute
@@ -429,8 +518,10 @@ export interface FileRoutesById {
   '/demo/feature-flags': typeof DemoFeatureFlagsRoute
   '/demo/login': typeof DemoLoginRoute
   '/demo/organizations': typeof DemoOrganizationsRoute
+  '/demo/payment-orders': typeof DemoPaymentOrdersRoute
   '/demo/process-roles': typeof DemoProcessRolesRoute
   '/demo/profile': typeof DemoProfileRoute
+  '/demo/provider-organizations': typeof DemoProviderOrganizationsRoute
   '/demo/providers': typeof DemoProvidersRoute
   '/demo/start': typeof DemoStartRoute
   '/demo/testing': typeof DemoTestingRoute
@@ -449,6 +540,9 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/admin'
+    | '/agent-organization'
+    | '/agent-reports'
+    | '/bank-certificate'
     | '/chats'
     | '/codes'
     | '/compliance-tools'
@@ -461,14 +555,19 @@ export interface FileRouteTypes {
     | '/login'
     | '/mcp'
     | '/organizations'
+    | '/payment-orders'
     | '/process-roles'
     | '/profile'
+    | '/provider-organizations'
     | '/providers'
     | '/start'
     | '/testing'
     | '/.mcp/list-tools'
     | '/.well-known/oauth-protected-resource'
     | '/demo/admin'
+    | '/demo/agent-organization'
+    | '/demo/agent-reports'
+    | '/demo/bank-certificate'
     | '/demo/chats'
     | '/demo/codes'
     | '/demo/compliance-tools'
@@ -480,8 +579,10 @@ export interface FileRouteTypes {
     | '/demo/feature-flags'
     | '/demo/login'
     | '/demo/organizations'
+    | '/demo/payment-orders'
     | '/demo/process-roles'
     | '/demo/profile'
+    | '/demo/provider-organizations'
     | '/demo/providers'
     | '/demo/start'
     | '/demo/testing'
@@ -498,6 +599,9 @@ export interface FileRouteTypes {
   to:
     | '/'
     | '/admin'
+    | '/agent-organization'
+    | '/agent-reports'
+    | '/bank-certificate'
     | '/chats'
     | '/codes'
     | '/compliance-tools'
@@ -510,14 +614,19 @@ export interface FileRouteTypes {
     | '/login'
     | '/mcp'
     | '/organizations'
+    | '/payment-orders'
     | '/process-roles'
     | '/profile'
+    | '/provider-organizations'
     | '/providers'
     | '/start'
     | '/testing'
     | '/.mcp/list-tools'
     | '/.well-known/oauth-protected-resource'
     | '/demo/admin'
+    | '/demo/agent-organization'
+    | '/demo/agent-reports'
+    | '/demo/bank-certificate'
     | '/demo/chats'
     | '/demo/codes'
     | '/demo/compliance-tools'
@@ -529,8 +638,10 @@ export interface FileRouteTypes {
     | '/demo/feature-flags'
     | '/demo/login'
     | '/demo/organizations'
+    | '/demo/payment-orders'
     | '/demo/process-roles'
     | '/demo/profile'
+    | '/demo/provider-organizations'
     | '/demo/providers'
     | '/demo/start'
     | '/demo/testing'
@@ -547,6 +658,9 @@ export interface FileRouteTypes {
     | '__root__'
     | '/'
     | '/admin'
+    | '/agent-organization'
+    | '/agent-reports'
+    | '/bank-certificate'
     | '/chats'
     | '/codes'
     | '/compliance-tools'
@@ -559,14 +673,19 @@ export interface FileRouteTypes {
     | '/login'
     | '/mcp'
     | '/organizations'
+    | '/payment-orders'
     | '/process-roles'
     | '/profile'
+    | '/provider-organizations'
     | '/providers'
     | '/start'
     | '/testing'
     | '/.mcp/list-tools'
     | '/.well-known/oauth-protected-resource'
     | '/demo/admin'
+    | '/demo/agent-organization'
+    | '/demo/agent-reports'
+    | '/demo/bank-certificate'
     | '/demo/chats'
     | '/demo/codes'
     | '/demo/compliance-tools'
@@ -578,8 +697,10 @@ export interface FileRouteTypes {
     | '/demo/feature-flags'
     | '/demo/login'
     | '/demo/organizations'
+    | '/demo/payment-orders'
     | '/demo/process-roles'
     | '/demo/profile'
+    | '/demo/provider-organizations'
     | '/demo/providers'
     | '/demo/start'
     | '/demo/testing'
@@ -597,6 +718,9 @@ export interface FileRouteTypes {
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AdminRoute: typeof AdminRoute
+  AgentOrganizationRoute: typeof AgentOrganizationRoute
+  AgentReportsRoute: typeof AgentReportsRoute
+  BankCertificateRoute: typeof BankCertificateRoute
   ChatsRoute: typeof ChatsRoute
   CodesRoute: typeof CodesRoute
   ComplianceToolsRoute: typeof ComplianceToolsRoute
@@ -609,14 +733,19 @@ export interface RootRouteChildren {
   LoginRoute: typeof LoginRoute
   McpRoute: typeof McpRoute
   OrganizationsRoute: typeof OrganizationsRoute
+  PaymentOrdersRoute: typeof PaymentOrdersRoute
   ProcessRolesRoute: typeof ProcessRolesRoute
   ProfileRoute: typeof ProfileRoute
+  ProviderOrganizationsRoute: typeof ProviderOrganizationsRoute
   ProvidersRoute: typeof ProvidersRoute
   StartRoute: typeof StartRoute
   TestingRoute: typeof TestingRoute
   Char91DotmcpChar93ListToolsRoute: typeof Char91DotmcpChar93ListToolsRoute
   Char91DotwellKnownChar93OauthProtectedResourceRoute: typeof Char91DotwellKnownChar93OauthProtectedResourceRoute
   DemoAdminRoute: typeof DemoAdminRoute
+  DemoAgentOrganizationRoute: typeof DemoAgentOrganizationRoute
+  DemoAgentReportsRoute: typeof DemoAgentReportsRoute
+  DemoBankCertificateRoute: typeof DemoBankCertificateRoute
   DemoChatsRoute: typeof DemoChatsRoute
   DemoCodesRoute: typeof DemoCodesRoute
   DemoComplianceToolsRoute: typeof DemoComplianceToolsRoute
@@ -628,8 +757,10 @@ export interface RootRouteChildren {
   DemoFeatureFlagsRoute: typeof DemoFeatureFlagsRoute
   DemoLoginRoute: typeof DemoLoginRoute
   DemoOrganizationsRoute: typeof DemoOrganizationsRoute
+  DemoPaymentOrdersRoute: typeof DemoPaymentOrdersRoute
   DemoProcessRolesRoute: typeof DemoProcessRolesRoute
   DemoProfileRoute: typeof DemoProfileRoute
+  DemoProviderOrganizationsRoute: typeof DemoProviderOrganizationsRoute
   DemoProvidersRoute: typeof DemoProvidersRoute
   DemoStartRoute: typeof DemoStartRoute
   DemoTestingRoute: typeof DemoTestingRoute
@@ -658,6 +789,27 @@ declare module '@tanstack/react-router' {
       path: '/admin'
       fullPath: '/admin'
       preLoaderRoute: typeof AdminRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/agent-organization': {
+      id: '/agent-organization'
+      path: '/agent-organization'
+      fullPath: '/agent-organization'
+      preLoaderRoute: typeof AgentOrganizationRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/agent-reports': {
+      id: '/agent-reports'
+      path: '/agent-reports'
+      fullPath: '/agent-reports'
+      preLoaderRoute: typeof AgentReportsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/bank-certificate': {
+      id: '/bank-certificate'
+      path: '/bank-certificate'
+      fullPath: '/bank-certificate'
+      preLoaderRoute: typeof BankCertificateRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/chats': {
@@ -744,6 +896,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof OrganizationsRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/payment-orders': {
+      id: '/payment-orders'
+      path: '/payment-orders'
+      fullPath: '/payment-orders'
+      preLoaderRoute: typeof PaymentOrdersRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/process-roles': {
       id: '/process-roles'
       path: '/process-roles'
@@ -756,6 +915,13 @@ declare module '@tanstack/react-router' {
       path: '/profile'
       fullPath: '/profile'
       preLoaderRoute: typeof ProfileRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/provider-organizations': {
+      id: '/provider-organizations'
+      path: '/provider-organizations'
+      fullPath: '/provider-organizations'
+      preLoaderRoute: typeof ProviderOrganizationsRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/providers': {
@@ -805,6 +971,27 @@ declare module '@tanstack/react-router' {
       path: '/demo/admin'
       fullPath: '/demo/admin'
       preLoaderRoute: typeof DemoAdminRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/demo/agent-organization': {
+      id: '/demo/agent-organization'
+      path: '/demo/agent-organization'
+      fullPath: '/demo/agent-organization'
+      preLoaderRoute: typeof DemoAgentOrganizationRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/demo/agent-reports': {
+      id: '/demo/agent-reports'
+      path: '/demo/agent-reports'
+      fullPath: '/demo/agent-reports'
+      preLoaderRoute: typeof DemoAgentReportsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/demo/bank-certificate': {
+      id: '/demo/bank-certificate'
+      path: '/demo/bank-certificate'
+      fullPath: '/demo/bank-certificate'
+      preLoaderRoute: typeof DemoBankCertificateRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/demo/chats': {
@@ -884,6 +1071,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DemoOrganizationsRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/demo/payment-orders': {
+      id: '/demo/payment-orders'
+      path: '/demo/payment-orders'
+      fullPath: '/demo/payment-orders'
+      preLoaderRoute: typeof DemoPaymentOrdersRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/demo/process-roles': {
       id: '/demo/process-roles'
       path: '/demo/process-roles'
@@ -896,6 +1090,13 @@ declare module '@tanstack/react-router' {
       path: '/demo/profile'
       fullPath: '/demo/profile'
       preLoaderRoute: typeof DemoProfileRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/demo/provider-organizations': {
+      id: '/demo/provider-organizations'
+      path: '/demo/provider-organizations'
+      fullPath: '/demo/provider-organizations'
+      preLoaderRoute: typeof DemoProviderOrganizationsRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/demo/providers': {
@@ -981,6 +1182,9 @@ declare module '@tanstack/react-router' {
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AdminRoute: AdminRoute,
+  AgentOrganizationRoute: AgentOrganizationRoute,
+  AgentReportsRoute: AgentReportsRoute,
+  BankCertificateRoute: BankCertificateRoute,
   ChatsRoute: ChatsRoute,
   CodesRoute: CodesRoute,
   ComplianceToolsRoute: ComplianceToolsRoute,
@@ -993,8 +1197,10 @@ const rootRouteChildren: RootRouteChildren = {
   LoginRoute: LoginRoute,
   McpRoute: McpRoute,
   OrganizationsRoute: OrganizationsRoute,
+  PaymentOrdersRoute: PaymentOrdersRoute,
   ProcessRolesRoute: ProcessRolesRoute,
   ProfileRoute: ProfileRoute,
+  ProviderOrganizationsRoute: ProviderOrganizationsRoute,
   ProvidersRoute: ProvidersRoute,
   StartRoute: StartRoute,
   TestingRoute: TestingRoute,
@@ -1002,6 +1208,9 @@ const rootRouteChildren: RootRouteChildren = {
   Char91DotwellKnownChar93OauthProtectedResourceRoute:
     Char91DotwellKnownChar93OauthProtectedResourceRoute,
   DemoAdminRoute: DemoAdminRoute,
+  DemoAgentOrganizationRoute: DemoAgentOrganizationRoute,
+  DemoAgentReportsRoute: DemoAgentReportsRoute,
+  DemoBankCertificateRoute: DemoBankCertificateRoute,
   DemoChatsRoute: DemoChatsRoute,
   DemoCodesRoute: DemoCodesRoute,
   DemoComplianceToolsRoute: DemoComplianceToolsRoute,
@@ -1013,8 +1222,10 @@ const rootRouteChildren: RootRouteChildren = {
   DemoFeatureFlagsRoute: DemoFeatureFlagsRoute,
   DemoLoginRoute: DemoLoginRoute,
   DemoOrganizationsRoute: DemoOrganizationsRoute,
+  DemoPaymentOrdersRoute: DemoPaymentOrdersRoute,
   DemoProcessRolesRoute: DemoProcessRolesRoute,
   DemoProfileRoute: DemoProfileRoute,
+  DemoProviderOrganizationsRoute: DemoProviderOrganizationsRoute,
   DemoProvidersRoute: DemoProvidersRoute,
   DemoStartRoute: DemoStartRoute,
   DemoTestingRoute: DemoTestingRoute,

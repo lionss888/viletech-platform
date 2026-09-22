@@ -110,10 +110,11 @@ func (s *FormPaymentService) StartExtraction(ctx context.Context, principal auth
 		return formpayment.Form{}, apperrors.New(apperrors.ErrCodeValidation, "extraction only on draft or corrections")
 	}
 	form.UnpackDocsJSON()
-	if err := s.enqueue(ctx, form, events.TypeOCRRequested, map[string]any{
+	payload := BuildOCRPayload(ctx, s.store, s.blobs, form, map[string]any{
 		"status": st,
 		"kind":   "manual_restart",
-	}); err != nil {
+	})
+	if err := s.enqueue(ctx, form, events.TypeOCRRequested, payload); err != nil {
 		return formpayment.Form{}, err
 	}
 	_ = s.store.AppendHistory(ctx, formpayment.ComplianceHistoryEntry{

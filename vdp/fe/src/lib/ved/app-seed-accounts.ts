@@ -34,6 +34,7 @@ export const APP_SEED_ACCOUNTS: AppSeedAccount[] = [
     password: "manager",
     personName: "Manager Seed",
     accountId: "22222222-2222-2222-2222-222222222222",
+    organizationId: "bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb",
   },
   {
     role: "treasurer",

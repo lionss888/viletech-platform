@@ -6,6 +6,7 @@ export type CoreOrganization = {
   inn?: string;
   legal_address?: string;
   status?: string;
+  type?: "client" | "provider" | string;
   blocked?: boolean;
   is_active?: boolean;
   fields_frozen?: boolean;

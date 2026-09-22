@@ -244,13 +244,18 @@ export function ExtractionReviewPanel({
       <div className="flex flex-wrap items-baseline justify-between gap-2">
         {!embedded ? <h2 className="text-sm font-semibold text-foreground">Распознанные данные</h2> : null}
         <p className="text-xs text-muted-foreground">
-          {draft.meta.engine_id ?? "engine"} · проверьте позиции перед подтверждением
+          {draft.meta.engine_id ?? "engine"}
+          {draft.meta.engine_id === "docling" ? " · пилот Docling" : ""} · проверьте позиции перед
+          подтверждением
         </p>
       </div>
       {!confirmed ? controlBar : null}
       <p className="text-xs text-muted-foreground">
         Поле без правки помечено «распознано». Если значение изменили — «изменено». Цвет строки с низкой уверенностью
         это не заменяет.
+        {draft.meta.engine_id === "docling"
+          ? " Пустые поля на пилоте Docling — норма: дозаполните вручную перед подтверждением."
+          : ""}
       </p>
       {!canConfirm && !confirmed ? (
         <p className="text-xs text-muted-foreground">

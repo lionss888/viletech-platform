@@ -41,15 +41,20 @@ func main() {
 		os.Exit(1)
 	}
 	timeout := time.Duration(cfg.ExternalTimeout) * time.Millisecond
+	ocrTimeout := time.Duration(cfg.OCRTimeout) * time.Millisecond
+	if ocrTimeout <= 0 {
+		ocrTimeout = 120 * time.Second
+	}
 	plugins := registry.New()
 	_ = plugins.Register(telegram.New(timeout, cfg.MaxRetries, log))
 	_ = plugins.Register(onec.New(timeout, cfg.MaxRetries, log).WithCore(cfg.CoreURL, cfg.SharedSecret))
 	_ = plugins.Register(diadoc.New(timeout, cfg.MaxRetries, log).WithCore(cfg.CoreURL, cfg.SharedSecret))
-	_ = plugins.Register(ocr.New(timeout, cfg.MaxRetries, log).WithCore(cfg.CoreURL, cfg.SharedSecret))
+	_ = plugins.Register(ocr.New(ocrTimeout, cfg.MaxRetries, log).WithCore(cfg.CoreURL, cfg.SharedSecret))
 	_ = plugins.Register(partner.New(timeout, cfg.MaxRetries, log))
 	_ = plugins.Register(docs.New(timeout, cfg.MaxRetries, log))
 	_ = plugins.Register(mail.New(timeout, cfg.MaxRetries, log))
 	_ = plugins.Register(sms.New(timeout, cfg.MaxRetries, log))
+	log.Info("hub timeouts", "external_ms", cfg.ExternalTimeout, "ocr_ms", cfg.OCRTimeout)
 	dispatch := dispatcher.New(inboxStore, plugins, log)
 	server := httpapi.New(cfg, dispatch, plugins)
 	addr := cfg.Host + ":" + cfg.Port

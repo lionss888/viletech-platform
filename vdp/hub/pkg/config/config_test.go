@@ -97,6 +97,24 @@ func TestValidateProduction(t *testing.T) {
 	}
 }
 
+// TestOCRTimeoutDefaultIsIndependentOfExternalTimeout keeps OCR slow-path budget at 120s.
+func TestOCRTimeoutDefaultIsIndependentOfExternalTimeout(t *testing.T) {
+	t.Setenv("EXTERNAL_TIMEOUT_MS", "3000")
+	t.Setenv("OCR_TIMEOUT_MS", "")
+	cfg := Load()
+	if cfg.ExternalTimeout != 3000 {
+		t.Fatalf("ExternalTimeout=%d", cfg.ExternalTimeout)
+	}
+	if cfg.OCRTimeout != 120000 {
+		t.Fatalf("OCRTimeout default want 120000 got %d", cfg.OCRTimeout)
+	}
+	t.Setenv("OCR_TIMEOUT_MS", "90000")
+	cfg2 := Load()
+	if cfg2.OCRTimeout != 90000 {
+		t.Fatalf("OCRTimeout override want 90000 got %d", cfg2.OCRTimeout)
+	}
+}
+
 // TestIsLocalEnvironment verifies environment classification.
 func TestIsLocalEnvironment(t *testing.T) {
 	localEnvs := []string{"", "development", "dev", "DEV", "local", "LOCAL", "test", "TEST", "ci", "CI"}

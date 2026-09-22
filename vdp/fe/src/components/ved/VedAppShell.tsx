@@ -12,7 +12,15 @@ import { RowNavContextMenu } from "@/components/ved/RowNavContextMenu";
 import { useAuth } from "@/lib/auth/session";
 import { BRAND_MARK, BRAND_NAME } from "@/lib/brand";
 import { effectiveActionsFor, effectiveActionsFormCtx } from "@/lib/ved/effective-actions";
-import { filterNav, MAIN_NAV, REFERENCE_NAV } from "@/lib/ved/nav-config";
+import {
+  filterNav,
+  filterNavGroups,
+  filterReferenceFlat,
+  flattenReferenceNav,
+  MAIN_NAV,
+  REFERENCE_GROUPS,
+  REFERENCE_NAV,
+} from "@/lib/ved/nav-config";
 import { readRefsOpen, writeRefsOpen } from "@/lib/ved/nav-refs-open";
 import { isFeatureDisabled, useFeatureFlags } from "@/lib/ved/feature-flags";
 import { usePlatformBasePath, usePlatformMode } from "@/lib/ved/platform-mode";
@@ -24,21 +32,7 @@ import { cn } from "@/lib/utils";
 import type { VedRole } from "@/lib/ved/types";
 
 
-type AppRoute =
-  | "/dashboard"
-  | "/demo/dashboard"
-  | "/forms"
-  | "/demo/forms"
-  | "/forms/new"
-  | "/demo/forms/new"
-  | "/documents"
-  | "/demo/documents"
-  | "/counterparties"
-  | "/demo/counterparties"
-  | "/profile"
-  | "/demo/profile"
-  | "/chats"
-  | "/demo/chats";
+type AppRoute = string;
 
 export function VedAppShell({ children, title, subtitle }: { children: ReactNode; title: string; subtitle?: string }) {
   const mode = usePlatformMode();
@@ -54,6 +48,7 @@ export function VedAppShell({ children, title, subtitle }: { children: ReactNode
   const email = isDemo ? store.session?.email : auth.email;
 
   const [refsOpen, setRefsOpenState] = useState(() => readRefsOpen(false));
+  const [openNavGroups, setOpenNavGroups] = useState<Record<string, boolean>>({});
   const [supportOpen, setSupportOpen] = useState(false);
   const processRoles = useProcessRolesRows();
   const flags = useFeatureFlags();
@@ -65,6 +60,10 @@ export function VedAppShell({ children, title, subtitle }: { children: ReactNode
       return next;
     });
   };
+
+  function toggleNavGroup(groupId: string) {
+    setOpenNavGroups((prev) => ({ ...prev, [groupId]: !prev[groupId] }));
+  }
 
   if (!isDemo && !auth.ready) {
     return (
@@ -88,7 +87,15 @@ export function VedAppShell({ children, title, subtitle }: { children: ReactNode
   const mainNav = filterNav(MAIN_NAV, role).filter(
     (item) => item.segment !== "/forms/new" && !isFeatureDisabled(flags, item.segment, role),
   );
-  const refs = filterNav(REFERENCE_NAV, role).filter((item) => !isFeatureDisabled(flags, item.segment, role));
+  const refGroups = filterNavGroups(REFERENCE_GROUPS, role)
+    .map((group) => ({
+      ...group,
+      items: group.items.filter((item) => !isFeatureDisabled(flags, item.segment, role)),
+    }))
+    .filter((group) => group.items.length > 0);
+  const refFlat = filterReferenceFlat(role).filter((item) => !isFeatureDisabled(flags, item.segment, role));
+  const refs = flattenReferenceNav(role).filter((item) => !isFeatureDisabled(flags, item.segment, role));
+  const hasRefs = refGroups.length > 0 || refFlat.length > 0;
 
   // Прямой заход по ссылке в выключенный раздел: показываем заглушку вместо контента.
   const relPath = isDemo && pathname.startsWith("/demo") ? pathname.slice("/demo".length) || "/" : pathname;
@@ -105,8 +112,6 @@ export function VedAppShell({ children, title, subtitle }: { children: ReactNode
 
   const dashTo = `${base}/dashboard` as AppRoute;
   const formsNewTo = `${base}/forms/new` as AppRoute;
-  const documentsTo = `${base}/documents` as AppRoute;
-  const counterpartiesTo = `${base}/counterparties` as AppRoute;
 
   const footerText = isDemo
     ? `${BRAND_NAME} · сделок в системе: ${store.forms.length}`
@@ -156,22 +161,60 @@ export function VedAppShell({ children, title, subtitle }: { children: ReactNode
             );
           })}
 
-          {refs.length > 0 && (
+          {hasRefs && (
             <div className="mt-2">
               <button
                 type="button"
                 onClick={() => setRefsOpen((v) => !v)}
                 className={cn("flex w-full items-center justify-between", linkCls(false))}
+                data-testid="nav-refs-toggle"
               >
                 Справочники
                 <span className="font-mono text-[11px]">{refsOpen ? "−" : "+"}</span>
               </button>
               {refsOpen && (
                 <div className="mt-1 ml-3 flex flex-col gap-1 border-l border-border pl-2">
-                  {refs.map((item) => {
+                  {refGroups.map((group) => {
+                    const groupOpen = Boolean(openNavGroups[group.id]);
+                    return (
+                      <div key={group.id} className="flex flex-col gap-1">
+                        <button
+                          type="button"
+                          onClick={() => toggleNavGroup(group.id)}
+                          className={cn("flex w-full items-center justify-between", linkCls(false), "text-[13px]")}
+                          data-testid={`nav-group-${group.id}`}
+                        >
+                          {group.label}
+                          <span className="font-mono text-[11px]">{groupOpen ? "−" : "+"}</span>
+                        </button>
+                        {groupOpen && (
+                          <div className="ml-2 flex flex-col gap-1 border-l border-border pl-2">
+                            {group.items.map((item) => {
+                              const to = `${base}${item.segment}` as AppRoute;
+                              return (
+                                <Link
+                                  key={`${group.id}-${item.segment}`}
+                                  to={to}
+                                  className={cn(linkCls(pathname === to), "text-[13px]")}
+                                  data-testid={`nav-leaf-${item.segment.replace(/^\//, "")}`}
+                                >
+                                  {item.label}
+                                </Link>
+                              );
+                            })}
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
+                  {refFlat.map((item) => {
                     const to = `${base}${item.segment}` as AppRoute;
                     return (
-                      <Link key={item.segment} to={to} className={cn(linkCls(pathname === to), "text-[13px]")}>
+                      <Link
+                        key={`flat-${item.segment}-${item.label}`}
+                        to={to}
+                        className={cn(linkCls(pathname === to), "text-[13px]")}
+                      >
                         {item.label}
                       </Link>
                     );

@@ -19,3 +19,14 @@ DB_BIND=127.0.0.1
 DOCS_URL=
 MAIL_URL=
 BANK_WEBHOOK_URL=
+
+# Docling OCR pilot (PRIMARY). Yandex keys stay unset on this pilot.
+EXTRACTION_PRIMARY=docling
+EXTRACTION_FALLBACK=fixture
+EXTRACTION_DOCLING_URL=http://docling:5001
+OCR_TIMEOUT_MS=120000
+# DOCLING_IMAGE=quay.io/docling-project/docling-serve-cpu:latest
+
+# On-host verify after Images/Deploy: curl extraction /health expects primary equals docling;
+# then one upload via UI or API. Workstation SSH to alpha may be publickey denied —
+# use GitHub Deploy with refreshed DEPLOY_SSH_KEY; local DoD still closes without SSH.

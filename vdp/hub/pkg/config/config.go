@@ -17,6 +17,7 @@ type Config struct {
 	SharedSecret    string
 	CoreURL         string
 	ExternalTimeout int
+	OCRTimeout      int
 	MaxRetries      int
 }
 
@@ -31,6 +32,7 @@ func Load() *Config {
 		SharedSecret:    getEnv("HUB_SHARED_SECRET", "vdp-s2s-dev-secret"),
 		CoreURL:         getEnv("CORE_URL", "http://localhost:8080"),
 		ExternalTimeout: getEnvAsInt("EXTERNAL_TIMEOUT_MS", 3000),
+		OCRTimeout:      getEnvAsInt("OCR_TIMEOUT_MS", 120000),
 		MaxRetries:      getEnvAsInt("EXTERNAL_MAX_RETRIES", 3),
 	}
 }

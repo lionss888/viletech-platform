@@ -11,6 +11,7 @@ import (
 	"github.com/viletech/vdp/core/internal/domain/formpayment"
 	"github.com/viletech/vdp/core/internal/outbox"
 	"github.com/viletech/vdp/core/internal/repository"
+	"github.com/viletech/vdp/core/internal/storage"
 	apperrors "github.com/viletech/vdp/core/pkg/errors"
 	"github.com/viletech/vdp/core/pkg/logger"
 	"github.com/viletech/vdp/shared/events"
@@ -29,11 +30,18 @@ type FormPaymentService struct {
 	extractionURL   string
 	hubSharedSecret string
 	managerOps      *ManagerOpsPublisher
+	blobs           storage.BlobStore
 }
 
 // NewFormPaymentService wires store, outbox, and default process-role service.
 func NewFormPaymentService(store repository.Store, box outbox.Store, newID IDFunc) *FormPaymentService {
 	return &FormPaymentService{store: store, box: box, newID: newID, roles: NewProcessRoleService(store)}
+}
+
+// WithBlobStore enables OCR payloads that include file bytes for extraction.
+func (s *FormPaymentService) WithBlobStore(blobs storage.BlobStore) *FormPaymentService {
+	s.blobs = blobs
+	return s
 }
 
 func (s *FormPaymentService) WithEventBus(bus *FormEventBus) *FormPaymentService {
