@@ -480,13 +480,17 @@ func (s *CatalogService) AttachFileToForm(ctx context.Context, principal authz.P
 		return formpayment.Form{}, err
 	}
 	if firstAttach && !form.NoDocuments && s.box != nil {
+		payload := BuildOCRPayload(ctx, s.store, s.Blobs(), form, map[string]any{
+			"status": string(form.Status),
+			"kind":   "first_attach",
+		})
 		_ = s.box.Enqueue(ctx, outbox.Event{
 			ID:            s.newID(),
 			AggregateID:   form.ID,
 			AggregateType: events.AggregateFormPayment,
 			EventType:     events.TypeOCRRequested,
 			FormPaymentID: form.ID,
-			Payload:       map[string]any{"status": string(form.Status), "kind": "first_attach"},
+			Payload:       payload,
 			Status:        "pending",
 			MaxRetries:    3,
 			CreatedAt:     time.Now().UTC(),

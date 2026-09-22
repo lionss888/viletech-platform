@@ -18,6 +18,7 @@ func main() {
 		Fallback:       env("EXTRACTION_FALLBACK", "fixture"),
 		ShadowURL:      os.Getenv("EXTRACTION_SHADOW_URL"),
 		GoldDir:        env("EXTRACTION_GOLD_DIR", "/var/vdp/extraction-gold"),
+		DoclingURL:     os.Getenv("EXTRACTION_DOCLING_URL"),
 		YandexAPIKey:   os.Getenv("YANDEX_API_KEY"),
 		YandexFolderID: os.Getenv("YANDEX_FOLDER_ID"),
 		YandexModelURI: os.Getenv("YANDEX_MODEL_URI"),
@@ -26,6 +27,10 @@ func main() {
 		OllamaModel:    env("OLLAMA_MODEL", "qwen2.5:3b"),
 		OwnFewShotK:    service.ParseFewShotK(os.Getenv("OWN_FEW_SHOT_K")),
 		Log:            log,
+	}
+	if cfg.Primary == "docling" && cfg.DoclingURL == "" {
+		log.Warn("EXTRACTION_DOCLING_URL missing; forcing fixture primary")
+		cfg.Primary = "fixture"
 	}
 	if cfg.Primary == "yandex" && (cfg.YandexAPIKey == "" || cfg.YandexFolderID == "") {
 		log.Warn("YANDEX_API_KEY or YANDEX_FOLDER_ID missing; forcing fixture primary")
@@ -39,9 +44,10 @@ func main() {
 	mux := http.NewServeMux()
 	mux.HandleFunc("GET /health", func(w http.ResponseWriter, _ *http.Request) {
 		writeJSON(w, http.StatusOK, map[string]any{
-			"status":          "ok",
-			"primary":         cfg.Primary,
+			"status":            "ok",
+			"primary":           cfg.Primary,
 			"ollama_configured": cfg.OllamaBaseURL != "",
+			"docling_url_set":   cfg.DoclingURL != "",
 		})
 	})
 	mux.HandleFunc("GET /metrics", func(w http.ResponseWriter, _ *http.Request) {

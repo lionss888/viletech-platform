@@ -34,7 +34,7 @@ func TestCreateDefersOCRUntilFirstAttach(t *testing.T) {
 		}
 	}
 
-	meta, err := catalog.UploadFile(ctx, user, form.ID, "invoice.pdf", "application/pdf", "%PDF-1.4")
+	meta, err := catalog.UploadFileBytes(ctx, user, form.ID, "application/pdf", []byte("%PDF-1.4"))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -46,13 +46,16 @@ func TestCreateDefersOCRUntilFirstAttach(t *testing.T) {
 	for _, e := range pending {
 		if e.EventType == events.TypeOCRRequested {
 			ocrCount++
+			if e.Payload["content_base64"] == nil || e.Payload["content_base64"] == "" {
+				t.Fatal("first attach OCR payload must include content_base64")
+			}
 		}
 	}
 	if ocrCount != 1 {
 		t.Fatalf("want 1 OCR after first attach, got %d", ocrCount)
 	}
 
-	meta2, err := catalog.UploadFile(ctx, user, form.ID, "contract.pdf", "application/pdf", "%PDF-1.4")
+	meta2, err := catalog.UploadFileBytes(ctx, user, form.ID, "application/pdf", []byte("%PDF-1.4-b"))
 	if err != nil {
 		t.Fatal(err)
 	}

@@ -72,6 +72,8 @@ export type Organization = {
   inn: string;
   legalAddress: string;
   status: "approved" | "not_approved" | "waiting_verification" | "blocked";
+  /** Domain org type — provider orgs are not payment-agent catalog rows. */
+  type?: "client" | "provider";
   fieldsFrozen?: boolean;
   businessForm?: string;
   phone?: string;

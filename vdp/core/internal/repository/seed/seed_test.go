@@ -27,6 +27,20 @@ func TestDevSeedsAccountsAndOrgsOnly(t *testing.T) {
 	if org.Status != domain.OrgApproved || !org.IsActive {
 		t.Fatalf("pilot org want approved+active, got status=%s active=%v", org.Status, org.IsActive)
 	}
+	manager, err := store.AccountByID(context.Background(), seed.ManagerID)
+	if err != nil {
+		t.Fatalf("manager: %v", err)
+	}
+	if manager.OrganizationID != seed.ManagerOrgID {
+		t.Fatalf("manager organization_id=%q want %q", manager.OrganizationID, seed.ManagerOrgID)
+	}
+	managerOrg, err := store.OrganizationByID(context.Background(), seed.ManagerOrgID)
+	if err != nil {
+		t.Fatalf("manager org: %v", err)
+	}
+	if managerOrg.Name != "ООО Агент ВЭД" || managerOrg.INN != "7700000002" {
+		t.Fatalf("manager org name/inn = %q/%q", managerOrg.Name, managerOrg.INN)
+	}
 	cps, err := store.ListCounterparties(context.Background())
 	if err != nil {
 		t.Fatalf("counterparties: %v", err)

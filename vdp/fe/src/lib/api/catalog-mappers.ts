@@ -24,12 +24,14 @@ export function mapOrgStatus(raw: string | undefined, blocked?: boolean): Organi
 
 /** Maps core DTO to cabinet coreorganization shape. */
 export function mapCoreOrganization(org: CoreOrganization): Organization {
+  const orgType = org.type === "provider" || org.type === "client" ? org.type : undefined;
   return {
     id: org.id,
     name: org.name,
     inn: org.inn ?? "—",
     legalAddress: org.legal_address ?? "—",
     status: mapOrgStatus(org.status, org.blocked),
+    type: orgType,
     fieldsFrozen: org.fields_frozen,
     businessForm: org.business_form,
     phone: org.phone,

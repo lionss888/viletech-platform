@@ -1,37 +1,11 @@
 import { useNavigate } from "@tanstack/react-router";
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 
-import { filterNav, REFERENCE_NAV } from "@/lib/ved/nav-config";
+import { flattenReferenceNav } from "@/lib/ved/nav-config";
 import { writeRefsOpen } from "@/lib/ved/nav-refs-open";
 import type { VedRole } from "@/lib/ved/types";
 
-type AppRoute =
-  | "/chats"
-  | "/demo/chats"
-  | "/profile"
-  | "/demo/profile"
-  | "/documents"
-  | "/demo/documents"
-  | "/counterparties"
-  | "/demo/counterparties"
-  | "/organizations"
-  | "/demo/organizations"
-  | "/compliance-tools"
-  | "/demo/compliance-tools"
-  | "/admin"
-  | "/demo/admin"
-  | "/process-roles"
-  | "/demo/process-roles"
-  | "/providers"
-  | "/demo/providers"
-  | "/codes"
-  | "/demo/codes"
-  | "/currencies"
-  | "/demo/currencies"
-  | "/countries"
-  | "/demo/countries"
-  | "/testing"
-  | "/demo/testing";
+type AppRoute = string;
 
 type MenuPoint = { x: number; y: number };
 
@@ -55,7 +29,7 @@ export function RowNavContextMenu({
   const rootRef = useRef<HTMLDivElement | null>(null);
   const menuRef = useRef<HTMLDivElement | null>(null);
   const [point, setPoint] = useState<MenuPoint | null>(null);
-  const refs = useMemo(() => filterNav(REFERENCE_NAV, role), [role]);
+  const refs = useMemo(() => flattenReferenceNav(role), [role]);
 
   const close = useCallback(() => setPoint(null), []);
 

@@ -22,6 +22,7 @@ type Config struct {
 	Fallback         string
 	ShadowURL        string
 	GoldDir          string
+	DoclingURL       string
 	YandexAPIKey     string
 	YandexFolderID   string
 	YandexModelURI   string
@@ -78,6 +79,12 @@ func New(cfg Config) *Service {
 
 func pickPrimary(cfg Config, store *gold.Store, log *slog.Logger) engine.Primary {
 	switch cfg.Primary {
+	case "docling":
+		if cfg.DoclingURL == "" {
+			log.Warn("EXTRACTION_PRIMARY=docling without EXTRACTION_DOCLING_URL; forcing fixture")
+			return engine.FixturePrimary{}
+		}
+		return engine.NewDocling(cfg.DoclingURL)
 	case "yandex":
 		if cfg.YandexAPIKey == "" || cfg.YandexFolderID == "" {
 			return engine.FixturePrimary{}
@@ -133,7 +140,7 @@ func (s *Service) Recognize(ctx context.Context, req RecognizeRequest) (Recogniz
 
 	result, err := s.primary.Extract(ctx, in)
 	mode := s.primary.Name()
-	ml := mode == "yandex" || mode == "own"
+	ml := mode == "yandex" || mode == "own" || mode == "docling"
 	if err != nil && s.fallback != nil && s.fallback.Name() != s.primary.Name() {
 		s.log.Warn("primary failed, fallback", "err", err, "primary", s.primary.Name())
 		metrics.Default.PrimaryFail.Add(1)

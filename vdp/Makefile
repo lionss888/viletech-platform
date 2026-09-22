@@ -38,7 +38,7 @@ test:
 	cd manager-ops && go test ./...
 	cd release-gate && go test ./...
 
-.PHONY: extraction-export-gold extraction-train-eval extraction-yandex-smoke extraction-ollama-ensure extraction-eval-own manager-ops-export
+.PHONY: extraction-export-gold extraction-train-eval extraction-yandex-smoke extraction-docling-smoke extraction-ollama-ensure extraction-eval-own manager-ops-export
 extraction-export-gold:
 	cd extraction && go run ./cmd/export-gold -gold-dir="$${EXTRACTION_GOLD_DIR:-./.gold}" -out="$${EXTRACTION_EXPORT_DIR:-./.export}"
 
@@ -54,6 +54,10 @@ extraction-eval-own:
 extraction-yandex-smoke:
 	@chmod +x scripts/extraction-yandex-smoke.sh
 	@./scripts/extraction-yandex-smoke.sh
+
+extraction-docling-smoke:
+	@chmod +x scripts/extraction-docling-smoke.sh
+	@./scripts/extraction-docling-smoke.sh
 
 extraction-ollama-ensure:
 	@chmod +x scripts/extraction-ollama-ensure.sh

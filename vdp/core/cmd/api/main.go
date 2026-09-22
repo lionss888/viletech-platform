@@ -59,7 +59,10 @@ func main() {
 		os.Exit(1)
 	} else if blobs != nil {
 		catalog = catalog.WithBlobStore(blobs)
+		forms = forms.WithBlobStore(blobs)
 		log.Info("blob store ready", "driver", "disk", "dir", cfg.BlobDir)
+	} else {
+		forms = forms.WithBlobStore(catalog.Blobs())
 	}
 	auth := service.NewAuthService(store, cfg.JWTSecret, cfg.JWTExpirationHours)
 	accounts := service.NewAccountService(store)

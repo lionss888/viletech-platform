@@ -5,15 +5,15 @@ Manual entry always remains. Status machine stays in core; extraction is a plugi
 
 ## Architecture
 
-PRIMARY (client-visible prefill): Yandex Vision OCR plus AI Studio, or fixture without keys, or own (Ollama) for dev/canary after wiring.
+PRIMARY (client-visible prefill): Docling serve (EXTRACTION_PRIMARY equals docling) on the current pilot, or Yandex Vision OCR plus AI Studio, or fixture without keys, or own (Ollama) for dev/canary after wiring.
 
-SHADOW: Docling HTTP when EXTRACTION_SHADOW_URL is set; otherwise deterministic stub. Not shown in UI.
+SHADOW: Docling HTTP when EXTRACTION_SHADOW_URL is set; otherwise deterministic stub. On the Docling PRIMARY pilot shadow stays stub (one engine). Not shown in UI.
 
 HITL: operator edits line items and confirms; hard labels live in human_out.
 
 Gold: JSONL under EXTRACTION_GOLD_DIR (includes layout_text for SFT).
 
-Own: CPU = Ollama Qwen2.5-3B plus few-shot from gold; weights = Wave E LoRA (see train/lora_recipe.md). Prod PRIMARY equals own only after held-out eval.
+Own: CPU equals Ollama Qwen2.5-3B plus few-shot from gold; weights equals Wave E LoRA (see train/lora_recipe.md). Prod PRIMARY equals own only after held-out eval.
 
 ## Schema v1
 
@@ -25,21 +25,27 @@ GoldRecord: gold_id, form_payment_id, organization_id, primary_out, shadow_out, 
 
 OCR_URL — hub to extraction POST /recognize.
 
-EXTRACTION_PRIMARY — yandex | fixture | own.
+OCR_TIMEOUT_MS — hub OCR plugin timeout (default 120000). Other adapters keep EXTERNAL_TIMEOUT_MS.
 
-EXTRACTION_FALLBACK — fixture (commercial wire) or yandex when own is primary.
+EXTRACTION_PRIMARY — docling | yandex | fixture | own. Pilot default equals docling.
 
-EXTRACTION_SHADOW_URL — Docling HTTP; empty means stub.
+EXTRACTION_FALLBACK — fixture (pilot and commercial wire) or yandex when own is primary.
+
+EXTRACTION_DOCLING_URL — docling-serve base (compose: http://docling:5001).
+
+EXTRACTION_SHADOW_URL — Docling HTTP for shadow; empty means stub.
 
 EXTRACTION_GOLD_DIR — JSONL gold store.
 
-YANDEX_API_KEY / YANDEX_FOLDER_ID / YANDEX_MODEL_URI — PRIMARY yandex (gitignored .env only).
+YANDEX_API_KEY / YANDEX_FOLDER_ID / YANDEX_MODEL_URI — PRIMARY yandex (gitignored .env only). Not used as PRIMARY on the Docling pilot.
 
 OLLAMA_BASE_URL / OLLAMA_MODEL / OWN_FEW_SHOT_K — own via host Ollama (default model qwen2.5:3b).
 
 OWN_MODEL_PATH — artifact dir (metrics.json may set ollama_model tag).
 
-Secrets: copy .env.example to .env. Rotate leaked keys. Smoke: make extraction-yandex-smoke. Own ensure: make extraction-ollama-ensure (pull once if missing).
+Secrets: copy .env.example to .env. Rotate leaked keys. Smoke: make extraction-docling-smoke (pilot) or make extraction-yandex-smoke. Own ensure: make extraction-ollama-ensure (pull once if missing).
+
+Docling PRIMARY maps markdown or text to header fields with light heuristics; empty fields are normal and HITL fills them. meta.engine_id equals docling.
 
 ## Model cache (no re-download on rebuild)
 

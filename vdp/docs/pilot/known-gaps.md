@@ -88,14 +88,17 @@ Role ACL tested in unit e2e including treasurer AuthZ on confirm. Checklist secu
 
 ## OCR / document extraction
 
-Dual-track behind hub OCR_URL (vdp/extraction). Fixture works without Yandex keys.
-HITL confirm writes gold JSONL for offline train. Own model equals not ready for prod PRIMARY until Wave E held-out eval (see architecture/extraction.md). Commercial path: wire via gitignored .env (YANDEX_* plus EXTRACTION_PRIMARY equals yandex, fallback fixture). Smoke: make extraction-yandex-smoke. Keys leaked outside secret store must be rotated.
+Dual-track behind hub OCR_URL (vdp/extraction). Fixture works without vendor keys.
+Pilot PRIMARY equals Docling (EXTRACTION_PRIMARY equals docling, EXTRACTION_DOCLING_URL equals http://docling:5001, OCR_TIMEOUT_MS equals 120000). Yandex is not PRIMARY on this pilot. Smoke: make extraction-docling-smoke.
+HITL confirm writes gold JSONL for offline train. Own model equals not ready for prod PRIMARY until Wave E held-out eval (see architecture/extraction.md). Commercial path remains available later via the same port (YANDEX_* plus EXTRACTION_PRIMARY equals yandex, fallback fixture). Smoke for that path: make extraction-yandex-smoke. Keys leaked outside secret store must be rotated.
 
 Own CPU: Ollama Qwen2.5-3b plus few-shot is testable (EXTRACTION_PRIMARY equals own, OLLAMA_BASE_URL); make extraction-ollama-ensure once; make extraction-eval-own keeps ready_for_prod_primary false. Weight-based own model equals Wave E after GPU (lora_recipe.md).
 
 Applied skips: YaLM 100B self-host; Onyx as OCR/IE. HF equals LoRA tooling only; open-llms equals license checklist before train (extraction/train/lora_recipe.md).
 
 OCR is optional side-path only. recognize_complete in app advances draft without vendor OCR. Never on transactional payment commit. Manual entry remains available.
+
+Alpha Docling pilot: set the same keys in .env.deploy, recreate docling plus extraction plus hub plus core after Images Deploy. On-host verify health primary equals docling and one live upload. Workstation SSH may stay blocked (publickey denied) until DEPLOY_SSH_KEY refresh; Deploy workflow still covers the host.
 
 ## Milestone 2 in-scope вводных
 
