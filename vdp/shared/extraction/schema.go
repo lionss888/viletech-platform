@@ -87,7 +87,70 @@ type GoldRecord struct {
 	LayoutText     string    `json:"layout_text,omitempty"`
 }
 
-// FixtureResult returns a valid schema v1 payload for offline/dev.
+// Degraded engine ids — FE treats these as degraded, not successful OCR.
+const (
+	EngineUnavailable = "unavailable"
+	EngineTimeout     = "timeout"
+	EngineFixtureError = "fixture_error"
+	EngineFixture     = "fixture"
+)
+
+// DegradedResult is schema v1 with empty header so poll completes without fake money.
+func DegradedResult(formID, engineID, reason string) Result {
+	if engineID == "" {
+		engineID = EngineUnavailable
+	}
+	warnings := []string{"degraded"}
+	if reason != "" {
+		warnings = append(warnings, reason)
+	}
+	r := Result{
+		SchemaVersion: SchemaVersion,
+		DocType:       "invoice",
+		Confidence:    0,
+		Header:        Header{},
+		LineItems:     []LineItem{},
+		Meta: Meta{
+			EngineID:      engineID,
+			ModelVersion:  engineID,
+			FormPaymentID: formID,
+		},
+		Warnings: warnings,
+	}
+	r.Meta.ContentHash = ContentHash(r)
+	return r
+}
+
+// IsDegraded reports engines/warnings that must not show as successful OCR done.
+func IsDegraded(r Result) bool {
+	switch r.Meta.EngineID {
+	case EngineUnavailable, EngineTimeout, EngineFixtureError, EngineFixture:
+		return true
+	}
+	if strings.HasSuffix(r.Meta.EngineID, "_fallback") {
+		return true
+	}
+	for _, w := range r.Warnings {
+		if w == "degraded" || w == "fixture_mode" || w == "primary_error" || strings.HasSuffix(w, "_fallback") {
+			return true
+		}
+	}
+	return false
+}
+
+// ClassifyOCRFailEngine maps a transport error to unavailable vs timeout.
+func ClassifyOCRFailEngine(err error) string {
+	if err == nil {
+		return EngineUnavailable
+	}
+	msg := strings.ToLower(err.Error())
+	if strings.Contains(msg, "timeout") || strings.Contains(msg, "deadline exceeded") || strings.Contains(msg, "context canceled") {
+		return EngineTimeout
+	}
+	return EngineUnavailable
+}
+
+// FixtureResult returns a valid schema v1 payload for offline/dev (marked degraded).
 func FixtureResult(formID string) Result {
 	r := Result{
 		SchemaVersion: SchemaVersion,
@@ -111,11 +174,11 @@ func FixtureResult(formID string) Result {
 			},
 		},
 		Meta: Meta{
-			EngineID:      "fixture",
+			EngineID:      EngineFixture,
 			ModelVersion:  "fixture-0",
 			FormPaymentID: formID,
 		},
-		Warnings: []string{"fixture_mode"},
+		Warnings: []string{"fixture_mode", "degraded"},
 	}
 	r.Meta.ContentHash = ContentHash(r)
 	return r

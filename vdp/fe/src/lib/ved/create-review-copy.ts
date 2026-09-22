@@ -16,3 +16,15 @@ export const CREATE_REVIEW_OCR_DONE = "Готово — поля предзап�
 /** Shown when poll times out without ExtractionResult. */
 export const CREATE_REVIEW_OCR_FAILED =
   "Не удалось распознать документ вовремя. Заполните сумму и реквизиты вручную — заявку можно сохранить.";
+
+/** Extraction / Docling not reachable — do not pretend recognition is running. */
+export const CREATE_REVIEW_OCR_UNAVAILABLE =
+  "Распознавание временно недоступно. Заполните поля вручную или повторите позже.";
+
+/** Fixture / fallback / empty degraded result. */
+export const CREATE_REVIEW_OCR_DEGRADED =
+  "Распознавание завершилось с ограничениями — проверьте поля вручную. Полные данные можно открыть в «Просмотр данных».";
+
+/** Session died while polling. */
+export const CREATE_REVIEW_OCR_AUTH_LOST =
+  "Сессия истекла. Войдите снова, чтобы продолжить работу с заявкой.";

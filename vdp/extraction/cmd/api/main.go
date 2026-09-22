@@ -1,10 +1,12 @@
 package main
 
 import (
+	"context"
 	"encoding/json"
 	"log/slog"
 	"net/http"
 	"os"
+	"time"
 
 	"github.com/viletech/vdp/extraction/internal/metrics"
 	"github.com/viletech/vdp/extraction/internal/service"
@@ -42,12 +44,19 @@ func main() {
 	svc := service.New(cfg)
 	addr := env("PORT", "8093")
 	mux := http.NewServeMux()
-	mux.HandleFunc("GET /health", func(w http.ResponseWriter, _ *http.Request) {
+	mux.HandleFunc("GET /health", func(w http.ResponseWriter, r *http.Request) {
+		doclingReachable := false
+		if cfg.DoclingURL != "" {
+			probeCtx, cancel := context.WithTimeout(r.Context(), 2*time.Second)
+			defer cancel()
+			doclingReachable = service.ProbeDoclingReachable(probeCtx, cfg.DoclingURL, nil)
+		}
 		writeJSON(w, http.StatusOK, map[string]any{
-			"status":            "ok",
-			"primary":           cfg.Primary,
-			"ollama_configured": cfg.OllamaBaseURL != "",
-			"docling_url_set":   cfg.DoclingURL != "",
+			"status":             "ok",
+			"primary":            cfg.Primary,
+			"ollama_configured":  cfg.OllamaBaseURL != "",
+			"docling_url_set":    cfg.DoclingURL != "",
+			"docling_reachable":  doclingReachable,
 		})
 	})
 	mux.HandleFunc("GET /metrics", func(w http.ResponseWriter, _ *http.Request) {

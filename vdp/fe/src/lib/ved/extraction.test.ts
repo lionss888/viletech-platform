@@ -5,8 +5,11 @@ import {
   extractionPanelMode,
   extractionShellVariant,
   extractionTriggerLabel,
+  isDegradedExtraction,
   isExtractionDraft,
   isLowConfidence,
+  isOcrAuthLostError,
+  ocrBannerFromExtraction,
   ocrPollTimedOut,
   OCR_POLL_TIMEOUT_MS,
   parseExtractionResult,
@@ -64,6 +67,43 @@ describe("ocrPollTimedOut", () => {
   });
 });
 
+describe("isDegradedExtraction", () => {
+  it("marks fixture and unavailable engines as degraded", () => {
+    expect(
+      isDegradedExtraction({
+        schema_version: "v1",
+        header: {},
+        line_items: [],
+        meta: { engine_id: "fixture" },
+        warnings: ["fixture_mode", "degraded"],
+      }),
+    ).toBe(true);
+    expect(
+      isDegradedExtraction({
+        schema_version: "v1",
+        header: {},
+        line_items: [],
+        meta: { engine_id: "unavailable" },
+      }),
+    ).toBe(true);
+    expect(
+      ocrBannerFromExtraction({
+        schema_version: "v1",
+        header: { invoice_amount: "1" },
+        line_items: [],
+        meta: { engine_id: "docling" },
+      }),
+    ).toBe("done");
+  });
+});
+
+describe("isOcrAuthLostError", () => {
+  it("detects 401 status", () => {
+    expect(isOcrAuthLostError({ status: 401 })).toBe(true);
+    expect(isOcrAuthLostError({ status: 500 })).toBe(false);
+    expect(isOcrAuthLostError(null)).toBe(false);
+  });
+});
 describe("extractionPanelMode", () => {
   it("hides OCR without documents on late statuses", () => {
     expect(

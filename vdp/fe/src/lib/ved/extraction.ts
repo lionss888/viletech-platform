@@ -39,6 +39,47 @@ export type ExtractionResult = {
 /** Wizard / card poll: wait this long for ExtractionResult before honest fail. */
 export const OCR_POLL_TIMEOUT_MS = 120_000;
 
+/** Wizard OCR banner states (honest UX). */
+export type OcrBannerState =
+  | "unavailable"
+  | "pending"
+  | "done"
+  | "degraded"
+  | "failed"
+  | "auth_lost";
+
+const DEGRADED_ENGINES = new Set(["unavailable", "timeout", "fixture_error", "fixture"]);
+
+/** True when ExtractionResult must not show as successful OCR done. */
+export function isDegradedExtraction(result: ExtractionResult): boolean {
+  const id = (result.meta.engine_id ?? "").trim();
+  if (DEGRADED_ENGINES.has(id) || id.endsWith("_fallback")) return true;
+  const warnings = result.warnings ?? [];
+  return (
+    warnings.includes("degraded") ||
+    warnings.includes("fixture_mode") ||
+    warnings.includes("primary_error") ||
+    warnings.includes("primary_fallback")
+  );
+}
+
+/** Map draft to done vs degraded after poll sees ExtractionResult. */
+export function ocrBannerFromExtraction(result: ExtractionResult): "done" | "degraded" {
+  return isDegradedExtraction(result) ? "degraded" : "done";
+}
+
+/** True when poll should stop permanently (not pending). */
+export function isOcrBannerTerminal(state: OcrBannerState | null | undefined): boolean {
+  return Boolean(state && state !== "pending");
+}
+
+/** Detect auth death from ApiError-like objects. */
+export function isOcrAuthLostError(err: unknown): boolean {
+  if (!err || typeof err !== "object") return false;
+  const status = (err as { status?: number }).status;
+  return status === 401;
+}
+
 /** Parses OCR/extraction JSON into typed fields for review UI. */
 export function parseExtractionResult(invoiceJson: string | undefined | null): ExtractionResult | null {
   if (!invoiceJson || !invoiceJson.trim()) return null;
