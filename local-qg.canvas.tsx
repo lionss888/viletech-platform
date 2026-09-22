@@ -39,7 +39,7 @@ const NO_BROWSER_PROMPT = `${RUN} Команда (ровно одна): cd vdp &
 
 const BROWSER_ONLY_PROMPT = `${RUN} Команда (ровно одна): cd vdp && make playwright-e2e. Только сценарии в браузере (вход, заявка, роли). Нужна уже поднятая локальная среда (Docker). Не проверяет оформление текстов и не гоняет всю лестницу ролей.`;
 
-const ENV_PROMPT = `${RUN} Команда (ровно одна): cd vdp && make check-env-parity. Проверь, что на этой машине та же версия Node, что в проекте. Если нет — скажи, что сделать (nvm use / mise), без установки пакетов без спроса.`;
+const ENV_PROMPT = `${RUN} Команда (ровно одна): cd vdp && make check-env-parity. Проверь, что на этой машине те же версии Node (fe/.nvmrc) и Go (vdp/.go-version), что в проекте. Если нет — скажи, что сделать (nvm use / mise; Go 1.22.x на PATH), без установки пакетов без спроса.`;
 
 const SECRETS_PROMPT = `${RUN} Команда (ровно одна): cd vdp && make check-deploy-secrets. Проверь, может ли компьютер отправить служебное сообщение о выкате. Не печатай токены и секреты. Если нет — объясни простым языком, какой файл создать, без значений.`;
 
@@ -101,12 +101,22 @@ export default function LocalQG() {
         </Text>
       </Stack>
 
+      <Callout tone="neutral" title="Единица готовности — запрос заказчика / срез дня">
+        Не строки кода. Готово = Acceptance у роли + зелёная кнопка DoD из
+        плана. Эталон: заметки/ориентир-скорости-запросов-заказчика-2026-09-21.md.
+        Шаблон среза и онбординг: заметки/шаблон-среза-запроса-заказчика.md.
+        Замер недели: заметки/замер-lead-time-неделя-2026-09-22.md.
+        Неожиданный красный main → postmortem по
+        vdp/docs/postmortems/TEMPLATE.txt + один prevention item в план.
+      </Callout>
+
       <Callout tone="info" title="Commit короткий · Push = gate · alpha отдельно">
         GitHub Desktop при Commit гоняет короткий слой (как кнопка ниже). При
         Push — path-aware: e2e вне smoke → ci-main; лестница → ci-pr-pilot;
         иначе ci-pr. Это паритет PR/main на GitHub, не гарантия уже выкатанной
         alpha. После merge смотрите «До alpha»: CI → Images → Deploy. Обход
-        Push только SKIP_PREPUSH_GATE=1.
+        Push только SKIP_PREPUSH_GATE=1. Не пушьте поверх уже идущего длинного
+        ci-pr-pilot / ci-main без крайней нужды.
       </Callout>
 
       <Stack gap={8}>
@@ -489,8 +499,8 @@ export default function LocalQG() {
           <CardBody>
             <Stack gap={10}>
               <Text tone="secondary" size="small">
-                Часто коммит падает сразу: другая версия Node. Эта кнопка
-                проверяет совпадение с проектом. ~5 сек.
+                Часто коммит падает сразу: другая версия Node или Go. Эта
+                кнопка проверяет совпадение с проектом. ~5 сек.
               </Text>
               <Button
                 variant="secondary"

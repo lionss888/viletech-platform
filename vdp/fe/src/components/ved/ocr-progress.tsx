@@ -1,6 +1,10 @@
 import { useEffect, useState } from "react";
 
-import { CREATE_REVIEW_OCR_DONE, CREATE_REVIEW_OCR_PENDING } from "@/lib/ved/create-review-copy";
+import {
+  CREATE_REVIEW_OCR_DONE,
+  CREATE_REVIEW_OCR_FAILED,
+  CREATE_REVIEW_OCR_PENDING,
+} from "@/lib/ved/create-review-copy";
 import { nextOcrProgress, OCR_PROGRESS_START } from "@/lib/ved/ocr-progress-model";
 import { cn } from "@/lib/utils";
 
@@ -25,6 +29,8 @@ function usePrefersReducedMotion(): boolean {
 export type OcrProgressProps = {
   /** Whether recognition has actually completed (prefill applied). */
   done: boolean;
+  /** Poll timed out without ExtractionResult — honest fail, no fake progress. */
+  failed?: boolean;
   /** Called after the completed state has been shown briefly, so the parent can unmount it. */
   onHide?: () => void;
   /** Root testid; children derive `${testId}-bar` and state labels. */
@@ -36,14 +42,19 @@ export type OcrProgressProps = {
  * a success message once `done`, then asks the parent to hide it. See `ocr-progress-model` for why
  * the value is an honest estimate rather than a backend-reported percentage.
  */
-export function OcrProgress({ done, onHide, testId = "wizard-ocr-progress" }: OcrProgressProps) {
+export function OcrProgress({
+  done,
+  failed = false,
+  onHide,
+  testId = "wizard-ocr-progress",
+}: OcrProgressProps) {
   const [value, setValue] = useState(OCR_PROGRESS_START);
   const reduced = usePrefersReducedMotion();
   useEffect(() => {
-    if (done) return;
+    if (done || failed) return;
     const id = setInterval(() => setValue((prev) => nextOcrProgress(prev, false)), TICK_MS);
     return () => clearInterval(id);
-  }, [done]);
+  }, [done, failed]);
   useEffect(() => {
     if (!done) return;
     setValue(100);
@@ -51,6 +62,20 @@ export function OcrProgress({ done, onHide, testId = "wizard-ocr-progress" }: Oc
     return () => clearTimeout(id);
   }, [done, onHide]);
   const rounded = Math.round(value);
+  if (failed) {
+    return (
+      <div
+        className="mb-4 rounded-md bg-destructive-soft px-3 py-2.5 text-destructive"
+        data-testid={testId}
+        role="status"
+        aria-live="polite"
+      >
+        <p className="text-sm font-medium" data-testid={`${testId}-failed`}>
+          {CREATE_REVIEW_OCR_FAILED}
+        </p>
+      </div>
+    );
+  }
   return (
     <div
       className={cn(

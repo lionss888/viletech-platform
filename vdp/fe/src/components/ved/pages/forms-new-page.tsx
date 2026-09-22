@@ -16,7 +16,12 @@ import {
 } from "@/lib/api/forms";
 import { assertFileSize, UploadError } from "@/lib/api/files";
 import { CREATE_REVIEW_OCR_BANNER, CREATE_REVIEW_OCR_CAPTION } from "@/lib/ved/create-review-copy";
-import { parseExtractionResult } from "@/lib/ved/extraction";
+import {
+  isExtractionDraft,
+  OCR_POLL_TIMEOUT_MS,
+  ocrPollTimedOut,
+  parseExtractionResult,
+} from "@/lib/ved/extraction";
 import { usePlatformBasePath, usePlatformMode } from "@/lib/ved/platform-mode";
 import { usePlatformStore } from "@/lib/ved/platform-store";
 import { sortCurrencyRecords } from "@/lib/ved/sort-currencies";
@@ -51,9 +56,11 @@ export function NewForm() {
   const [formId, setFormId] = useState<string | null>(null);
   const [ocrPending, setOcrPending] = useState(false);
   const [ocrReady, setOcrReady] = useState(false);
+  const [ocrFailed, setOcrFailed] = useState(false);
   const [ocrProgressVisible, setOcrProgressVisible] = useState(false);
   const touchedRef = useRef<WizardTouched>({});
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const pollStartedAtRef = useRef<number>(0);
   const [draft, setDraft] = useState({
     direction: "import" as FormDirection,
     kind: "good" as FormKind,
@@ -112,9 +119,9 @@ export function NewForm() {
     });
   }, [organizations, counterparties, hsCodes, currencyOptions]);
 
-  const applyOcrPrefill = useCallback((invoiceJson: string | undefined | null) => {
+  const applyOcrPrefill = useCallback((invoiceJson: string | undefined | null): boolean => {
     const extraction = parseExtractionResult(invoiceJson);
-    if (!extraction) return;
+    if (!extraction) return false;
     setDraft((prev) => {
       const merged = mergeExtractionPrefill(
         {
@@ -138,35 +145,44 @@ export function NewForm() {
     });
     setOcrReady(true);
     setOcrPending(false);
+    setOcrFailed(false);
+    return true;
   }, []);
 
   useEffect(() => {
-    if (!formId || mode !== "app" || draft.noDocuments || ocrReady) return;
+    if (!formId || mode !== "app" || draft.noDocuments || ocrReady || ocrFailed) return;
     setOcrPending(true);
     setOcrProgressVisible(true);
-    const tick = async () => {
-      try {
-        const form = await getForm(formId);
-        if (form.invoice_json?.trim()) {
-          applyOcrPrefill(form.invoice_json);
-          if (pollRef.current) {
-            clearInterval(pollRef.current);
-            pollRef.current = null;
-          }
-        }
-      } catch {
-        /* keep polling */
-      }
-    };
-    void tick();
-    pollRef.current = setInterval(() => void tick(), 1500);
-    return () => {
+    pollStartedAtRef.current = Date.now();
+    const stopPoll = () => {
       if (pollRef.current) {
         clearInterval(pollRef.current);
         pollRef.current = null;
       }
     };
-  }, [formId, mode, draft.noDocuments, ocrReady, applyOcrPrefill]);
+    const tick = async () => {
+      try {
+        if (ocrPollTimedOut(Date.now() - pollStartedAtRef.current, OCR_POLL_TIMEOUT_MS)) {
+          stopPoll();
+          setOcrFailed(true);
+          setOcrPending(false);
+          return;
+        }
+        const form = await getForm(formId);
+        // Only stop when invoice_json is ExtractionResult — form dumps are always non-empty.
+        if (isExtractionDraft(form.invoice_json) && applyOcrPrefill(form.invoice_json)) {
+          stopPoll();
+        }
+      } catch {
+        /* keep polling until timeout */
+      }
+    };
+    void tick();
+    pollRef.current = setInterval(() => void tick(), 1500);
+    return () => {
+      stopPoll();
+    };
+  }, [formId, mode, draft.noDocuments, ocrReady, ocrFailed, applyOcrPrefill]);
 
   function setField<K extends keyof typeof draft>(key: K, value: (typeof draft)[K]) {
     setDraft((prev) => ({ ...prev, [key]: value }));
@@ -266,6 +282,8 @@ export function NewForm() {
     setFormId(created.id);
     if (mode === "app" && !draft.noDocuments) {
       setOcrPending(true);
+      setOcrFailed(false);
+      setOcrReady(false);
     }
     if (mode === "app" && draft.condition) {
       await patchForm(created.id, nestFormPrefixForRole(session?.role ?? "user"), {
@@ -436,7 +454,13 @@ export function NewForm() {
       <div className="panel mt-4 w-full p-5 lg:w-3/4">
         {error && <p className="mb-4 rounded-md bg-destructive-soft px-2 py-1.5 text-xs text-destructive">{error}</p>}
         {ocrProgressVisible && step > WIZARD_STEP.docs && (
-          <OcrProgress done={ocrReady} onHide={() => setOcrProgressVisible(false)} />
+          <OcrProgress
+            done={ocrReady}
+            failed={ocrFailed}
+            onHide={() => {
+              if (!ocrFailed) setOcrProgressVisible(false);
+            }}
+          />
         )}
 
         {step === WIZARD_STEP.docs && (
@@ -473,7 +497,8 @@ export function NewForm() {
                   />
                 </FileField>
                 <p className="text-xs text-muted-foreground">
-                  Чаще достаточно инвойса. После «Далее» распознавание пойдёт в фоне — можно заполнять форму дальше.
+                  Чаще достаточно инвойса. После «Далее» распознавание пойдёт в фоне — применить отдельно не
+                  нужно: поля подставятся сами, когда распознавание закончится.
                 </p>
               </>
             )}
@@ -658,7 +683,7 @@ export function NewForm() {
                 value={draft.amount}
                 onChange={(e) => setTouchedField("amount", e.target.value)}
                 inputMode="decimal"
-                placeholder="1250000"
+                placeholder="сумма"
                 className="field font-mono"
                 data-testid="wizard-amount"
               />
@@ -732,7 +757,7 @@ export function NewForm() {
               <input
                 value={draft.invoiceNumber}
                 onChange={(e) => setTouchedField("invoiceNumber", e.target.value)}
-                placeholder="INV-2026-0001"
+                placeholder="номер"
                 className="field font-mono"
               />
             </Field>

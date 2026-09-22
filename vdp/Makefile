@@ -10,6 +10,13 @@ IMAGE_NAMESPACE ?= $(shell git -C .. config --get remote.origin.url 2>/dev/null 
 IMAGE_TAG ?= $(shell git -C .. rev-parse --short HEAD 2>/dev/null || echo local)
 PIN_FILE ?= .release-images.env
 
+# Prefer toolchain matching .go-version (e.g. ~/sdk/go1.22.12) over a newer default Go on PATH.
+PINNED_GO_BIN := $(shell ./scripts/resolve-pinned-go.sh 2>/dev/null)
+ifneq ($(strip $(PINNED_GO_BIN)),)
+export PATH := $(PINNED_GO_BIN):$(PATH)
+export GOROOT := $(shell cd "$(PINNED_GO_BIN)/.." && pwd)
+endif
+
 export DATABASE_URL_CORE ?= postgres://vdp_core:vdp_core@localhost:5432/vdp_core?sslmode=disable
 export DATABASE_URL_HUB ?= postgres://vdp_hub:vdp_hub@localhost:5432/vdp_hub?sslmode=disable
 export STORE_DRIVER ?= postgres
@@ -206,8 +213,9 @@ integration-gate:
 	$(MAKE) compose-e2e
 
 # Local PR parity for VDP CI (vdp-ci.yml) without full nightly Playwright / release-gate.
-# Fast: static checks (parallel) + compose-e2e.
+# Fast: env-parity (fail-fast) + static checks (parallel) + compose-e2e.
 ci-pr-fast:
+	$(MAKE) check-env-parity
 	@chmod +x scripts/ci-pr-static.sh
 	@./scripts/ci-pr-static.sh
 	$(MAKE) compose-e2e
@@ -375,8 +383,9 @@ notify-mgmt:
 		$(if $(NEXT),--next "$(NEXT)") \
 		$(if $(DRY_RUN),--dry-run)
 
-# Local docs-format + unit gate + management Telegram (pass and fail). Used by .githooks/pre-commit.
+# Same surface as .githooks/pre-commit: env-parity → docs-format + unit + TG on fail.
 precommit-gate:
+	$(MAKE) check-env-parity
 	@chmod +x scripts/precommit-mgmt-notify.sh
 	./scripts/precommit-mgmt-notify.sh
 

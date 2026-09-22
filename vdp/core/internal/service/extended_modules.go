@@ -246,7 +246,7 @@ func (s *CatalogService) CreateHsCode(ctx context.Context, principal authz.Princ
 	return h, s.store.SaveHsCode(ctx, h)
 }
 
-// AttachHsCodesToForm stores TN VED codes on form invoice_json (Nest invoice hs-codes).
+// AttachHsCodes stores TN VED codes on form invoice_json without wiping ExtractionResult meta.
 func (s *FormPaymentService) AttachHsCodes(ctx context.Context, principal authz.Principal, formID string, codes []string) (formpayment.Form, error) {
 	form, err := s.Get(ctx, principal, formID)
 	if err != nil {
@@ -260,6 +260,11 @@ func (s *FormPaymentService) AttachHsCodes(ctx context.Context, principal authz.
 		inv = map[string]any{}
 	}
 	inv["hs_codes"] = codes
+	// Keep schema v1 header in sync when OCR draft is present (do not drop meta/header).
+	if header, ok := inv["header"].(map[string]any); ok {
+		header["hs_codes"] = codes
+		inv["header"] = header
+	}
 	raw, _ := json.Marshal(inv)
 	form.InvoiceJSON = string(raw)
 	form.UpdatedAt = time.Now().UTC()

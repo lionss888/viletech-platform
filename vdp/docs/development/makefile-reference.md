@@ -90,7 +90,7 @@ Browser E2E через Docker. Команды make playwright-e2e, make compose-
 
 ## precommit-gate
 
-Локальный хук-агрегат: `docs-format-check`, затем `make test`, затем TG notify (pass/fail). Команда `make precommit-gate` / `.githooks/pre-commit`. Не заменяет `ci-pr`.
+Локальный хук-агрегат: сначала `check-env-parity` (Node и Go), затем `docs-format-check`, затем `make test`, затем TG notify только при fail. Команда `make precommit-gate`. Хук `.githooks/pre-commit` вызывает тот же target. Не заменяет `ci-pr`.
 
 ## compose-db-migrate
 
