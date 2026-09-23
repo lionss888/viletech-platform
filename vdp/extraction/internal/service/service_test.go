@@ -11,6 +11,22 @@ import (
 	"github.com/viletech/vdp/shared/extraction"
 )
 
+// waitGoldAppend blocks until async runShadowGold finished writing (avoids t.TempDir cleanup race).
+func waitGoldAppend(t *testing.T, svc *Service) {
+	t.Helper()
+	deadline := time.Now().Add(2 * time.Second)
+	for {
+		recs, listErr := svc.GoldStore().List()
+		if listErr == nil && len(recs) > 0 {
+			return
+		}
+		if time.Now().After(deadline) {
+			t.Fatal("gold append did not finish")
+		}
+		time.Sleep(20 * time.Millisecond)
+	}
+}
+
 func TestRecognizeFixture(t *testing.T) {
 	t.Parallel()
 	goldDir := t.TempDir()
@@ -33,17 +49,7 @@ func TestRecognizeFixture(t *testing.T) {
 	if !strings.Contains(inv, "fixture") || !strings.Contains(inv, "degraded") {
 		t.Fatalf("fixture mode should be marked degraded: %s", inv)
 	}
-	deadline := time.Now().Add(2 * time.Second)
-	for {
-		recs, listErr := svc.GoldStore().List()
-		if listErr == nil && len(recs) > 0 {
-			break
-		}
-		if time.Now().After(deadline) {
-			t.Fatal("gold append did not finish")
-		}
-		time.Sleep(20 * time.Millisecond)
-	}
+	waitGoldAppend(t, svc)
 }
 
 type failPrimary struct{}
@@ -76,4 +82,5 @@ func TestRecognizePrimaryFailUsesDegradedNotFakeMoney(t *testing.T) {
 	if !strings.Contains(inv, "fixture_error") {
 		t.Fatalf("want fixture_error engine: %s", inv)
 	}
+	waitGoldAppend(t, svc)
 }
