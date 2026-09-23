@@ -93,10 +93,11 @@ flowchart LR
 
 1. `make -C vdp check-env-parity`
 2. FE unit + Go unit по затронутому
-3. Local repro на localhost (upload → done или timeout; CTA на карточке)
-4. `make -C vdp ci-pr` (без нового e2e вне smoke). Если добавим Playwright вне login/submit/provider/reject → `make ci-main`
-5. Не утверждать «OCR 100% / паритет IE» — только: сквозной путь prefill+HITL снова наблюдаем
-6. `notify-mgmt` после закрытия: продуктово — «распознавание снова видно в мастере и на карточке»
+3. `make -C vdp ocr-path-gate` (Local QG «Путь распознавания») — Docling smoke + wizard journey; **до** Acceptance руками клиента
+4. Local repro на localhost при нужде (CTA на карточке) — только после зелёного ocr-path-gate
+5. `make -C vdp ci-pr` если без нового e2e вне smoke; при e2e/ocr-wizard-path или другом e2e вне login/submit/provider/reject → `make ci-main`
+6. Не утверждать «OCR 100% / паритет IE» — только: сквозной путь prefill+HITL снова наблюдаем
+7. `notify-mgmt` после закрытия: продуктово — «распознавание снова видно в мастере и на карточке»
 
 ## Честность
 

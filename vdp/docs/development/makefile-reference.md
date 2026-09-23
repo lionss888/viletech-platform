@@ -68,6 +68,10 @@ Browser E2E через Docker. Команды make playwright-e2e, make compose-
 
 После suite (успех или fail) compose-playwright вызывает POST probe-data wipe от root, чтобы не оставлять следы заявок. Отключить: E2E_WIPE_AFTER=0. Wipe разрешён на local/development/test/ci/alpha; кнопка Root «Очистить все заявки» на /testing для ручного QA.
 
+## ocr-path-gate
+
+До ручной проверки клиентом по распознаванию. Нужен уже поднятый compose. Сначала extraction-docling-smoke, затем Playwright только e2e/ocr-wizard-path.spec.ts (баннер уходит из pending). Команда make ocr-path-gate. Local QG кнопка Путь распознавания. Подробности в ocr-path-gate.md. Для merge-ready после смены этого e2e нужен make ci-main.
+
 ## playwright-pilot
 
 Быстрый UI-прогон default актёров (User/Manager/Provider/Root) по тегу `@pilot-flow` в `fe/e2e/pilot-form-flow.spec.ts`. Команда make playwright-pilot (`PLAYWRIGHT_ARGS='--grep @pilot-flow'` → compose-playwright).

@@ -1,4 +1,4 @@
-.PHONY: deps test test-integration test-adapters build db-setup db-migrate compose-db-migrate run-hub run-core run smoke staging-smoke stop compose-up compose-up-prod compose-down compose-ps compose-e2e compose-fe-smoke compose-fe-refresh compose-fe-prod-smoke compose-playwright lovable-seed-check platform-mounts-check integration-gate playwright-e2e playwright-pilot playwright-pilot-matrix robot-matrix-check docs-format-check check-deploy-secrets release-gate image-build image-push image-build-push compose-release-config-check compose-release-up deploy-alpha deploy-beta deploy-gamma rollback-alpha rollback-beta rollback-gamma rollback-rehearsal-local test-cd-scripts notify-mgmt core-seed-reset install-git-hooks precommit-gate prepush-gate ci-pr-fast ci-pr ci-pr-pilot ci-main perf-gate
+.PHONY: deps test test-integration test-adapters build db-setup db-migrate compose-db-migrate run-hub run-core run smoke staging-smoke stop compose-up compose-up-prod compose-down compose-ps compose-e2e compose-fe-smoke compose-fe-refresh compose-fe-prod-smoke compose-playwright lovable-seed-check platform-mounts-check integration-gate playwright-e2e playwright-pilot playwright-pilot-matrix robot-matrix-check docs-format-check check-deploy-secrets release-gate image-build image-push image-build-push compose-release-config-check compose-release-up deploy-alpha deploy-beta deploy-gamma rollback-alpha rollback-beta rollback-gamma rollback-rehearsal-local test-cd-scripts notify-mgmt core-seed-reset install-git-hooks precommit-gate prepush-gate ci-pr-fast ci-pr ci-pr-pilot ci-main perf-gate ocr-path-gate
 
 CORE_DIR := core
 HUB_DIR := hub
@@ -65,6 +65,12 @@ extraction-yandex-smoke:
 extraction-docling-smoke:
 	@chmod +x scripts/extraction-docling-smoke.sh
 	@./scripts/extraction-docling-smoke.sh
+
+# Before human OCR UAT: Docling smoke + wizard journey (pending must end in done or fail).
+# Requires compose-up. Does not run @pilot-matrix. New e2e is outside PR-smoke → merge-ready needs ci-main.
+ocr-path-gate:
+	@chmod +x scripts/ocr-path-gate.sh
+	@./scripts/ocr-path-gate.sh
 
 extraction-ollama-ensure:
 	@chmod +x scripts/extraction-ollama-ensure.sh

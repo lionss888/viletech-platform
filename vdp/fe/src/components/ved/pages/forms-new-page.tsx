@@ -324,11 +324,6 @@ export function NewForm() {
       } as Parameters<typeof createForm>[0]),
     );
     setFormId(created.id);
-    if (mode === "app" && !draft.noDocuments) {
-      setOcrPending(true);
-      setOcrFailed(false);
-      setOcrReady(false);
-    }
     if (mode === "app" && draft.condition) {
       await patchForm(created.id, nestFormPrefixForRole(session?.role ?? "user"), {
         payment_method: conditionToPaymentMethod(draft.condition, draft.direction),

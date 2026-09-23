@@ -45,6 +45,8 @@ const SECRETS_PROMPT = `${RUN} Команда (ровно одна): cd vdp && m
 
 const COMPOSE_UP_PROMPT = `${RUN} Команда (ровно одна): cd vdp && make compose-up. Подними локальную среду (Docker). В конце коротко: поднялось или нет (по make compose-ps / health). Не трогай FE deps (compose-fe-refresh) без явного «да».`;
 
+const OCR_PATH_PROMPT = `${RUN} Команда (ровно одна): cd vdp && make ocr-path-gate. Путь распознавания до ручной проверки клиентом: Docling smoke + один сценарий в мастере (баннер уходит в done или честный fail, не вечный pending). Нужна уже поднятая среда (make compose-up). Не заменяет лестницу ролей и не утверждает качество IE. Красный → чинить продукт, не звать человека.`;
+
 const ROBOT_BOTH_PROMPT = `${RUN} Pilot Robot Matrix — оба робота по очереди. Нужна уже поднятая среда (если нет — сначала make compose-up). Выполни строго по порядку, без обсуждения:
 1) cd vdp && make compose-e2e
 2) cd vdp && make playwright-pilot-matrix
@@ -82,9 +84,10 @@ const TRIAGE_PROMPT = `Local QG — подскажи проверку. Не за
 
 По git status и git diff скажи простым языком:
 1. Что менялось (экраны, правила заявки, тексты, только план).
-2. Какую кнопку нажать в Local QG (перед коммитом / перед Push / лестница / Main push полный браузер / без браузера / с браузером / До alpha / документация создать или тест / производительность / Pilot Robot Matrix).
+2. Какую кнопку нажать в Local QG (Путь распознавания / перед коммитом / перед Push / лестница / Main push полный браузер / без браузера / с браузером / До alpha / документация создать или тест / производительность / Pilot Robot Matrix).
 3. Почему именно её, одной фразой.
-Если в diff есть vdp/fe/e2e/** вне login-form, user-submit, provider-acl, reject-path — рекомендуй «Main push (полный браузер)» (ci-main), не только лестницу.
+Если в diff есть forms-new, extraction, ocr-progress, create-review-copy, ocr-readiness, extraction-docling или e2e/ocr-wizard-path — первой рекомендуй «Путь распознавания» (ocr-path-gate) до ручного UAT клиента и до лестницы.
+Если в diff есть vdp/fe/e2e/** вне login-form, user-submit, provider-acl, reject-path — для merge-ready рекомендуй «Main push (полный браузер)» (ci-main), не только лестницу.
 Не коммить. Не пушь. Не запускай make.`;
 
 export default function LocalQG() {
@@ -117,6 +120,13 @@ export default function LocalQG() {
         alpha. После merge смотрите «До alpha»: CI → Images → Deploy. Обход
         Push только SKIP_PREPUSH_GATE=1. Не пушьте поверх уже идущего длинного
         ci-pr-pilot / ci-main без крайней нужды.
+      </Callout>
+
+      <Callout tone="warning" title="OCR: не звать человека до «Путь распознавания»">
+        Если меняли мастер заявки, extraction или Docling — сначала кнопка
+        «Путь распознавания» (ocr-path-gate). Зелёные п.1–2 и Pilot Matrix не
+        доказывают, что баннер распознавания уходит в done или честный fail.
+        Ручной UAT клиента только после зелёного OCR path.
       </Callout>
 
       <Stack gap={8}>
@@ -181,7 +191,25 @@ export default function LocalQG() {
       <Divider />
 
       <Stack gap={8}>
-        <H2>3. До alpha</H2>
+        <H2>3. Путь распознавания (до ручного UAT)</H2>
+        <Text tone="secondary" size="small">
+          Docling smoke и один сценарий в мастере: баннер не остаётся вечным
+          pending. Нужен уже поднятый Docker. Не заменяет Push-gate и не
+          проверяет качество полей IE. ~2–5 мин плюс до ~2 мин на timeout fail.
+        </Text>
+        <Button
+          onClick={() =>
+            dispatch({ type: "newComposerChat", userPrompt: OCR_PATH_PROMPT })
+          }
+        >
+          Путь распознавания
+        </Button>
+      </Stack>
+
+      <Divider />
+
+      <Stack gap={8}>
+        <H2>4. До alpha</H2>
         <Text tone="secondary" size="small">
           После merge в main: статусы VDP CI / Images / Deploy и живая проверка
           login на alpha. Не заменяет Push-gate. Выкат из Local QG сам не
@@ -199,7 +227,7 @@ export default function LocalQG() {
       <Divider />
 
       <Stack gap={8}>
-        <H2>4. Pilot Robot Matrix</H2>
+        <H2>5. Pilot Robot Matrix</H2>
         <Text tone="secondary" size="small">
           Роботы матрицы: сначала логика заявки (API), затем клики в кабинетах.
           Нужна поднятая локальная среда. Данные по умолчанию — учебный пакет
@@ -310,7 +338,7 @@ export default function LocalQG() {
 
       <Divider />
 
-      <H2>5. Частичные проверки</H2>
+      <H2>6. Частичные проверки</H2>
       <Text tone="secondary" size="small">
         Когда правили только часть и не хотите ждать четверть часа.
       </Text>
