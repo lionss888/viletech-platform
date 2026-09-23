@@ -28,7 +28,7 @@ Hub adapter HTTP tests docs mail sms telegram diadoc onec. Команда make t
 
 ## compose-up
 
-Порядок: postgres → `compose-db-migrate` → остальной стек (core/hub/fe). Initdb mounts на уже существующих volumes не переигрываются; migrate до seed core обязателен. Health wait, compose-fe-smoke, URL. Команда make compose-up.
+Порядок: postgres → `compose-db-migrate` → остальной стек (core/hub/fe). Initdb mounts на уже существующих volumes не переигрываются; migrate до seed core обязателен. Postgres `--wait` и полный `up -d --build` идут через `scripts/compose-up-with-retry.sh` (гонки Desktop: exit 0 на recreate, No such container). Migrate ждёт стабильный ready и nudges сервис при простое. Health wait, compose-fe-smoke, URL. Команда make compose-up.
 
 ## compose-up-prod
 
@@ -98,7 +98,7 @@ Browser E2E через Docker. Команды make playwright-e2e, make compose-
 
 ## compose-db-migrate
 
-Накатывает core/hub `*.sql` в compose Postgres. Ждёт стабильный ready (post-initdb restart) и ретраит psql при `shutting down`. Команда `make compose-db-migrate`; вызывается из `compose-up` / release up.
+Накатывает core/hub `*.sql` в compose Postgres. Ждёт стабильный ready (post-initdb restart, до WAIT_PG_MAX секунд) с nudge `up -d` при долгом not-ready и ретраит psql при `shutting down` / `starting up`. Команда `make compose-db-migrate`; вызывается из `compose-up` / release up.
 
 ## release-gate
 

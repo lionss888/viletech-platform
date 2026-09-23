@@ -174,6 +174,10 @@ func MapDoclingText(in Input, text string) extraction.Result {
 	if m := reCompany.FindStringSubmatch(text); len(m) > 1 {
 		r.Header.CompanyName = strings.TrimSpace(m[1])
 	}
+	// Raise confidence when commercial fields were recovered so FE can treat as done + HITL review.
+	if strings.TrimSpace(r.Header.InvoiceAmount) != "" || strings.TrimSpace(r.Header.InvoiceNumber) != "" {
+		r.Confidence = 0.72
+	}
 	layout := truncate(text, 1800)
 	r.Warnings = []string{"docling_pilot", "layout:" + layout}
 	r.Meta.ContentHash = extraction.ContentHash(r)

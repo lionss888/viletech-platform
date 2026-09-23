@@ -63,9 +63,28 @@ export function isDegradedExtraction(result: ExtractionResult): boolean {
   );
 }
 
-/** Map draft to done vs degraded after poll sees ExtractionResult. */
+/** True when extraction carries at least one field the wizard can prefill. */
+export function hasPrefillableExtraction(result: ExtractionResult): boolean {
+  const header = result.header ?? {};
+  if (header.invoice_amount?.trim()) return true;
+  if (header.currency?.trim()) return true;
+  if (header.invoice_number?.trim()) return true;
+  if (header.contract_number?.trim()) return true;
+  if (header.hs_codes?.some((code) => Boolean(code?.trim()))) return true;
+  return result.line_items.some(
+    (line) => Boolean(line.line_amount?.trim()) || Boolean(line.currency?.trim()),
+  );
+}
+
+/**
+ * Map draft to done vs degraded after poll sees ExtractionResult.
+ * Done only when primary path has usable fields and confidence is not low — never promise autofill on empty/limitations.
+ */
 export function ocrBannerFromExtraction(result: ExtractionResult): "done" | "degraded" {
-  return isDegradedExtraction(result) ? "degraded" : "done";
+  if (isDegradedExtraction(result)) return "degraded";
+  if (!hasPrefillableExtraction(result)) return "degraded";
+  if (isLowConfidence(result)) return "degraded";
+  return "done";
 }
 
 /** True when poll should stop permanently (not pending). */

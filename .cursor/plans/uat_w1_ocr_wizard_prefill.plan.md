@@ -1,19 +1,19 @@
 ---
 name: UAT W1 OCR wizard prefill
-overview: "Живой prefill OCR на реальных PDF из вводных; ясный banner при limitations; не обещать авто-подстановку без данных (F1)."
+overview: Живой prefill OCR на реальных PDF из вводных; ясный banner при limitations; не обещать авто-подстановку без данных (F1).
 todos:
   - id: w1-repro-real-pdf
-    content: "Repro F1 на реальном инвойсе из вводные/примеры документов/Инвойсы"
-    status: pending
+    content: Repro F1 на реальном инвойсе из вводные/примеры документов/Инвойсы
+    status: completed
   - id: w1-banner-copy
     content: "Banner: при limitations не обещать «поля подставятся сами» на шаге 1"
-    status: pending
+    status: completed
   - id: w1-prefill-apply
-    content: "Prefill amount/invoice/CP currency когда extraction confidence OK + HITL review"
-    status: pending
+    content: Prefill amount/invoice/CP currency когда extraction confidence OK + HITL review
+    status: completed
   - id: w1-tests-gate
-    content: "Unit extraction banner + e2e extraction_confirm; check-env-parity → ci-pr-pilot если OCR path"
-    status: pending
+    content: Unit extraction banner + e2e extraction_confirm; check-env-parity → ci-pr-pilot если OCR path
+    status: completed
 isProject: false
 ---
 
@@ -25,10 +25,11 @@ UAT 2026-09-23 finding **F1** (`заметки/uat-кабинеты-feedback-202
 
 ## Acceptance
 
-1. На реальном PDF из `вводные/примеры документов/Инвойсы` при успешном extraction сумма и/или номер инвойса появляются на шаге «Условия» без ручного ввода (или через «Просмотр данных» → подтвердить).
-2. Если extraction с ограничениями — banner **не** обещает авто-подстановку; явный next step: заполнить вручную / открыть данные.
-3. OCR остаётся side-path: нет auto-submit, нет auto-pay (`машинное-обучение`).
-4. Stub robot PDF может оставаться «с ограничениями» — отдельный fixture с извлекаемыми полями для e2e.
+1. **Сначала живой browser repro** на `localhost:5173`: жест upload (`filechooser` / FilePickButton) с PDF из `вводные/примеры документов/Инвойсы` (не только stub robot, не только API extraction/start).
+2. При успешном extraction сумма и/или номер инвойса появляются на шаге «Условия» без ручного ввода (или через «Просмотр данных» → подтвердить HITL).
+3. Если extraction с ограничениями — banner **не** обещает авто-подстановку; явный next step: заполнить вручную / открыть данные.
+4. OCR остаётся side-path: нет auto-submit, нет auto-pay (`машинное-обучение`).
+5. Stub robot PDF может оставаться «с ограничениями» — отдельный fixture с извлекаемыми полями для e2e.
 
 ## Вне scope
 

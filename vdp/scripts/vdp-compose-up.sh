@@ -35,11 +35,16 @@ if [ -n "${VDP_MAIL_IMAGE:-}" ] || [ -n "${VDP_SMS_IMAGE:-}" ]; then
   PROFILES+=(--profile gateways)
 fi
 
-dc "${PROFILES[@]}" up -d --no-build --wait postgres-core postgres-hub
+# Retry helper: compose --wait exit-0 race + "No such container" on stack up.
+# Pass docker compose explicitly (helper cannot see shell function dc).
+chmod +x ./scripts/compose-up-with-retry.sh
+# shellcheck disable=SC2086
+./scripts/compose-up-with-retry.sh docker compose ${COMPOSE_FILES} "${PROFILES[@]}" up -d --no-build --wait postgres-core postgres-hub
 chmod +x ./scripts/compose-db-migrate.sh
 ./scripts/compose-db-migrate.sh
 
-dc "${PROFILES[@]}" up -d --no-build --scale fe=0
+# shellcheck disable=SC2086
+./scripts/compose-up-with-retry.sh docker compose ${COMPOSE_FILES} "${PROFILES[@]}" up -d --no-build --scale fe=0
 dc "${PROFILES[@]}" restart core hub
 
 if [ -x ./scripts/wait-release-health.sh ]; then

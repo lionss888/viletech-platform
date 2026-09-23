@@ -107,10 +107,12 @@ compose-db-migrate:
 
 # Existing Postgres volumes skip docker-entrypoint-initdb.d; migrate before core seed.
 # --wait: healthy after start; compose-db-migrate also waits through post-initdb restart.
+# Retry helper: compose --wait exit-0 race + "No such container" on full stack up.
 compose-up:
-	docker compose up -d --build --wait postgres-core postgres-hub
+	@chmod +x scripts/compose-up-with-retry.sh
+	@./scripts/compose-up-with-retry.sh docker compose up -d --build --wait postgres-core postgres-hub
 	@$(MAKE) compose-db-migrate
-	docker compose up -d --build
+	@./scripts/compose-up-with-retry.sh docker compose up -d --build
 	@echo "waiting for core+hub+fe health..."
 	@# Vite cold start after recreate can exceed 90s (observed ~91s); allow ~180s.
 	@ok=0; for i in $$(seq 1 90); do \
@@ -135,9 +137,10 @@ core-seed-reset:
 	@echo "core restarted; seed accounts kept, forms wiped (local only)"
 
 compose-up-prod:
-	docker compose --profile prod up -d --build --wait postgres-core postgres-hub
+	@chmod +x scripts/compose-up-with-retry.sh
+	@./scripts/compose-up-with-retry.sh docker compose --profile prod up -d --build --wait postgres-core postgres-hub
 	@$(MAKE) compose-db-migrate
-	docker compose --profile prod up -d --build
+	@./scripts/compose-up-with-retry.sh docker compose --profile prod up -d --build
 	@echo "waiting for core+hub+fe-prod health..."
 	@ok=0; for i in $$(seq 1 90); do \
 		if curl -sf http://127.0.0.1:8080/api/v1/health >/dev/null && \

@@ -558,7 +558,7 @@ export function NewForm() {
               >
                 <p className="min-w-0 flex-1 text-sm text-wait">
                   Вы отметили, что документов пока нет — это нормально, заявку можно заполнить и так. Если инвойс или
-                  контракт появятся, просто добавьте их: распознавание подставит данные за вас.
+                  контракт появятся, добавьте их: распознавание попробует подставить доступные поля (не гарантируется).
                 </p>
                 <button
                   type="button"
@@ -816,11 +816,17 @@ export function NewForm() {
         {step === WIZARD_STEP.review && (
           <div className="grid gap-4" data-testid="wizard-review-step">
             {!draft.noDocuments &&
-              ocrBannerState !== "unavailable" &&
-              ocrBannerState !== "failed" &&
-              ocrBannerState !== "auth_lost" &&
-              ocrBannerState !== "degraded" && (
+              ocrBannerState === "pending" && (
               <p className="rounded-md bg-muted px-3 py-2 text-sm text-foreground">{CREATE_REVIEW_OCR_BANNER}</p>
+            )}
+            {!draft.noDocuments && ocrBannerState === "degraded" && (
+              <p
+                className="rounded-md bg-wait-soft px-3 py-2 text-sm text-wait"
+                data-testid="wizard-review-ocr-degraded"
+              >
+                Распознавание с ограничениями — на автоподстановку рассчитывать нельзя. Проверьте сумму и реквизиты
+                вручную или откройте «Просмотр данных».
+              </p>
             )}
             <dl className="grid gap-3 sm:grid-cols-2">
               {[

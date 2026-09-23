@@ -5,6 +5,7 @@ import {
   extractionPanelMode,
   extractionShellVariant,
   extractionTriggerLabel,
+  hasPrefillableExtraction,
   isDegradedExtraction,
   isExtractionDraft,
   isLowConfidence,
@@ -92,8 +93,68 @@ describe("isDegradedExtraction", () => {
         header: { invoice_amount: "1" },
         line_items: [],
         meta: { engine_id: "docling" },
+        confidence: 0.9,
       }),
     ).toBe("done");
+  });
+
+  it("treats empty header and low confidence as degraded banner", () => {
+    expect(
+      ocrBannerFromExtraction({
+        schema_version: "v1",
+        header: {},
+        line_items: [],
+        meta: { engine_id: "docling" },
+        confidence: 0.9,
+      }),
+    ).toBe("degraded");
+    expect(
+      ocrBannerFromExtraction({
+        schema_version: "v1",
+        header: { invoice_amount: "1500", currency: "USD" },
+        line_items: [],
+        meta: { engine_id: "docling" },
+        confidence: 0.35,
+      }),
+    ).toBe("degraded");
+    expect(
+      ocrBannerFromExtraction({
+        schema_version: "v1",
+        header: {},
+        line_items: [],
+        meta: { engine_id: "timeout" },
+        warnings: ["degraded", "ocr_timeout"],
+      }),
+    ).toBe("degraded");
+  });
+});
+
+describe("hasPrefillableExtraction", () => {
+  it("detects header and line fallbacks", () => {
+    expect(
+      hasPrefillableExtraction({
+        schema_version: "v1",
+        header: { invoice_amount: "10" },
+        line_items: [],
+        meta: {},
+      }),
+    ).toBe(true);
+    expect(
+      hasPrefillableExtraction({
+        schema_version: "v1",
+        header: {},
+        line_items: [{ line_amount: "5", currency: "EUR" }],
+        meta: {},
+      }),
+    ).toBe(true);
+    expect(
+      hasPrefillableExtraction({
+        schema_version: "v1",
+        header: {},
+        line_items: [],
+        meta: {},
+      }),
+    ).toBe(false);
   });
 });
 

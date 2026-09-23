@@ -5,12 +5,14 @@
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
+REPO_ROOT="$(cd "${ROOT}/.." && pwd)"
 COMPOSE_NETWORK="${COMPOSE_NETWORK:-vdp_default}"
 PLAYWRIGHT_IMAGE="${PLAYWRIGHT_IMAGE:-mcr.microsoft.com/playwright:v1.62.1-jammy}"
 # In-container URLs on compose network (ignore host CORE_URL / PLAYWRIGHT_BASE_URL from Makefile).
 E2E_FE_URL="${E2E_FE_URL:-http://fe:5173}"
 E2E_CORE_URL="${E2E_CORE_URL:-http://core:8080}"
 E2E_WIPE_AFTER="${E2E_WIPE_AFTER:-1}"
+VDP_REAL_INVOICE_SAMPLES="${VDP_REAL_INVOICE_SAMPLES:-${REPO_ROOT}/вводные/примеры документов/Инвойсы}"
 
 echo "== health (compose network ${COMPOSE_NETWORK}) =="
 docker run --rm --network "${COMPOSE_NETWORK}" curlimages/curl:latest \
@@ -37,6 +39,7 @@ docker run --rm \
   --network "${COMPOSE_NETWORK}" \
   -v "${ROOT}/fe:/fe:ro" \
   -v "${ROOT}/testdata:/testdata:ro" \
+  -v "${VDP_REAL_INVOICE_SAMPLES}:/vvodnye-invoices:ro" \
   -w /work \
   -e PLAYWRIGHT_BASE_URL="${E2E_FE_URL}" \
   -e CORE_URL="${E2E_CORE_URL}" \
@@ -46,6 +49,7 @@ docker run --rm \
   -e E2E_WIPE_AFTER="${E2E_WIPE_AFTER}" \
   -e VDP_ROBOT_FIXTURE_PACK="${VDP_ROBOT_FIXTURE_PACK}" \
   -e VDP_ROBOT_FIXTURES_ROOT="/testdata/robot-fixtures" \
+  -e VDP_REAL_INVOICE="/vvodnye-invoices/Euroled Invoice-25918.pdf" \
   "${PLAYWRIGHT_IMAGE}" \
   bash -lc '
 set -euo pipefail

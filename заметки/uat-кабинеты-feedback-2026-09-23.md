@@ -18,100 +18,117 @@
 | 08:50 | user | wizard docs + OCR stub PDF | OCR limitations banner | F1 |
 | 08:51 | user | parties default org | Inline Org first, не ООО Пример | F2 |
 | 08:52 | user | change CP keeps org (select) | orgKept=true | F3 note |
-| 08:53–08:57 | user | import/good/advance + submit | OK → form card ВЭД-05e8f9ff awaits manager | F6, F7 |
+| 08:53–08:57 | user | import/good/advance + submit | OK → form card awaits manager | F6, F7 |
 | 08:55 | API | 8 combos create+submit | all 201/200 → form_waiting_verification | — |
 | 08:56 | API | continuity eco/manager no_docs | stuck: invoice document required | F5 |
 | 08:56 | API | eco@ role eco_start | 403 when ECO slot off | F8 note |
 | 08:57 | API | manager eco_reject | → form_waiting_corrections | OK |
 | 09:01 | API | spine+invoice → payment_sent | OK; provider card no PII | — |
-| 09:01 | API | root_cancel draft | 403 FORBIDDEN | F11 |
-| 09:01 | API | bank create | 400 Idempotency-Key required | F12 note |
+| 09:01 | API | root_cancel actions/root_cancel | 403 FORBIDDEN | F11 |
+| 09:01 | API | bank create без Idempotency-Key | 400 | F12 note |
+| 09:20 | API | spine → report → completed | OK | — |
+| 09:20 | API | import advance + treasurer | → completed | — |
+| 09:20 | API | refund init/start/sent | → payment_refund_sent | — |
+| 09:20 | API | shipment waiting→accept | → completed | — |
+| 09:20 | API | postpay rate POST /forms/{id}/rate | 200 at payment_sent | — |
+| 09:21 | API | export PAY_FROM_EXPORT full | → completed | — |
+| 09:21 | API | bank + Idempotency-Key | 201 channel=bank | — |
+| 09:21 | API | root PUT manager/.../cancel | → canceled_by_manager | F11 clarified |
+| 09:21 | API | reject → user form/accept resubmit | → form_waiting_verification | OK |
+| 09:22 | API | OCR readiness + real PDF extract | readiness ok; amount not prefilled | F1 |
+| 09:20 | Go | HTTP export/refund/shipment/IMP tests | ok | — |
 
 ### Типы заявок (API create+submit)
 
-Все 8 комбинаций direction×kind×condition: OK → `form_waiting_verification` (до wipe core).
+Все 8 комбинаций direction×kind×condition: OK → `form_waiting_verification`.
 
 ### Spine
 
-- **UI User** create+submit import/good/advance: OK (ВЭД-05e8f9ff; данные могли сброситься после restart core).  
-- **API** Manager continuity + assign provider + provider sent → `payment_sent`: OK (form `016d6161-…`).  
-- **Provider ACL API:** карточка без passport/email/user@vdp/ФИО — OK.  
-- **UI Manager/Provider/ICO/ECO:** не завершён (auto-review блокировал смену роли в браузере).  
-- Postpay / export ladder / refund / shipment / return: **остаток**.
+- **UI User** create+submit import/good/advance + PDF: OK.  
+- **API** continuity approve → order → payment → provider → report → **completed**: OK.  
+- **Reject** → form_waiting_corrections; **resubmit** via `PUT .../form/accept` → form_waiting_verification: OK.  
+- **Provider ACL API:** без passport/email/user@vdp/ФИО: OK.  
+- **UI Manager/Provider/ICO/ECO в браузере:** не закрыт (auto-review блокировал смену роли); покрытие API + Go HTTP + ранее login smoke Playwright.
+
+### Денежные лестницы (API)
+
+| Лестница | Итог статуса | Примечание |
+|---|---|---|
+| import advance + treasurer confirm | completed | PATCH treasurer/confirm-payment |
+| postpay + set rate | payment_sent + rate 200 | POST /api/v1/forms/{id}/rate |
+| export PAY_FROM_EXPORT | completed | order-advance/* → treas → complete-from-verification-treasurer |
+| refund | payment_refund_sent | POST refund/init → start → sent |
+| shipment branch | completed | POST shipment/waiting from payment_sent → accept |
+
+### Ветки
+
+| Ветка | Результат |
+|---|---|
+| OCR F1 | readiness ok; stub+real PDF без prefill суммы (W1) |
+| bank channel | 201 + channel=bank при Idempotency-Key |
+| root cancel | канон: `PUT /manager/form-payment/{id}/cancel` → canceled_by_manager; `actions/root_cancel` 403 |
+| treasurer | login OK; import advance + export paths OK |
+| return-episode | API refund OK; **browser return** → W7 (`return-episode-*.spec.ts`) |
 
 ---
 
 ## Findings
 
-### F1 — OCR на мастере: «с ограничениями», поля не prefill
+### F1 — OCR: limitations / нет prefill суммы
 
 - **Роль:** user  
-- **Тип:** import/good/advance  
-- **Шаги:** загрузка invoice+contract PDF → Далее → баннер «Распознавание завершилось с ограничениями»; сумма/номер не подставились.  
-- **Severity:** major (на stub fixture ожидаемо; на реальных PDF из `вводные/примеры документов` — отдельный прогон W1).  
-- **Evidence:** wizard step 2–4, кнопка «Просмотр данных».  
+- **Шаги:** wizard stub PDF → banner limitations; API real PDF `inv, pl 2026DTD(RU)01005.pdf` + extraction/start → invoice_amount остаётся ручным.  
+- **Severity:** major  
 - **Волна:** W1  
+- **Закрытие (W1):** честный copy шага Документы / banner (без «подставятся сами»); degraded при empty/low-conf/fixture; mergeExtractionPrefill + line fallback; Docling confidence↑ при полях; `ocr-path-gate` green (3 e2e, real Euroled PDF).
 
 ### F2 — Default организация = Inline Org*, не seed «ООО Пример»
 
-- **Роль:** user  
-- **Шаги:** шаг «Стороны»; combobox org value = `Inline Org 1789558348009`; ООО Пример в списке 6-м среди 16.  
-- **Severity:** major (Choice Overload / Hick на local UAT).  
-- **Evidence:** API `GET /organizations` → 16 orgs, E2E Inline* доминируют.  
-- **Волна:** W2  
+- **Severity:** major → **W2**
 
 ### F3 — Сброс org при смене CP
 
-- **Проверка:** смена CP через native select → `orgKept: true` (ООО Пример сохраняется).  
-- **Severity:** note — не подтверждён на этом пути; оставить в W2 как regression-тест (dialog pick путь не прогнан).  
+- select-path: orgKept=true. **note** / regression в W2.
 
-### F5 — Путь no_documents: compliance не проходит без инвойса
+### F5 — no_documents → 409 invoice required на accept
 
-- **Роль:** manager continuity / eco  
-- **Шаги:** `no_documents: true` → submit → `eco_accept` / `mgr eco_accept` → **409** `invoice document is required`; статус остаётся `form_verification`.  
-- **Severity:** major (домен ок, но UX «нет документов» вводит в тупик до approve).  
-- **Волна:** W3  
+- **Severity:** major → **W3**
 
-### F6 — Путаница полей Инвойс / Контракт на карточке
+### F6 — Путаница Инвойс / Контракт на карточке
 
-- **Роль:** user  
-- **Шаги:** в мастере введён номер инвойса `INV-UAT-001`; на карточке: Инвойс=`template`, Контракт=`INV-UAT-001`.  
-- **Severity:** major (копирайт/маппинг полей).  
-- **Evidence:** скрин `uat-wizard-after-submit.png`, заявка ВЭД-05e8f9ff.  
-- **Волна:** W4  
+- **Severity:** major → **W4**
 
-### F7 — Sticky CTA «Создать заявку» на карточке заявки
+### F7 — Sticky «Создать заявку» на detail
 
-- **Роль:** user  
-- **Шаги:** после submit на detail формы FAB/кнопка «Создать заявку» остаётся внизу.  
-- **Severity:** minor (отвлекает от «следующего шага» по статусу).  
-- **Волна:** W4 или hygiene  
+- **Severity:** minor → **W4**
 
-### F8 — ECO direct API 403 при выключенном слоте
+### F8 — ECO direct 403 при выключенном слоте
 
-- **Роль:** eco  
-- **Шаги:** `PUT .../eco/.../form/start` → 403; manager `eco_start` → 200.  
-- **Severity:** note (пилот continuity через manager — ожидаемо).  
+- **Severity:** note (continuity через manager).
 
-### F9 — Карточка «Доработка»: «контрагент не указан» при reject
+### F9 — «контрагент не указан» на доработке после docs-reject
 
-- **Роль:** user  
-- **Шаги:** после manager eco_reject дашборд: `ВЭД-3bf40eea Доработка контрагент не указан`.  
-- **Severity:** major (копирайт/проекция вводит в заблуждение — reject был по docs, не по CP).  
-- **Волна:** W4 или W5  
+- **Severity:** major → **W4**
 
-### F11 — root_cancel на draft: 403
+### F11 — root_cancel: имя действия vs канон
 
-- **Роль:** root  
-- **Шаги:** `POST /api/v1/forms/{id}/actions/root_cancel` → 403 role not allowed.  
-- **Severity:** major (UAT-сценарий root cancel из docs/pilot).  
-- **Волна:** W5  
+- `POST .../actions/root_cancel` → 403.  
+- Канон scenarioverify: `PUT /api/v1/manager/form-payment/{id}/cancel` от root → **canceled_by_manager** (OK).  
+- `POST .../actions/cancel` → canceled_by_user.  
+- **Severity:** major (docs/UI root_cancel_form vs живой path) → **W5** (сверить FE action-bridge / docs, не ломать manager cancel).
 
-### F12 — Bank create требует Idempotency-Key
+### F12 — Bank без Idempotency-Key → 400
 
-- **Роль:** bank  
-- **Шаги:** POST `/api/v1/bank/forms` без ключа → 400.  
-- **Severity:** note (контракт ок; проверить UI `/testing` smoke с ключом).  
+- **Severity:** note; с ключом 201 + channel badge payload OK.
+
+---
+
+## DoD сессии UAT (чеклист)
+
+- [x] Журнал заполнен по spine + ≥3 типа заявок (8 combos + ladders)
+- [x] Blocker/major имеют живой repro (F1–F2, F5–F7, F9, F11)
+- [x] ≥1 волна-план (W1–W7)
+- [x] Не утверждать «всё зелёное» UI всех ролей — закрытие UI → **W6**; browser лестницы/return → **W7**; OCR real PDF → **W1**
 
 ---
 
@@ -119,8 +136,10 @@
 
 | Волна | Тема | Finding ids | Plan file |
 |---|---|---|---|
-| W1 | OCR wizard: prefills / reals PDFs / banner UX | F1 | `.cursor/plans/uat_w1_ocr_wizard_prefill.plan.md` |
+| W1 | OCR wizard: prefills / **реальные PDF browser** / banner UX | F1 | `.cursor/plans/uat_w1_ocr_wizard_prefill.plan.md` |
 | W2 | Гигиена org/CP pick | F2, F3 | `.cursor/plans/uat_w2_parties_hygiene.plan.md` |
 | W3 | no_documents → gate инвойса до compliance | F5 | `.cursor/plans/uat_w3_no_docs_invoice_gate.plan.md` |
 | W4 | Маппинг Инвойс/Контракт + sticky CTA + copy доработки | F6, F7, F9 | `.cursor/plans/uat_w4_card_field_labels.plan.md` |
-| W5 | Root cancel AuthZ / admin path | F11 | `.cursor/plans/uat_w5_root_cancel.plan.md` |
+| W5 | Root cancel docs/FE path vs manager cancel | F11 | `.cursor/plans/uat_w5_root_cancel.plan.md` |
+| W6 | **Browser UI** Manager / ICO / ECO / Provider / Root / Treasurer | остаток UI ролей | `.cursor/plans/uat_w6_role_cabinets_browser.plan.md` |
+| W7 | **Browser лестницы** postpay / export / refund / shipment + return | остаток UI ladders | `.cursor/plans/uat_w7_browser_ladders_return.plan.md` |

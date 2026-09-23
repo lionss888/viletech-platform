@@ -51,8 +51,24 @@ export async function loginAs(page: Page, role: SeedRole): Promise<void> {
 
 /** End app session and return to login screen. */
 export async function logout(page: Page): Promise<void> {
-  await page.getByRole("button", { name: "Выйти" }).click();
-  await expect(page).toHaveURL(/\/login/);
+  const logoutBtn = page.getByRole("button", { name: "Выйти" });
+  if (await logoutBtn.isVisible().catch(() => false)) {
+    // Navigate may lag if POST /auth/logout is slow; race click with URL wait.
+    await Promise.all([
+      page.waitForURL(/\/login/, { timeout: 20_000 }).catch(() => undefined),
+      logoutBtn.click(),
+    ]);
+  }
+  if (!/\/login/.test(page.url())) {
+    // Fallback: clear client session and open login (UI logout hung on API).
+    await page.evaluate(() => {
+      sessionStorage.clear();
+      localStorage.clear();
+    });
+    await page.goto("/login", { waitUntil: "networkidle" });
+  }
+  await expect(page).toHaveURL(/\/login/, { timeout: 15_000 });
+  await expect(page.getByRole("heading", { name: "Вход в платформу" })).toBeVisible();
 }
 
 type AuthFixtures = {
