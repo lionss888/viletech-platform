@@ -45,6 +45,9 @@ func TestDoclingPrimaryConvertsAndMaps(t *testing.T) {
 	if out.Header.CompanyName == "" {
 		t.Fatal("expected company")
 	}
+	if out.Confidence < 0.55 {
+		t.Fatalf("expected raised confidence when fields found, got %v", out.Confidence)
+	}
 }
 
 func TestDoclingPrimaryUsesContentBase64(t *testing.T) {
@@ -86,5 +89,12 @@ func TestMapDoclingTextHeuristics(t *testing.T) {
 	}
 	if r.Header.InvoiceAmount != "1200.50" {
 		t.Fatalf("amount=%s", r.Header.InvoiceAmount)
+	}
+	if r.Confidence < 0.55 {
+		t.Fatalf("confidence=%v", r.Confidence)
+	}
+	empty := engine.MapDoclingText(engine.Input{FormPaymentID: "y"}, "no commercial fields here")
+	if empty.Confidence >= 0.55 {
+		t.Fatalf("empty layout should stay low confidence, got %v", empty.Confidence)
 	}
 }

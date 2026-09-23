@@ -1,4 +1,4 @@
-.PHONY: deps test test-integration test-adapters build db-setup db-migrate compose-db-migrate run-hub run-core run smoke staging-smoke stop compose-up compose-up-prod compose-down compose-ps compose-e2e compose-fe-smoke compose-fe-refresh compose-fe-prod-smoke compose-playwright lovable-seed-check platform-mounts-check integration-gate playwright-e2e playwright-pilot playwright-pilot-matrix robot-matrix-check docs-format-check check-deploy-secrets release-gate image-build image-push image-build-push compose-release-config-check compose-release-up deploy-alpha deploy-beta deploy-gamma rollback-alpha rollback-beta rollback-gamma rollback-rehearsal-local test-cd-scripts notify-mgmt core-seed-reset install-git-hooks precommit-gate prepush-gate ci-pr-fast ci-pr ci-pr-pilot ci-main perf-gate
+.PHONY: deps test test-integration test-adapters build db-setup db-migrate compose-db-migrate run-hub run-core run smoke staging-smoke stop compose-up compose-up-prod compose-down compose-ps compose-e2e compose-fe-smoke compose-fe-refresh compose-fe-prod-smoke compose-playwright lovable-seed-check platform-mounts-check integration-gate playwright-e2e playwright-pilot playwright-pilot-matrix robot-matrix-check docs-format-check check-deploy-secrets release-gate image-build image-push image-build-push compose-release-config-check compose-release-up deploy-alpha deploy-beta deploy-gamma rollback-alpha rollback-beta rollback-gamma rollback-rehearsal-local test-cd-scripts notify-mgmt core-seed-reset install-git-hooks precommit-gate prepush-gate ci-pr-fast ci-pr ci-pr-pilot ci-main perf-gate ocr-path-gate
 
 CORE_DIR := core
 HUB_DIR := hub
@@ -9,6 +9,13 @@ IMAGE_REGISTRY ?= ghcr.io
 IMAGE_NAMESPACE ?= $(shell git -C .. config --get remote.origin.url 2>/dev/null | sed -E 's#.*[:/]([^/]+)/[^/]+(\.git)?$$#\1#' | tr '[:upper:]' '[:lower:]' || echo viletech)
 IMAGE_TAG ?= $(shell git -C .. rev-parse --short HEAD 2>/dev/null || echo local)
 PIN_FILE ?= .release-images.env
+
+# Prefer toolchain matching .go-version (e.g. ~/sdk/go1.22.12) over a newer default Go on PATH.
+PINNED_GO_BIN := $(shell ./scripts/resolve-pinned-go.sh 2>/dev/null)
+ifneq ($(strip $(PINNED_GO_BIN)),)
+export PATH := $(PINNED_GO_BIN):$(PATH)
+export GOROOT := $(shell cd "$(PINNED_GO_BIN)/.." && pwd)
+endif
 
 export DATABASE_URL_CORE ?= postgres://vdp_core:vdp_core@localhost:5432/vdp_core?sslmode=disable
 export DATABASE_URL_HUB ?= postgres://vdp_hub:vdp_hub@localhost:5432/vdp_hub?sslmode=disable
@@ -59,6 +66,12 @@ extraction-docling-smoke:
 	@chmod +x scripts/extraction-docling-smoke.sh
 	@./scripts/extraction-docling-smoke.sh
 
+# Before human OCR UAT: Docling smoke + wizard journey (pending must end in done or fail).
+# Requires compose-up. Does not run @pilot-matrix. New e2e is outside PR-smoke → merge-ready needs ci-main.
+ocr-path-gate:
+	@chmod +x scripts/ocr-path-gate.sh
+	@./scripts/ocr-path-gate.sh
+
 extraction-ollama-ensure:
 	@chmod +x scripts/extraction-ollama-ensure.sh
 	@./scripts/extraction-ollama-ensure.sh
@@ -94,12 +107,15 @@ compose-db-migrate:
 
 # Existing Postgres volumes skip docker-entrypoint-initdb.d; migrate before core seed.
 # --wait: healthy after start; compose-db-migrate also waits through post-initdb restart.
+# Retry helper: compose --wait exit-0 race + "No such container" on full stack up.
 compose-up:
-	docker compose up -d --build --wait postgres-core postgres-hub
+	@chmod +x scripts/compose-up-with-retry.sh
+	@./scripts/compose-up-with-retry.sh docker compose up -d --build --wait postgres-core postgres-hub
 	@$(MAKE) compose-db-migrate
-	docker compose up -d --build
+	@./scripts/compose-up-with-retry.sh docker compose up -d --build
 	@echo "waiting for core+hub+fe health..."
-	@ok=0; for i in 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28 29 30; do \
+	@# Vite cold start after recreate can exceed 90s (observed ~91s); allow ~180s.
+	@ok=0; for i in $$(seq 1 90); do \
 		if curl -sf http://127.0.0.1:8080/api/v1/health >/dev/null && \
 		   curl -sf http://127.0.0.1:8081/api/v1/health >/dev/null && \
 		   curl -sf http://127.0.0.1:5173/ >/dev/null; then \
@@ -121,11 +137,12 @@ core-seed-reset:
 	@echo "core restarted; seed accounts kept, forms wiped (local only)"
 
 compose-up-prod:
-	docker compose --profile prod up -d --build --wait postgres-core postgres-hub
+	@chmod +x scripts/compose-up-with-retry.sh
+	@./scripts/compose-up-with-retry.sh docker compose --profile prod up -d --build --wait postgres-core postgres-hub
 	@$(MAKE) compose-db-migrate
-	docker compose --profile prod up -d --build
+	@./scripts/compose-up-with-retry.sh docker compose --profile prod up -d --build
 	@echo "waiting for core+hub+fe-prod health..."
-	@ok=0; for i in 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28 29 30; do \
+	@ok=0; for i in $$(seq 1 90); do \
 		if curl -sf http://127.0.0.1:8080/api/v1/health >/dev/null && \
 		   curl -sf http://127.0.0.1:8081/api/v1/health >/dev/null && \
 		   curl -sf http://127.0.0.1:3000/login >/dev/null; then \
@@ -206,8 +223,9 @@ integration-gate:
 	$(MAKE) compose-e2e
 
 # Local PR parity for VDP CI (vdp-ci.yml) without full nightly Playwright / release-gate.
-# Fast: static checks (parallel) + compose-e2e.
+# Fast: env-parity (fail-fast) + static checks (parallel) + compose-e2e.
 ci-pr-fast:
+	$(MAKE) check-env-parity
 	@chmod +x scripts/ci-pr-static.sh
 	@./scripts/ci-pr-static.sh
 	$(MAKE) compose-e2e
@@ -375,8 +393,9 @@ notify-mgmt:
 		$(if $(NEXT),--next "$(NEXT)") \
 		$(if $(DRY_RUN),--dry-run)
 
-# Local docs-format + unit gate + management Telegram (pass and fail). Used by .githooks/pre-commit.
+# Same surface as .githooks/pre-commit: env-parity → docs-format + unit + TG on fail.
 precommit-gate:
+	$(MAKE) check-env-parity
 	@chmod +x scripts/precommit-mgmt-notify.sh
 	./scripts/precommit-mgmt-notify.sh
 

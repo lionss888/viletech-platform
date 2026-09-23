@@ -1,6 +1,7 @@
 package extraction
 
 import (
+	"context"
 	"encoding/json"
 	"testing"
 )
@@ -48,5 +49,29 @@ func TestContentHashStable(t *testing.T) {
 	b := FixtureResult("f3")
 	if ContentHash(a) != ContentHash(b) {
 		t.Fatal("hash mismatch")
+	}
+}
+
+func TestDegradedResultAndIsDegraded(t *testing.T) {
+	t.Parallel()
+	r := DegradedResult("f4", EngineUnavailable, "ocr_transport_failed")
+	if err := Validate(r); err != nil {
+		t.Fatal(err)
+	}
+	if r.Header.InvoiceAmount != "" {
+		t.Fatalf("want empty amount, got %q", r.Header.InvoiceAmount)
+	}
+	if !IsDegraded(r) {
+		t.Fatal("expected degraded")
+	}
+	if !IsDegraded(FixtureResult("f5")) {
+		t.Fatal("fixture must be degraded")
+	}
+	ok := Result{SchemaVersion: SchemaVersion, Meta: Meta{EngineID: "docling"}}
+	if IsDegraded(ok) {
+		t.Fatal("docling must not be degraded")
+	}
+	if ClassifyOCRFailEngine(context.DeadlineExceeded) != EngineTimeout {
+		t.Fatal("deadline -> timeout")
 	}
 }

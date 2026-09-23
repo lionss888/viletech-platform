@@ -2,6 +2,7 @@ package ocr
 
 import (
 	"context"
+	"errors"
 	"log/slog"
 	"os"
 	"time"
@@ -61,6 +62,28 @@ func fixtureFields(formID string) map[string]any {
 	return extraction.HubFields(r)
 }
 
+func degradedFields(formID, engineID, reason string) map[string]any {
+	r := extraction.DegradedResult(formID, engineID, reason)
+	return extraction.HubFields(r)
+}
+
+func callbackBody(formID, eventID string, fieldsMap map[string]any) map[string]any {
+	cbBody := map[string]any{
+		"form_payment_id": formID,
+		"action":          "ocr_recognized",
+		"event_id":        eventID,
+		"fields":          fieldsMap,
+	}
+	for k, v := range fieldsMap {
+		cbBody[k] = v
+	}
+	return cbBody
+}
+
+func (p *Plugin) postRecognizedCallback(ctx context.Context, formID, eventID string, fieldsMap map[string]any) (map[string]any, error) {
+	return remote.PostCoreCallback(ctx, p.coreURL, p.secret, p.timeout, callbackBody(formID, eventID, fieldsMap))
+}
+
 func (p *Plugin) Execute(ctx context.Context, action string, params map[string]any) (map[string]any, error) {
 	ctx, cancel := context.WithTimeout(ctx, p.timeout)
 	defer cancel()
@@ -77,9 +100,9 @@ func (p *Plugin) Execute(ctx context.Context, action string, params map[string]a
 				"fields": fields, "contract": contract,
 			}
 		} else {
-			out, err := remote.PostJSON(ctx, p.baseURL, p.timeout, contract)
-			if err != nil {
-				return err
+			out, postErr := remote.PostJSON(ctx, p.baseURL, p.timeout, contract)
+			if postErr != nil {
+				return postErr
 			}
 			result = out
 			if result["status"] == nil {
@@ -91,24 +114,42 @@ func (p *Plugin) Execute(ctx context.Context, action string, params map[string]a
 			}
 		}
 		fieldsMap, _ := result["fields"].(map[string]any)
-		cbBody := map[string]any{
-			"form_payment_id": formID,
-			"action":          "ocr_recognized",
-			"event_id":        eventID,
-			"fields":          fieldsMap,
-		}
-		for k, v := range fieldsMap {
-			cbBody[k] = v
-		}
-		cb, err := remote.PostCoreCallback(ctx, p.coreURL, p.secret, p.timeout, cbBody)
-		if err != nil {
-			return err
+		cb, cbErr := p.postRecognizedCallback(ctx, formID, eventID, fieldsMap)
+		if cbErr != nil {
+			return cbErr
 		}
 		result["core_callback"] = cb
 		return nil
 	})
 	if err != nil {
-		return nil, err
+		engineID := extraction.ClassifyOCRFailEngine(err)
+		reason := "ocr_transport_failed"
+		if errors.Is(err, context.DeadlineExceeded) || errors.Is(err, context.Canceled) {
+			engineID = extraction.EngineTimeout
+			reason = "ocr_timeout"
+		}
+		p.log.Warn("ocr recognize failed, degraded callback", "form_payment_id", formID, "err", err, "engine_id", engineID)
+		fieldsMap := degradedFields(formID, engineID, reason)
+		cbTimeout := p.timeout
+		if cbTimeout <= 0 {
+			cbTimeout = 5 * time.Second
+		}
+		cbCtx, cbCancel := context.WithTimeout(context.Background(), cbTimeout)
+		defer cbCancel()
+		cb, cbErr := p.postRecognizedCallback(cbCtx, formID, eventID, fieldsMap)
+		if cbErr != nil {
+			p.log.Error("ocr degraded callback failed", "form_payment_id", formID, "err", cbErr)
+			return nil, err
+		}
+		return map[string]any{
+			"status":         "recognized",
+			"mode":           "degraded",
+			"ml":             false,
+			"fields":         fieldsMap,
+			"contract":       contract,
+			"core_callback":  cb,
+			"degraded_error": err.Error(),
+		}, nil
 	}
 	return result, nil
 }

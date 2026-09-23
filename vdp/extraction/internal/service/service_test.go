@@ -2,9 +2,30 @@ package service
 
 import (
 	"context"
+	"errors"
+	"strings"
 	"testing"
 	"time"
+
+	"github.com/viletech/vdp/extraction/internal/engine"
+	"github.com/viletech/vdp/shared/extraction"
 )
+
+// waitGoldAppend blocks until async runShadowGold finished writing (avoids t.TempDir cleanup race).
+func waitGoldAppend(t *testing.T, svc *Service) {
+	t.Helper()
+	deadline := time.Now().Add(2 * time.Second)
+	for {
+		recs, listErr := svc.GoldStore().List()
+		if listErr == nil && len(recs) > 0 {
+			return
+		}
+		if time.Now().After(deadline) {
+			t.Fatal("gold append did not finish")
+		}
+		time.Sleep(20 * time.Millisecond)
+	}
+}
 
 func TestRecognizeFixture(t *testing.T) {
 	t.Parallel()
@@ -24,15 +45,42 @@ func TestRecognizeFixture(t *testing.T) {
 	if out.Fields["invoice_json"] == nil || out.Fields["invoice_json"] == "" {
 		t.Fatal("missing invoice_json")
 	}
-	deadline := time.Now().Add(2 * time.Second)
-	for {
-		recs, listErr := svc.GoldStore().List()
-		if listErr == nil && len(recs) > 0 {
-			break
-		}
-		if time.Now().After(deadline) {
-			t.Fatal("gold append did not finish")
-		}
-		time.Sleep(20 * time.Millisecond)
+	inv, _ := out.Fields["invoice_json"].(string)
+	if !strings.Contains(inv, "fixture") || !strings.Contains(inv, "degraded") {
+		t.Fatalf("fixture mode should be marked degraded: %s", inv)
 	}
+	waitGoldAppend(t, svc)
+}
+
+type failPrimary struct{}
+
+func (failPrimary) Name() string { return "broken" }
+func (failPrimary) Extract(context.Context, engine.Input) (extraction.Result, error) {
+	return extraction.Result{}, errors.New("boom")
+}
+
+func TestRecognizePrimaryFailUsesDegradedNotFakeMoney(t *testing.T) {
+	t.Parallel()
+	svc := New(Config{Primary: "fixture", GoldDir: t.TempDir()})
+	svc.primary = failPrimary{}
+	svc.fallback = nil
+	out, err := svc.Recognize(context.Background(), RecognizeRequest{
+		FormPaymentID: "form-fail",
+		EventID:       "ev-fail",
+		Payload:       map[string]any{"file_name": "a.txt", "text": "x"},
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if out.Mode != "fixture_error" {
+		t.Fatalf("mode=%s", out.Mode)
+	}
+	inv, _ := out.Fields["invoice_json"].(string)
+	if strings.Contains(inv, `"invoice_amount":"1000"`) {
+		t.Fatalf("must not use fixture money: %s", inv)
+	}
+	if !strings.Contains(inv, "fixture_error") {
+		t.Fatalf("want fixture_error engine: %s", inv)
+	}
+	waitGoldAppend(t, svc)
 }

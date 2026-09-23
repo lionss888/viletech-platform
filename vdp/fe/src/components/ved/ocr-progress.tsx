@@ -1,6 +1,14 @@
 import { useEffect, useState } from "react";
 
-import { CREATE_REVIEW_OCR_DONE, CREATE_REVIEW_OCR_PENDING } from "@/lib/ved/create-review-copy";
+import {
+  CREATE_REVIEW_OCR_AUTH_LOST,
+  CREATE_REVIEW_OCR_DEGRADED,
+  CREATE_REVIEW_OCR_DONE,
+  CREATE_REVIEW_OCR_FAILED,
+  CREATE_REVIEW_OCR_PENDING,
+  CREATE_REVIEW_OCR_UNAVAILABLE,
+} from "@/lib/ved/create-review-copy";
+import type { OcrBannerState } from "@/lib/ved/extraction";
 import { nextOcrProgress, OCR_PROGRESS_START } from "@/lib/ved/ocr-progress-model";
 import { cn } from "@/lib/utils";
 
@@ -22,28 +30,51 @@ function usePrefersReducedMotion(): boolean {
   return reduced;
 }
 
+function bannerCopy(state: OcrBannerState): string {
+  switch (state) {
+    case "unavailable":
+      return CREATE_REVIEW_OCR_UNAVAILABLE;
+    case "degraded":
+      return CREATE_REVIEW_OCR_DEGRADED;
+    case "failed":
+      return CREATE_REVIEW_OCR_FAILED;
+    case "auth_lost":
+      return CREATE_REVIEW_OCR_AUTH_LOST;
+    case "done":
+      return CREATE_REVIEW_OCR_DONE;
+    default:
+      return CREATE_REVIEW_OCR_PENDING;
+  }
+}
+
 export type OcrProgressProps = {
-  /** Whether recognition has actually completed (prefill applied). */
-  done: boolean;
-  /** Called after the completed state has been shown briefly, so the parent can unmount it. */
+  /** Canonical banner state from the wizard. */
+  state: OcrBannerState;
+  /** Called after successful done has been shown briefly. */
   onHide?: () => void;
   /** Root testid; children derive `${testId}-bar` and state labels. */
   testId?: string;
 };
 
 /**
- * Recognition progress banner. Eases toward a sub-100% ceiling while pending and snaps to 100% with
- * a success message once `done`, then asks the parent to hide it. See `ocr-progress-model` for why
- * the value is an honest estimate rather than a backend-reported percentage.
+ * Recognition status banner: pending progress, done (auto-hide), or sticky
+ * unavailable / degraded / failed / auth_lost.
  */
-export function OcrProgress({ done, onHide, testId = "wizard-ocr-progress" }: OcrProgressProps) {
+export function OcrProgress({ state, onHide, testId = "wizard-ocr-progress" }: OcrProgressProps) {
   const [value, setValue] = useState(OCR_PROGRESS_START);
   const reduced = usePrefersReducedMotion();
+  const pending = state === "pending";
+  const done = state === "done";
+  const stickyFail =
+    state === "failed" ||
+    state === "unavailable" ||
+    state === "degraded" ||
+    state === "auth_lost";
   useEffect(() => {
-    if (done) return;
+    if (!pending) return;
     const id = setInterval(() => setValue((prev) => nextOcrProgress(prev, false)), TICK_MS);
     return () => clearInterval(id);
-  }, [done]);
+  }, [pending]);
   useEffect(() => {
     if (!done) return;
     setValue(100);
@@ -51,6 +82,25 @@ export function OcrProgress({ done, onHide, testId = "wizard-ocr-progress" }: Oc
     return () => clearTimeout(id);
   }, [done, onHide]);
   const rounded = Math.round(value);
+  const copy = bannerCopy(state);
+  if (stickyFail) {
+    const tone =
+      state === "degraded"
+        ? "bg-wait-soft text-wait"
+        : "bg-destructive-soft text-destructive";
+    return (
+      <div
+        className={cn("mb-4 rounded-md px-3 py-2.5", tone)}
+        data-testid={testId}
+        role="status"
+        aria-live="polite"
+      >
+        <p className="text-sm font-medium" data-testid={`${testId}-${state}`}>
+          {copy}
+        </p>
+      </div>
+    );
+  }
   return (
     <div
       className={cn(
@@ -70,9 +120,7 @@ export function OcrProgress({ done, onHide, testId = "wizard-ocr-progress" }: Oc
             className={cn("inline-block h-2 w-2 rounded-full bg-current", !reduced && "animate-pulse")}
           />
         )}
-        <span data-testid={done ? `${testId}-done` : "wizard-ocr-pending"}>
-          {done ? CREATE_REVIEW_OCR_DONE : CREATE_REVIEW_OCR_PENDING}
-        </span>
+        <span data-testid={done ? `${testId}-done` : "wizard-ocr-pending"}>{copy}</span>
       </div>
       <div
         className="mt-2 h-1.5 w-full overflow-hidden rounded-full bg-current/15"

@@ -1,4 +1,3 @@
-import { type Page } from "@playwright/test";
 import { test, expect } from "./fixtures/auth.fixture";
 import {
   assertCoreHealthy,
@@ -6,23 +5,9 @@ import {
   loginAllRoles,
   purgeDemoMockCounterparties,
 } from "./helpers/api";
+import { clickAction, confirmModal } from "./helpers/click-action";
 import { expectFormStatus } from "./helpers/status";
 import { waitForFormDetail } from "./helpers/form-detail";
-
-
-async function clickAction(page: Page, name: string | RegExp): Promise<void> {
-  const btn = page.getByRole("button", { name });
-  await expect(btn).toBeVisible({ timeout: 30_000 });
-  await expect(btn).toBeEnabled({ timeout: 30_000 });
-  await btn.click();
-}
-
-async function confirmModal(page: Page): Promise<void> {
-  const confirm = page.getByRole("button", { name: /^Подтвердить$/ });
-  await expect(confirm).toBeEnabled({ timeout: 20_000 });
-  await confirm.click();
-  await expect(confirm).toBeHidden({ timeout: 30_000 });
-}
 
 /**
  * Pilot Robot Matrix — refund after funds received.

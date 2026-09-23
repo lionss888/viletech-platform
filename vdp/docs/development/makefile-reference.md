@@ -28,7 +28,7 @@ Hub adapter HTTP tests docs mail sms telegram diadoc onec. Команда make t
 
 ## compose-up
 
-Порядок: postgres → `compose-db-migrate` → остальной стек (core/hub/fe). Initdb mounts на уже существующих volumes не переигрываются; migrate до seed core обязателен. Health wait, compose-fe-smoke, URL. Команда make compose-up.
+Порядок: postgres → `compose-db-migrate` → остальной стек (core/hub/fe). Initdb mounts на уже существующих volumes не переигрываются; migrate до seed core обязателен. Postgres `--wait` и полный `up -d --build` идут через `scripts/compose-up-with-retry.sh` (гонки Desktop: exit 0 на recreate, No such container). Migrate ждёт стабильный ready и nudges сервис при простое. Health wait, compose-fe-smoke, URL. Команда make compose-up.
 
 ## compose-up-prod
 
@@ -68,6 +68,10 @@ Browser E2E через Docker. Команды make playwright-e2e, make compose-
 
 После suite (успех или fail) compose-playwright вызывает POST probe-data wipe от root, чтобы не оставлять следы заявок. Отключить: E2E_WIPE_AFTER=0. Wipe разрешён на local/development/test/ci/alpha; кнопка Root «Очистить все заявки» на /testing для ручного QA.
 
+## ocr-path-gate
+
+До ручной проверки клиентом по распознаванию. Нужен уже поднятый compose. Сначала extraction-docling-smoke, затем Playwright только e2e/ocr-wizard-path.spec.ts (баннер уходит из pending). Команда make ocr-path-gate. Local QG кнопка Путь распознавания. Подробности в ocr-path-gate.md. Для merge-ready после смены этого e2e нужен make ci-main.
+
 ## playwright-pilot
 
 Быстрый UI-прогон default актёров (User/Manager/Provider/Root) по тегу `@pilot-flow` в `fe/e2e/pilot-form-flow.spec.ts`. Команда make playwright-pilot (`PLAYWRIGHT_ARGS='--grep @pilot-flow'` → compose-playwright).
@@ -90,11 +94,11 @@ Browser E2E через Docker. Команды make playwright-e2e, make compose-
 
 ## precommit-gate
 
-Локальный хук-агрегат: `docs-format-check`, затем `make test`, затем TG notify (pass/fail). Команда `make precommit-gate` / `.githooks/pre-commit`. Не заменяет `ci-pr`.
+Локальный хук-агрегат: сначала `check-env-parity` (Node и Go), затем `docs-format-check`, затем `make test`, затем TG notify только при fail. Команда `make precommit-gate`. Хук `.githooks/pre-commit` вызывает тот же target. Не заменяет `ci-pr`.
 
 ## compose-db-migrate
 
-Накатывает core/hub `*.sql` в compose Postgres. Ждёт стабильный ready (post-initdb restart) и ретраит psql при `shutting down`. Команда `make compose-db-migrate`; вызывается из `compose-up` / release up.
+Накатывает core/hub `*.sql` в compose Postgres. Ждёт стабильный ready (post-initdb restart, до WAIT_PG_MAX секунд) с nudge `up -d` при долгом not-ready и ретраит psql при `shutting down` / `starting up`. Команда `make compose-db-migrate`; вызывается из `compose-up` / release up.
 
 ## release-gate
 

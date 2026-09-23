@@ -49,7 +49,8 @@ echo "== fe: restart =="
 docker compose restart fe
 echo "== fe: wait for HTTP 200 =="
 ok=0
-for _ in $(seq 1 30); do
+# Vite cold start after restart can exceed 90s; allow ~180s.
+for _ in $(seq 1 90); do
   if curl -sf -o /dev/null http://127.0.0.1:5173/; then
     ok=1
     break

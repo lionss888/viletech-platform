@@ -9,7 +9,8 @@ Version 22.17.0 from vdp/fe/.nvmrc
 Package manager npm 10.9.2 or higher
 
 ### Go
-Version 1.22 from .github/workflows/vdp-ci.yml
+Version 1.22 from vdp/.go-version. CI reads the same file into setup-go.
+Local check: make check-env-parity compares go version major.minor to that file before commit.
 
 ### Docker
 Docker Engine 24.0 or higher
@@ -66,7 +67,14 @@ Verify:
 go version
 ```
 
-Expected output: go version go1.22.x.
+Expected output: go version go1.22.x (major.minor must match vdp/.go-version).
+
+Before commit, run make check-env-parity from the vdp directory. Local gates and the pre-commit hook prefer an already downloaded toolchain under HOME/sdk/go1.22.x (or brew go@1.22 / gvm) even when a newer Go is first on PATH. If none is found, the check fails until Go 1.22.x is installed:
+
+```bash
+go install golang.org/dl/go1.22.12@latest
+go1.22.12 download
+```
 
 ### Docker Setup
 

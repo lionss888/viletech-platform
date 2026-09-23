@@ -3,15 +3,18 @@
 # Optional env:
 #   COMPOSE_FILES          e.g. "-f docker-compose.yml -f docker-compose.release.yml"
 #   COMPOSE_PROJECT_NAME   docker compose project (preview: pr-N); native compose env
+#   WAIT_PG_MAX            seconds to wait for consecutive ready probes (default 180)
 #
 # Fresh volumes run docker-entrypoint-initdb.d, then Postgres shuts down and restarts.
 # A single SELECT 1 can succeed mid-init; migrate must wait for a stable window and
 # retry if psql hits "database system is shutting down".
+# Docker Desktop may also recreate the container after --wait; nudge with up -d.
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 CORE_MIG="$ROOT/core/migrations"
 HUB_MIG="$ROOT/hub/migrations"
+WAIT_PG_MAX="${WAIT_PG_MAX:-180}"
 
 # Word-split COMPOSE_FILES intentionally (caller supplies -f flags).
 # shellcheck disable=SC2086
@@ -24,13 +27,22 @@ pg_ready() {
   dc exec -T "$svc" psql -U "$user" -d "$db" -c 'SELECT 1' >/dev/null 2>&1
 }
 
+nudge_pg() {
+  local svc=$1
+  echo "wait_pg: nudging $svc (compose up -d)..." >&2
+  dc up -d "$svc" >/dev/null 2>&1 || true
+}
+
 # Require consecutive successful probes so we outlive the post-initdb restart.
 wait_pg() {
   local svc=$1 user=$2 db=$3
   local need=5
   local got=0
   local i
-  for i in $(seq 1 90); do
+  local max=$WAIT_PG_MAX
+  # Brief settle: --wait can report healthy while post-initdb restart is imminent.
+  sleep 2
+  for i in $(seq 1 "$max"); do
     if pg_ready "$svc" "$user" "$db"; then
       got=$((got + 1))
       if [ "$got" -ge "$need" ]; then
@@ -38,6 +50,10 @@ wait_pg() {
       fi
     else
       got=0
+      # Every 30s of not-ready: bring the service back (Desktop recreate / shutdown race).
+      if [ $((i % 30)) -eq 0 ]; then
+        nudge_pg "$svc"
+      fi
     fi
     sleep 1
   done
@@ -48,7 +64,7 @@ wait_pg() {
 
 is_transient_psql_err() {
   local err=$1
-  echo "$err" | grep -qiE 'shutting down|connection refused|the database system is starting up|server closed the connection|could not connect' 
+  echo "$err" | grep -qiE 'shutting down|connection refused|the database system is starting up|server closed the connection|could not connect'
 }
 
 apply() {

@@ -64,13 +64,31 @@ describe("wizard-steps", () => {
     expect(merged.hsCode).toBe("8471");
   });
 
+  it("prefills amount and currency from line items when header is empty", () => {
+    const extraction: ExtractionResult = {
+      schema_version: "v1",
+      header: {},
+      line_items: [
+        { line_amount: "100", currency: "USD" },
+        { line_amount: "50.5", currency: "USD" },
+      ],
+      meta: { engine_id: "docling" },
+      confidence: 0.8,
+    };
+    const merged = mergeExtractionPrefill({ amount: "", counterpartyCurrency: "" }, {}, extraction);
+    expect(merged.amount).toBe("150.5");
+    expect(merged.counterpartyCurrency).toBe("USD");
+  });
+
+  it("documents caption does not guarantee autofill", () => {
+    expect(WIZARD_STEP_CAPTIONS.Документы).toContain("инвойс");
+    expect(WIZARD_STEP_CAPTIONS.Документы).toMatch(/если удастся/i);
+    expect(WIZARD_STEP_CAPTIONS.Документы).not.toMatch(/подставятся автоматически/i);
+  });
+
   it("labels documents for invoice-only", () => {
     expect(documentsLabel(false, true, false)).toBe("Только инвойс");
     expect(documentsLabel(false, true, true)).toBe("Инвойс + контракт");
-  });
-
-  it("documents caption is invoice-first", () => {
-    expect(WIZARD_STEP_CAPTIONS.Документы).toContain("инвойс");
   });
 
   it("validateDocsStep requires invoice or no-docs contract fields", () => {

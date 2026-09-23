@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"os"
+	"strings"
 	"testing"
 	"time"
 
@@ -43,5 +44,44 @@ func TestOCRRecognizeHTTPAndCallback(t *testing.T) {
 	}
 	if cb["status"] == "payment_sent" {
 		t.Fatal("OCR must not auto-pay")
+	}
+}
+
+func TestOCRRecognizeHTTPFailStillDegradedCallback(t *testing.T) {
+	t.Parallel()
+	var cb map[string]any
+	core := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		_ = json.NewDecoder(r.Body).Decode(&cb)
+		w.WriteHeader(http.StatusOK)
+		_, _ = w.Write([]byte(`{"status":"draft"}`))
+	}))
+	t.Cleanup(core.Close)
+	provider := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusBadGateway)
+		_, _ = w.Write([]byte(`down`))
+	}))
+	t.Cleanup(provider.Close)
+	log := slog.New(slog.NewJSONHandler(os.Stdout, &slog.HandlerOptions{Level: slog.LevelError}))
+	plugin := ocr.New(time.Second, 1, log).WithBaseURL(provider.URL).WithCore(core.URL, "s2s")
+	out, err := plugin.Execute(context.Background(), "recognize", map[string]any{
+		"event_id": "e-fail", "form_payment_id": "f-fail",
+	})
+	if err != nil {
+		t.Fatalf("want degraded success nil err, got %v", err)
+	}
+	if out["mode"] != "degraded" {
+		t.Fatalf("mode=%v out=%#v", out["mode"], out)
+	}
+	if cb["action"] != "ocr_recognized" || cb["form_payment_id"] != "f-fail" {
+		t.Fatalf("callback %#v", cb)
+	}
+	inv, _ := cb["invoice_json"].(string)
+	if inv == "" {
+		if fields, ok := cb["fields"].(map[string]any); ok {
+			inv, _ = fields["invoice_json"].(string)
+		}
+	}
+	if inv == "" || !strings.Contains(inv, "unavailable") || !strings.Contains(inv, "schema_version") {
+		t.Fatalf("invoice_json=%s cb=%#v", inv, cb)
 	}
 }

@@ -124,6 +124,23 @@ export MGMT_NOTIFY_CHAT_ID="your_chat_id"
 
 Проверка встроена в `ci-pr` и `release-gate`; можно запустить отдельно: `make check-deploy-secrets`.
 
+## Compose Desktop flakes (MUST)
+
+Локальный `compose-up` / `ci-pr*` / pre-push часто краснеют **без** продуктового бага:
+
+| Симптом | Где | Что делать |
+|---|---|---|
+| `postgres --wait` exit 0 / recreate race | `compose-up` postgres | `scripts/compose-up-with-retry.sh` на `--wait` |
+| `No such container` на полном `up -d --build` | после migrate | тот же helper на full stack |
+| `postgres … not stable after init` / consecutive ready | `compose-db-migrate` wait_pg | длиннее `WAIT_PG_MAX`, nudge `up -d`, не «чинить» заявку/FE |
+
+**MUST:**
+1. `compose-up` / `compose-up-prod` / `vdp-compose-up.sh` — retry и postgres `--wait`, и полного стека через helper; порядок postgres → migrate → stack не ломать (`test-cd-scripts`).
+2. Красный Local QG только на compose/migrate flake → чинить скрипты/контракт CD, **не** продукт и **не** `SKIP_PREPUSH_GATE`.
+3. После правок compose/CD: `make test-cd-scripts` (+ `compose-up` repro) до заявления «среда ок».
+4. Не ослаблять health curl timeout ради зелёного flake.
+5. Длинный Playwright handoff (смена ролей через «Выйти»): `logout` в `e2e/fixtures/auth.fixture.ts` обязан довести URL до `/login` (fallback clear session + goto), иначе следующий `loginAs` ломает весь suite — это flake auth/E2E, не продукт заявки.
+
 ## MUST NOT
 
 - **Пропускать `make check-env-parity`** перед любыми тестами/билдами — это первый gate всегда.
@@ -154,3 +171,4 @@ export MGMT_NOTIFY_CHAT_ID="your_chat_id"
 - Писать rich markdown в `docs/operations/` и чинить только после красного GitHub docs job.
 - Пробный `make` в sandbox агента → ложный fail / `No rule to make target`; потом «сориентировался» на all.
 - Пушить в main/PR без проверки deploy secrets → fail на CI deploy step с ошибкой «Management notify secrets are required».
+- Обходить красный `postgres not stable` / `No such container` через `SKIP_PREPUSH_GATE` вместо retry helper / wait_pg harden.

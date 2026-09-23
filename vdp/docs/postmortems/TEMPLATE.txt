@@ -1,0 +1,33 @@
+Postmortem template (unexpected red on main)
+
+Copy this file to vdp/docs/postmortems/YYYY-MM-DD-short-slug.txt and fill every section.
+After the write-up, add exactly one prevention item to an open plan or a new slice plan. Do not close with only a hotfix.
+
+Date
+Author
+Status Draft or Resolved
+Impact (roles, alpha, lead time of customer requests)
+
+Executive Summary
+What failed in product language. What customers or roles could not do.
+
+Timeline (timezone)
+First signal. Wrong ready claims if any. Root cause found. Fix landed. Prevention landed.
+
+Root Cause
+Primary cause. Contributing factors (local gate != required check, env mismatch, stale E2E, cancel-in-progress, secrets).
+
+Action Items Immediate
+What was fixed in the same day.
+
+Prevention Measures
+What lasting check, rule, test, or Callout was added so the class cannot silently return.
+
+Lessons Learned
+What DoD or Local QG button was skipped. What gate name should have been in the plan.
+
+Sign-off
+Author. Reviewer. Date.
+
+Rule of use
+Unexpected red on main or required GitHub check after a ready claim always gets a postmortem in this folder plus one prevention item. Expected red during an open known slice does not need a full postmortem.

@@ -7,24 +7,10 @@ import {
   loginAllRoles,
   purgeDemoMockCounterparties,
 } from "./helpers/api";
+import { clickAction, confirmModal } from "./helpers/click-action";
 import { expectFormStatus } from "./helpers/status";
 import { waitForFormDetail } from "./helpers/form-detail";
 import { loadRobotPack, readRobotPdf } from "./helpers/robot-fixtures";
-
-
-async function clickAction(page: Page, name: string | RegExp): Promise<void> {
-  const btn = page.getByRole("button", { name });
-  await expect(btn).toBeVisible({ timeout: 30_000 });
-  await expect(btn).toBeEnabled({ timeout: 30_000 });
-  await btn.click();
-}
-
-async function confirmModal(page: Page): Promise<void> {
-  const confirm = page.getByRole("button", { name: /^Подтвердить$/ });
-  await expect(confirm).toBeEnabled({ timeout: 20_000 });
-  await confirm.click();
-  await expect(confirm).toBeHidden({ timeout: 30_000 });
-}
 
 async function attachModalFile(page: Page, pdf: Buffer, fileName: string): Promise<void> {
   const input = page.getByTestId("action-modal-file");

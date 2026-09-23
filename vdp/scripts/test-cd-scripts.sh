@@ -18,6 +18,7 @@ for script in \
   scripts/deploy-preview.sh \
   scripts/gitlab-promote.sh \
   scripts/compose-db-migrate.sh \
+  scripts/compose-up-with-retry.sh \
   scripts/compose-playwright.sh \
   scripts/db-migrate-host.sh \
   scripts/lib/e2e-continuity.sh \
@@ -234,12 +235,26 @@ echo "== local make compose-up: postgres → migrate → stack (core seed needs 
 awk '/^compose-up:/{f=1;next} f&&/^[^#[:space:]].*:/{exit} f' Makefile > /tmp/vdp-compose-up-recipe.txt
 pg_line=$(grep -n 'postgres-core postgres-hub' /tmp/vdp-compose-up-recipe.txt | head -1 | cut -d: -f1)
 mig_line=$(grep -n 'compose-db-migrate' /tmp/vdp-compose-up-recipe.txt | head -1 | cut -d: -f1)
-stack_line=$(grep -n 'docker compose up -d --build$' /tmp/vdp-compose-up-recipe.txt | head -1 | cut -d: -f1)
+stack_line=$(grep -nE 'compose-up-with-retry\.sh.*up -d --build$|docker compose up -d --build$' /tmp/vdp-compose-up-recipe.txt | head -1 | cut -d: -f1)
 [ -n "$pg_line" ] || fail "compose-up must start postgres-core postgres-hub first"
 [ -n "$mig_line" ] || fail "compose-up must run compose-db-migrate"
 [ -n "$stack_line" ] || fail "compose-up must bring full stack after migrate"
 [ "$pg_line" -lt "$mig_line" ] && [ "$mig_line" -lt "$stack_line" ] \
   || fail "compose-up order must be postgres → compose-db-migrate → full stack"
+
+echo "== compose-up retry helper covers postgres --wait and full stack =="
+grep -q 'compose-up-with-retry' Makefile \
+  || fail "Makefile must use compose-up-with-retry.sh"
+grep -c 'compose-up-with-retry' /tmp/vdp-compose-up-recipe.txt | grep -qE '^[2-9]' \
+  || fail "compose-up must retry both postgres --wait and full stack up"
+grep -q 'compose-up-with-retry' scripts/vdp-compose-up.sh \
+  || fail "vdp-compose-up must use compose-up-with-retry.sh"
+grep -c 'compose-up-with-retry' scripts/vdp-compose-up.sh | grep -qE '^[2-9]' \
+  || fail "vdp-compose-up must retry both postgres --wait and stack up"
+grep -q 'nudging\|nudge_pg' scripts/compose-db-migrate.sh \
+  || fail "compose-db-migrate wait_pg must nudge postgres when not ready"
+grep -qE 'WAIT_PG_MAX|:-180' scripts/compose-db-migrate.sh \
+  || fail "compose-db-migrate must allow longer wait_pg window (WAIT_PG_MAX)"
 
 echo "== staging-smoke must exercise seed login (schema drift → 401) =="
 grep -q '/api/v1/auth/login' scripts/staging-smoke.sh \

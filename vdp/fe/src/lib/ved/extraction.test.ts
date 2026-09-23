@@ -5,7 +5,14 @@ import {
   extractionPanelMode,
   extractionShellVariant,
   extractionTriggerLabel,
+  hasPrefillableExtraction,
+  isDegradedExtraction,
+  isExtractionDraft,
   isLowConfidence,
+  isOcrAuthLostError,
+  ocrBannerFromExtraction,
+  ocrPollTimedOut,
+  OCR_POLL_TIMEOUT_MS,
   parseExtractionResult,
 } from "./extraction";
 
@@ -21,18 +28,167 @@ describe("parseExtractionResult", () => {
     expect(got?.header.currency).toBe("USD");
     expect(got?.line_items).toHaveLength(1);
     expect(isLowConfidence(got!.line_items[0]!)).toBe(true);
+    expect(isExtractionDraft(raw)).toBe(true);
+  });
+
+  it("returns null for form dump json without schema or engine", () => {
+    const dump = JSON.stringify({
+      id: "f1",
+      account_id: "a1",
+      status: "creating",
+      invoice_amount: "0",
+      currency: "CNY",
+    });
+    expect(parseExtractionResult(dump)).toBeNull();
+    expect(isExtractionDraft(dump)).toBe(false);
   });
 
   it("returns null for unrelated json", () => {
     expect(parseExtractionResult('{"foo":1}')).toBeNull();
   });
+
+  it("accepts engine_id without schema_version for nested extraction wrap", () => {
+    const raw = JSON.stringify({
+      extraction: {
+        header: { invoice_amount: "10" },
+        line_items: [],
+        meta: { engine_id: "docling" },
+      },
+    });
+    expect(parseExtractionResult(raw)?.meta.engine_id).toBe("docling");
+  });
 });
 
+describe("ocrPollTimedOut", () => {
+  it("is false before timeout and true at/after default budget", () => {
+    expect(ocrPollTimedOut(0)).toBe(false);
+    expect(ocrPollTimedOut(OCR_POLL_TIMEOUT_MS - 1)).toBe(false);
+    expect(ocrPollTimedOut(OCR_POLL_TIMEOUT_MS)).toBe(true);
+    expect(ocrPollTimedOut(50, 40)).toBe(true);
+  });
+});
+
+describe("isDegradedExtraction", () => {
+  it("marks fixture and unavailable engines as degraded", () => {
+    expect(
+      isDegradedExtraction({
+        schema_version: "v1",
+        header: {},
+        line_items: [],
+        meta: { engine_id: "fixture" },
+        warnings: ["fixture_mode", "degraded"],
+      }),
+    ).toBe(true);
+    expect(
+      isDegradedExtraction({
+        schema_version: "v1",
+        header: {},
+        line_items: [],
+        meta: { engine_id: "unavailable" },
+      }),
+    ).toBe(true);
+    expect(
+      ocrBannerFromExtraction({
+        schema_version: "v1",
+        header: { invoice_amount: "1" },
+        line_items: [],
+        meta: { engine_id: "docling" },
+        confidence: 0.9,
+      }),
+    ).toBe("done");
+  });
+
+  it("treats empty header and low confidence as degraded banner", () => {
+    expect(
+      ocrBannerFromExtraction({
+        schema_version: "v1",
+        header: {},
+        line_items: [],
+        meta: { engine_id: "docling" },
+        confidence: 0.9,
+      }),
+    ).toBe("degraded");
+    expect(
+      ocrBannerFromExtraction({
+        schema_version: "v1",
+        header: { invoice_amount: "1500", currency: "USD" },
+        line_items: [],
+        meta: { engine_id: "docling" },
+        confidence: 0.35,
+      }),
+    ).toBe("degraded");
+    expect(
+      ocrBannerFromExtraction({
+        schema_version: "v1",
+        header: {},
+        line_items: [],
+        meta: { engine_id: "timeout" },
+        warnings: ["degraded", "ocr_timeout"],
+      }),
+    ).toBe("degraded");
+  });
+});
+
+describe("hasPrefillableExtraction", () => {
+  it("detects header and line fallbacks", () => {
+    expect(
+      hasPrefillableExtraction({
+        schema_version: "v1",
+        header: { invoice_amount: "10" },
+        line_items: [],
+        meta: {},
+      }),
+    ).toBe(true);
+    expect(
+      hasPrefillableExtraction({
+        schema_version: "v1",
+        header: {},
+        line_items: [{ line_amount: "5", currency: "EUR" }],
+        meta: {},
+      }),
+    ).toBe(true);
+    expect(
+      hasPrefillableExtraction({
+        schema_version: "v1",
+        header: {},
+        line_items: [],
+        meta: {},
+      }),
+    ).toBe(false);
+  });
+});
+
+describe("isOcrAuthLostError", () => {
+  it("detects 401 status", () => {
+    expect(isOcrAuthLostError({ status: 401 })).toBe(true);
+    expect(isOcrAuthLostError({ status: 500 })).toBe(false);
+    expect(isOcrAuthLostError(null)).toBe(false);
+  });
+});
 describe("extractionPanelMode", () => {
-  it("hides OCR outside draft/creating/corrections", () => {
+  it("hides OCR without documents on late statuses", () => {
     expect(
       extractionPanelMode({ role: "user", hasDraft: false, status: "form_verification" }),
     ).toBe("hide");
+  });
+
+  it("shows idle with documents after submit including org-waiting", () => {
+    expect(
+      extractionPanelMode({
+        role: "user",
+        hasDraft: false,
+        status: "organization_waiting_verification",
+        hasDocuments: true,
+      }),
+    ).toBe("idle");
+    expect(
+      extractionPanelMode({
+        role: "user",
+        hasDraft: false,
+        status: "form_verification",
+        hasDocuments: true,
+      }),
+    ).toBe("idle");
   });
 
   it("shows pending while creating even when no_documents", () => {
@@ -67,6 +223,25 @@ describe("extractionPanelMode", () => {
     expect(
       extractionPanelMode({ role: "manager", hasDraft: true, status: "form_verification" }),
     ).toBe("review");
+    expect(
+      extractionPanelMode({
+        role: "user",
+        hasDraft: true,
+        status: "organization_waiting_verification",
+        hasDocuments: true,
+      }),
+    ).toBe("review");
+  });
+
+  it("hides on terminal statuses even with documents", () => {
+    expect(
+      extractionPanelMode({
+        role: "user",
+        hasDraft: false,
+        status: "finished",
+        hasDocuments: true,
+      }),
+    ).toBe("hide");
   });
 });
 

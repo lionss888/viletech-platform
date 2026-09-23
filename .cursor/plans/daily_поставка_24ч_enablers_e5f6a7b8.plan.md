@@ -3,20 +3,20 @@ name: Daily поставка 24ч — enablers
 overview: "Технические и процессные доработки, без которых эталон «срез ≤ 24 ч на alpha» будет регулярно срываться: Go в env-parity, fail-fast на длинных E2E лестницы, дисциплина push поверх длинного run, postmortem на неожиданный fail main."
 todos:
   - id: go-env-parity
-    content: "Добавить проверку версии Go в check-env-parity.sh + строка в environment-requirements; CI/pre-commit подхватывают тот же скрипт"
-    status: pending
+    content: Добавить проверку версии Go в check-env-parity.sh + строка в environment-requirements; CI/pre-commit подхватывают тот же скрипт
+    status: completed
   - id: fail-fast-e2e
-    content: "Паттерн короткого expect на CTA/шаг для длинных @pilot-matrix / return specs; без silent wait 7–17 мин"
-    status: pending
+    content: Паттерн короткого expect на CTA/шаг для длинных @pilot-matrix / return specs; без silent wait 7–17 мин
+    status: completed
   - id: push-over-long-run
     content: "Callout/правило Local QG + пункт в DoD шаблона: не пушить поверх идущего ci-pr-pilot/ci-main без нужды"
-    status: pending
+    status: completed
   - id: postmortem-habit
     content: "Правило или короткий шаблон: неожиданный красный main → postmortem + 1 prevention item в план"
-    status: pending
+    status: completed
   - id: verify-gates
     content: "После go-parity: make check-env-parity; после e2e — make ci-pr-pilot или ci-main по path"
-    status: pending
+    status: completed
 isProject: false
 ---
 

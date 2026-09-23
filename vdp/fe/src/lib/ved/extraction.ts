@@ -36,20 +36,86 @@ export type ExtractionResult = {
   warnings?: string[];
 };
 
+/** Wizard / card poll: wait this long for ExtractionResult before honest fail. */
+export const OCR_POLL_TIMEOUT_MS = 120_000;
+
+/** Wizard OCR banner states (honest UX). */
+export type OcrBannerState =
+  | "unavailable"
+  | "pending"
+  | "done"
+  | "degraded"
+  | "failed"
+  | "auth_lost";
+
+const DEGRADED_ENGINES = new Set(["unavailable", "timeout", "fixture_error", "fixture"]);
+
+/** True when ExtractionResult must not show as successful OCR done. */
+export function isDegradedExtraction(result: ExtractionResult): boolean {
+  const id = (result.meta.engine_id ?? "").trim();
+  if (DEGRADED_ENGINES.has(id) || id.endsWith("_fallback")) return true;
+  const warnings = result.warnings ?? [];
+  return (
+    warnings.includes("degraded") ||
+    warnings.includes("fixture_mode") ||
+    warnings.includes("primary_error") ||
+    warnings.includes("primary_fallback")
+  );
+}
+
+/** True when extraction carries at least one field the wizard can prefill. */
+export function hasPrefillableExtraction(result: ExtractionResult): boolean {
+  const header = result.header ?? {};
+  if (header.invoice_amount?.trim()) return true;
+  if (header.currency?.trim()) return true;
+  if (header.invoice_number?.trim()) return true;
+  if (header.contract_number?.trim()) return true;
+  if (header.hs_codes?.some((code) => Boolean(code?.trim()))) return true;
+  return result.line_items.some(
+    (line) => Boolean(line.line_amount?.trim()) || Boolean(line.currency?.trim()),
+  );
+}
+
+/**
+ * Map draft to done vs degraded after poll sees ExtractionResult.
+ * Done only when primary path has usable fields and confidence is not low — never promise autofill on empty/limitations.
+ */
+export function ocrBannerFromExtraction(result: ExtractionResult): "done" | "degraded" {
+  if (isDegradedExtraction(result)) return "degraded";
+  if (!hasPrefillableExtraction(result)) return "degraded";
+  if (isLowConfidence(result)) return "degraded";
+  return "done";
+}
+
+/** True when poll should stop permanently (not pending). */
+export function isOcrBannerTerminal(state: OcrBannerState | null | undefined): boolean {
+  return Boolean(state && state !== "pending");
+}
+
+/** Detect auth death from ApiError-like objects. */
+export function isOcrAuthLostError(err: unknown): boolean {
+  if (!err || typeof err !== "object") return false;
+  const status = (err as { status?: number }).status;
+  return status === 401;
+}
+
 /** Parses OCR/extraction JSON into typed fields for review UI. */
 export function parseExtractionResult(invoiceJson: string | undefined | null): ExtractionResult | null {
   if (!invoiceJson || !invoiceJson.trim()) return null;
   try {
     const raw = JSON.parse(invoiceJson) as Record<string, unknown>;
     const candidate = (raw["extraction"] as Record<string, unknown> | undefined) ?? raw;
-    if (candidate["schema_version"] !== "v1" && !candidate["header"] && !candidate["line_items"]) {
+    const meta = (candidate["meta"] as ExtractionResult["meta"]) ?? {};
+    const engineId = typeof meta.engine_id === "string" ? meta.engine_id.trim() : "";
+    const hasSchema = candidate["schema_version"] === "v1";
+    // Reject form dumps and other JSON that only share sparse keys with extraction.
+    if (!hasSchema && !engineId) {
       return null;
     }
     const header = (candidate["header"] as ExtractionResult["header"]) ?? {};
     const lineItems = Array.isArray(candidate["line_items"])
       ? (candidate["line_items"] as ExtractionLineItem[])
       : [];
-    const meta = (candidate["meta"] as ExtractionResult["meta"]) ?? {};
     return {
       schema_version: "v1",
       doc_type: typeof candidate["doc_type"] === "string" ? candidate["doc_type"] : undefined,
@@ -63,6 +129,25 @@ export function parseExtractionResult(invoiceJson: string | undefined | null): E
   } catch {
     return null;
   }
+}
+
+/** True when invoice_json holds ExtractionResult schema v1 (not a form dump). */
+export function isExtractionDraft(invoiceJson: string | undefined | null): boolean {
+  return parseExtractionResult(invoiceJson) !== null;
+}
+
+/** True when OCR poll should stop and show the fail banner. */
+export function ocrPollTimedOut(elapsedMs: number, timeoutMs: number = OCR_POLL_TIMEOUT_MS): boolean {
+  return elapsedMs >= timeoutMs;
+}
+
+/** Terminal statuses where OCR controls are no longer useful. */
+export function isExtractionPanelTerminal(status: string): boolean {
+  const st = status.trim();
+  if (!st) return false;
+  if (st === "finished" || st === "closed") return true;
+  if (st.includes("cancel")) return true;
+  return false;
 }
 
 /** True when extraction confidence is below review threshold. */
@@ -82,11 +167,12 @@ export function extractionPanelMode(input: {
   if (input.role === "provider") return "hide";
   if (input.hasDraft) return "review";
   const st = input.status ?? "";
-  const editable = st === "creating" || st === "draft" || st.includes("correction");
-  if (!editable) return "hide";
-  // Upload + OCR controls stay on the card for these statuses (noDocuments is not a dead-end).
+  if (isExtractionPanelTerminal(st)) return "hide";
   if (st === "creating") return "pending";
-  return "idle";
+  if (input.hasDocuments) return "idle";
+  const editable = st === "draft" || st.includes("correction");
+  if (editable) return "idle";
+  return "hide";
 }
 
 function asNumber(raw: string | undefined): number | undefined {

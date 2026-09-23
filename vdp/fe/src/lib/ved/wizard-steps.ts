@@ -7,7 +7,7 @@ export const WIZARD_STEPS = ["Документы", "Направление", "С
 /** Пояснения к каждому шагу мастера — отрабатывают ожидания пользователя. */
 export const WIZARD_STEP_CAPTIONS: Record<(typeof WIZARD_STEPS)[number], string> = {
   Документы:
-    "Сначала загрузите инвойс — реквизиты подставятся автоматически. Контракт можно добавить сразу или позже; без файлов укажите номер и дату договора вручную.",
+    "Сначала загрузите инвойс — после «Далее» распознавание пойдёт в фоне и подставит доступные поля, если удастся. Контракт можно добавить сразу или позже; без файлов укажите номер и дату договора вручную.",
   Направление: "Укажите, вы отправляете платёж за рубеж или получаете оплату из-за рубежа.",
   Стороны: "Выберите вашу организацию и иностранного контрагента — или создайте новых прямо здесь.",
   Условия: "Сумма и валюта платежа, код ТН ВЭД, дата отгрузки и условие оплаты.",
@@ -60,20 +60,57 @@ export type WizardPrefillSlice = {
   hsCode?: string;
 };
 
-/** Merge OCR header into wizard draft without overwriting touched fields. */
+function parsePrefillNumber(raw: string | undefined): number | undefined {
+  if (!raw?.trim()) return undefined;
+  const value = Number(raw.replace(/\s/g, "").replace(",", "."));
+  return Number.isNaN(value) ? undefined : value;
+}
+
+/** Amount from header or sum of line amounts when header total is empty. */
+export function derivePrefillAmount(extraction: ExtractionResult): string | undefined {
+  const headerAmount = extraction.header.invoice_amount?.trim();
+  if (headerAmount) return headerAmount;
+  let sum = 0;
+  let hasLine = false;
+  for (const line of extraction.line_items) {
+    const amount = parsePrefillNumber(line.line_amount);
+    if (amount === undefined) continue;
+    sum += amount;
+    hasLine = true;
+  }
+  return hasLine ? String(sum) : undefined;
+}
+
+/** Counterparty currency from header or first line with currency. */
+export function derivePrefillCurrency(extraction: ExtractionResult): string | undefined {
+  const headerCurrency = extraction.header.currency?.trim();
+  if (headerCurrency) return headerCurrency.toUpperCase();
+  for (const line of extraction.line_items) {
+    const currency = line.currency?.trim();
+    if (currency) return currency.toUpperCase();
+  }
+  return undefined;
+}
+
+/**
+ * Merge OCR header (and line fallbacks) into wizard draft without overwriting touched fields.
+ * Applies whenever fields are present — including degraded/HITL drafts so the user can review.
+ */
 export function mergeExtractionPrefill(
   current: WizardPrefillSlice,
   touched: WizardTouched,
   extraction: ExtractionResult | null,
 ): WizardPrefillSlice {
-  if (!extraction?.header) return current;
-  const header = extraction.header;
+  if (!extraction) return current;
+  const header = extraction.header ?? {};
   const next: WizardPrefillSlice = { ...current };
-  if (!touched.amount && header.invoice_amount?.trim()) {
-    next.amount = header.invoice_amount.trim();
+  const amount = derivePrefillAmount(extraction);
+  if (!touched.amount && amount) {
+    next.amount = amount;
   }
-  if (!touched.counterpartyCurrency && header.currency?.trim()) {
-    next.counterpartyCurrency = header.currency.trim().toUpperCase();
+  const currency = derivePrefillCurrency(extraction);
+  if (!touched.counterpartyCurrency && currency) {
+    next.counterpartyCurrency = currency;
   }
   if (!touched.invoiceNumber && header.invoice_number?.trim()) {
     next.invoiceNumber = header.invoice_number.trim();

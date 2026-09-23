@@ -98,6 +98,8 @@ Applied skips: YaLM 100B self-host; Onyx as OCR/IE. HF equals LoRA tooling only;
 
 OCR is optional side-path only. recognize_complete in app advances draft without vendor OCR. Never on transactional payment commit. Manual entry remains available.
 
+Wizard and form card: poll waits for ExtractionResult schema v1 (not form dump in invoice_json); timeout shows manual-fill banner; CTA Просмотр данных or Статус распознавания stays available with documents through early post-submit statuses including organization waiting. AttachHsCodes merges hs_codes without wiping meta.engine_id.
+
 Alpha Docling pilot: set the same keys in .env.deploy, recreate docling plus extraction plus hub plus core after Images Deploy. On-host verify health primary equals docling and one live upload. Workstation SSH may stay blocked (publickey denied) until DEPLOY_SSH_KEY refresh; Deploy workflow still covers the host.
 
 ## Milestone 2 in-scope вводных

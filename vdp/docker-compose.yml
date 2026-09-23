@@ -296,8 +296,8 @@ services:
       test: ["CMD-SHELL", "wget -qO- http://127.0.0.1:5173/ >/dev/null || exit 1"]
       interval: 5s
       timeout: 3s
-      retries: 20
-      start_period: 30s
+      retries: 24
+      start_period: 120s
     volumes:
       - ./fe:/app
       - fe_node_modules:/app/node_modules

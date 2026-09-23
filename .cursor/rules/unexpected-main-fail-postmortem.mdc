@@ -1,0 +1,16 @@
+---
+description: Неожиданный красный main → postmortem + prevention
+alwaysApply: false
+---
+
+# Неожиданный fail на main
+
+Когда required check на `main` (или PR после «готово») падает **неожиданно** — не только hotfix.
+
+## MUST
+
+1. Скопировать `vdp/docs/postmortems/TEMPLATE.txt` → `vdp/docs/postmortems/YYYY-MM-DD-slug.txt` и заполнить.
+2. Добавить **ровно один** prevention item в открытый план или новый срез (env-parity, fail-fast E2E, Local QG, path-aware gate и т.п.).
+3. Не утверждать «готово» снова без зелёного gate из DoD (`vdp-ci-local-gate`, `честность-готовности`).
+
+Ожидаемый красный внутри известного открытого среза — полный postmortem не обязателен; достаточно фикса в том же срезе.

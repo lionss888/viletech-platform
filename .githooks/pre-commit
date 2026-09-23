@@ -1,10 +1,6 @@
 #!/usr/bin/env bash
-# Repo pre-commit: environment parity check + local unit gate + management Telegram.
+# Repo pre-commit: same surface as `make -C vdp precommit-gate`
+# (env-parity → docs-format + unit + management Telegram on fail).
 set -euo pipefail
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
-
-# First: environment parity check (fail-fast if version mismatch)
-"$ROOT/vdp/scripts/check-env-parity.sh" || exit $?
-
-# Then: local unit gate + Telegram notify
-exec "$ROOT/vdp/scripts/precommit-mgmt-notify.sh"
+exec make -C "$ROOT/vdp" precommit-gate

@@ -3,6 +3,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { CounterpartyPickDialog } from "@/components/ved/CounterpartyPickDialog";
+import { ExtractionReviewDialog } from "@/components/ved/ExtractionReviewDialog";
 import { FilePickButton } from "@/components/ved/file-pick-button";
 import { OcrProgress } from "@/components/ved/ocr-progress";
 import { OrganizationPickDialog } from "@/components/ved/OrganizationPickDialog";
@@ -15,8 +16,19 @@ import {
   transitionForm,
 } from "@/lib/api/forms";
 import { assertFileSize, UploadError } from "@/lib/api/files";
+import { fetchOcrReadiness } from "@/lib/api/ocr-readiness";
 import { CREATE_REVIEW_OCR_BANNER, CREATE_REVIEW_OCR_CAPTION } from "@/lib/ved/create-review-copy";
-import { parseExtractionResult } from "@/lib/ved/extraction";
+import {
+  extractionPanelMode,
+  extractionTriggerLabel,
+  isExtractionDraft,
+  isOcrAuthLostError,
+  OCR_POLL_TIMEOUT_MS,
+  ocrBannerFromExtraction,
+  ocrPollTimedOut,
+  parseExtractionResult,
+  type OcrBannerState,
+} from "@/lib/ved/extraction";
 import { usePlatformBasePath, usePlatformMode } from "@/lib/ved/platform-mode";
 import { usePlatformStore } from "@/lib/ved/platform-store";
 import { sortCurrencyRecords } from "@/lib/ved/sort-currencies";
@@ -49,11 +61,13 @@ export function NewForm() {
   const [orgDialogOpen, setOrgDialogOpen] = useState(false);
   const [cpDialogOpen, setCpDialogOpen] = useState(false);
   const [formId, setFormId] = useState<string | null>(null);
-  const [ocrPending, setOcrPending] = useState(false);
-  const [ocrReady, setOcrReady] = useState(false);
+  const [ocrBannerState, setOcrBannerState] = useState<OcrBannerState | null>(null);
   const [ocrProgressVisible, setOcrProgressVisible] = useState(false);
+  const [ocrInvoiceJson, setOcrInvoiceJson] = useState<string | undefined>(undefined);
+  const [extractionDialogOpen, setExtractionDialogOpen] = useState(false);
   const touchedRef = useRef<WizardTouched>({});
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const pollStartedAtRef = useRef<number>(0);
   const [draft, setDraft] = useState({
     direction: "import" as FormDirection,
     kind: "good" as FormKind,
@@ -112,9 +126,10 @@ export function NewForm() {
     });
   }, [organizations, counterparties, hsCodes, currencyOptions]);
 
-  const applyOcrPrefill = useCallback((invoiceJson: string | undefined | null) => {
+  const applyOcrPrefill = useCallback((invoiceJson: string | undefined | null): "done" | "degraded" | false => {
     const extraction = parseExtractionResult(invoiceJson);
-    if (!extraction) return;
+    if (!extraction) return false;
+    setOcrInvoiceJson(invoiceJson ?? undefined);
     setDraft((prev) => {
       const merged = mergeExtractionPrefill(
         {
@@ -136,38 +151,83 @@ export function NewForm() {
         hsCode: merged.hsCode ?? prev.hsCode,
       };
     });
-    setOcrReady(true);
-    setOcrPending(false);
+    return ocrBannerFromExtraction(extraction);
   }, []);
 
   useEffect(() => {
-    if (!formId || mode !== "app" || draft.noDocuments || ocrReady) return;
-    setOcrPending(true);
-    setOcrProgressVisible(true);
-    const tick = async () => {
-      try {
-        const form = await getForm(formId);
-        if (form.invoice_json?.trim()) {
-          applyOcrPrefill(form.invoice_json);
-          if (pollRef.current) {
-            clearInterval(pollRef.current);
-            pollRef.current = null;
-          }
-        }
-      } catch {
-        /* keep polling */
-      }
-    };
-    void tick();
-    pollRef.current = setInterval(() => void tick(), 1500);
-    return () => {
+    if (!formId || mode !== "app" || draft.noDocuments) return;
+    let cancelled = false;
+    const stopPoll = () => {
       if (pollRef.current) {
         clearInterval(pollRef.current);
         pollRef.current = null;
       }
     };
-  }, [formId, mode, draft.noDocuments, ocrReady, applyOcrPrefill]);
+    const startPoll = () => {
+      setOcrBannerState("pending");
+      setOcrProgressVisible(true);
+      pollStartedAtRef.current = Date.now();
+      const tick = async () => {
+        try {
+          if (ocrPollTimedOut(Date.now() - pollStartedAtRef.current, OCR_POLL_TIMEOUT_MS)) {
+            stopPoll();
+            setOcrBannerState("failed");
+            return;
+          }
+          const form = await getForm(formId);
+          if (isExtractionDraft(form.invoice_json)) {
+            const outcome = applyOcrPrefill(form.invoice_json);
+            if (outcome) {
+              stopPoll();
+              setOcrBannerState(outcome);
+            }
+          }
+        } catch (err) {
+          if (isOcrAuthLostError(err)) {
+            stopPoll();
+            setOcrBannerState("auth_lost");
+            setOcrProgressVisible(true);
+            navigate({ to: `${base}/login` as never });
+          }
+        }
+      };
+      void tick();
+      pollRef.current = setInterval(() => void tick(), 1500);
+    };
+    void (async () => {
+      try {
+        const readiness = await fetchOcrReadiness();
+        if (cancelled) return;
+        if (!readiness.ok) {
+          setOcrBannerState("unavailable");
+          setOcrProgressVisible(true);
+          return;
+        }
+        startPoll();
+      } catch (err) {
+        if (cancelled) return;
+        if (isOcrAuthLostError(err)) {
+          setOcrBannerState("auth_lost");
+          setOcrProgressVisible(true);
+          navigate({ to: `${base}/login` as never });
+          return;
+        }
+        startPoll();
+      }
+    })();
+    return () => {
+      cancelled = true;
+      stopPoll();
+    };
+  }, [formId, mode, draft.noDocuments, applyOcrPrefill, navigate, base]);
 
+  const extractionMode = extractionPanelMode({
+    role: session?.role ?? "user",
+    hasDraft: Boolean(parseExtractionResult(ocrInvoiceJson)),
+    status: "creating",
+    hasDocuments: !draft.noDocuments && Boolean(formId),
+  });
+  const extractionTrigger = extractionTriggerLabel(extractionMode);
   function setField<K extends keyof typeof draft>(key: K, value: (typeof draft)[K]) {
     setDraft((prev) => ({ ...prev, [key]: value }));
     setInvalidFields((prev) => (prev.includes(key as string) ? prev.filter((k) => k !== key) : prev));
@@ -264,9 +324,6 @@ export function NewForm() {
       } as Parameters<typeof createForm>[0]),
     );
     setFormId(created.id);
-    if (mode === "app" && !draft.noDocuments) {
-      setOcrPending(true);
-    }
     if (mode === "app" && draft.condition) {
       await patchForm(created.id, nestFormPrefixForRole(session?.role ?? "user"), {
         payment_method: conditionToPaymentMethod(draft.condition, draft.direction),
@@ -435,10 +492,26 @@ export function NewForm() {
 
       <div className="panel mt-4 w-full p-5 lg:w-3/4">
         {error && <p className="mb-4 rounded-md bg-destructive-soft px-2 py-1.5 text-xs text-destructive">{error}</p>}
-        {ocrProgressVisible && step > WIZARD_STEP.docs && (
-          <OcrProgress done={ocrReady} onHide={() => setOcrProgressVisible(false)} />
+        {ocrProgressVisible && ocrBannerState && step > WIZARD_STEP.docs && (
+          <OcrProgress
+            state={ocrBannerState}
+            onHide={() => {
+              if (ocrBannerState === "done") setOcrProgressVisible(false);
+            }}
+          />
         )}
-
+        {formId && extractionMode !== "hide" && extractionTrigger && step > WIZARD_STEP.docs ? (
+          <div className="mb-4 flex flex-wrap items-center gap-2">
+            <button
+              type="button"
+              data-testid="wizard-extraction-dialog-trigger"
+              className="flex h-9 items-center rounded-md border border-border bg-card px-3 text-xs font-semibold text-foreground hover:bg-muted"
+              onClick={() => setExtractionDialogOpen(true)}
+            >
+              {extractionTrigger}
+            </button>
+          </div>
+        ) : null}
         {step === WIZARD_STEP.docs && (
           <div className="grid gap-4" data-testid="wizard-docs-step">
             {!hasClientOrg && (
@@ -473,7 +546,8 @@ export function NewForm() {
                   />
                 </FileField>
                 <p className="text-xs text-muted-foreground">
-                  Чаще достаточно инвойса. После «Далее» распознавание пойдёт в фоне — можно заполнять форму дальше.
+                  Чаще достаточно инвойса. После «Далее» распознавание пойдёт в фоне; статус и предзаполнение
+                  появятся на следующих шагах. Если сервис недоступен — заполните сумму и реквизиты вручную.
                 </p>
               </>
             )}
@@ -484,7 +558,7 @@ export function NewForm() {
               >
                 <p className="min-w-0 flex-1 text-sm text-wait">
                   Вы отметили, что документов пока нет — это нормально, заявку можно заполнить и так. Если инвойс или
-                  контракт появятся, просто добавьте их: распознавание подставит данные за вас.
+                  контракт появятся, добавьте их: распознавание попробует подставить доступные поля (не гарантируется).
                 </p>
                 <button
                   type="button"
@@ -658,7 +732,7 @@ export function NewForm() {
                 value={draft.amount}
                 onChange={(e) => setTouchedField("amount", e.target.value)}
                 inputMode="decimal"
-                placeholder="1250000"
+                placeholder="сумма"
                 className="field font-mono"
                 data-testid="wizard-amount"
               />
@@ -732,7 +806,7 @@ export function NewForm() {
               <input
                 value={draft.invoiceNumber}
                 onChange={(e) => setTouchedField("invoiceNumber", e.target.value)}
-                placeholder="INV-2026-0001"
+                placeholder="номер"
                 className="field font-mono"
               />
             </Field>
@@ -741,8 +815,18 @@ export function NewForm() {
 
         {step === WIZARD_STEP.review && (
           <div className="grid gap-4" data-testid="wizard-review-step">
-            {!draft.noDocuments && (
+            {!draft.noDocuments &&
+              ocrBannerState === "pending" && (
               <p className="rounded-md bg-muted px-3 py-2 text-sm text-foreground">{CREATE_REVIEW_OCR_BANNER}</p>
+            )}
+            {!draft.noDocuments && ocrBannerState === "degraded" && (
+              <p
+                className="rounded-md bg-wait-soft px-3 py-2 text-sm text-wait"
+                data-testid="wizard-review-ocr-degraded"
+              >
+                Распознавание с ограничениями — на автоподстановку рассчитывать нельзя. Проверьте сумму и реквизиты
+                вручную или откройте «Просмотр данных».
+              </p>
             )}
             <dl className="grid gap-3 sm:grid-cols-2">
               {[
@@ -831,6 +915,18 @@ export function NewForm() {
           )}
         </div>
       </div>
+      <ExtractionReviewDialog
+        open={extractionDialogOpen}
+        onOpenChange={setExtractionDialogOpen}
+        formId={formId ?? ""}
+        invoiceJson={ocrInvoiceJson}
+        role={session?.role ?? "user"}
+        status="creating"
+        hasDocuments={!draft.noDocuments}
+        canConfirm={false}
+        currencyOptions={currencyOptions.map((c) => ({ value: c.code, label: `${c.code} — ${c.name}` }))}
+        hsOptions={hsCodes.map((h) => ({ value: h.code, label: `${h.code} — ${h.name}` }))}
+      />
     </VedAppShell>
   );
 }

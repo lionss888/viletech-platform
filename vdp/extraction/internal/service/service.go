@@ -147,13 +147,16 @@ func (s *Service) Recognize(ctx context.Context, req RecognizeRequest) (Recogniz
 		result, err = s.fallback.Extract(ctx, in)
 		mode = s.fallback.Name() + "_fallback"
 		ml = false
+		if err == nil {
+			result.Meta.EngineID = mode
+			result.Warnings = append(result.Warnings, "degraded", "primary_fallback")
+		}
 	}
 	if err != nil {
 		metrics.Default.PrimaryFail.Add(1)
-		result = extraction.FixtureResult(in.FormPaymentID)
+		result = extraction.DegradedResult(in.FormPaymentID, extraction.EngineFixtureError, "primary_error")
 		mode = "fixture_error"
 		ml = false
-		result.Warnings = append(result.Warnings, "primary_error")
 	} else {
 		metrics.Default.PrimarySuccess.Add(1)
 	}
