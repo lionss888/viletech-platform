@@ -112,7 +112,8 @@ compose-up:
 	@$(MAKE) compose-db-migrate
 	docker compose up -d --build
 	@echo "waiting for core+hub+fe health..."
-	@ok=0; for i in 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28 29 30; do \
+	@# Vite cold start after recreate can exceed 90s (observed ~91s); allow ~180s.
+	@ok=0; for i in $$(seq 1 90); do \
 		if curl -sf http://127.0.0.1:8080/api/v1/health >/dev/null && \
 		   curl -sf http://127.0.0.1:8081/api/v1/health >/dev/null && \
 		   curl -sf http://127.0.0.1:5173/ >/dev/null; then \
@@ -138,7 +139,7 @@ compose-up-prod:
 	@$(MAKE) compose-db-migrate
 	docker compose --profile prod up -d --build
 	@echo "waiting for core+hub+fe-prod health..."
-	@ok=0; for i in 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28 29 30; do \
+	@ok=0; for i in $$(seq 1 90); do \
 		if curl -sf http://127.0.0.1:8080/api/v1/health >/dev/null && \
 		   curl -sf http://127.0.0.1:8081/api/v1/health >/dev/null && \
 		   curl -sf http://127.0.0.1:3000/login >/dev/null; then \
