@@ -12,7 +12,7 @@ todos:
     content: "test-cd-scripts: assert retry helper + порядок postgres→migrate→stack; bash -n"
     status: completed
   - id: docs-rules
-    content: "makefile-reference + vdp-ci-local-gate (compose flake prevention); docs-format-check"
+    content: makefile-reference + vdp-ci-local-gate (compose flake prevention); docs-format-check
     status: completed
   - id: repro-compose
     content: check-env-parity + test-cd-scripts + compose-up healthy
@@ -22,7 +22,7 @@ todos:
     status: completed
   - id: commit-push
     content: Коммит только compose harden (+ logout fixture); push d2 без SKIP_PREPUSH_GATE (по запросу)
-    status: pending
+    status: completed
 isProject: false
 ---
 
