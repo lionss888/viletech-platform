@@ -207,7 +207,7 @@ services:
       CORE_URL: http://core:8080
       DOCS_URL: http://docs-service:8090/generate
       OCR_URL: http://extraction:8093/recognize
-      OCR_TIMEOUT_MS: ${OCR_TIMEOUT_MS:-120000}
+      OCR_TIMEOUT_MS: ${OCR_TIMEOUT_MS:-180000}
       MAIL_URL: http://mail-gateway:8091/notify
       SMS_URL: http://sms-gateway:8092/notify
       TELEGRAM_BOT_TOKEN: ${TELEGRAM_BOT_TOKEN:-}
@@ -253,6 +253,8 @@ services:
       HUB_URL: http://hub:8081
       HUB_SHARED_SECRET: vdp-s2s-dev-secret
       JWT_SECRET: vdp-core-dev-secret
+      # Core→hub inbox is sync (incl. OCR). Keep >= OCR_TIMEOUT_MS/1000 or OCR dies at ~15s.
+      GATEWAY_TIMEOUT: ${GATEWAY_TIMEOUT:-180}
       GATEWAY_RATE_LIMIT: ${GATEWAY_RATE_LIMIT:-2000}
       TELEGRAM_BOT_USERNAME: ${TELEGRAM_BOT_USERNAME:-vdp_notify_bot}
       EXTRACTION_URL: http://extraction:8093

@@ -61,7 +61,7 @@ describe("parseExtractionResult", () => {
 
 describe("ocrPollTimedOut", () => {
   it("uses 165s default budget above hub 120s", () => {
-    expect(OCR_POLL_TIMEOUT_MS).toBe(165_000);
+    expect(OCR_POLL_TIMEOUT_MS).toBe(225_000);
     expect(ocrPollTimedOut(0)).toBe(false);
     expect(ocrPollTimedOut(OCR_POLL_TIMEOUT_MS - 1)).toBe(false);
     expect(ocrPollTimedOut(OCR_POLL_TIMEOUT_MS)).toBe(true);

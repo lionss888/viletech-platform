@@ -26,7 +26,8 @@ EXTRACTION_URL=http://127.0.0.1:8093
 
 # Document extraction (side-path). Compose: http://extraction:8093/recognize
 OCR_URL=http://127.0.0.1:8093/recognize
-OCR_TIMEOUT_MS=120000
+OCR_TIMEOUT_MS=180000
+GATEWAY_TIMEOUT=180
 # Docling pilot PRIMARY (default local compose). Yandex not PRIMARY on this pilot.
 EXTRACTION_PRIMARY=docling
 EXTRACTION_FALLBACK=fixture
