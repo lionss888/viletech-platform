@@ -125,7 +125,7 @@ export function ProcessRolesPage() {
   }
 
   async function setInfluence(row: ProcessRoleRow, influence: ProcessRoleInfluence) {
-    let caps = row.capabilities;
+    let caps = row.capabilities ?? [];
     if (influence === "observer") {
       caps = caps.filter((id) => {
         const label = findCapabilityLabel(catalog, id);
@@ -137,8 +137,9 @@ export function ProcessRolesPage() {
   }
 
   async function toggleCap(row: ProcessRoleRow, capId: string) {
-    const has = row.capabilities.includes(capId);
-    const next = has ? row.capabilities.filter((c) => c !== capId) : [...row.capabilities, capId];
+    const current = row.capabilities ?? [];
+    const has = current.includes(capId);
+    const next = has ? current.filter((c) => c !== capId) : [...current, capId];
     await patchRole(row.role, { capabilities: next });
   }
 
@@ -229,7 +230,7 @@ export function ProcessRolesPage() {
                   </td>
                   <td className="px-3 py-2">
                     <ul className="space-y-1 text-xs">
-                      {row.capabilities.map((id) => {
+                      {(row.capabilities ?? []).map((id) => {
                         const label = findCapabilityLabel(catalog, id);
                         return (
                           <li key={id} title={label.description || id}>
@@ -251,7 +252,7 @@ export function ProcessRolesPage() {
                       <div className="mt-2 max-h-48 space-y-1 overflow-y-auto rounded border border-border p-2">
                         {(catalog.length > 0 ? catalog.map((c) => c.id) : allCaps).map((id) => {
                           const label = findCapabilityLabel(catalog, id);
-                          const checked = row.capabilities.includes(id);
+                          const checked = (row.capabilities ?? []).includes(id);
                           return (
                             <label key={id} className="flex cursor-pointer items-start gap-2 text-xs">
                               <input

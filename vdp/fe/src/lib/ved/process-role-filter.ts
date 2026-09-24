@@ -70,9 +70,10 @@ export function roleAllowsUiAction(cfg: ProcessRoleRow | undefined, actionId: st
   }
   const cap = capabilityForUiAction(actionId);
   if (!cap) return true;
-  if (cfg.capabilities.includes(cap)) return true;
+  const caps = cfg.capabilities ?? [];
+  if (caps.includes(cap)) return true;
   // Platform admin union CTA: forms.admin is modeled as full business catalog on FE via capabilities.
-  return cfg.capabilities.includes("forms.admin");
+  return caps.includes("forms.admin");
 }
 
 /** Effective account caps (from /me) for cabinet CTA filtering. */
@@ -115,5 +116,5 @@ export function canContinuityAdvance(
   if (!isProcessSlotDisabled(rows, slotRole)) return false;
   const actor = findProcessRole(rows, actorRole);
   if (!actor?.enabled || actor.influence !== "actor") return false;
-  return actor.capabilities.includes("manager.ops");
+  return (actor.capabilities ?? []).includes("manager.ops");
 }

@@ -302,6 +302,14 @@ fi
 if grep -nE '[^_](/api/v1/eco/form-payment/)' scripts/compose-e2e.sh | grep -vE 'try_(put|post)|#'; then
   fail "compose-e2e must not hard-call /eco/form-payment without try_ (use e2e-continuity.sh)"
 fi
+# Treasurer IMP path: snapshot branch, never force-enable local process-roles.
+grep -q 'process-roles treasurer slot' scripts/compose-e2e.sh \
+  || fail "compose-e2e must check process-roles treasurer slot before IMP1/IMP2"
+grep -q 'soft_skip IMP1/IMP2 reason=treasurer_slot_off' scripts/compose-e2e.sh \
+  || fail "compose-e2e must soft_skip IMP1/IMP2 when treasurer slot off"
+if grep -nE 'admin/process-roles/treasurer' scripts/compose-e2e.sh | grep -vE '^[^:]*:[0-9]+:[[:space:]]*#'; then
+  fail "compose-e2e must not PUT admin/process-roles/treasurer (no force-enable)"
+fi
 
 echo "== VDP CI: integration on every PR; Images waits CI on main =="
 WF_CI="$REPO_ROOT/.github/workflows/vdp-ci.yml"
