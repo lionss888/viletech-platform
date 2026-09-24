@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Batch POST /recognize for corpus PDFs (Yandex PRIMARY). Supports resume."""
+"""Batch POST /recognize for corpus PDFs (Docling or Yandex PRIMARY). Supports resume."""
 from __future__ import annotations
 
 import argparse
@@ -22,6 +22,7 @@ ROOT = Path(__file__).resolve().parents[2]
 DEFAULT_CORPUS = ROOT / "вводные" / "примеры документов"
 FOLDERS = ("Инвойсы", "Контракты")
 EXTRACT_ROOT = Path(__file__).resolve().parents[1] / "extraction"
+SUPPORTED_PRIMARIES = ("docling", "yandex")
 
 
 def file_id(folder: str, name: str) -> str:
@@ -86,35 +87,47 @@ def extract_fields(resp: dict) -> dict:
         "doc_type": parsed.get("doc_type") or "",
         "warnings": parsed.get("warnings") or [],
         "invoice_json_len": len(invoice_json) if isinstance(invoice_json, str) else 0,
+        "engine_id": (parsed.get("meta") or {}).get("engine_id") or "",
         "yandex_ok": "yandex" in str(resp.get("mode") or ""),
+        "docling_ok": "docling" in str(resp.get("mode") or "")
+        or (parsed.get("meta") or {}).get("engine_id") == "docling",
         "empty_amount": not str(fields.get("invoice_amount") or header.get("invoice_amount") or "").strip(),
         "empty_currency": not str(fields.get("currency") or header.get("currency") or "").strip(),
+        "has_invoice_number": bool(str(header.get("invoice_number") or "").strip()),
+        "has_company": bool(str(header.get("company_name") or "").strip()),
     }
 
 
-def post_recognize(base: str, body: dict, timeout: float) -> tuple[int, dict, str]:
+def post_recognize(base: str, body: dict, timeout: float, retries: int = 3) -> tuple[int, dict, str]:
     data = json.dumps(body).encode("utf-8")
-    req = urllib.request.Request(
-        f"{base.rstrip('/')}/recognize",
-        data=data,
-        headers={"content-type": "application/json"},
-        method="POST",
-    )
-    try:
-        with urllib.request.urlopen(req, timeout=timeout) as res:
-            raw = res.read().decode("utf-8", errors="replace")
-            try:
-                return res.status, json.loads(raw), ""
-            except json.JSONDecodeError:
-                return res.status, {}, raw[:500]
-    except urllib.error.HTTPError as exc:
-        raw = exc.read().decode("utf-8", errors="replace")
+    last_err = ""
+    for attempt in range(1, max(1, retries) + 1):
+        req = urllib.request.Request(
+            f"{base.rstrip('/')}/recognize",
+            data=data,
+            headers={"content-type": "application/json"},
+            method="POST",
+        )
         try:
-            return exc.code, json.loads(raw), ""
-        except json.JSONDecodeError:
-            return exc.code, {}, raw[:500]
-    except Exception as exc:  # noqa: BLE001
-        return 0, {}, str(exc)[:500]
+            with urllib.request.urlopen(req, timeout=timeout) as res:
+                raw = res.read().decode("utf-8", errors="replace")
+                try:
+                    return res.status, json.loads(raw), ""
+                except json.JSONDecodeError:
+                    return res.status, {}, raw[:500]
+        except urllib.error.HTTPError as exc:
+            raw = exc.read().decode("utf-8", errors="replace")
+            try:
+                return exc.code, json.loads(raw), ""
+            except json.JSONDecodeError:
+                return exc.code, {}, raw[:500]
+        except Exception as exc:  # noqa: BLE001
+            last_err = str(exc)[:500]
+            if attempt < retries:
+                time.sleep(min(30.0, 2.0 * attempt))
+                continue
+            return 0, {}, last_err
+    return 0, {}, last_err
 
 
 def iter_pdfs(corpus: Path) -> list[Path]:
@@ -130,6 +143,8 @@ def iter_pdfs(corpus: Path) -> list[Path]:
                 continue
             seen.add(key)
             out.append(p)
+    # Smallest first: large multi-page PDFs are likelier to OOM/crash docling mid-batch.
+    out.sort(key=lambda p: p.stat().st_size)
     return out
 
 
@@ -138,20 +153,15 @@ def main() -> int:
     parser.add_argument("--corpus", type=Path, default=DEFAULT_CORPUS)
     parser.add_argument("--base-url", default=os.environ.get("EXTRACTION_SMOKE_URL", "http://127.0.0.1:8093"))
     parser.add_argument("--out-dir", type=Path, default=None)
-    parser.add_argument("--throttle", type=float, default=1.5)
-    parser.add_argument("--timeout", type=float, default=120.0)
+    parser.add_argument("--throttle", type=float, default=0.5)
+    parser.add_argument("--timeout", type=float, default=180.0)
     parser.add_argument("--limit", type=int, default=0, help="0 = all")
+    parser.add_argument(
+        "--primary",
+        default="",
+        help="Expected PRIMARY (docling|yandex). Default: from /health",
+    )
     args = parser.parse_args()
-
-    key = os.environ.get("YANDEX_API_KEY", "").strip()
-    folder = os.environ.get("YANDEX_FOLDER_ID", "").strip()
-    primary = os.environ.get("EXTRACTION_PRIMARY", "").strip()
-
-    if not key or not folder:
-        print("FAIL: YANDEX_API_KEY and/or YANDEX_FOLDER_ID unset — refuse fixture recognize", file=sys.stderr)
-        return 2
-    if primary and primary != "yandex":
-        print(f"WARN: EXTRACTION_PRIMARY={primary} (expected yandex)", file=sys.stderr)
 
     # health
     try:
@@ -160,9 +170,27 @@ def main() -> int:
     except Exception as exc:  # noqa: BLE001
         print(f"FAIL: extraction health: {exc}", file=sys.stderr)
         return 2
-    if health.get("primary") != "yandex":
-        print(f"FAIL: extraction primary={health.get('primary')} want yandex", file=sys.stderr)
+
+    primary = (args.primary or health.get("primary") or "").strip()
+    if primary not in SUPPORTED_PRIMARIES:
+        print(
+            f"FAIL: extraction primary={primary!r} want one of {SUPPORTED_PRIMARIES}",
+            file=sys.stderr,
+        )
         return 2
+    if primary == "yandex":
+        key = os.environ.get("YANDEX_API_KEY", "").strip()
+        folder = os.environ.get("YANDEX_FOLDER_ID", "").strip()
+        if not key or not folder:
+            print(
+                "FAIL: YANDEX_API_KEY and/or YANDEX_FOLDER_ID unset — refuse fixture recognize",
+                file=sys.stderr,
+            )
+            return 2
+    if primary == "docling" and health.get("docling_reachable") is False:
+        print("FAIL: docling_reachable=false on extraction /health", file=sys.stderr)
+        return 2
+    print(f"primary={primary} health={health}", flush=True)
 
     run_id = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ")
     out_dir = args.out_dir or (EXTRACT_ROOT / ".corpus-runs" / run_id)
@@ -178,10 +206,14 @@ def main() -> int:
         "n": 0,
         "skipped_resume": 0,
         "http_ok": 0,
+        "primary_ok": 0,
         "yandex_ok": 0,
+        "docling_ok": 0,
         "fixture_or_other": 0,
         "empty_amount": 0,
         "empty_currency": 0,
+        "has_invoice_number": 0,
+        "has_company": 0,
         "errors": 0,
         "risk_large": 0,
     }
@@ -230,25 +262,37 @@ def main() -> int:
                 stats["http_ok"] += 1
             else:
                 stats["errors"] += 1
+            engine_ok = bool(row.get("docling_ok") if primary == "docling" else row.get("yandex_ok"))
+            row["primary_ok"] = engine_ok
             if row.get("yandex_ok"):
                 stats["yandex_ok"] += 1
+            if row.get("docling_ok"):
+                stats["docling_ok"] += 1
+            if engine_ok:
+                stats["primary_ok"] += 1
             elif row.get("http_ok"):
                 stats["fixture_or_other"] += 1
             if row.get("empty_amount"):
                 stats["empty_amount"] += 1
             if row.get("empty_currency"):
                 stats["empty_currency"] += 1
+            if row.get("has_invoice_number"):
+                stats["has_invoice_number"] += 1
+            if row.get("has_company"):
+                stats["has_company"] += 1
             fh.write(json.dumps(row, ensure_ascii=False) + "\n")
             fh.flush()
             print(
                 f"[{stats['n']}/{len(pdfs)}] {path.parent.name}/{path.name[:40]} "
-                f"http={code} mode={row.get('mode')} amount_empty={row.get('empty_amount')}",
+                f"http={code} mode={row.get('mode')} engine={row.get('engine_id')} "
+                f"amount={row.get('invoice_amount')!r} currency={row.get('currency')!r}",
                 flush=True,
             )
             time.sleep(args.throttle)
 
     summary = {
         "run_id": out_dir.name,
+        "primary": primary,
         "base_url": args.base_url,
         "corpus": str(args.corpus),
         "recognize_jsonl": str(jsonl_path),
@@ -259,8 +303,9 @@ def main() -> int:
     )
     print(json.dumps(summary, ensure_ascii=False, indent=2))
 
-    if stats["yandex_ok"] == 0 and stats["n"] > stats["skipped_resume"]:
-        print("FAIL: zero yandex_ok responses", file=sys.stderr)
+    processed = stats["n"] - stats["skipped_resume"]
+    if processed > 0 and stats["primary_ok"] == 0:
+        print(f"FAIL: zero {primary}_ok responses", file=sys.stderr)
         return 1
     return 0
 
