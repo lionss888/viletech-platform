@@ -27,7 +27,7 @@ async function createExportDraftForm(
     payment_method: "PAY_FROM_EXPORT",
     currency: packCurrency,
     invoice_amount: "1000",
-    no_documents: true,
+    no_documents: false,
     contract_number: `EXP-${Date.now()}`,
     contract_date: packDate,
   })) as { id: string };

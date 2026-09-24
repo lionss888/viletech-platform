@@ -24,6 +24,12 @@ func Apply(cmd Command) (Form, error) {
 	if !RoleMayPerformWithConfig(cmd.Role, cmd.Action, cmd.Policy) {
 		return Form{}, apperrors.New(apperrors.ErrCodeForbidden, "role is not allowed to perform this action")
 	}
+	if cmd.Action == ActionSubmit && cmd.Form.NoDocuments {
+		return Form{}, apperrors.New(
+			apperrors.ErrCodeConflict,
+			"cannot submit without documents; save as draft and attach documents first",
+		)
+	}
 	target := cmd.Target
 	var err error
 	if target == "" {

@@ -14,6 +14,7 @@ import (
 
 	"github.com/viletech/tools/vedy_bot/internal/agent"
 	"github.com/viletech/tools/vedy_bot/internal/card"
+	"github.com/viletech/tools/vedy_bot/internal/comms"
 	"github.com/viletech/tools/vedy_bot/internal/config"
 	"github.com/viletech/tools/vedy_bot/internal/console"
 	"github.com/viletech/tools/vedy_bot/internal/knowledge"
@@ -120,6 +121,12 @@ func main() {
 			}
 			return "", fmt.Errorf("agent job timeout")
 		},
+	}
+	if len(cfg.OperatorChatIDs) > 0 {
+		agentRunner.NotifyDigest = func(text string) {
+			body := comms.SanitizeManager("Разбор агента:\n" + text)
+			_, _ = p.SendOperatorDigest(context.Background(), body)
+		}
 	}
 
 	vdpRoot := strings.TrimSpace(os.Getenv("INTAKE_VDP_ROOT"))

@@ -15,11 +15,13 @@ import (
 )
 
 type fakeMsg struct {
-	texts []string
+	texts   []string
+	chatIDs []int64
 }
 
-func (f *fakeMsg) SendMessage(_ context.Context, _, _ int64, text string) (int64, error) {
+func (f *fakeMsg) SendMessage(_ context.Context, chatID, _ int64, text string) (int64, error) {
 	f.texts = append(f.texts, text)
+	f.chatIDs = append(f.chatIDs, chatID)
 	return int64(len(f.texts)), nil
 }
 
@@ -162,6 +164,85 @@ func TestPullMediaOnPhotoWithoutTriggerGoesToThreadOnly(t *testing.T) {
 	}
 }
 
+func TestHelpDoesNotCreateInbox(t *testing.T) {
+	t.Parallel()
+	home := t.TempDir()
+	st := store.New(home)
+	fm := &fakeMsg{}
+	p := &Pipeline{
+		Store:     st,
+		Messenger: fm,
+		ChatIDs:   map[int64]struct{}{-100: {}},
+		BotUser:   "vdp_intake_bot",
+	}
+	u := telegram.Update{
+		UpdateID: 100,
+		Message: &telegram.Message{
+			MessageID: 8,
+			Chat:      telegram.Chat{ID: -100},
+			Text:      "/help",
+		},
+	}
+	ok, err := p.HandleUpdate(context.Background(), u)
+	if err != nil || !ok {
+		t.Fatalf("ok=%v err=%v", ok, err)
+	}
+	if len(fm.texts) != 1 {
+		t.Fatalf("want help reply, got %v", fm.texts)
+	}
+	reply := fm.texts[0]
+	for _, needle := range []string{"inbox", "лента", "/vvod", "медиа без триггера"} {
+		if !strings.Contains(reply, needle) {
+			t.Fatalf("help copy missing %q in %q", needle, reply)
+		}
+	}
+	inbox, _ := st.ListInboxRecent(10)
+	if len(inbox) != 0 {
+		t.Fatalf("help must not create inbox, got %d", len(inbox))
+	}
+}
+
+func TestPhotoWithVvodCaptionCreatesInbox(t *testing.T) {
+	t.Parallel()
+	home := t.TempDir()
+	st := store.New(home)
+	fm := &fakeMsg{}
+	media := &fakeMedia{data: []byte("jpeg-bytes")}
+	p := &Pipeline{
+		Store:     st,
+		Messenger: fm,
+		Media:     media,
+		ChatIDs:   map[int64]struct{}{-100: {}},
+		BotUser:   "vdp_intake_bot",
+	}
+	u := telegram.Update{
+		UpdateID: 101,
+		Message: &telegram.Message{
+			MessageID: 9,
+			Chat:      telegram.Chat{ID: -100},
+			Caption:   "/vvod screenshot of bug",
+			Photo:     []telegram.PhotoSize{{FileID: "fid-cap", Width: 800, Height: 600, FileSize: 10}},
+		},
+	}
+	ok, err := p.HandleUpdate(context.Background(), u)
+	if err != nil || !ok {
+		t.Fatalf("ok=%v err=%v", ok, err)
+	}
+	inbox, err := st.ListInboxRecent(10)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(inbox) != 1 {
+		t.Fatalf("want one inbox record, got %d", len(inbox))
+	}
+	if inbox[0].Trigger != "vvod" {
+		t.Fatalf("trigger=%q", inbox[0].Trigger)
+	}
+	if len(inbox[0].Attachments) != 1 {
+		t.Fatalf("want photo attachment, got %+v", inbox[0].Attachments)
+	}
+}
+
 func TestIngestConsoleMirrorDoesNotDuplicate(t *testing.T) {
 	t.Parallel()
 	home := t.TempDir()
@@ -189,11 +270,44 @@ func TestIngestConsoleMirrorDoesNotDuplicate(t *testing.T) {
 	}
 	outs := 0
 	for _, m := range thread {
-		if m.Direction == "out" && strings.Contains(m.Text, "привет из консоли") {
+		if m.Direction == "out" {
 			outs++
 		}
 	}
 	if outs != 1 {
-		t.Fatalf("want one outbound thread line, got %d (%+v)", outs, thread)
+		t.Fatalf("thread outs=%d want 1 (no duplicate mirror)", outs)
+	}
+}
+
+func TestPublishSelectionSanitizesAndRoutesOperator(t *testing.T) {
+	t.Parallel()
+	home := t.TempDir()
+	fm := &fakeMsg{}
+	p := &Pipeline{
+		Store:           store.New(home),
+		Messenger:       fm,
+		ChatIDs:         map[int64]struct{}{-100: {}},
+		OperatorChatIDs: map[int64]struct{}{-200: {}},
+		BotUser:         "vedy_bot",
+	}
+	id, err := p.PublishSelection(context.Background(), "клиент готов; org-gate закрыт; vitest ok", "operator", 0)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if id == 0 {
+		t.Fatal("want tg message id")
+	}
+	if len(fm.texts) != 1 || len(fm.chatIDs) != 1 {
+		t.Fatalf("sends=%v chats=%v", fm.texts, fm.chatIDs)
+	}
+	if fm.chatIDs[0] != -200 {
+		t.Fatalf("want operator chat -200 got %d", fm.chatIDs[0])
+	}
+	low := strings.ToLower(fm.texts[0])
+	if strings.Contains(low, "org-gate") || strings.Contains(low, "vitest") {
+		t.Fatalf("tech leak in TG: %q", fm.texts[0])
+	}
+	if !strings.Contains(fm.texts[0], "клиент готов") {
+		t.Fatalf("product text lost: %q", fm.texts[0])
 	}
 }

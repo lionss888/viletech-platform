@@ -13,6 +13,7 @@ import {
 } from "./helpers/api";
 import { expectFormStatus } from "./helpers/status";
 import { waitForFormDetail } from "./helpers/form-detail";
+import { fillInvoiceAndReachParties } from "./helpers/wizard";
 
 const TAKE_IN_REVIEW = /Взять (заявку|организацию) в проверку|Взять .* в проверку/i;
 const REJECT_FOR_CORRECTIONS = /Вернуть на доработку|Вернуть на коррекцию/i;
@@ -39,12 +40,7 @@ test.describe("Pilot form flow @pilot-flow", () => {
     await loginAs("user");
     await page.goto("/forms/new");
     await expect(page.getByRole("heading", { name: /Новая платёжная заявка/i })).toBeVisible();
-    await expect(page.getByTestId("wizard-docs-step")).toBeVisible();
-    await page.getByTestId("wizard-no-documents").click();
-    await page.getByLabel(/Номер контракта/i).fill(`Pilot-CTR-${Date.now()}`);
-    await page.locator('input[type="date"]').first().fill("2026-09-01");
-    await page.getByRole("button", { name: "Далее" }).click();
-    await page.getByRole("button", { name: "Далее" }).click();
+    await fillInvoiceAndReachParties(page, "advance", `pilot-parties-${Date.now()}.pdf`);
     await expect(page.getByTestId("wizard-parties-step")).toBeVisible();
     const cpSelect = page.getByTestId("wizard-parties-step").locator("label").filter({ hasText: /Контрагент/i }).locator("select");
     await expect(cpSelect).toBeVisible();

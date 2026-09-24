@@ -25,7 +25,7 @@ func TestPatchFormOrganizationID(t *testing.T) {
 	root := authz.Principal{AccountID: seed.RootID, Role: domain.RoleRoot}
 	manager := authz.Principal{AccountID: seed.ManagerID, Role: domain.RoleManager}
 
-	form, err := forms.Create(ctx, user, service.CreateInput{InvoiceAmount: "10", Currency: "USD", NoDocuments: true})
+	form, err := forms.Create(ctx, user, service.CreateInput{InvoiceAmount: "10", Currency: "USD", NoDocuments: false})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -94,7 +94,7 @@ func TestDeleteFileRefRemovesDoc(t *testing.T) {
 	forms := service.NewFormPaymentService(store, outbox.NewMemoryStore(), seqID())
 	user := authz.Principal{AccountID: seed.UserID, Role: domain.RoleUser, OrganizationID: seed.OrgID}
 
-	form, err := forms.Create(ctx, user, service.CreateInput{InvoiceAmount: "10", Currency: "USD", NoDocuments: true})
+	form, err := forms.Create(ctx, user, service.CreateInput{InvoiceAmount: "10", Currency: "USD", NoDocuments: false})
 	if err != nil {
 		t.Fatal(err)
 	}

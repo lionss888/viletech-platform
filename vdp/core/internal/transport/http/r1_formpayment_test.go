@@ -15,7 +15,7 @@ func TestR1SmokeCreateDraftICOECOManagerOrder(t *testing.T) {
 	eco := login(t, core, "eco@vdp.local", "eco")
 	manager := login(t, core, "manager@vdp.local", "manager")
 
-	body := []byte(`{"currency":"USD","invoice_amount":"1000","no_documents":true,"contract_number":"C-R1","contract_date":"2026-01-01"}`)
+	body := []byte(`{"currency":"USD","invoice_amount":"1000","no_documents":false,"contract_number":"C-R1","contract_date":"2026-01-01"}`)
 	req := httptest.NewRequest(http.MethodPost, "/api/v1/site/form-payment", bytes.NewReader(body))
 	req.Header.Set("Authorization", "Bearer "+user)
 	req.Header.Set("Content-Type", "application/json")
@@ -60,7 +60,7 @@ func TestR1ForbiddenRoleAndConflictTransition(t *testing.T) {
 	core, _, _ := newStack(t)
 	user := login(t, core, "user@vdp.local", "user")
 	provider := login(t, core, "provider@vdp.local", "provider")
-	body := []byte(`{"currency":"USD","invoice_amount":"10","no_documents":true}`)
+	body := []byte(`{"currency":"USD","invoice_amount":"10","no_documents":false}`)
 	req := httptest.NewRequest(http.MethodPost, "/api/v1/site/form-payment", bytes.NewReader(body))
 	req.Header.Set("Authorization", "Bearer "+user)
 	req.Header.Set("Content-Type", "application/json")

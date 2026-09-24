@@ -16,7 +16,7 @@ func TestIMP1TreasurerConfirmImportAdvance(t *testing.T) {
 	manager := login(t, core, "manager@vdp.local", "manager")
 	root := login(t, core, "root@vdp.local", "root")
 
-	body := []byte(`{"currency":"USD","invoice_amount":"1000","no_documents":true,"contract_number":"C-IMP1","contract_date":"2026-01-01"}`)
+	body := []byte(`{"currency":"USD","invoice_amount":"1000","no_documents":false,"contract_number":"C-IMP1","contract_date":"2026-01-01"}`)
 	req := httptest.NewRequest(http.MethodPost, "/api/v1/site/form-payment", bytes.NewReader(body))
 	req.Header.Set("Authorization", "Bearer "+user)
 	req.Header.Set("Content-Type", "application/json")
@@ -65,7 +65,7 @@ func TestIMP1TreasurerConfirmForbiddenForManager(t *testing.T) {
 	eco := login(t, core, "eco@vdp.local", "eco")
 	manager := login(t, core, "manager@vdp.local", "manager")
 
-	body := []byte(`{"currency":"USD","invoice_amount":"50","no_documents":true}`)
+	body := []byte(`{"currency":"USD","invoice_amount":"50","no_documents":false}`)
 	req := httptest.NewRequest(http.MethodPost, "/api/v1/site/form-payment", bytes.NewReader(body))
 	req.Header.Set("Authorization", "Bearer "+user)
 	req.Header.Set("Content-Type", "application/json")
@@ -97,7 +97,7 @@ func TestIMP1TreasurerConfirmExportUnchanged(t *testing.T) {
 	manager := login(t, core, "manager@vdp.local", "manager")
 	root := login(t, core, "root@vdp.local", "root")
 
-	body := []byte(`{"currency":"USD","invoice_amount":"200","no_documents":true,"direction":"export"}`)
+	body := []byte(`{"currency":"USD","invoice_amount":"200","no_documents":false,"direction":"export"}`)
 	req := httptest.NewRequest(http.MethodPost, "/api/v1/site/form-payment", bytes.NewReader(body))
 	req.Header.Set("Authorization", "Bearer "+user)
 	req.Header.Set("Content-Type", "application/json")

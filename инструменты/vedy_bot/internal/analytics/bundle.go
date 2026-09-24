@@ -35,6 +35,27 @@ type Bundle struct {
 	Estimate   EstimateView   `json:"estimate"`
 }
 
+// Result is the public DTO name for the analytics boundary (alias of Bundle).
+type Result = Bundle
+
+// InboxMeta is the flattened slice of Bundle written onto inbox records.
+type InboxMeta struct {
+	Class      string
+	Confidence string
+	Chars      int
+	Tags       []string
+}
+
+// PlanMeta is the Bundle projection consumed by planfile drafts.
+type PlanMeta struct {
+	Class          string
+	Conflicts      []string
+	TimelinePhrase string
+	EngineerNote   string
+	Todos          int
+	Hours          float64
+}
+
 // Run builds the analytics bundle from raw intake text (trigger still stripped inside Analyze).
 func Run(raw, bot string) Bundle {
 	a := analyze.Analyze(raw, bot)
@@ -82,4 +103,32 @@ func (b Bundle) ConflictPlains() []string {
 		out = append(out, c.Plain)
 	}
 	return out
+}
+
+// ToInbox maps Bundle onto inbox jsonl fields (single contract → flat record).
+func (b Bundle) ToInbox() InboxMeta {
+	tags := append([]string(nil), b.Tags...)
+	return InboxMeta{
+		Class:      b.Class,
+		Confidence: b.Confidence,
+		Chars:      b.Chars,
+		Tags:       tags,
+	}
+}
+
+// ToPlan maps Bundle onto planfile Document scalars.
+func (b Bundle) ToPlan() PlanMeta {
+	return PlanMeta{
+		Class:          b.Class,
+		Conflicts:      b.ConflictPlains(),
+		TimelinePhrase: b.Estimate.ManagerPhrase,
+		EngineerNote:   b.Estimate.EngineerNote,
+		Todos:          b.Estimate.Todos,
+		Hours:          b.Estimate.Hours,
+	}
+}
+
+// LowConfidence reports whether the bundle asks for clarify.
+func (b Bundle) LowConfidence() bool {
+	return b.Confidence == string(analyze.ConfidenceLow)
 }

@@ -208,3 +208,68 @@ func TestProcessRemindersSoftThenStale(t *testing.T) {
 		}
 	}
 }
+
+func TestReminderRoutesToOperatorChat(t *testing.T) {
+	t.Parallel()
+	home := t.TempDir()
+	fm := &fakeMsg{}
+	fixed := time.Date(2026, 9, 9, 12, 0, 0, 0, time.UTC)
+	p := &Pipeline{
+		Store:            store.New(home),
+		Cards:            card.NewStore(home),
+		Messenger:        fm,
+		ChatIDs:          map[int64]struct{}{-100: {}},
+		OperatorChatIDs:  map[int64]struct{}{-200: {}},
+		BotUser:          "vedy_bot",
+		WithHITL:         true,
+		ReminderInterval: time.Hour,
+		MaxReminders:     2,
+		now:              func() time.Time { return fixed },
+	}
+	c := &card.Card{
+		ID:            "card--100-9",
+		ChatID:        -100,
+		RootMessageID: 9,
+		Status:        card.StatusAwaitingApprove,
+		LastAskAt:     fixed.Add(-2 * time.Hour),
+	}
+	if err := p.Cards.Save(c); err != nil {
+		t.Fatal(err)
+	}
+	if err := p.ProcessReminders(context.Background()); err != nil {
+		t.Fatal(err)
+	}
+	if len(fm.chatIDs) != 1 || fm.chatIDs[0] != -200 {
+		t.Fatalf("reminder chatIDs=%v want operator -200", fm.chatIDs)
+	}
+	thread, err := p.Store.ListThreadRecent(5)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(thread) == 0 || thread[0].Channel != "operator" {
+		t.Fatalf("thread channel=%v", thread)
+	}
+}
+
+func TestOperatorDigestRoutes(t *testing.T) {
+	t.Parallel()
+	home := t.TempDir()
+	fm := &fakeMsg{}
+	p := &Pipeline{
+		Store:           store.New(home),
+		Messenger:       fm,
+		ChatIDs:         map[int64]struct{}{-100: {}},
+		OperatorChatIDs: map[int64]struct{}{-200: {}},
+		BotUser:         "vedy_bot",
+	}
+	if _, err := p.SendOperatorDigest(context.Background(), "краткий разбор"); err != nil {
+		t.Fatal(err)
+	}
+	if len(fm.chatIDs) != 1 || fm.chatIDs[0] != -200 {
+		t.Fatalf("digest chat=%v", fm.chatIDs)
+	}
+	thread, _ := p.Store.ListThreadRecent(3)
+	if len(thread) == 0 || thread[0].Channel != "operator" {
+		t.Fatalf("thread=%+v", thread)
+	}
+}

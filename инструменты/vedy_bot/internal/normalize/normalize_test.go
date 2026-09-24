@@ -21,6 +21,16 @@ func TestClassifyMentionAndVvod(t *testing.T) {
 	if Classify(Message{Text: "no trigger", BotUser: "vdp_intake_bot"}) != TriggerNone {
 		t.Fatal("want none")
 	}
+	if Classify(Message{Text: "", BotUser: "vdp_intake_bot"}) != TriggerNone {
+		t.Fatal("empty text (media-only) must be none")
+	}
+	if Classify(Message{Text: "   ", BotUser: "vdp_intake_bot"}) != TriggerNone {
+		t.Fatal("whitespace-only must be none")
+	}
+	// Caption-style body with /vvod (PrimaryText feeds caption into Classify).
+	if Classify(Message{Text: "/vvod photo note", BotUser: "vdp_intake_bot"}) != TriggerVvod {
+		t.Fatal("want vvod on caption body")
+	}
 }
 
 func TestStripTrigger(t *testing.T) {

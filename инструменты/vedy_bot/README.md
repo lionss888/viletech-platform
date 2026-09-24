@@ -107,19 +107,29 @@ Optional demo mocks: `VITE_INTAKE_DEMO=1` (default is live Go API).
 
 ## Console capabilities
 
+React SPA (`fe/`) is the operator surface (AP2a): HITL, `mgmt/done`, `tg/delete`, `to-cursor` prompt+plan, plan panel.
+Vanilla `internal/console/ui/` remains fallback when SPA upstream/static is absent.
+
 - Live thread from `thread/` JSONL (in + out mirrors), not only inbox; filter manager/operator
 - HITL cards approve/decline; optional agent analyze/ask
 - Send text (as vedy_bot and/or mirror to Telegram)
 - Upload image/video/code files
 - Cursor-grade `.plan.md` under `.cursor/plans/тгбот/` (frontmatter + todos) via API/UI
 - Selective publish of selected text to manager or operator chat (sanitize)
+  - React: preview + optional plan summary; no auto-publish
+  - `POST /api/publish` accepts `text` / `source`|`message_ids` / `plan_id`|`include_plan` / `target`
 - Delete a Telegram message by id
 - Manager-safe "done" template (`comms.ManagerDone`) mirrored to the chat
 - Header shows console Bearer vs agent key (`crsr_…`, legacy `key_…`) separately
+- `fe-sync` must keep `fe/src/lib/api/**` (see exclude in `scripts/fe-sync.sh`)
 
 ## Analytics boundary
 
-In-process package `internal/analytics`: one `Bundle` DTO (class, confidence, summary, conflicts, estimate) on HITL cards and planfile/API. Not a separate docker service; no external LLM HTTP.
+In-process package `internal/analytics` only — **not** a docker/HTTP analytics service and not an external LLM.
+
+Public DTO: `analytics.Bundle` (alias `Result`) with `class`, `confidence`, `summary`, `conflicts`, `estimate`.
+Pipeline writes one contract (`Run` → card.`Analytics`, inbox via `ToInbox`, planfile via `DocumentFromAnalytics` / `ToPlan`).
+Console `GET /api/cards` returns card JSON including the `analytics` object.
 
 ## Tests
 
@@ -129,14 +139,15 @@ In-process package `internal/analytics`: one `Bundle` DTO (class, confidence, su
 
 ## Trigger matrix
 
+Канон в коде: `normalize.RouteOf` / `CreatesHITLCard` (см. `internal/normalize/route.go`).
+`/help` в чате повторяет ту же матрицу менеджеру.
+
 | Вход | Лента (thread) | Inbox / HITL |
 |---|---|---|
 | `@бот` или `/vvod` (+ текст и/или медиа) | да | да (HITL при `-hitl`) |
 | Сообщение/медиа без триггера | да | нет |
 | `/help` | да (справка) | нет |
 | Стикеры / голосовые | нет | нет |
-
-Код маршрута: `normalize.RouteOf` / `CreatesHITLCard`.
 
 ## Honesty gaps
 
@@ -147,10 +158,11 @@ In-process package `internal/analytics`: one `Bundle` DTO (class, confidence, su
 - Stand start is operator console / operator TG only; manager sees sanitized status text without commands/paths.
 - Lovable preview alone is not the live console until `fe/src/lib/api` is wired and vedy_bot is running — preview mocks ≠ production thread.
 - Embed vanilla UI under `internal/console/ui/` is fallback only when SPA upstream/static is absent.
-- Stickers/voice are not ingested.
+- Stickers/voice are not ingested (вне AP0 scope; не попадают в inbox).
 - Media without intake trigger (`@bot` / `/vvod`) is mirrored into the thread only — it does not create an inbox HITL card.
 - Bot API does not return history from before the poller started; the console is a live mirror from process start.
-- Console is operator-only (bearer token on loopback), not a VED cabinet; second TG operator chat is optional (`TELEGRAM_OPERATOR_CHAT_IDS`) — console remains the mirror.
+- Console is operator-only (bearer token on loopback), not a VED cabinet; second TG operator chat is optional (`TELEGRAM_OPERATOR_CHAT_IDS`) — console remains the live mirror of both chats, not a second Telegram client.
+- Dual-chat routing (AP2b): reminders / agent digests / operator prompts → operator chat when configured; manager ack (`proposal`) stays on intake chat. Without operator ids, those kinds fall back to manager.
 - Plans are Cursor frontmatter/todos parity, not full CreatePlan MCP / auto-run from TG.
 - Not full parity of all Telegram update types.
 - Do not claim full Lovable-preview ↔ prod parity without smoke: SPA HTML from :8787 and `GET /api/thread` with token.

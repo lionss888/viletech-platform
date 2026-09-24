@@ -8,6 +8,7 @@ import {
 } from "./helpers/api";
 import { expectFormStatus } from "./helpers/status";
 import { waitForFormDetail } from "./helpers/form-detail";
+import { fillInvoiceAndReachParties } from "./helpers/wizard";
 
 
 test.describe("Wave1 parties / orgs", () => {
@@ -52,12 +53,7 @@ test.describe("Wave1 parties / orgs", () => {
   test("wizard parties: create org and CP CTAs visible", async ({ page, loginAs }) => {
     await loginAs("user");
     await page.goto("/forms/new");
-    await expect(page.getByTestId("wizard-docs-step")).toBeVisible();
-    await page.getByTestId("wizard-no-documents").click();
-    await page.getByLabel(/Номер контракта/i).fill(`W1-CTR-${Date.now()}`);
-    await page.locator('input[type="date"]').first().fill("2026-09-01");
-    await page.getByRole("button", { name: "Далее" }).click();
-    await page.getByRole("button", { name: "Далее" }).click();
+    await fillInvoiceAndReachParties(page, "advance", `w1-parties-${Date.now()}.pdf`);
     await expect(page.getByTestId("wizard-parties-step")).toBeVisible();
     await expect(page.getByTestId("wizard-create-org-btn")).toBeVisible();
     await page.getByTestId("wizard-create-cp-btn").click();

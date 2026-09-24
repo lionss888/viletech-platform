@@ -8,6 +8,8 @@ import (
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/viletech/tools/vedy_bot/internal/analytics"
 )
 
 // TodoStatus matches Cursor plan frontmatter todos.
@@ -56,6 +58,23 @@ type Document struct {
 	Todos          int
 	Hours          float64
 	PlanTodos      []TodoItem
+}
+
+// DocumentFromAnalytics maps the analytics boundary Bundle into a planfile Document.
+func DocumentFromAnalytics(cardID, status, summary, proposal string, b analytics.Bundle) Document {
+	meta := b.ToPlan()
+	return Document{
+		CardID:         cardID,
+		Status:         status,
+		Class:          meta.Class,
+		Summary:        summary,
+		Proposal:       proposal,
+		TimelinePhrase: meta.TimelinePhrase,
+		Conflicts:      meta.Conflicts,
+		EngineerNote:   meta.EngineerNote,
+		Todos:          meta.Todos,
+		Hours:          meta.Hours,
+	}
 }
 
 // Dir under workspace: .cursor/plans/тгбот
@@ -175,6 +194,7 @@ func WritePlan(workspace string, doc PlanDoc) (string, error) {
 	if doc.Updated == "" {
 		doc.Updated = time.Now().UTC().Format(time.RFC3339)
 	}
+	Normalize(&doc)
 	path := filepath.Join(Dir(workspace), id+".plan.md")
 	raw, err := Encode(doc)
 	if err != nil {
@@ -193,6 +213,7 @@ func WriteMarkdown(workspace string, doc Document) (string, error) {
 
 // Encode serializes PlanDoc to frontmatter + body (stdlib-only YAML subset).
 func Encode(doc PlanDoc) (string, error) {
+	Normalize(&doc)
 	var b strings.Builder
 	b.WriteString("---\n")
 	b.WriteString("name: ")
@@ -203,10 +224,6 @@ func Encode(doc PlanDoc) (string, error) {
 	b.WriteString("\n")
 	b.WriteString("todos:\n")
 	for _, todo := range doc.Todos {
-		status := todo.Status
-		if status == "" {
-			status = TodoPending
-		}
 		b.WriteString("  - id: ")
 		b.WriteString(yamlScalar(todo.ID))
 		b.WriteString("\n")
@@ -214,7 +231,7 @@ func Encode(doc PlanDoc) (string, error) {
 		b.WriteString(yamlScalar(todo.Content))
 		b.WriteString("\n")
 		b.WriteString("    status: ")
-		b.WriteString(string(status))
+		b.WriteString(string(todo.Status))
 		b.WriteString("\n")
 	}
 	b.WriteString("isProject: ")
@@ -277,12 +294,34 @@ func Parse(raw string) (PlanDoc, error) {
 		return PlanDoc{}, err
 	}
 	doc.Body = strings.TrimSpace(m[2])
+	Normalize(&doc)
+	return doc, nil
+}
+
+// ValidTodoStatus reports whether status is a Cursor plan todo status.
+func ValidTodoStatus(s TodoStatus) bool {
+	switch s {
+	case TodoPending, TodoInProgress, TodoCompleted, TodoCancelled:
+		return true
+	default:
+		return false
+	}
+}
+
+// Normalize fills todo ids and coerces unknown statuses to pending (AP3 Cursor parity).
+func Normalize(doc *PlanDoc) {
+	if doc == nil {
+		return
+	}
 	for i := range doc.Todos {
-		if doc.Todos[i].Status == "" {
+		if strings.TrimSpace(doc.Todos[i].ID) == "" {
+			doc.Todos[i].ID = fmt.Sprintf("todo-%d", i+1)
+		}
+		if !ValidTodoStatus(doc.Todos[i].Status) {
 			doc.Todos[i].Status = TodoPending
 		}
+		doc.Todos[i].Content = strings.TrimSpace(doc.Todos[i].Content)
 	}
-	return doc, nil
 }
 
 func parseFrontmatter(fm string) (PlanDoc, error) {

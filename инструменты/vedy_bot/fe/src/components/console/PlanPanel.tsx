@@ -3,14 +3,17 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { getPlan, listPlans, putPlan, type PlanDoc, type PlanTodo } from "@/lib/api/client";
+import { preparePlanForSave } from "@/lib/api/plan-normalize";
+import { formatPlanPublishSummary } from "@/lib/api/publish-compose";
 
 type Props = {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   busy?: boolean;
+  onPublishSummary?: (text: string) => void;
 };
 
-export function PlanPanel({ open, onOpenChange, busy }: Props) {
+export function PlanPanel({ open, onOpenChange, busy, onPublishSummary }: Props) {
   const [plans, setPlans] = useState<PlanDoc[]>([]);
   const [active, setActive] = useState<PlanDoc | null>(null);
   const [status, setStatus] = useState("");
@@ -38,6 +41,11 @@ export function PlanPanel({ open, onOpenChange, busy }: Props) {
     setActive({ ...active, todos });
   }
 
+  function removeTodo(i: number) {
+    if (!active) return;
+    setActive({ ...active, todos: active.todos.filter((_, idx) => idx !== i) });
+  }
+
   return (
     <div className="fixed inset-0 z-40 flex items-end justify-center bg-black/50 p-4 sm:items-center">
       <div className="max-h-[90dvh] w-full max-w-2xl overflow-y-auto rounded-xl border border-border bg-background p-4 shadow-xl">
@@ -47,6 +55,9 @@ export function PlanPanel({ open, onOpenChange, busy }: Props) {
             Закрыть
           </Button>
         </div>
+        <p className="mb-3 font-mono text-[11px] text-muted-foreground">
+          Редактор frontmatter + todos. Автозапуск todos из консоли не выполняется.
+        </p>
         <div className="mb-3 flex flex-wrap gap-2">
           {plans.map((p) => (
             <Button
@@ -89,6 +100,12 @@ export function PlanPanel({ open, onOpenChange, busy }: Props) {
                   className="flex flex-wrap items-center gap-2 rounded border border-border p-2"
                 >
                   <Input
+                    value={t.id}
+                    onChange={(e) => updateTodo(i, { id: e.target.value })}
+                    className="w-28 font-mono text-[11px]"
+                    placeholder="id"
+                  />
+                  <Input
                     value={t.content}
                     onChange={(e) => updateTodo(i, { content: e.target.value })}
                     className="min-w-0 flex-1 font-mono text-xs"
@@ -103,6 +120,9 @@ export function PlanPanel({ open, onOpenChange, busy }: Props) {
                     <option value="completed">completed</option>
                     <option value="cancelled">cancelled</option>
                   </select>
+                  <Button size="sm" variant="ghost" onClick={() => removeTodo(i)}>
+                    Удалить
+                  </Button>
                 </div>
               ))}
               <Button
@@ -127,22 +147,44 @@ export function PlanPanel({ open, onOpenChange, busy }: Props) {
               className="min-h-28 font-mono text-xs"
               placeholder="markdown body"
             />
-            <div className="flex items-center gap-2">
+            <div className="flex flex-wrap items-center gap-2">
               <Button
                 size="sm"
                 disabled={busy || !active.id}
                 onClick={() => {
                   if (!active.id) return;
-                  void putPlan(active.id, active)
+                  const payload = preparePlanForSave(active);
+                  void putPlan(active.id, payload)
                     .then((doc) => {
                       setActive(doc);
-                      setStatus(doc.path || "сохранено");
+                      setStatus(doc.path ? `сохранено: ${doc.path}` : "сохранено");
                     })
                     .catch((e) => setStatus(String((e as Error).message || e)));
                 }}
               >
                 Сохранить
               </Button>
+              {onPublishSummary && (
+                <Button
+                  size="sm"
+                  variant="outline"
+                  disabled={busy}
+                  data-testid="publish-plan-summary"
+                  onClick={() => {
+                    const text = formatPlanPublishSummary({
+                      name: active.name,
+                      overview: active.overview,
+                    });
+                    if (!text.trim()) {
+                      setStatus("нет name/overview для отправки");
+                      return;
+                    }
+                    onPublishSummary(text);
+                  }}
+                >
+                  Отправить summary в TG
+                </Button>
+              )}
               {active.path && (
                 <span className="truncate font-mono text-[10px] text-muted-foreground">
                   {active.path}

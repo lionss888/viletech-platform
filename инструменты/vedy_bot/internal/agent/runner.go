@@ -40,6 +40,8 @@ type Runner struct {
 	CloudDefault string
 	// LocalFallbackCloud retries cloud when local fails (P4).
 	LocalFallbackCloud bool
+	// NotifyDigest optionally mirrors a short agent digest to the operator TG chat (AP2b).
+	NotifyDigest func(text string)
 }
 
 // StartJob creates and runs a job in background.
@@ -205,13 +207,24 @@ func (r *Runner) mirrorAgentReply(job *Job) error {
 	if r.Store == nil || strings.TrimSpace(job.Result) == "" {
 		return nil
 	}
-	return r.Store.AppendThread(store.ThreadMsg{
+	if err := r.Store.AppendThread(store.ThreadMsg{
 		MessageID: time.Now().UnixNano(),
 		Direction: "agent",
 		FromUser:  "agent",
 		Text:      job.Result,
 		Kind:      job.Mode,
-	})
+		Channel:   "operator",
+	}); err != nil {
+		return err
+	}
+	if r.NotifyDigest != nil {
+		digest := strings.TrimSpace(job.Result)
+		if len([]rune(digest)) > 800 {
+			digest = string([]rune(digest)[:800]) + "…"
+		}
+		r.NotifyDigest(digest)
+	}
+	return nil
 }
 
 func (r *Runner) runCursorAgent(ctx context.Context, prompt, apiKeyOverride string) (string, error) {

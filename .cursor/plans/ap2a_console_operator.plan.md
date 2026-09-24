@@ -1,16 +1,16 @@
 ---
 name: AP2a Console operator
-overview: "React-паритет mgmt/delete/to-cursor plan; индикация Bearer vs agent key; консоль = операторский контур."
+overview: React-паритет mgmt/delete/to-cursor plan; индикация Bearer vs agent key; консоль = операторский контур.
 todos:
   - id: ap2a-react-parity
     content: Wire mgmt/done, tg/delete, to-cursor plan в React SPA
-    status: pending
+    status: completed
   - id: ap2a-key-status
     content: Отдельные статусы консоль/агент в шапке
-    status: pending
+    status: completed
   - id: ap2a-smoke
     content: fe-test + make up / smoke SPA
-    status: pending
+    status: completed
 isProject: false
 ---
 

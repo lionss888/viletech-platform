@@ -33,11 +33,22 @@ func Primary(ids map[int64]struct{}) int64 {
 	return 0
 }
 
-// TargetForKind picks destination chat for outbound bot traffic.
-// manager_ack / proposal / stale → manager; reminder / operator_digest → operator when configured.
-func TargetForKind(kind string, manager, operator map[int64]struct{}, fallback int64) (chatID int64, channel Channel) {
+// IsOperatorBound reports whether outbound kind is routed to the operator chat when configured.
+// AP2b: reminders, agent digests, operator prompts → operator; proposal/help/stale/ack → manager.
+func IsOperatorBound(kind string) bool {
 	switch kind {
 	case "reminder", "operator_digest", "operator_prompt":
+		return true
+	default:
+		return false
+	}
+}
+
+// TargetForKind picks destination chat for outbound bot traffic.
+// Operator-bound kinds use TELEGRAM_OPERATOR_CHAT_IDS when set; otherwise fall back to manager/fallback.
+// Manager-bound (proposal, help, stale, stand, …): ack stays on the manager intake chat.
+func TargetForKind(kind string, manager, operator map[int64]struct{}, fallback int64) (chatID int64, channel Channel) {
+	if IsOperatorBound(kind) {
 		if id := Primary(operator); id != 0 {
 			return id, ChannelOperator
 		}
@@ -45,14 +56,13 @@ func TargetForKind(kind string, manager, operator map[int64]struct{}, fallback i
 			return fallback, Classify(fallback, manager, operator)
 		}
 		return Primary(manager), ChannelManager
-	default:
-		if fallback != 0 {
-			ch := Classify(fallback, manager, operator)
-			if ch == ChannelUnknown {
-				ch = ChannelManager
-			}
-			return fallback, ch
-		}
-		return Primary(manager), ChannelManager
 	}
+	if fallback != 0 {
+		ch := Classify(fallback, manager, operator)
+		if ch == ChannelUnknown {
+			ch = ChannelManager
+		}
+		return fallback, ch
+	}
+	return Primary(manager), ChannelManager
 }

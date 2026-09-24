@@ -67,7 +67,7 @@ PROV_T=$(login provider@vdp.local provider)
 
 echo "== create form =="
 FORM=$(auth_post "$USER_T" /api/v1/site/form-payment \
-  '{"currency":"USD","invoice_amount":"500","no_documents":true,"contract_number":"COMPOSE-E2E","contract_date":"2026-08-01"}')
+  '{"currency":"USD","invoice_amount":"500","no_documents":false,"contract_number":"COMPOSE-E2E","contract_date":"2026-08-01"}')
 ID=$(echo "$FORM" | python3 -c 'import sys,json; print(json.load(sys.stdin)["id"])')
 echo "form=$ID"
 
@@ -131,7 +131,7 @@ echo "main path completed"
 
 echo "== refund smoke =="
 FORM2=$(auth_post "$USER_T" /api/v1/site/form-payment \
-  '{"currency":"EUR","invoice_amount":"100","no_documents":true}')
+  '{"currency":"EUR","invoice_amount":"100","no_documents":false}')
 ID2=$(echo "$FORM2" | python3 -c 'import sys,json; print(json.load(sys.stdin)["id"])')
 auth_post "$USER_T" "/api/v1/forms/$ID2/actions/recognize_complete" '{}' >/dev/null
 auth_put "$USER_T" "/api/v1/site/form-payment/$ID2/form/accept"
@@ -152,7 +152,7 @@ fi
 
 echo "== RD7 provider_start spot (parallel form) =="
 FORM3=$(auth_post "$USER_T" /api/v1/site/form-payment \
-  '{"currency":"USD","invoice_amount":"200","no_documents":true,"contract_number":"RD7-SPOT"}')
+  '{"currency":"USD","invoice_amount":"200","no_documents":false,"contract_number":"RD7-SPOT"}')
 ID3=$(echo "$FORM3" | python3 -c 'import sys,json; print(json.load(sys.stdin)["id"])')
 auth_post "$USER_T" "/api/v1/forms/$ID3/actions/recognize_complete" '{}' >/dev/null
 auth_put "$USER_T" "/api/v1/site/form-payment/$ID3/form/accept"
@@ -177,7 +177,7 @@ echo "== RD8 root cancel + admin spot =="
 ROOT_T=$(login root@vdp.local root)
 curl -sf -H "Authorization: Bearer $ROOT_T" "$BASE/api/v1/admin/account" | python3 -c 'import sys,json; d=json.load(sys.stdin); assert isinstance(d,list) and len(d)>0'
 FORM4=$(auth_post "$USER_T" /api/v1/site/form-payment \
-  '{"currency":"RUB","invoice_amount":"50","no_documents":true,"contract_number":"RD8-CANCEL"}')
+  '{"currency":"RUB","invoice_amount":"50","no_documents":false,"contract_number":"RD8-CANCEL"}')
 ID4=$(echo "$FORM4" | python3 -c 'import sys,json; print(json.load(sys.stdin)["id"])')
 auth_post "$USER_T" "/api/v1/forms/$ID4/actions/recognize_complete" '{}' >/dev/null
 curl -sf -X PUT "$BASE/api/v1/manager/form-payment/$ID4/cancel" \
@@ -209,7 +209,7 @@ echo "== RH2 ICO org-pending spot (soft_skip_forbidden) =="
 # Force org into unverified state so the scenario cannot soft-skip.
 try_put "$ICO_T" "/api/v1/admin/internal-compliance-officer/organization/$ORG_ID/un-approve" || true
 FORM5=$(auth_post "$USER_T" /api/v1/site/form-payment \
-  '{"currency":"USD","invoice_amount":"120","no_documents":true,"contract_number":"RH2-ICO"}')
+  '{"currency":"USD","invoice_amount":"120","no_documents":false,"contract_number":"RH2-ICO"}')
 ID5=$(echo "$FORM5" | python3 -c 'import sys,json; print(json.load(sys.stdin)["id"])')
 auth_post "$USER_T" "/api/v1/forms/$ID5/actions/recognize_complete" '{}' >/dev/null
 auth_put "$USER_T" "/api/v1/site/form-payment/$ID5/form/accept"
@@ -235,7 +235,7 @@ echo "RH2 ICO org-pending path ok form=$ID5 status=$ST5B"
 
 echo "== RH2 ECO/manager reject + user resubmit =="
 FORM6=$(auth_post "$USER_T" /api/v1/site/form-payment \
-  '{"currency":"USD","invoice_amount":"130","no_documents":true,"contract_number":"RH2-REJECT"}')
+  '{"currency":"USD","invoice_amount":"130","no_documents":false,"contract_number":"RH2-REJECT"}')
 ID6=$(echo "$FORM6" | python3 -c 'import sys,json; print(json.load(sys.stdin)["id"])')
 auth_post "$USER_T" "/api/v1/forms/$ID6/actions/recognize_complete" '{}' >/dev/null
 auth_put "$USER_T" "/api/v1/site/form-payment/$ID6/form/accept"
@@ -255,7 +255,7 @@ echo "RH2 reject/resubmit ok form=$ID6"
 
 echo "== RH2 refund full cycle =="
 FORM7=$(auth_post "$USER_T" /api/v1/site/form-payment \
-  '{"currency":"USD","invoice_amount":"1000","no_documents":true,"contract_number":"RH2-REFUND"}')
+  '{"currency":"USD","invoice_amount":"1000","no_documents":false,"contract_number":"RH2-REFUND"}')
 ID7=$(echo "$FORM7" | python3 -c 'import sys,json; print(json.load(sys.stdin)["id"])')
 auth_post "$USER_T" "/api/v1/forms/$ID7/actions/recognize_complete" '{}' >/dev/null
 auth_put "$USER_T" "/api/v1/site/form-payment/$ID7/form/accept"
@@ -279,7 +279,7 @@ echo "RH2 refund full ok form=$ID7"
 
 echo "== P5 advance_signing smoke =="
 FORM8=$(auth_post "$USER_T" /api/v1/site/form-payment \
-  '{"currency":"USD","invoice_amount":"800","no_documents":true,"contract_number":"P5-ADV"}')
+  '{"currency":"USD","invoice_amount":"800","no_documents":false,"contract_number":"P5-ADV"}')
 ID8=$(echo "$FORM8" | python3 -c 'import sys,json; print(json.load(sys.stdin)["id"])')
 auth_post "$USER_T" "/api/v1/forms/$ID8/actions/recognize_complete" '{}' >/dev/null
 auth_put "$USER_T" "/api/v1/site/form-payment/$ID8/form/accept"
@@ -321,7 +321,7 @@ echo "== provider_return_to_manager =="
 # Re-approve org for subsequent forms (ICO spot left it approved; ensure baseline).
 try_put "$ICO_T" "/api/v1/admin/internal-compliance-officer/organization/$ORG_ID/approve" || true
 FORM9=$(auth_post "$USER_T" /api/v1/site/form-payment \
-  '{"currency":"USD","invoice_amount":"640","no_documents":true,"contract_number":"PROV-RET"}')
+  '{"currency":"USD","invoice_amount":"640","no_documents":false,"contract_number":"PROV-RET"}')
 ID9=$(echo "$FORM9" | python3 -c 'import sys,json; print(json.load(sys.stdin)["id"])')
 auth_post "$USER_T" "/api/v1/forms/$ID9/actions/recognize_complete" '{}' >/dev/null
 auth_put "$USER_T" "/api/v1/site/form-payment/$ID9/form/accept"
@@ -345,7 +345,7 @@ echo "provider_return_to_manager ok form=$ID9"
 
 echo "== manager_sets_deal_rate =="
 FORM10=$(auth_post "$USER_T" /api/v1/site/form-payment \
-  '{"currency":"USD","invoice_amount":"410","no_documents":true,"contract_number":"DEAL-RATE"}')
+  '{"currency":"USD","invoice_amount":"410","no_documents":false,"contract_number":"DEAL-RATE"}')
 ID10=$(echo "$FORM10" | python3 -c 'import sys,json; print(json.load(sys.stdin)["id"])')
 auth_post "$USER_T" "/api/v1/forms/$ID10/actions/recognize_complete" '{}' >/dev/null
 auth_put "$USER_T" "/api/v1/site/form-payment/$ID10/form/accept"
@@ -361,7 +361,7 @@ echo "manager_sets_deal_rate ok form=$ID10 rate=$RATE_VAL"
 
 echo "== IMP1_import_advance_treasurer (P5) =="
 FORM11=$(auth_post "$USER_T" /api/v1/site/form-payment \
-  '{"direction":"import","payment_method":"advance","currency":"USD","invoice_amount":"1000","no_documents":true,"contract_number":"IMP1-ADV"}')
+  '{"direction":"import","payment_method":"advance","currency":"USD","invoice_amount":"1000","no_documents":false,"contract_number":"IMP1-ADV"}')
 ID11=$(echo "$FORM11" | python3 -c 'import sys,json; print(json.load(sys.stdin)["id"])')
 auth_post "$USER_T" "/api/v1/forms/$ID11/actions/recognize_complete" '{}' >/dev/null
 auth_put "$USER_T" "/api/v1/site/form-payment/$ID11/form/accept"
@@ -385,7 +385,7 @@ echo "IMP1_import_advance_treasurer ok form=$ID11"
 
 echo "== IMP2_import_postpay_RATE_ON_PP (P5) =="
 FORM12=$(auth_post "$USER_T" /api/v1/site/form-payment \
-  '{"direction":"import","payment_method":"post_payment","currency":"USD","invoice_amount":"800","no_documents":true,"contract_number":"IMP2-PP"}')
+  '{"direction":"import","payment_method":"post_payment","currency":"USD","invoice_amount":"800","no_documents":false,"contract_number":"IMP2-PP"}')
 ID12=$(echo "$FORM12" | python3 -c 'import sys,json; print(json.load(sys.stdin)["id"])')
 auth_post "$USER_T" "/api/v1/forms/$ID12/actions/recognize_complete" '{}' >/dev/null
 auth_put "$USER_T" "/api/v1/site/form-payment/$ID12/form/accept"

@@ -8,6 +8,7 @@ This file is a stub so tools that still look for `AGENTS.md` do not invent a sec
 |---|---|
 | Workspace map / `перенос-среды` | `workspace-карта` |
 | Plan vs rules (+ слои/QG в DoD) | `планирование-сверка-с-rules`, `базовые-правила-инструмента` |
+| Plan close (todos + DoD + status) | `plan-закрытие-и-dod` |
 | Docker FE refresh (ask first) | `vdp-fe-docker-пересборка` |
 | Local CI before push/PR | `vdp-ci-local-gate` |
 | Local QG canvas Run | `vdp-ci-local-gate` (Shell без sandbox; кнопка Run = выполнить) |

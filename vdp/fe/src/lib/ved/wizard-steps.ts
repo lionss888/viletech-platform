@@ -7,12 +7,16 @@ export const WIZARD_STEPS = ["Документы", "Направление", "С
 /** Пояснения к каждому шагу мастера — отрабатывают ожидания пользователя. */
 export const WIZARD_STEP_CAPTIONS: Record<(typeof WIZARD_STEPS)[number], string> = {
   Документы:
-    "Сначала загрузите инвойс — после «Далее» распознавание пойдёт в фоне и подставит доступные поля, если удастся. Контракт можно добавить сразу или позже; без файлов укажите номер и дату договора вручную.",
+    "Сначала загрузите инвойс — после «Далее» распознавание пойдёт в фоне и подставит доступные поля, если удастся. Контракт можно добавить сразу или позже. Без файлов можно сохранить только черновик с ориентировочной суммой.",
   Направление: "Укажите, вы отправляете платёж за рубеж или получаете оплату из-за рубежа.",
   Стороны: "Выберите вашу организацию и иностранного контрагента — или создайте новых прямо здесь.",
   Условия: "Сумма и валюта платежа, код ТН ВЭД, дата отгрузки и условие оплаты.",
   Проверка: "Сверьте данные перед отправкой. После отправки заявка уйдёт на комплаенс-проверку.",
 };
+
+/** Alert when the client marked «no documents» — draft-only path. */
+export const NO_DOCUMENTS_DRAFT_ALERT =
+  "Без документов заявку можно сохранить только как черновик. Ждём документы по заявке, чтобы отправить менеджеру.";
 
 /** Create-form wizard step ids. */
 export const WIZARD_STEP = {
@@ -134,27 +138,21 @@ export type DocsStepInput = {
   skipInvoiceRequirement?: boolean;
 };
 
-/** Validates the documents wizard step (invoice-first or manual contract fields). */
+/** Validates the documents wizard step (invoice-first; no-docs skips to draft-only terms). */
 export function validateDocsStep(input: DocsStepInput): { message: string; fields: string[] } | null {
+  if (input.noDocuments) return null;
   const fields: string[] = [];
   const messages: string[] = [];
-  if (!input.noDocuments && !input.skipInvoiceRequirement && !input.invoiceFile) {
+  if (!input.skipInvoiceRequirement && !input.invoiceFile) {
     fields.push("invoiceFile");
     messages.push("Загрузите инвойс или выберите «У меня нет документов»");
-  }
-  if (input.noDocuments) {
-    if (!input.contractNumber?.trim()) fields.push("contractNumber");
-    if (!input.contractDate?.trim()) fields.push("contractDate");
-    if (fields.length > 0) {
-      messages.push("Без документов укажите номер и дату контракта вручную");
-    }
   }
   if (messages.length === 0) return null;
   return { message: messages.join(". "), fields };
 }
 
 export function documentsLabel(noDocuments: boolean, hasInvoice: boolean, hasContract: boolean): string {
-  if (noDocuments) return "Без файлов (ручной контракт)";
+  if (noDocuments) return "Без файлов (черновик)";
   if (hasInvoice && hasContract) return "Инвойс + контракт";
   if (hasInvoice) return "Только инвойс";
   if (hasContract) return "Только контракт";

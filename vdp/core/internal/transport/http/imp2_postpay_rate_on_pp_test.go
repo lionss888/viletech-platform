@@ -18,7 +18,7 @@ func TestIMP2PostpayAutoModeAndTreasurerConfirm(t *testing.T) {
 	root := login(t, core, "root@vdp.local", "root")
 	provider := login(t, core, "provider@vdp.local", "provider")
 
-	body := []byte(`{"currency":"USD","invoice_amount":"1500","no_documents":true,"payment_method":"post_payment","contract_number":"C-IMP2","contract_date":"2026-02-01"}`)
+	body := []byte(`{"currency":"USD","invoice_amount":"1500","no_documents":false,"payment_method":"post_payment","contract_number":"C-IMP2","contract_date":"2026-02-01"}`)
 	req := httptest.NewRequest(http.MethodPost, "/api/v1/site/form-payment", bytes.NewReader(body))
 	req.Header.Set("Authorization", "Bearer "+user)
 	req.Header.Set("Content-Type", "application/json")
@@ -81,7 +81,7 @@ func TestIMP2PatchPostPaymentSetsMode(t *testing.T) {
 	user := login(t, core, "user@vdp.local", "user")
 	manager := login(t, core, "manager@vdp.local", "manager")
 
-	body := []byte(`{"currency":"EUR","invoice_amount":"100","no_documents":true}`)
+	body := []byte(`{"currency":"EUR","invoice_amount":"100","no_documents":false}`)
 	req := httptest.NewRequest(http.MethodPost, "/api/v1/site/form-payment", bytes.NewReader(body))
 	req.Header.Set("Authorization", "Bearer "+user)
 	req.Header.Set("Content-Type", "application/json")

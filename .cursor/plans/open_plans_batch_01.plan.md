@@ -61,8 +61,8 @@ Each todo: check whether open todos in the source plan are still needed → stat
 
 ## DoD
 
-- [ ] All triage todos closed with a decision (completed / cancelled + reason)
-- [ ] Product CI only when triage = execute in source plan
+- [x] All triage todos closed with a decision (completed / cancelled + reason)
+- [x] Product CI only when triage = execute in source plan
 
 
 ## Triage decisions (2026-09-24)

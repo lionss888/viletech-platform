@@ -3,7 +3,7 @@ import { assertCoreHealthy, loginAllRoles, uploadAndAttachInvoice } from "./help
 import { clickAction, confirmModal } from "./helpers/click-action";
 import { expectFormStatus } from "./helpers/status";
 import { waitForFormDetail } from "./helpers/form-detail";
-import { finishTermsAndReview, saveWizardDraft } from "./helpers/wizard";
+import { finishTermsAndReview, fillInvoiceAndReachParties, saveWizardDraft } from "./helpers/wizard";
 import { readRobotPdf, loadRobotPack } from "./helpers/robot-fixtures";
 import type { Page } from "@playwright/test";
 
@@ -18,19 +18,11 @@ async function attachModalFile(page: Page, pdf: Buffer, fileName: string): Promi
   await input.setInputFiles({ name: fileName, mimeType: "application/pdf", buffer: pdf });
 }
 
-async function fillNoDocsAndReachParties(
+async function fillInvoicePathToTerms(
   page: Page,
   condition: "advance" | "postPayment" = "advance",
 ): Promise<void> {
-  await expect(page.getByTestId("wizard-docs-step")).toBeVisible();
-  await page.getByTestId("wizard-no-documents").click();
-  await page.getByLabel(/Номер контракта/i).fill(`POSTPAY-${Date.now()}`);
-  await page.locator('input[type="date"]').first().fill("2026-09-10");
-  await page.getByRole("button", { name: "Далее" }).click();
-  await expect(page.getByTestId("wizard-direction-step")).toBeVisible();
-  await page.getByTestId("wizard-payment-condition").selectOption(condition);
-  await page.getByRole("button", { name: "Далее" }).click();
-  await expect(page.getByTestId("wizard-parties-step")).toBeVisible();
+  await fillInvoiceAndReachParties(page, condition, `postpay-${Date.now()}.pdf`);
   await page.getByRole("button", { name: "Далее" }).click();
 }
 
@@ -57,7 +49,7 @@ test.describe("Pilot matrix POSTPAY_RATE_ON_PP @pilot-matrix", () => {
     await loginAs("user");
     await page.goto("/forms/new");
     await page.waitForLoadState("networkidle");
-    await fillNoDocsAndReachParties(page, "postPayment");
+    await fillInvoicePathToTerms(page, "postPayment");
     await finishTermsAndReview(page, "5000");
     await saveWizardDraft(page);
     await expect(page.getByTestId("form-params")).toBeVisible({ timeout: 30_000 });

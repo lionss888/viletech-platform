@@ -1,16 +1,16 @@
 ---
 name: AP4 Selective publish
-overview: "POST /api/publish + UI превью выбранного → TG (manager/operator); sanitize."
+overview: POST /api/publish + UI превью выбранного → TG (manager/operator); sanitize.
 todos:
   - id: ap4-api
     content: POST /api/publish source+text+target+sanitize
-    status: pending
+    status: completed
   - id: ap4-ui
     content: Отправить выбранное с превью; plan summary optional
-    status: pending
+    status: completed
   - id: ap4-tests
     content: Unit sanitize + 401; smoke TG
-    status: pending
+    status: completed
 isProject: false
 ---
 

@@ -166,6 +166,7 @@ export function extractionPanelMode(input: {
   hasDocuments?: boolean;
 }): "hide" | "pending" | "review" | "idle" {
   if (input.role === "provider") return "hide";
+  if (input.noDocuments) return "hide";
   if (input.hasDraft) return "review";
   const st = input.status ?? "";
   if (isExtractionPanelTerminal(st)) return "hide";
