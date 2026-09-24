@@ -9,9 +9,9 @@ import (
 
 func TestSanitizeManagerStripsTech(t *testing.T) {
 	t.Parallel()
-	in := "см. .cursor/plans/тгбот/card-1.md и make ci-pr https://github.com/x localhost:5173 класс=bug"
+	in := "см. .cursor/plans/тгбот/card-1.md и make ci-pr https://github.com/x localhost:5173 класс=bug org-gate DoD"
 	out := comms.SanitizeManager(in)
-	for _, bad := range []string{".cursor/plans", "make ci-pr", "github.com", "localhost", "класс="} {
+	for _, bad := range []string{".cursor/plans", "make ci-pr", "github.com", "localhost", "класс=", "org-gate", "dod"} {
 		if strings.Contains(strings.ToLower(out), strings.ToLower(bad)) {
 			t.Fatalf("still contains %q in %q", bad, out)
 		}

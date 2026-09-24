@@ -24,6 +24,7 @@ import {
   getToken,
   hitlDecide,
   isDemoMode,
+  listPlans,
   mgmtDone,
   publishSelection,
   savePlan,
@@ -34,6 +35,7 @@ import {
   uploadFile,
   waitAgentJob,
 } from "@/lib/api/client";
+import { formatPlanPublishSummary } from "@/lib/api/publish-compose";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -67,11 +69,13 @@ function Index() {
   const [busy, setBusy] = useState(false);
   const [agentError, setAgentError] = useState<string | null>(null);
   const [channelFilter, setChannelFilter] = useState<"all" | "manager" | "operator">("all");
+  const [planSummary, setPlanSummary] = useState("");
 
   const refresh = useCallback(async () => {
     if (demo) {
       setMessages(demoMessages);
       setCards(demoCards);
+      setPlanSummary("");
       setSignedIn(true);
       return;
     }
@@ -80,9 +84,19 @@ function Index() {
       return;
     }
     try {
-      const [thread, hitl] = await Promise.all([fetchThread(200), fetchCards()]);
+      const [thread, hitl, plans] = await Promise.all([
+        fetchThread(200),
+        fetchCards(),
+        listPlans().catch(() => []),
+      ]);
       setMessages(thread);
       setCards(hitl);
+      const first = plans[0];
+      setPlanSummary(
+        first
+          ? formatPlanPublishSummary({ name: first.name, overview: first.overview })
+          : "",
+      );
       setSignedIn(true);
     } catch (e) {
       const err = e as Error & { status?: number };
@@ -255,6 +269,7 @@ function Index() {
           count={selected.length}
           busy={busy}
           previewText={selectedPreview}
+          planSummary={planSummary}
           onClear={() => setSelected([])}
           onAnalyzeSelected={(p) => void runAgent("analyze_selected", selected, p)}
           onAnalyzeChat={() => void runAgent("analyze_chat", [], "")}
@@ -262,7 +277,11 @@ function Index() {
           onPublish={(text, target) => {
             setBusy(true);
             void publishSelection({ text, messageIds: selected, target })
-              .then(() => refresh())
+              .then(() => {
+                toast.success(target === "operator" ? "Отправлено оператору" : "Отправлено менеджеру");
+                return refresh();
+              })
+              .catch((e) => toast.error(e instanceof Error ? e.message : String(e)))
               .finally(() => setBusy(false));
           }}
           onMgmtDone={(title, body) => {
@@ -365,7 +384,22 @@ function Index() {
         }}
         onAskAgent={(_id, text) => void runAgent("ask_agent", [], text)}
       />
-      <PlanPanel open={plansOpen} onOpenChange={setPlansOpen} busy={busy} />
+      <PlanPanel
+        open={plansOpen}
+        onOpenChange={setPlansOpen}
+        busy={busy}
+        onPublishSummary={(text) => {
+          setBusy(true);
+          void publishSelection({ text, target: "manager", includePlan: false })
+            .then(() => {
+              toast.success("Summary плана отправлен менеджеру");
+              setPlansOpen(false);
+              return refresh();
+            })
+            .catch((e) => toast.error(e instanceof Error ? e.message : String(e)))
+            .finally(() => setBusy(false));
+        }}
+      />
     </div>
   );
 }

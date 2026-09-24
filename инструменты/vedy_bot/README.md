@@ -116,6 +116,8 @@ Vanilla `internal/console/ui/` remains fallback when SPA upstream/static is abse
 - Upload image/video/code files
 - Cursor-grade `.plan.md` under `.cursor/plans/тгбот/` (frontmatter + todos) via API/UI
 - Selective publish of selected text to manager or operator chat (sanitize)
+  - React: preview + optional plan summary; no auto-publish
+  - `POST /api/publish` accepts `text` / `source`|`message_ids` / `plan_id`|`include_plan` / `target`
 - Delete a Telegram message by id
 - Manager-safe "done" template (`comms.ManagerDone`) mirrored to the chat
 - Header shows console Bearer vs agent key (`crsr_…`, legacy `key_…`) separately

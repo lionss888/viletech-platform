@@ -553,11 +553,11 @@ func (p *Pipeline) pullMedia(ctx context.Context, msg *telegram.Message) ([]stor
 func (p *Pipeline) PublishSelection(ctx context.Context, text, target string, chatID int64) (int64, error) {
 	body := comms.SanitizeManager(strings.TrimSpace(text))
 	if body == "" {
-		return 0, fmt.Errorf("text required")
+		return 0, fmt.Errorf("text required after sanitize")
 	}
-	kind := "proposal"
-	if strings.EqualFold(target, "operator") {
-		kind = "operator_prompt"
+	target = strings.ToLower(strings.TrimSpace(target))
+	if target == "" {
+		target = "manager"
 	}
 	res, err := p.IngestConsole(ctx, ConsoleIngest{
 		Text:       body,
@@ -570,7 +570,6 @@ func (p *Pipeline) PublishSelection(ctx context.Context, text, target string, ch
 	if err != nil {
 		return 0, err
 	}
-	_ = kind
 	return res.TGMessage, nil
 }
 

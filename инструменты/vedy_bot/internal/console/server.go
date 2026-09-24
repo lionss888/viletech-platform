@@ -485,52 +485,121 @@ func (s *Server) handleMgmtDone(w http.ResponseWriter, r *http.Request) {
 }
 
 type publishReq struct {
-	Text       string   `json:"text"`
-	Target     string   `json:"target"` // manager|operator
-	ChatID     int64    `json:"chat_id"`
-	MessageIDs []string `json:"message_ids"`
+	Text        string   `json:"text"`
+	Target      string   `json:"target"` // manager|operator
+	ChatID      int64    `json:"chat_id"`
+	MessageIDs  []string `json:"message_ids"`
+	Source      []string `json:"source"` // alias for message_ids (AP4)
+	PlanID      string   `json:"plan_id"`
+	IncludePlan bool     `json:"include_plan"`
 }
 
 func (s *Server) handlePublish(w http.ResponseWriter, r *http.Request) {
+	if s.Pipeline == nil {
+		http.Error(w, "pipeline not configured", http.StatusServiceUnavailable)
+		return
+	}
 	var req publishReq
 	if err := json.NewDecoder(io.LimitReader(r.Body, 1<<20)).Decode(&req); err != nil {
 		http.Error(w, "bad json", http.StatusBadRequest)
 		return
 	}
+	ids := req.MessageIDs
+	if len(ids) == 0 {
+		ids = req.Source
+	}
 	text := strings.TrimSpace(req.Text)
-	if text == "" && len(req.MessageIDs) > 0 && s.Store != nil {
-		all, _ := s.Store.ListThreadRecent(500)
-		byID := map[string]store.ThreadMsg{}
-		for _, m := range all {
-			byID[m.ID] = m
-		}
-		var parts []string
-		for _, id := range req.MessageIDs {
-			if m, ok := byID[id]; ok {
-				parts = append(parts, strings.TrimSpace(m.Text))
+	if text == "" && len(ids) > 0 && s.Store != nil {
+		text = joinThreadTexts(s.Store, ids)
+	}
+	if req.IncludePlan || strings.TrimSpace(req.PlanID) != "" {
+		summary := s.planPublishSummary(req.PlanID)
+		if summary != "" {
+			if text == "" {
+				text = summary
+			} else {
+				text = text + "\n\n" + summary
 			}
 		}
-		text = strings.Join(parts, "\n\n")
 	}
 	if strings.TrimSpace(text) == "" {
-		http.Error(w, "text or message_ids required", http.StatusBadRequest)
+		http.Error(w, "text, source/message_ids, or plan summary required", http.StatusBadRequest)
 		return
 	}
 	target := strings.ToLower(strings.TrimSpace(req.Target))
 	if target == "" {
 		target = "manager"
 	}
+	if target != "manager" && target != "operator" {
+		http.Error(w, "target must be manager or operator", http.StatusBadRequest)
+		return
+	}
 	id, err := s.Pipeline.PublishSelection(r.Context(), text, target, req.ChatID)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
+	sent := comms.SanitizeManager(text)
 	writeJSON(w, http.StatusOK, map[string]any{
 		"ok":            true,
 		"tg_message_id": id,
-		"text":          comms.SanitizeManager(text),
+		"text":          sent,
 		"target":        target,
 	})
+}
+
+func joinThreadTexts(st *store.Store, ids []string) string {
+	if st == nil || len(ids) == 0 {
+		return ""
+	}
+	all, _ := st.ListThreadRecent(500)
+	byID := map[string]store.ThreadMsg{}
+	for _, m := range all {
+		byID[m.ID] = m
+	}
+	var parts []string
+	for _, id := range ids {
+		if m, ok := byID[id]; ok {
+			if t := strings.TrimSpace(m.Text); t != "" {
+				parts = append(parts, t)
+			}
+		}
+	}
+	return strings.Join(parts, "\n\n")
+}
+
+func (s *Server) planPublishSummary(planID string) string {
+	if s.Workspace == "" {
+		return ""
+	}
+	planID = strings.TrimSpace(planID)
+	if planID != "" {
+		doc, err := planfile.Read(s.Workspace, planID)
+		if err != nil {
+			return ""
+		}
+		return formatPlanSummary(doc)
+	}
+	items, err := planfile.ListByCard(s.Workspace, "")
+	if err != nil || len(items) == 0 {
+		return ""
+	}
+	return formatPlanSummary(items[0])
+}
+
+func formatPlanSummary(doc planfile.PlanDoc) string {
+	name := strings.TrimSpace(doc.Name)
+	overview := strings.TrimSpace(doc.Overview)
+	if name == "" && overview == "" {
+		return ""
+	}
+	if overview == "" {
+		return "План: " + name
+	}
+	if name == "" {
+		return "Кратко по плану:\n" + overview
+	}
+	return "План «" + name + "»:\n" + overview
 }
 
 func (s *Server) handlePlansList(w http.ResponseWriter, r *http.Request) {

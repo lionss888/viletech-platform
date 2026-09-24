@@ -18,6 +18,7 @@ import (
 	"github.com/viletech/tools/vedy_bot/internal/analytics"
 	"github.com/viletech/tools/vedy_bot/internal/card"
 	"github.com/viletech/tools/vedy_bot/internal/pipeline"
+	"github.com/viletech/tools/vedy_bot/internal/planfile"
 	"github.com/viletech/tools/vedy_bot/internal/store"
 )
 
@@ -436,6 +437,157 @@ func TestCardsAPIIncludesAnalytics(t *testing.T) {
 	est, ok := raw["estimate"].(map[string]any)
 	if !ok || est["manager_phrase"] == nil {
 		t.Fatalf("estimate missing: %#v", raw)
+	}
+}
+
+func TestPlansAPIRoundTrip(t *testing.T) {
+	t.Parallel()
+	ws := t.TempDir()
+	_, err := planfile.WritePlan(ws, planfile.PlanDoc{
+		Name:     "API plan",
+		Overview: "round-trip via GET/PUT",
+		Todos: []planfile.TodoItem{
+			{ID: "t1", Content: "first", Status: planfile.TodoPending},
+		},
+		IsProject: false,
+		ID:        "api-plan-1",
+		Body:      "# Body\n\nseed",
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	s := &Server{Token: "secret", Workspace: ws}
+	mux := http.NewServeMux()
+	mux.HandleFunc("GET /api/plans", s.auth(s.handlePlansList))
+	mux.HandleFunc("GET /api/plans/", s.auth(s.handlePlanGet))
+	mux.HandleFunc("PUT /api/plans/", s.auth(s.handlePlanPut))
+
+	listReq := httptest.NewRequest(http.MethodGet, "/api/plans", nil)
+	listReq.Header.Set("Authorization", "Bearer secret")
+	listRR := httptest.NewRecorder()
+	mux.ServeHTTP(listRR, listReq)
+	if listRR.Code != http.StatusOK {
+		t.Fatalf("list %d %s", listRR.Code, listRR.Body.String())
+	}
+	var listed struct {
+		Items []planfile.PlanDoc `json:"items"`
+	}
+	if err := json.Unmarshal(listRR.Body.Bytes(), &listed); err != nil {
+		t.Fatal(err)
+	}
+	if len(listed.Items) != 1 || listed.Items[0].ID != "api-plan-1" {
+		t.Fatalf("list=%+v", listed.Items)
+	}
+
+	getReq := httptest.NewRequest(http.MethodGet, "/api/plans/api-plan-1", nil)
+	getReq.Header.Set("Authorization", "Bearer secret")
+	getRR := httptest.NewRecorder()
+	mux.ServeHTTP(getRR, getReq)
+	if getRR.Code != http.StatusOK {
+		t.Fatalf("get %d %s", getRR.Code, getRR.Body.String())
+	}
+	var got planfile.PlanDoc
+	if err := json.Unmarshal(getRR.Body.Bytes(), &got); err != nil {
+		t.Fatal(err)
+	}
+	got.Overview = `updated: with colon and "quotes"`
+	got.Todos = append(got.Todos, planfile.TodoItem{
+		ID: "t2", Content: "second", Status: planfile.TodoInProgress,
+	})
+	got.Todos[0].Status = planfile.TodoCompleted
+	body, err := json.Marshal(got)
+	if err != nil {
+		t.Fatal(err)
+	}
+	putReq := httptest.NewRequest(http.MethodPut, "/api/plans/api-plan-1", bytes.NewReader(body))
+	putReq.Header.Set("Authorization", "Bearer secret")
+	putReq.Header.Set("Content-Type", "application/json")
+	putRR := httptest.NewRecorder()
+	mux.ServeHTTP(putRR, putReq)
+	if putRR.Code != http.StatusOK {
+		t.Fatalf("put %d %s", putRR.Code, putRR.Body.String())
+	}
+	reloaded, err := planfile.Read(ws, "api-plan-1")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if reloaded.Overview != got.Overview {
+		t.Fatalf("overview=%q", reloaded.Overview)
+	}
+	if len(reloaded.Todos) != 2 || reloaded.Todos[0].Status != planfile.TodoCompleted {
+		t.Fatalf("todos=%+v", reloaded.Todos)
+	}
+	if reloaded.Todos[1].Status != planfile.TodoInProgress {
+		t.Fatalf("todo1=%+v", reloaded.Todos[1])
+	}
+}
+
+func TestPublishAPISourcePlanSanitizeAnd401(t *testing.T) {
+	t.Parallel()
+	home := t.TempDir()
+	ws := t.TempDir()
+	st := store.New(home)
+	_ = st.AppendThread(store.ThreadMsg{
+		ID: "src-1", Direction: "in", Text: "фрагмент A", ChatID: -100, MessageID: 1,
+	})
+	_ = st.AppendThread(store.ThreadMsg{
+		ID: "src-2", Direction: "agent", Text: "фрагмент B org-gate", ChatID: -100, MessageID: 2,
+	})
+	_, err := planfile.WritePlan(ws, planfile.PlanDoc{
+		Name: "AP4 plan", Overview: "кратко: клиент видит статус", ID: "ap4-plan",
+		Todos: []planfile.TodoItem{{ID: "t1", Content: "x", Status: planfile.TodoPending}},
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	fm := &fakeMessenger{}
+	p := &pipeline.Pipeline{
+		Store:     st,
+		Messenger: fm,
+		ChatIDs:   map[int64]struct{}{-100: {}},
+		BotUser:   "bot",
+		Workspace: ws,
+	}
+	s := &Server{Token: "secret", Pipeline: p, Store: st, Workspace: ws}
+
+	body, _ := json.Marshal(map[string]any{"text": "x", "target": "manager"})
+	req := httptest.NewRequest(http.MethodPost, "/api/publish", bytes.NewReader(body))
+	rr := httptest.NewRecorder()
+	s.auth(s.handlePublish)(rr, req)
+	if rr.Code != http.StatusUnauthorized {
+		t.Fatalf("401 want, got %d", rr.Code)
+	}
+
+	body, _ = json.Marshal(map[string]any{
+		"source":       []string{"src-1", "src-2"},
+		"include_plan": true,
+		"plan_id":      "ap4-plan",
+		"target":       "manager",
+	})
+	req = httptest.NewRequest(http.MethodPost, "/api/publish", bytes.NewReader(body))
+	req.Header.Set("Authorization", "Bearer secret")
+	req.Header.Set("Content-Type", "application/json")
+	rr = httptest.NewRecorder()
+	s.auth(s.handlePublish)(rr, req)
+	if rr.Code != http.StatusOK {
+		t.Fatalf("publish %d %s", rr.Code, rr.Body.String())
+	}
+	var pub map[string]any
+	if err := json.Unmarshal(rr.Body.Bytes(), &pub); err != nil {
+		t.Fatal(err)
+	}
+	text, _ := pub["text"].(string)
+	if !strings.Contains(text, "фрагмент A") || !strings.Contains(text, "клиент видит статус") {
+		t.Fatalf("missing pieces: %q", text)
+	}
+	if strings.Contains(strings.ToLower(text), "org-gate") {
+		t.Fatalf("tech leak: %q", text)
+	}
+	if fm.last == "" {
+		t.Fatal("messenger not called (smoke TG path)")
+	}
+	if strings.Contains(strings.ToLower(fm.last), "org-gate") {
+		t.Fatalf("TG leak: %q", fm.last)
 	}
 }
 

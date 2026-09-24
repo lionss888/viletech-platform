@@ -270,11 +270,44 @@ func TestIngestConsoleMirrorDoesNotDuplicate(t *testing.T) {
 	}
 	outs := 0
 	for _, m := range thread {
-		if m.Direction == "out" && strings.Contains(m.Text, "привет из консоли") {
+		if m.Direction == "out" {
 			outs++
 		}
 	}
 	if outs != 1 {
-		t.Fatalf("want one outbound thread line, got %d (%+v)", outs, thread)
+		t.Fatalf("thread outs=%d want 1 (no duplicate mirror)", outs)
+	}
+}
+
+func TestPublishSelectionSanitizesAndRoutesOperator(t *testing.T) {
+	t.Parallel()
+	home := t.TempDir()
+	fm := &fakeMsg{}
+	p := &Pipeline{
+		Store:           store.New(home),
+		Messenger:       fm,
+		ChatIDs:         map[int64]struct{}{-100: {}},
+		OperatorChatIDs: map[int64]struct{}{-200: {}},
+		BotUser:         "vedy_bot",
+	}
+	id, err := p.PublishSelection(context.Background(), "клиент готов; org-gate закрыт; vitest ok", "operator", 0)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if id == 0 {
+		t.Fatal("want tg message id")
+	}
+	if len(fm.texts) != 1 || len(fm.chatIDs) != 1 {
+		t.Fatalf("sends=%v chats=%v", fm.texts, fm.chatIDs)
+	}
+	if fm.chatIDs[0] != -200 {
+		t.Fatalf("want operator chat -200 got %d", fm.chatIDs[0])
+	}
+	low := strings.ToLower(fm.texts[0])
+	if strings.Contains(low, "org-gate") || strings.Contains(low, "vitest") {
+		t.Fatalf("tech leak in TG: %q", fm.texts[0])
+	}
+	if !strings.Contains(fm.texts[0], "клиент готов") {
+		t.Fatalf("product text lost: %q", fm.texts[0])
 	}
 }

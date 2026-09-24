@@ -271,14 +271,20 @@ export async function putPlan(id: string, doc: PlanDoc): Promise<PlanDoc> {
 export async function publishSelection(input: {
   text?: string;
   messageIds?: string[];
+  source?: string[];
   target?: "manager" | "operator";
-}): Promise<{ ok: boolean; text?: string }> {
+  planId?: string;
+  includePlan?: boolean;
+}): Promise<{ ok: boolean; text?: string; target?: string }> {
   return api("/api/publish", {
     method: "POST",
     body: JSON.stringify({
       text: input.text || "",
       message_ids: input.messageIds || [],
+      source: input.source || [],
       target: input.target || "manager",
+      plan_id: input.planId || "",
+      include_plan: Boolean(input.includePlan),
     }),
   });
 }
