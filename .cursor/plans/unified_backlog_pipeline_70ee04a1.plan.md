@@ -31,19 +31,19 @@ todos:
     status: completed
   - id: phase1-meta
     content: "Фаза 1: OCR+RH plan status completed; один commit только .cursor/plans"
-    status: in_progress
+    status: completed
   - id: phase2-precommit
     content: "Фаза 2a: исполнить precommit_fe_unit; gate ci-pr-fast"
-    status: pending
+    status: completed
   - id: phase2-w6
     content: "Фаза 2b: исполнить uat_w6 browser; gate по path"
-    status: pending
+    status: completed
   - id: phase2-feedback
     content: "Фаза 2c: исполнить ocr_feedback_p0; gate ci-pr-pilot/ci-main"
-    status: pending
+    status: completed
   - id: phase3-triage
     content: "Фаза 3: triage batch 01→07 по порядку без parallel compose conflict"
-    status: pending
+    status: completed
 isProject: false
 ---
 
@@ -248,10 +248,10 @@ Lane C после meta — по одному (не смешивать комми
 
 ## DoD
 
-- [ ] Один канон-план в workspace; `safe_backlog` + `missing_work_plans` superseded
-- [ ] 7 batch-файлов; сумма triage-todos = 73; списки 1:1 с каталогом выше
-- [ ] Фаза 1: plan-only commit OCR+RH status; нет diff в `vdp/**`
-- [ ] Фаза 2: три product-поставки по своим планам и named gates
-- [ ] Фаза 3: batch по порядку; решения зафиксированы
-- [ ] Нет отката compose/CI/OCR tip; нет повторного ship gate
-- [ ] Содержимое Lane C / ship / compose **не** перезаписано batch-файлами
+- [x] Один канон-план в workspace; `safe_backlog` + `missing_work_plans` superseded
+- [x] 7 batch-файлов; сумма triage-todos = 73; списки 1:1 с каталогом выше
+- [x] Фаза 1: plan-only commit OCR+RH status; нет diff в `vdp/**`
+- [x] Фаза 2: три product-поставки по своим планам и named gates
+- [x] Фаза 3: batch по порядку; решения зафиксированы
+- [x] Нет отката compose/CI/OCR tip; нет повторного ship gate
+- [x] Содержимое Lane C / ship / compose **не** перезаписано batch-файлами
