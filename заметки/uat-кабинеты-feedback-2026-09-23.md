@@ -143,3 +143,17 @@
 | W5 | Root cancel docs/FE path vs manager cancel | F11 | `.cursor/plans/uat_w5_root_cancel.plan.md` |
 | W6 | **Browser UI** Manager / ICO / ECO / Provider / Root / Treasurer | остаток UI ролей | `.cursor/plans/uat_w6_role_cabinets_browser.plan.md` |
 | W7 | **Browser лестницы** postpay / export / refund / shipment + return | остаток UI ladders | `.cursor/plans/uat_w7_browser_ladders_return.plan.md` |
+
+### W6 browser 2026-09-24 (unified backlog)
+
+| Время | Роль | Сценарий | Результат | Finding |
+|---|---|---|---|---|
+| 13:33 | manager@ | dashboard → карточка ВЭД-32c8bb26 CTA «Взять в проверку» / «Запросить сведения» | OK | note: «Клиент не найден» в участниках |
+| 13:35 | provider@ | dashboard → карточка ВЭД-663eb3c8; блок «Реквизиты платежа (без ПДн клиента)»; CTA подтверждения платежа | OK no-PII | — |
+| 13:36 | ico@ | dashboard «Внутренний комплаенс»; очередь организаций 23 | OK | — |
+| 13:37 | eco@ | dashboard «Внешний комплаенс»; slot on | OK | — |
+| 13:38 | root@ | dashboard «Суперадмин»; сервисы 7/7; отменённая ВЭД-e23f6e66 в ленте | OK | — |
+| 13:39 | treasurer@ | dashboard «Казначей»; очередь 4 | OK spot | — |
+
+Gate W6: без новых e2e в этой волне → journal-only; path gate не требуется сверх уже идущего ci-main на push.
+

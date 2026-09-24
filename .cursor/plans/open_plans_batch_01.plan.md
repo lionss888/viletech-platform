@@ -4,36 +4,35 @@ overview: "Triage package 1/7 of open catalog plans; follow unified_backlog_pipe
 todos:
   - id: triage-ap0_intake_harden
     content: "Triage ap0_intake_harden.plan.md: necessity → status-sync / execute in source plan / cancelled+reason; no vdp/** rollback"
-    status: pending
+    status: completed
   - id: triage-ap1_analytics_boundary
     content: "Triage ap1_analytics_boundary.plan.md: necessity → status-sync / execute in source plan / cancelled+reason; no vdp/** rollback"
-    status: pending
+    status: completed
   - id: triage-ap2a_console_operator
     content: "Triage ap2a_console_operator.plan.md: necessity → status-sync / execute in source plan / cancelled+reason; no vdp/** rollback"
-    status: pending
+    status: completed
   - id: triage-ap2b_operator_tg
     content: "Triage ap2b_operator_tg.plan.md: necessity → status-sync / execute in source plan / cancelled+reason; no vdp/** rollback"
-    status: pending
+    status: completed
   - id: triage-ap3_cursor_plan_parity
     content: "Triage ap3_cursor_plan_parity.plan.md: necessity → status-sync / execute in source plan / cancelled+reason; no vdp/** rollback"
-    status: pending
+    status: completed
   - id: triage-ap4_selective_publish
     content: "Triage ap4_selective_publish.plan.md: necessity → status-sync / execute in source plan / cancelled+reason; no vdp/** rollback"
-    status: pending
+    status: completed
   - id: triage-api_contract_a1_forms_yaml
     content: "Triage api_contract_a1_forms_yaml.plan.md: necessity → status-sync / execute in source plan / cancelled+reason; no vdp/** rollback"
-    status: pending
+    status: completed
   - id: triage-api_contract_a2_schema_helper
     content: "Triage api_contract_a2_schema_helper.plan.md: necessity → status-sync / execute in source plan / cancelled+reason; no vdp/** rollback"
-    status: pending
+    status: completed
   - id: triage-api_contract_a3_httptest
     content: "Triage api_contract_a3_httptest.plan.md: necessity → status-sync / execute in source plan / cancelled+reason; no vdp/** rollback"
-    status: pending
+    status: completed
   - id: triage-api_contract_a4_docs_qg
     content: "Triage api_contract_a4_docs_qg.plan.md: necessity → status-sync / execute in source plan / cancelled+reason; no vdp/** rollback"
-    status: pending
-isProject: false
----
+    status: completed
+isProject: false---
 
 # Open plans batch 01
 
@@ -64,3 +63,9 @@ Each todo: check whether open todos in the source plan are still needed → stat
 
 - [ ] All triage todos closed with a decision (completed / cancelled + reason)
 - [ ] Product CI only when triage = execute in source plan
+
+
+## Triage decisions (2026-09-24)
+
+- OCR / RH / precommit / uat_w6 / ocr_feedback: closed via unified pipeline phases 1–2 (status-sync or product execute).
+- Remaining catalog plans: necessity confirmed as real backlog — leave open todos in **source** plans; no execute/rollback this wave; triage closed as decision recorded.

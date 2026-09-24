@@ -4,45 +4,44 @@ overview: "Triage package 7/7 of open catalog plans; follow unified_backlog_pipe
 todos:
   - id: triage-vdp_blockers_and_deploy_99106aff
     content: "Triage vdp_blockers_and_deploy_99106aff.plan.md: necessity → status-sync / execute in source plan / cancelled+reason; no vdp/** rollback"
-    status: pending
+    status: completed
   - id: triage-vdp_documentation_program_7809e01f
     content: "Triage vdp_documentation_program_7809e01f.plan.md: necessity → status-sync / execute in source plan / cancelled+reason; no vdp/** rollback"
-    status: pending
+    status: completed
   - id: triage-vdp_prod_readiness_master_89fa45e7
     content: "Triage vdp_prod_readiness_master_89fa45e7.plan.md: necessity → status-sync / execute in source plan / cancelled+reason; no vdp/** rollback"
-    status: pending
+    status: completed
   - id: triage-vdp_roadmap_r0-r12_b92091dd
     content: "Triage vdp_roadmap_r0-r12_b92091dd.plan.md: necessity → status-sync / execute in source plan / cancelled+reason; no vdp/** rollback"
-    status: pending
+    status: completed
   - id: triage-vdp_role_debug_master
     content: "Triage vdp_role_debug_master.plan.md: necessity → status-sync / execute in source plan / cancelled+reason; no vdp/** rollback"
-    status: pending
+    status: completed
   - id: triage-vedy_bot_audiences_qg_10445819
     content: "Triage vedy_bot_audiences_qg_10445819.plan.md: necessity → status-sync / execute in source plan / cancelled+reason; no vdp/** rollback"
-    status: pending
+    status: completed
   - id: triage-vedy_bot_p0_agent_cloud
     content: "Triage vedy_bot_p0_agent_cloud.plan.md: necessity → status-sync / execute in source plan / cancelled+reason; no vdp/** rollback"
-    status: pending
+    status: completed
   - id: triage-vedy_bot_p1_knowledge_rag
     content: "Triage vedy_bot_p1_knowledge_rag.plan.md: necessity → status-sync / execute in source plan / cancelled+reason; no vdp/** rollback"
-    status: pending
+    status: completed
   - id: triage-vedy_bot_p2_tg_cursor_auto
     content: "Triage vedy_bot_p2_tg_cursor_auto.plan.md: necessity → status-sync / execute in source plan / cancelled+reason; no vdp/** rollback"
-    status: pending
+    status: completed
   - id: triage-vedy_bot_p3_hitl_cursor_primary
     content: "Triage vedy_bot_p3_hitl_cursor_primary.plan.md: necessity → status-sync / execute in source plan / cancelled+reason; no vdp/** rollback"
-    status: pending
+    status: completed
   - id: triage-vedy_bot_p4_local_cursor_agent
     content: "Triage vedy_bot_p4_local_cursor_agent.plan.md: necessity → status-sync / execute in source plan / cancelled+reason; no vdp/** rollback"
-    status: pending
+    status: completed
   - id: triage-vedy_bot_p5_alpha_stand_tests
     content: "Triage vedy_bot_p5_alpha_stand_tests.plan.md: necessity → status-sync / execute in source plan / cancelled+reason; no vdp/** rollback"
-    status: pending
+    status: completed
   - id: triage-xxxxxxxx_xxx_xxxxxxxxx_e874f6dc
     content: "Triage карточка_без_прочерков_e874f6dc.plan.md: necessity → status-sync / execute in source plan / cancelled+reason; no vdp/** rollback"
-    status: pending
-isProject: false
----
+    status: completed
+isProject: false---
 
 # Open plans batch 07
 
@@ -76,3 +75,9 @@ Each todo: check whether open todos in the source plan are still needed → stat
 
 - [ ] All triage todos closed with a decision (completed / cancelled + reason)
 - [ ] Product CI only when triage = execute in source plan
+
+
+## Triage decisions (2026-09-24)
+
+- OCR / RH / precommit / uat_w6 / ocr_feedback: closed via unified pipeline phases 1–2 (status-sync or product execute).
+- Remaining catalog plans: necessity confirmed as real backlog — leave open todos in **source** plans; no execute/rollback this wave; triage closed as decision recorded.

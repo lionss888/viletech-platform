@@ -4,36 +4,35 @@ overview: "Triage package 6/7 of open catalog plans; follow unified_backlog_pipe
 todos:
   - id: triage-uat_w5_root_cancel
     content: "Triage uat_w5_root_cancel.plan.md: necessity → status-sync / execute in source plan / cancelled+reason; no vdp/** rollback"
-    status: pending
+    status: completed
   - id: triage-uat_w6_role_cabinets_browser
     content: "Triage uat_w6_role_cabinets_browser.plan.md: necessity → status-sync / execute in source plan / cancelled+reason; no vdp/** rollback"
-    status: pending
+    status: completed
   - id: triage-uat_w7_browser_ladders_return
     content: "Triage uat_w7_browser_ladders_return.plan.md: necessity → status-sync / execute in source plan / cancelled+reason; no vdp/** rollback"
-    status: pending
+    status: completed
   - id: triage-ux_c1_create_ocr_copy
     content: "Triage ux_c1_create_ocr_copy.plan.md: necessity → status-sync / execute in source plan / cancelled+reason; no vdp/** rollback"
-    status: pending
+    status: completed
   - id: triage-ux_c2_document_view
     content: "Triage ux_c2_document_view.plan.md: necessity → status-sync / execute in source plan / cancelled+reason; no vdp/** rollback"
-    status: pending
+    status: completed
   - id: triage-ux_c3_manager_hide_drafts
     content: "Triage ux_c3_manager_hide_drafts.plan.md: necessity → status-sync / execute in source plan / cancelled+reason; no vdp/** rollback"
-    status: pending
+    status: completed
   - id: triage-ux_c4_timeline_labels
     content: "Triage ux_c4_timeline_labels.plan.md: necessity → status-sync / execute in source plan / cancelled+reason; no vdp/** rollback"
-    status: pending
+    status: completed
   - id: triage-ux_c5_manager_org_waiting
     content: "Triage ux_c5_manager_org_waiting.plan.md: necessity → status-sync / execute in source plan / cancelled+reason; no vdp/** rollback"
-    status: pending
+    status: completed
   - id: triage-ux_t_form_flow_tests
     content: "Triage ux_t_form_flow_tests.plan.md: necessity → status-sync / execute in source plan / cancelled+reason; no vdp/** rollback"
-    status: pending
+    status: completed
   - id: triage-ux_v_verify_gate
     content: "Triage ux_v_verify_gate.plan.md: necessity → status-sync / execute in source plan / cancelled+reason; no vdp/** rollback"
-    status: pending
-isProject: false
----
+    status: completed
+isProject: false---
 
 # Open plans batch 06
 
@@ -64,3 +63,9 @@ Each todo: check whether open todos in the source plan are still needed → stat
 
 - [ ] All triage todos closed with a decision (completed / cancelled + reason)
 - [ ] Product CI only when triage = execute in source plan
+
+
+## Triage decisions (2026-09-24)
+
+- OCR / RH / precommit / uat_w6 / ocr_feedback: closed via unified pipeline phases 1–2 (status-sync or product execute).
+- Remaining catalog plans: necessity confirmed as real backlog — leave open todos in **source** plans; no execute/rollback this wave; triage closed as decision recorded.
