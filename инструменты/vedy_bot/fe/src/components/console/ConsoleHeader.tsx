@@ -4,7 +4,9 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
   agentKeyPresent,
+  agentKeyStatusLabel,
   consoleKeyPresent,
+  consoleKeyStatusLabel,
   hasAgentKeyPrefix,
   getAgentKey,
   getToken,
@@ -68,15 +70,17 @@ export function ConsoleHeader({
             <span className="inline-flex items-center gap-1.5" title="INTAKE_CONSOLE_TOKEN">
               <span
                 className={`size-1.5 rounded-full ${consoleOk ? "bg-success" : "bg-warning"}`}
+                data-testid="console-key-status"
               />
-              консоль {consoleOk ? "токен ок" : "нет Bearer"}
+              консоль {consoleKeyStatusLabel()}
             </span>
             <span aria-hidden>·</span>
-            <span className="inline-flex items-center gap-1.5" title="Ключ агента">
+            <span className="inline-flex items-center gap-1.5" title="Ключ агента (отдельно от Bearer)">
               <span
                 className={`size-1.5 rounded-full ${agentOk ? "bg-success" : "bg-muted-foreground"}`}
+                data-testid="agent-key-status"
               />
-              агент {agentOk ? "ключ введён" : "без ключа"}
+              агент {agentKeyStatusLabel()}
             </span>
             <span aria-hidden>·</span>
             <span>{messageCount} сообщений</span>

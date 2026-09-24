@@ -329,6 +329,42 @@ export function agentKeyPresent(): boolean {
   return hasAgentKeyPrefix(getAgentKey());
 }
 
+/** Kind of agent key string (canonical crsr_ vs legacy key_). */
+export function agentKeyKindOf(value: string): "crsr" | "key" | "none" {
+  const key = value.trim().toLowerCase();
+  if (key.startsWith(AGENT_KEY_PREFIX_CANONICAL)) return "crsr";
+  if (key.startsWith(AGENT_KEY_PREFIX_LEGACY)) return "key";
+  return "none";
+}
+
+/** Kind of stored agent key for header status. */
+export function agentKeyKind(): "crsr" | "key" | "none" {
+  return agentKeyKindOf(getAgentKey());
+}
+
+export function agentKeyStatusLabelOf(kind: "crsr" | "key" | "none"): string {
+  switch (kind) {
+    case "crsr":
+      return "ключ crsr_ ок";
+    case "key":
+      return "ключ key_ (legacy)";
+    default:
+      return "без ключа";
+  }
+}
+
+export function agentKeyStatusLabel(): string {
+  return agentKeyStatusLabelOf(agentKeyKind());
+}
+
+export function consoleKeyStatusLabelOf(present: boolean): string {
+  return present ? "Bearer ок" : "нет Bearer";
+}
+
+export function consoleKeyStatusLabel(): string {
+  return consoleKeyStatusLabelOf(consoleKeyPresent());
+}
+
 export async function deleteTgMessage(messageId: number, chatId = 0): Promise<void> {
   await api("/api/tg/delete", {
     method: "POST",

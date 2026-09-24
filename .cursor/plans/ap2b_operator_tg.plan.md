@@ -1,16 +1,16 @@
 ---
 name: AP2b Operator TG
-overview: "TELEGRAM_OPERATOR_CHAT_IDS + router manager vs operator; консоль — зеркало."
+overview: TELEGRAM_OPERATOR_CHAT_IDS + router manager vs operator; консоль — зеркало.
 todos:
   - id: ap2b-config
     content: Env TELEGRAM_OPERATOR_CHAT_IDS + config load test
-    status: pending
+    status: completed
   - id: ap2b-router
     content: HITL reminders/agent digests → operator; ack → manager
-    status: pending
+    status: completed
   - id: ap2b-thread
     content: Thread channel tag + console filter
-    status: pending
+    status: completed
 isProject: false
 ---
 

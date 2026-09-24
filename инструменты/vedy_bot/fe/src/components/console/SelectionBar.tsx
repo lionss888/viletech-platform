@@ -107,6 +107,7 @@ export function SelectionBar({
               variant="outline"
               className="border-border bg-surface"
               disabled={busy}
+              data-testid="mgmt-done"
               onClick={() => onMgmtDone("Обновление", previewText || question)}
             >
               Mgmt done
@@ -118,6 +119,7 @@ export function SelectionBar({
               variant="ghost"
               className="gap-1 text-muted-foreground"
               disabled={busy}
+              data-testid="delete-tg-selected"
               onClick={onDeleteSelected}
             >
               <Trash2 className="size-3.5" /> Удалить в TG

@@ -263,6 +263,17 @@ func (p *Pipeline) sendAndMirror(ctx context.Context, chatID, replyTo int64, kin
 	return p.sendAndMirrorRecord(ctx, chatID, replyTo, kind, text, true)
 }
 
+// SendOperatorDigest sends a short agent/operator digest to the operator chat when configured
+// (falls back to manager intake). Thread line is tagged channel=operator|manager.
+func (p *Pipeline) SendOperatorDigest(ctx context.Context, text string) (int64, error) {
+	body := strings.TrimSpace(text)
+	if body == "" {
+		return 0, fmt.Errorf("digest text required")
+	}
+	fallback := p.primaryChatID()
+	return p.sendAndMirrorRecord(ctx, fallback, 0, "operator_digest", body, true)
+}
+
 func (p *Pipeline) sendAndMirrorRecord(ctx context.Context, chatID, replyTo int64, kind, text string, recordThread bool) (int64, error) {
 	if p.Messenger == nil {
 		return 0, fmt.Errorf("messenger nil")

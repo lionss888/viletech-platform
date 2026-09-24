@@ -268,31 +268,51 @@ function Index() {
           onMgmtDone={(title, body) => {
             setBusy(true);
             void mgmtDone({ title, body })
-              .then(() => refresh())
+              .then(() => {
+                toast.success("Mgmt done отправлен");
+                return refresh();
+              })
+              .catch((e) => toast.error(e instanceof Error ? e.message : String(e)))
               .finally(() => setBusy(false));
           }}
           onDeleteSelected={() => {
             const targets = visibleMessages.filter(
               (m) => selected.includes(m.id) && m.messageId && m.direction !== "agent",
             );
-            if (targets.length === 0) return;
+            if (targets.length === 0) {
+              toast.error("Нет сообщений с message_id для удаления в TG");
+              return;
+            }
             setBusy(true);
             void (async () => {
               for (const m of targets) {
                 if (!m.messageId) continue;
                 await deleteTgMessage(m.messageId, m.chatId || 0);
               }
+              toast.success(`Удалено в TG: ${targets.length}`);
               await refresh();
-            })().finally(() => setBusy(false));
+            })()
+              .catch((e) => toast.error(e instanceof Error ? e.message : String(e)))
+              .finally(() => setBusy(false));
           }}
         />
         <Composer
           busy={busy}
           onSavePrompt={async (text) => {
-            await savePrompt(text);
+            try {
+              const res = await savePrompt(text);
+              toast.success(res.path ? `Запрос сохранён: ${res.path}` : "Запрос сохранён");
+            } catch (e) {
+              toast.error(e instanceof Error ? e.message : String(e));
+            }
           }}
           onSavePlan={async (text) => {
-            await savePlan(text);
+            try {
+              const res = await savePlan(text);
+              toast.success(res.path ? `План сохранён: ${res.path}` : "План сохранён");
+            } catch (e) {
+              toast.error(e instanceof Error ? e.message : String(e));
+            }
           }}
           onSend={async ({ text, asIntake, mirrorToTg, files }) => {
             setBusy(true);

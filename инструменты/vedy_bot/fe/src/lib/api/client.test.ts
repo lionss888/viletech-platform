@@ -1,5 +1,15 @@
 import { describe, expect, it } from "vitest";
-import { agentKeyProblem, formatAgentError, formatHitlError, mapHitlCard, mapThreadMsg } from "./client";
+import {
+  agentKeyKindOf,
+  agentKeyProblem,
+  agentKeyStatusLabelOf,
+  consoleKeyStatusLabelOf,
+  formatAgentError,
+  formatHitlError,
+  hasAgentKeyPrefix,
+  mapHitlCard,
+  mapThreadMsg,
+} from "./client";
 
 describe("mapThreadMsg", () => {
   it("maps inbound telegram line", () => {
@@ -42,6 +52,38 @@ describe("mapThreadMsg", () => {
     expect(actual.summary).toContain("облако не приняло ключ");
     expect(actual.summary).not.toContain("Invalid User API Key");
   });
+
+  it("maps channel for manager/operator filter", () => {
+    const op = mapThreadMsg({
+      id: "o",
+      direction: "out",
+      channel: "operator",
+      text: "digest",
+      at: "2026-09-11T10:00:00Z",
+    });
+    expect(op.tgChannel).toBe("operator");
+    const mgr = mapThreadMsg({
+      id: "m",
+      direction: "in",
+      channel: "manager",
+      text: "hi",
+      at: "2026-09-11T10:00:00Z",
+    });
+    expect(mgr.tgChannel).toBe("manager");
+  });
+
+  it("keeps message_id for tg/delete", () => {
+    const actual = mapThreadMsg({
+      id: "x",
+      message_id: 42,
+      chat_id: -100,
+      direction: "in",
+      text: "hi",
+      at: "2026-09-11T10:00:00Z",
+    });
+    expect(actual.messageId).toBe(42);
+    expect(actual.chatId).toBe(-100);
+  });
 });
 
 describe("mapHitlCard", () => {
@@ -75,5 +117,20 @@ describe("agent and hitl errors", () => {
 
   it("formats already decided card", () => {
     expect(formatHitlError(new Error("card not awaiting approve"))).toBe("карточка уже решена");
+  });
+});
+
+describe("key status labels (AP2a header)", () => {
+  it("reports separate console Bearer vs agent key labels", () => {
+    expect(consoleKeyStatusLabelOf(false)).toBe("нет Bearer");
+    expect(consoleKeyStatusLabelOf(true)).toBe("Bearer ок");
+    expect(agentKeyKindOf("")).toBe("none");
+    expect(agentKeyStatusLabelOf("none")).toBe("без ключа");
+    expect(agentKeyKindOf("crsr_live")).toBe("crsr");
+    expect(agentKeyStatusLabelOf("crsr")).toContain("crsr_");
+    expect(agentKeyKindOf("key_legacy")).toBe("key");
+    expect(agentKeyStatusLabelOf("key")).toContain("legacy");
+    expect(hasAgentKeyPrefix("crsr_x")).toBe(true);
+    expect(hasAgentKeyPrefix("tok")).toBe(false);
   });
 });

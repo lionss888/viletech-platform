@@ -44,3 +44,28 @@ func TestLoadFromEnvFile(t *testing.T) {
 		t.Fatal("operator chat missing")
 	}
 }
+
+func TestLoadOperatorOptional(t *testing.T) {
+	dir := t.TempDir()
+	envPath := filepath.Join(dir, "env")
+	content := "TELEGRAM_INTAKE_TOKEN=tok\nTELEGRAM_INTAKE_CHAT_IDS=-100\n"
+	if err := os.WriteFile(envPath, []byte(content), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	t.Setenv("INTAKE_HOME", dir)
+	t.Setenv("TELEGRAM_INTAKE_TOKEN", "")
+	t.Setenv("TELEGRAM_INTAKE_CHAT_IDS", "")
+	t.Setenv("TELEGRAM_OPERATOR_CHAT_IDS", "")
+	t.Setenv("MGMT_NOTIFY_TOKEN", "")
+	t.Setenv("MGMT_NOTIFY_CHAT_ID", "")
+	cfg, err := Load()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(cfg.OperatorChatIDs) != 0 {
+		t.Fatalf("operator should be optional empty, got %v", cfg.OperatorChatIDs)
+	}
+	if len(cfg.ChatIDs) != 1 {
+		t.Fatal("manager required")
+	}
+}

@@ -15,11 +15,13 @@ import (
 )
 
 type fakeMsg struct {
-	texts []string
+	texts   []string
+	chatIDs []int64
 }
 
-func (f *fakeMsg) SendMessage(_ context.Context, _, _ int64, text string) (int64, error) {
+func (f *fakeMsg) SendMessage(_ context.Context, chatID, _ int64, text string) (int64, error) {
 	f.texts = append(f.texts, text)
+	f.chatIDs = append(f.chatIDs, chatID)
 	return int64(len(f.texts)), nil
 }
 
