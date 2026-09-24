@@ -87,9 +87,18 @@ test.describe("OCR wizard product path", () => {
       await expect(page.getByRole("dialog")).toBeVisible({ timeout: 10_000 });
       await expect(page.getByTestId("extraction-review")).toBeVisible();
       await expect(page.getByTestId("extraction-meta")).toBeVisible();
+      await expect(page.getByTestId("extraction-view-only-banner")).toBeVisible();
+      await expect(page.getByRole("button", { name: /Подтвердить распознавание/i })).toHaveCount(0);
+      await page.keyboard.press("Escape");
     }
     const done = page.getByTestId("wizard-ocr-progress-done");
     if (await done.isVisible()) {
+      await page.getByTestId("wizard-extraction-dialog-trigger").click();
+      await expect(page.getByRole("dialog")).toBeVisible({ timeout: 10_000 });
+      await expect(page.getByTestId("extraction-review")).toBeVisible();
+      await expect(page.getByTestId("extraction-view-only-banner")).toBeVisible();
+      await expect(page.getByRole("button", { name: /Подтвердить распознавание/i })).toHaveCount(0);
+      await page.keyboard.press("Escape");
       await page.getByRole("button", { name: "Далее" }).click();
       await page.getByRole("button", { name: "Далее" }).click();
       await expect(page.getByTestId("wizard-terms-step")).toBeVisible({ timeout: 15_000 });

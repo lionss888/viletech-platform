@@ -69,6 +69,26 @@ describe("ExtractionReviewPanel embedded content", () => {
     expect(html).toContain("Fixture goods");
   });
 
+  it("hides confirm and shows honest banner when canConfirm is false", () => {
+    const html = withQuery(
+      <ExtractionReviewPanel
+        formId="f1"
+        role="user"
+        status="creating"
+        invoiceJson={sampleInvoiceJson}
+        hasDocuments
+        canConfirm={false}
+        embedded
+      />,
+    );
+    expect(html).toContain("data-testid=\"extraction-review\"");
+    expect(html).toContain("data-testid=\"extraction-view-only-banner\"");
+    expect(html).toContain("здесь просмотр и перезапуск");
+    expect(html).not.toContain("Подтвердить распознавание");
+    expect(html).not.toContain("исправить каждое поле до подтверждения");
+    expect(html).toContain("disabled");
+  });
+
   it("hides panel for provider", () => {
     const html = withQuery(
       <ExtractionReviewPanel formId="f1" role="provider" status="draft" hasDocuments embedded />,
