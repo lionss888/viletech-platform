@@ -13,13 +13,13 @@ todos:
     status: completed
   - id: repro-ocr-stack
     content: check-env-parity → docling healthy → extraction-docling-smoke → ocr-path-gate → AGMS repro
-    status: pending
+    status: completed
   - id: e2e-hitl-assert
     content: "ocr-wizard-path: при degraded открыть HITL / schema v1 draft; path → ci-main"
-    status: pending
+    status: completed
   - id: qg-uat
     content: Unit + ocr-path-gate; ci-pr или ci-main по path; notify при закрытии
-    status: pending
+    status: completed
 isProject: false
 ---
 

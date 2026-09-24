@@ -4,7 +4,7 @@ overview: "make release-gate агрегирует все gate'ы; vdp-release CI
 todos:
   - id: rh4-make-release-gate
     content: Makefile release-gate = integration-gate + playwright + test-integration + docs-format-check
-    status: pending
+    status: completed
   - id: rh4-ci-release
     content: workflow vdp-release.yml или job на tag / workflow_dispatch
     status: completed
@@ -22,7 +22,7 @@ todos:
     status: completed
   - id: rh4-gate
     content: "DoD: make release-gate green на clean clone + compose"
-    status: pending
+    status: completed
 isProject: false
 ---
 

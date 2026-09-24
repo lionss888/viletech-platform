@@ -16,7 +16,7 @@ todos:
     status: completed
   - id: ocr-path-verify-fix
     content: check-env-parity → ocr-path-gate; при red — product fix; ci-main + notify-mgmt
-    status: pending
+    status: completed
 isProject: false
 ---
 

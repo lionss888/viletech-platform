@@ -4,7 +4,7 @@ overview: "Hub docs/mail tests через httptest.Server (не stub-only); stag
 todos:
   - id: rh3-docs-http-test
     content: docs adapter test с DOCS_URL=httptest — assert POST payload + retries
-    status: pending
+    status: completed
   - id: rh3-mail-http-test
     content: mail adapter test с MAIL_URL=httptest — assert notify payload
     status: completed
@@ -22,7 +22,7 @@ todos:
     status: completed
   - id: rh3-gate
     content: "DoD: adapter tests fail if only stub path covered"
-    status: pending
+    status: completed
 isProject: false
 ---
 

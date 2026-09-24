@@ -4,7 +4,7 @@ overview: "Расширение compose-e2e (ICO, reject, refund) + Playwright (
 todos:
   - id: rh2-api-ico
     content: compose-e2e — ветка ICO org-pending (org approve → form flow)
-    status: pending
+    status: completed
   - id: rh2-api-reject
     content: compose-e2e — ECO reject → corrections → resubmit
     status: completed
@@ -25,7 +25,7 @@ todos:
     status: completed
   - id: rh2-gate
     content: "DoD: новые journeys green локально и в CI"
-    status: pending
+    status: completed
 isProject: false
 ---
 
