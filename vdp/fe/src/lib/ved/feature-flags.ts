@@ -7,19 +7,22 @@ const STORAGE_KEY = "ved-feature-flags-v1";
 /** Сегмент навигации → роли, которым раздел выключен. */
 export type FeatureFlags = Record<string, VedRole[]>;
 
+/** Stable empty snapshot for useSyncExternalStore getServerSnapshot (must not allocate). */
+export const EMPTY_FLAGS: FeatureFlags = Object.freeze({});
+
 let cache: FeatureFlags | null = null;
 const listeners = new Set<() => void>();
 
 function readStorage(): FeatureFlags {
-  if (typeof window === "undefined") return {};
+  if (typeof window === "undefined") return EMPTY_FLAGS;
   try {
     const raw = window.localStorage.getItem(STORAGE_KEY);
-    if (!raw) return {};
+    if (!raw) return EMPTY_FLAGS;
     const parsed = JSON.parse(raw) as unknown;
-    if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) return {};
+    if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) return EMPTY_FLAGS;
     return parsed as FeatureFlags;
   } catch {
-    return {};
+    return EMPTY_FLAGS;
   }
 }
 
@@ -52,9 +55,14 @@ function subscribe(listener: () => void): () => void {
   };
 }
 
+/** SSR / getServerSnapshot: stable empty reference (avoids React infinite loop). */
+export function getServerFeatureFlags(): FeatureFlags {
+  return EMPTY_FLAGS;
+}
+
 /** Reactive feature flags for components. */
 export function useFeatureFlags(): FeatureFlags {
-  return useSyncExternalStore(subscribe, getFeatureFlags, () => ({}));
+  return useSyncExternalStore(subscribe, getFeatureFlags, getServerFeatureFlags);
 }
 
 /** Root всегда видит все разделы, чтобы не отрезать себе управление. */

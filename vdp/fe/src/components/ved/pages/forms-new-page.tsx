@@ -171,7 +171,25 @@ export function NewForm() {
         try {
           if (ocrPollTimedOut(Date.now() - pollStartedAtRef.current, OCR_POLL_TIMEOUT_MS)) {
             stopPoll();
-            setOcrBannerState("failed");
+            try {
+              const lateForm = await getForm(formId);
+              if (cancelled) return;
+              if (isExtractionDraft(lateForm.invoice_json)) {
+                const outcome = applyOcrPrefill(lateForm.invoice_json);
+                if (outcome) {
+                  setOcrBannerState(outcome);
+                  return;
+                }
+              }
+            } catch (lateErr) {
+              if (isOcrAuthLostError(lateErr)) {
+                setOcrBannerState("auth_lost");
+                setOcrProgressVisible(true);
+                navigate({ to: `${base}/login` as never });
+                return;
+              }
+            }
+            if (!cancelled) setOcrBannerState("failed");
             return;
           }
           const form = await getForm(formId);

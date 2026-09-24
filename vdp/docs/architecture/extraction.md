@@ -27,6 +27,8 @@ OCR_URL — hub to extraction POST /recognize.
 
 OCR_TIMEOUT_MS — hub OCR plugin timeout (default 120000). Other adapters keep EXTERNAL_TIMEOUT_MS.
 
+FE wizard poll uses OCR_POLL_TIMEOUT_MS equals 165000 so a late degraded callback after hub timeout can still populate HITL. Do not set FE poll equal to or below hub OCR_TIMEOUT_MS.
+
 EXTRACTION_PRIMARY — docling | yandex | fixture | own. Pilot default equals docling.
 
 EXTRACTION_FALLBACK — fixture (pilot and commercial wire) or yandex when own is primary.
