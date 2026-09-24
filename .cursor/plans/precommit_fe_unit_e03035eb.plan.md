@@ -4,18 +4,17 @@ overview: Добавить в pre-commit path-aware `cd fe && npm test`, ког�
 todos:
   - id: precommit-fe-path
     content: "precommit-mgmt-notify: path-aware fe npm test after make test"
-    status: pending
+    status: completed
   - id: contract-docs-rules
     content: test-cd-scripts + makefile-reference + vdp-ci-local-gate line
-    status: pending
+    status: completed
   - id: repro-precommit
     content: check-env-parity + test-cd-scripts + manual staged fe vs docs repro
-    status: pending
+    status: completed
   - id: commit-push-gate
     content: One commit; make ci-pr-fast; push
-    status: pending
-isProject: false
----
+    status: completed
+isProject: false---
 
 # Pre-commit: FE unit по path
 
