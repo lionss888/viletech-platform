@@ -4,13 +4,13 @@ overview: Убрать шум 401 и React loop, закрыть гонку FE↔
 todos:
   - id: fix-return-auth
     content: return.ts → apiFetch (весь файл); form-detail retry:false; FE unit (200 / 401); 404→null не канон (core отдаёт 200 active:false)
-    status: pending
+    status: completed
   - id: fix-feature-flags-snapshot
     content: Стабильный EMPTY_FLAGS для getServerSnapshot (VedAppShell) + unit
-    status: pending
+    status: completed
   - id: fix-poll-headroom
     content: OCR_POLL_TIMEOUT_MS > hub 120s (150–180s) + late getForm после failed; unit на poll timeout
-    status: pending
+    status: completed
   - id: repro-ocr-stack
     content: check-env-parity → docling healthy → extraction-docling-smoke → ocr-path-gate → AGMS repro
     status: pending

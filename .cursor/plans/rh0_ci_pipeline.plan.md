@@ -7,10 +7,10 @@ todos:
     status: pending
   - id: rh0-ci-doc
     content: Документ vdp/docs/operations/ci.md — topology, triggers, branch protection
-    status: pending
+    status: completed
   - id: rh0-known-gaps
     content: Обновить known-gaps пункт CI CD (GitHub primary)
-    status: pending
+    status: completed
   - id: rh0-gate
     content: "DoD: pipeline green на main; integration и playwright — раздельные jobs"
     status: pending

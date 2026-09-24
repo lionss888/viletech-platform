@@ -7,19 +7,19 @@ todos:
     status: pending
   - id: rh3-mail-http-test
     content: mail adapter test с MAIL_URL=httptest — assert notify payload
-    status: pending
+    status: completed
   - id: rh3-make-target
     content: make test-adapters (hub adapter package tests)
-    status: pending
+    status: completed
   - id: rh3-staging-checklist
     content: staging-checklist.md — CI vs staging-manual per integration
-    status: pending
+    status: completed
   - id: rh3-xlsx-honesty
     content: XLSX stub flag or minimal valid bytes + known-gaps honesty
-    status: pending
+    status: completed
   - id: rh3-ci-step
     content: test-adapters step в CI job fast или integration
-    status: pending
+    status: completed
   - id: rh3-gate
     content: "DoD: adapter tests fail if only stub path covered"
     status: pending
