@@ -4,6 +4,7 @@ import { useMemo, useState } from "react";
 
 import { getComplianceHistory, getForm, startExtraction } from "@/lib/api/forms";
 import { listExecutionProviders } from "@/lib/api/catalog";
+import { ensureHsCodeFromOcr } from "@/lib/api/catalog-mutations";
 import { getFormDiadocStatus } from "@/lib/api/notifications";
 import {
   assignedManagerLabel,
@@ -780,6 +781,14 @@ export function FormDetail() {
           formAmountMinor={form.amountMinor}
           formCurrency={form.currency}
           documentKind={visibleDocuments.some((d) => d.kind === "order") ? "order" : undefined}
+          onEnsureHsCode={async (code) => {
+            try {
+              const created = await ensureHsCodeFromOcr(code);
+              return { value: created.code, label: `${created.code} — ${created.description || "OCR"}` };
+            } catch {
+              return null;
+            }
+          }}
         />
       )}
     </VedAppShell>

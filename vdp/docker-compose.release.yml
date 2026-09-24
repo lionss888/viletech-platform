@@ -27,8 +27,9 @@ services:
     restart: unless-stopped
     environment:
       EXTRACTION_PRIMARY: ${EXTRACTION_PRIMARY:-docling}
-      EXTRACTION_FALLBACK: ${EXTRACTION_FALLBACK:-fixture}
+      EXTRACTION_FALLBACK: ${EXTRACTION_FALLBACK:-doctr}
       EXTRACTION_DOCLING_URL: ${EXTRACTION_DOCLING_URL:-http://docling:5001}
+      EXTRACTION_DOCTR_URL: ${EXTRACTION_DOCTR_URL:-http://doctr:5002}
     volumes:
       - extraction_gold:/var/vdp/extraction-gold
 

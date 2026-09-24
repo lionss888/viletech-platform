@@ -26,6 +26,7 @@ export type ExtractionReviewDialogProps = {
   formAmountMinor?: number;
   formCurrency?: string;
   documentKind?: string;
+  onEnsureHsCode?: (code: string) => Promise<{ value: string; label: string } | null>;
 };
 
 /**
@@ -47,6 +48,7 @@ export function ExtractionReviewDialog({
   formAmountMinor,
   formCurrency,
   documentKind,
+  onEnsureHsCode,
 }: ExtractionReviewDialogProps) {
   const mobileHook = useIsMobileViewport(open);
   const isMobile = forceMobile ?? mobileHook;
@@ -79,6 +81,7 @@ export function ExtractionReviewDialog({
       formAmountMinor={formAmountMinor}
       formCurrency={formCurrency}
       documentKind={documentKind}
+      onEnsureHsCode={onEnsureHsCode}
       embedded
       onConfirmed={() => onOpenChange(false)}
     />

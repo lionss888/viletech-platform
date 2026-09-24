@@ -177,6 +177,22 @@ export function extractionPanelMode(input: {
   return "hide";
 }
 
+/** Pull raw OCR layout blob out of warnings (prefix layout:). */
+export function layoutTextFromWarnings(warnings: string[] | undefined): string {
+  if (!warnings?.length) return "";
+  return warnings
+    .filter((w) => w.startsWith("layout:"))
+    .map((w) => w.slice("layout:".length))
+    .join("\n")
+    .trim();
+}
+
+/** Warnings suitable for a short amber list (excludes layout dump). */
+export function shortExtractionWarnings(warnings: string[] | undefined): string[] {
+  if (!warnings?.length) return [];
+  return warnings.filter((w) => !w.startsWith("layout:"));
+}
+
 function asNumber(raw: string | undefined): number | undefined {
   if (!raw?.trim()) return undefined;
   const value = Number(raw.replace(/\s/g, "").replace(",", "."));

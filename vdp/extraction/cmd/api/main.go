@@ -16,11 +16,12 @@ import (
 func main() {
 	log := slog.Default()
 	cfg := service.Config{
-		Primary:        env("EXTRACTION_PRIMARY", "fixture"),
-		Fallback:       env("EXTRACTION_FALLBACK", "fixture"),
+		Primary:        env("EXTRACTION_PRIMARY", "docling"),
+		Fallback:       env("EXTRACTION_FALLBACK", "doctr"),
 		ShadowURL:      os.Getenv("EXTRACTION_SHADOW_URL"),
 		GoldDir:        env("EXTRACTION_GOLD_DIR", "/var/vdp/extraction-gold"),
 		DoclingURL:     os.Getenv("EXTRACTION_DOCLING_URL"),
+		DocTRURL:       os.Getenv("EXTRACTION_DOCTR_URL"),
 		YandexAPIKey:   os.Getenv("YANDEX_API_KEY"),
 		YandexFolderID: os.Getenv("YANDEX_FOLDER_ID"),
 		YandexModelURI: os.Getenv("YANDEX_MODEL_URI"),
@@ -29,14 +30,6 @@ func main() {
 		OllamaModel:    env("OLLAMA_MODEL", "qwen2.5:3b"),
 		OwnFewShotK:    service.ParseFewShotK(os.Getenv("OWN_FEW_SHOT_K")),
 		Log:            log,
-	}
-	if cfg.Primary == "docling" && cfg.DoclingURL == "" {
-		log.Warn("EXTRACTION_DOCLING_URL missing; forcing fixture primary")
-		cfg.Primary = "fixture"
-	}
-	if cfg.Primary == "yandex" && (cfg.YandexAPIKey == "" || cfg.YandexFolderID == "") {
-		log.Warn("YANDEX_API_KEY or YANDEX_FOLDER_ID missing; forcing fixture primary")
-		cfg.Primary = "fixture"
 	}
 	if cfg.Primary == "own" && cfg.OllamaBaseURL == "" {
 		log.Warn("EXTRACTION_PRIMARY=own without OLLAMA_BASE_URL; stub/artifact only")
@@ -51,12 +44,21 @@ func main() {
 			defer cancel()
 			doclingReachable = service.ProbeDoclingReachable(probeCtx, cfg.DoclingURL, nil)
 		}
+		doctrReachable := false
+		if cfg.DocTRURL != "" {
+			probeCtx, cancel := context.WithTimeout(r.Context(), 2*time.Second)
+			defer cancel()
+			doctrReachable = service.ProbeHTTPReachable(probeCtx, cfg.DocTRURL, nil)
+		}
 		writeJSON(w, http.StatusOK, map[string]any{
-			"status":             "ok",
-			"primary":            cfg.Primary,
-			"ollama_configured":  cfg.OllamaBaseURL != "",
-			"docling_url_set":    cfg.DoclingURL != "",
-			"docling_reachable":  doclingReachable,
+			"status":            "ok",
+			"primary":           cfg.Primary,
+			"fallback":          cfg.Fallback,
+			"ollama_configured": cfg.OllamaBaseURL != "",
+			"docling_url_set":   cfg.DoclingURL != "",
+			"docling_reachable": doclingReachable,
+			"doctr_url_set":     cfg.DocTRURL != "",
+			"doctr_reachable":   doctrReachable,
 		})
 	})
 	mux.HandleFunc("GET /metrics", func(w http.ResponseWriter, _ *http.Request) {

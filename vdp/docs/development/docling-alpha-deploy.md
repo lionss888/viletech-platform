@@ -4,7 +4,7 @@ After Images build publishes new core hub extraction digests and Deploy alpha ru
 
 ## Env on VM
 
-In /opt/vdp/.env.deploy set EXTRACTION_PRIMARY equals docling, EXTRACTION_FALLBACK equals fixture, EXTRACTION_DOCLING_URL equals http://docling:5001, OCR_TIMEOUT_MS equals 180000, GATEWAY_TIMEOUT equals 180. Leave Yandex PRIMARY unset on this pilot. Optional DOCLING_IMAGE pin for quay.io/docling-project/docling-serve-cpu.
+In /opt/vdp/.env.deploy set EXTRACTION_PRIMARY equals docling, EXTRACTION_FALLBACK equals doctr, EXTRACTION_DOCLING_URL equals http://docling:5001, EXTRACTION_DOCTR_URL equals http://doctr:5002, OCR_TIMEOUT_MS equals 180000, GATEWAY_TIMEOUT equals 180. Leave Yandex PRIMARY unset on this pilot. Optional DOCLING_IMAGE pin for quay.io/docling-project/docling-serve-cpu.
 
 ## Recreate
 

@@ -30,8 +30,9 @@ OCR_TIMEOUT_MS=180000
 GATEWAY_TIMEOUT=180
 # Docling pilot PRIMARY (default local compose). Yandex not PRIMARY on this pilot.
 EXTRACTION_PRIMARY=docling
-EXTRACTION_FALLBACK=fixture
+EXTRACTION_FALLBACK=doctr
 EXTRACTION_DOCLING_URL=http://docling:5001
+EXTRACTION_DOCTR_URL=http://doctr:5002
 EXTRACTION_SHADOW_URL=
 EXTRACTION_GOLD_DIR=/var/vdp/extraction-gold
 # Live commercial (not pilot): EXTRACTION_PRIMARY=yandex + all YANDEX_* in secret store (not git).

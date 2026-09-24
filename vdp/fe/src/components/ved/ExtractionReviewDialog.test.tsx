@@ -52,6 +52,43 @@ describe("ExtractionReviewPanel embedded content", () => {
     expect(html).toContain("Запустить распознавание");
   });
 
+  it("disables Start and shows Stop while pending", () => {
+    const html = withQuery(
+      <ExtractionReviewPanel formId="f1" role="user" status="creating" hasDocuments embedded />,
+    );
+    expect(html).toContain("data-testid=\"extraction-pending\"");
+    expect(html).toContain("data-testid=\"extraction-start\"");
+    expect(html).toContain("data-testid=\"extraction-stop\"");
+    expect(html).toContain("Остановить распознавание");
+    expect(html).toContain("disabled=\"\"");
+    expect(html).toContain("data-testid=\"extraction-start\"");
+  });
+
+  it("renders collapsible document text and confirm when canConfirm", () => {
+    const withLayout = JSON.stringify({
+      schema_version: "v1",
+      header: { invoice_amount: "1000", currency: "USD" },
+      line_items: [{ line_no: 1, description: "Goods", qty: "1", line_amount: "1000", hs_code: "847130" }],
+      meta: { engine_id: "docling" },
+      warnings: ["layout:INVOICE RAW TEXT BLOCK", "low confidence on HS"],
+    });
+    const html = withQuery(
+      <ExtractionReviewPanel
+        formId="f1"
+        role="user"
+        status="draft"
+        invoiceJson={withLayout}
+        hasDocuments
+        canConfirm
+        embedded
+      />,
+    );
+    expect(html).toContain("Текст документа");
+    expect(html).toContain("INVOICE RAW TEXT BLOCK");
+    expect(html).toContain("Подставить в заявку");
+    expect(html).not.toContain("data-testid=\"extraction-view-only-banner\"");
+  });
+
   it("renders review fields when invoice_json present", () => {
     const html = withQuery(
       <ExtractionReviewPanel
@@ -65,7 +102,7 @@ describe("ExtractionReviewPanel embedded content", () => {
       />,
     );
     expect(html).toContain("data-testid=\"extraction-review\"");
-    expect(html).toContain("Подтвердить распознавание");
+    expect(html).toContain("Подставить в заявку");
     expect(html).toContain("Fixture goods");
   });
 

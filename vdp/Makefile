@@ -45,7 +45,7 @@ test:
 	cd manager-ops && go test ./...
 	cd release-gate && go test ./...
 
-.PHONY: extraction-export-gold extraction-train-eval extraction-yandex-smoke extraction-docling-smoke extraction-ollama-ensure extraction-eval-own manager-ops-export
+.PHONY: extraction-export-gold extraction-train-eval extraction-yandex-smoke extraction-docling-smoke extraction-doctr-smoke extraction-ollama-ensure extraction-eval-own manager-ops-export
 extraction-export-gold:
 	cd extraction && go run ./cmd/export-gold -gold-dir="$${EXTRACTION_GOLD_DIR:-./.gold}" -out="$${EXTRACTION_EXPORT_DIR:-./.export}"
 
@@ -65,6 +65,10 @@ extraction-yandex-smoke:
 extraction-docling-smoke:
 	@chmod +x scripts/extraction-docling-smoke.sh
 	@./scripts/extraction-docling-smoke.sh
+
+extraction-doctr-smoke:
+	@chmod +x scripts/extraction-doctr-smoke.sh
+	@./scripts/extraction-doctr-smoke.sh
 
 # Before human OCR UAT: Docling smoke + wizard journey (pending must end in done or fail).
 # Requires compose-up. Does not run @pilot-matrix. New e2e is outside PR-smoke → merge-ready needs ci-main.

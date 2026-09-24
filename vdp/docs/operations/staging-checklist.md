@@ -40,8 +40,8 @@ CI adapter tests (cover/fee, 409 idempotent, timeout). Not a new service. Stagin
 
 Policy: optional side-path only. See [architecture/extraction.md](../architecture/extraction.md).
 Compose: extraction service on port 8093; hub OCR_URL equals http://extraction:8093/recognize.
-EXTRACTION_PRIMARY equals fixture without Yandex keys; yandex needs YANDEX_API_KEY plus YANDEX_FOLDER_ID plus model URI in gitignored .env (see .env.example and extraction-yandex-runbook.md). Rotate keys if leaked.
-EXTRACTION_FALLBACK equals fixture until own engine is ready.
+EXTRACTION_PRIMARY equals docling with EXTRACTION_FALLBACK equals doctr on demo compose (see .env.example). Optional yandex needs YANDEX_API_KEY plus YANDEX_FOLDER_ID plus model URI in gitignored .env (see extraction-yandex-runbook.md). Rotate keys if leaked.
+EXTRACTION_FALLBACK equals doctr for the Docling pilot; fixture is not the silent demo fallback.
 Gold JSONL under EXTRACTION_GOLD_DIR. HITL confirm required for human_out.
 EXTRACTION_PRIMARY equals own only after Wave 6 / Wave E eval — otherwise stub or partial.
 Smoke: make extraction-yandex-smoke (reads env; never pass API key on CLI).

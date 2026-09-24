@@ -232,6 +232,14 @@ export function createHsCode(input: CreateHsInput): Promise<CoreHsCode> {
   });
 }
 
+/** POST /api/v1/hs-codes/ensure — OCR missing code upsert (user allowed). */
+export function ensureHsCodeFromOcr(code: string): Promise<CoreHsCode> {
+  return apiFetch<CoreHsCode>("/api/v1/hs-codes/ensure", {
+    method: "POST",
+    body: JSON.stringify({ code }),
+  });
+}
+
 /** POST /api/v1/admin/account. */
 export function createAdminAccount(input: CreateAdminInput): Promise<CoreAdminAccount> {
   return apiFetch<CoreAdminAccount>("/api/v1/admin/account", {

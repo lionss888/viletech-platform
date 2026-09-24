@@ -246,6 +246,42 @@ func (s *CatalogService) CreateHsCode(ctx context.Context, principal authz.Princ
 	return h, s.store.SaveHsCode(ctx, h)
 }
 
+// EnsureHsCodeFromOCR upserts a TN VED code from OCR prefill (AuthZ H1: user|manager|root).
+func (s *CatalogService) EnsureHsCodeFromOCR(ctx context.Context, principal authz.Principal, code string) (domain.HsCode, error) {
+	if err := authz.AuthorizeRoles(principal, domain.RoleRoot, domain.RoleManager, domain.RoleUser); err != nil {
+		return domain.HsCode{}, err
+	}
+	normalized := normalizeHsCode(code)
+	if normalized == "" {
+		return domain.HsCode{}, apperrors.New(apperrors.ErrCodeValidation, "code required")
+	}
+	items, err := s.store.ListHsCodes(ctx)
+	if err != nil {
+		return domain.HsCode{}, err
+	}
+	for _, item := range items {
+		if item.Code == normalized {
+			return item, nil
+		}
+	}
+	h := domain.HsCode{Code: normalized, Description: "OCR · " + normalized}
+	return h, s.store.SaveHsCode(ctx, h)
+}
+
+func normalizeHsCode(raw string) string {
+	var b strings.Builder
+	for _, r := range strings.TrimSpace(raw) {
+		if r >= '0' && r <= '9' {
+			b.WriteRune(r)
+		}
+	}
+	out := b.String()
+	if len(out) < 4 || len(out) > 12 {
+		return ""
+	}
+	return out
+}
+
 // AttachHsCodes stores TN VED codes on form invoice_json without wiping ExtractionResult meta.
 func (s *FormPaymentService) AttachHsCodes(ctx context.Context, principal authz.Principal, formID string, codes []string) (formpayment.Form, error) {
 	form, err := s.Get(ctx, principal, formID)

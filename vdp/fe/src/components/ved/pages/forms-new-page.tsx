@@ -1,4 +1,5 @@
 import { useNavigate } from "@tanstack/react-router";
+import { useQueryClient } from "@tanstack/react-query";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from "@/components/ui/sheet";
@@ -8,6 +9,7 @@ import { FilePickButton } from "@/components/ved/file-pick-button";
 import { OcrProgress } from "@/components/ved/ocr-progress";
 import { OrganizationPickDialog } from "@/components/ved/OrganizationPickDialog";
 import { VedAppShell } from "@/components/ved/VedAppShell";
+import { ensureHsCodeFromOcr } from "@/lib/api/catalog-mutations";
 import {
   attachFormHsCodes,
   getForm,
@@ -51,6 +53,7 @@ type FinalizeMode = "draft" | "submit";
 
 export function NewForm() {
   const { organizations, counterparties, currencies, hsCodes, createForm, session } = usePlatformStore();
+  const queryClient = useQueryClient();
   const navigate = useNavigate();
   const base = usePlatformBasePath();
   const mode = usePlatformMode();
@@ -66,6 +69,8 @@ export function NewForm() {
   const [ocrProgressVisible, setOcrProgressVisible] = useState(false);
   const [ocrInvoiceJson, setOcrInvoiceJson] = useState<string | undefined>(undefined);
   const [extractionDialogOpen, setExtractionDialogOpen] = useState(false);
+  const [ocrManualOverride, setOcrManualOverride] = useState(false);
+  const [skipOcrPromptOpen, setSkipOcrPromptOpen] = useState(false);
   const touchedRef = useRef<WizardTouched>({});
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const pollStartedAtRef = useRef<number>(0);
@@ -372,6 +377,24 @@ export function NewForm() {
     return created.id;
   }
 
+  const ensureMissingHs = useCallback(async (code: string): Promise<{ value: string; label: string } | null> => {
+    try {
+      const created = await ensureHsCodeFromOcr(code);
+      const label = `${created.code} — ${created.description || "OCR"}`;
+      setDraft((prev) => ({ ...prev, hsCode: created.code }));
+      await queryClient.invalidateQueries({ queryKey: ["hs-codes"] });
+      return { value: created.code, label };
+    } catch {
+      return null;
+    }
+  }, [queryClient]);
+
+  useEffect(() => {
+    if (!draft.hsCode || draft.hsCode === "—") return;
+    if (hsCodes.some((h) => h.code === draft.hsCode)) return;
+    void ensureMissingHs(draft.hsCode);
+  }, [draft.hsCode, hsCodes, ensureMissingHs]);
+
   async function nextStep() {
     if (step === WIZARD_STEP.docs && !hasClientOrg) {
       setError("Нет организации клиента — создайте организацию, чтобы продолжить");
@@ -379,6 +402,18 @@ export function NewForm() {
       return;
     }
     const err = validateStep();
+    if (
+      err &&
+      ocrBannerState === "pending" &&
+      !ocrManualOverride &&
+      !draft.noDocuments &&
+      step >= WIZARD_STEP.direction
+    ) {
+      setSkipOcrPromptOpen(true);
+      setError(null);
+      setInvalidFields([]);
+      return;
+    }
     if (err) {
       setError(err.message);
       setInvalidFields(err.fields);
@@ -398,6 +433,22 @@ export function NewForm() {
       setBootstrapping(false);
     }
     setStep(step + 1);
+  }
+
+  function requestSkipOcr() {
+    setSkipOcrPromptOpen(true);
+  }
+
+  function confirmManualFill() {
+    setOcrManualOverride(true);
+    setSkipOcrPromptOpen(false);
+    setError(null);
+    setInvalidFields([]);
+  }
+
+  function declineManualFill() {
+    setSkipOcrPromptOpen(false);
+    setError("Дождитесь распознавания или выберите «Пропустить распознавание» и заполните поля вручную.");
   }
 
   async function syncFormFields(id: string): Promise<void> {
@@ -568,6 +619,21 @@ export function NewForm() {
             >
               {extractionTrigger}
             </button>
+            {ocrBannerState === "pending" && !ocrManualOverride ? (
+              <button
+                type="button"
+                data-testid="wizard-skip-ocr"
+                className="flex h-9 items-center rounded-md border border-border bg-card px-3 text-xs font-semibold text-muted-foreground hover:bg-muted"
+                onClick={() => requestSkipOcr()}
+              >
+                Пропустить распознавание
+              </button>
+            ) : null}
+            {ocrManualOverride && ocrBannerState === "pending" ? (
+              <span className="text-xs text-muted-foreground" data-testid="wizard-ocr-manual-hint">
+                Распознавание идёт в фоне — правки вручную имеют приоритет.
+              </span>
+            ) : null}
           </div>
         ) : null}
         {step === WIZARD_STEP.docs && (
@@ -828,6 +894,9 @@ export function NewForm() {
                     <option value="">
                       {hsCodes.length === 0 ? "Справочник пуст — откройте «Коды ТН ВЭД»" : "Выберите из справочника"}
                     </option>
+                    {draft.hsCode && !hsCodes.some((h) => h.code === draft.hsCode) ? (
+                      <option value={draft.hsCode}>{draft.hsCode} · из OCR (добавляется…)</option>
+                    ) : null}
                     {hsCodes.map((h) => (
                       <option key={h.code} value={h.code}>
                         {h.code} · {h.title}
@@ -995,10 +1064,45 @@ export function NewForm() {
         role={session?.role ?? "user"}
         status="creating"
         hasDocuments={!draft.noDocuments}
-        canConfirm={false}
+        canConfirm
         currencyOptions={currencyOptions.map((c) => ({ value: c.code, label: `${c.code} — ${c.name}` }))}
         hsOptions={hsCodes.map((h) => ({ value: h.code, label: `${h.code} — ${h.name}` }))}
+        onEnsureHsCode={ensureMissingHs}
       />
+      {skipOcrPromptOpen ? (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4"
+          data-testid="wizard-skip-ocr-dialog"
+          role="dialog"
+          aria-modal="true"
+        >
+          <div className="w-full max-w-md rounded-lg border border-border bg-card p-4 shadow-lg">
+            <h2 className="text-sm font-semibold text-foreground">Заполнить вручную?</h2>
+            <p className="mt-2 text-sm text-muted-foreground">
+              Распознавание продолжится в фоне. Если да — заполните сумму и реквизиты сами. Если нет — дождитесь
+              результата или откройте «Распознавание».
+            </p>
+            <div className="mt-4 flex flex-wrap gap-2">
+              <button
+                type="button"
+                className="rounded-md bg-primary px-3 py-2 text-sm font-semibold text-primary-foreground"
+                data-testid="wizard-skip-ocr-yes"
+                onClick={() => confirmManualFill()}
+              >
+                Да, заполнить вручную
+              </button>
+              <button
+                type="button"
+                className="rounded-md border border-border px-3 py-2 text-sm font-semibold text-foreground"
+                data-testid="wizard-skip-ocr-no"
+                onClick={() => declineManualFill()}
+              >
+                Нет, ждать
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
     </VedAppShell>
   );
 }

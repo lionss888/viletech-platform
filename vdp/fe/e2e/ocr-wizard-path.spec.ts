@@ -87,8 +87,9 @@ test.describe("OCR wizard product path", () => {
       await expect(page.getByRole("dialog")).toBeVisible({ timeout: 10_000 });
       await expect(page.getByTestId("extraction-review")).toBeVisible();
       await expect(page.getByTestId("extraction-meta")).toBeVisible();
-      await expect(page.getByTestId("extraction-view-only-banner")).toBeVisible();
-      await expect(page.getByRole("button", { name: /Подтвердить распознавание/i })).toHaveCount(0);
+      await expect(page.getByTestId("extraction-view-only-banner")).toHaveCount(0);
+      await expect(page.getByTestId("extraction-confirm")).toBeVisible();
+      await expect(page.getByTestId("extraction-confirm")).toContainText(/Подставить в заявку/i);
       await page.keyboard.press("Escape");
     }
     const done = page.getByTestId("wizard-ocr-progress-done");
@@ -96,13 +97,48 @@ test.describe("OCR wizard product path", () => {
       await page.getByTestId("wizard-extraction-dialog-trigger").click();
       await expect(page.getByRole("dialog")).toBeVisible({ timeout: 10_000 });
       await expect(page.getByTestId("extraction-review")).toBeVisible();
-      await expect(page.getByTestId("extraction-view-only-banner")).toBeVisible();
-      await expect(page.getByRole("button", { name: /Подтвердить распознавание/i })).toHaveCount(0);
+      await expect(page.getByTestId("extraction-view-only-banner")).toHaveCount(0);
+      await expect(page.getByTestId("extraction-confirm")).toContainText(/Подставить в заявку/i);
       await page.keyboard.press("Escape");
       await page.getByRole("button", { name: "Далее" }).click();
       await page.getByRole("button", { name: "Далее" }).click();
       await expect(page.getByTestId("wizard-terms-step")).toBeVisible({ timeout: 15_000 });
       await expect(page.getByTestId("wizard-amount")).not.toHaveValue("");
+    }
+  });
+
+  test("pending OCR: Start disabled, Stop visible; Skip opens manual dialog", async ({
+    page,
+    loginAs,
+  }) => {
+    test.setTimeout(60_000);
+    await loginAs("user");
+    await page.goto("/forms/new");
+    await uploadInvoiceViaGesture(page, {
+      name: "ocr-pending-controls.pdf",
+      mimeType: "application/pdf",
+      buffer: Buffer.from(
+        "%PDF-1.4\n1 0 obj<<>>endobj\ntrailer<<>>\n%%EOF\nInvoice pending controls\n",
+      ),
+    });
+    await page.getByRole("button", { name: "Далее" }).click();
+    await expect(page.getByTestId("wizard-direction-step")).toBeVisible({ timeout: 30_000 });
+    await page.getByTestId("wizard-extraction-dialog-trigger").click();
+    await expect(page.getByRole("dialog")).toBeVisible({ timeout: 10_000 });
+    const pendingOrIdle = page.getByTestId("extraction-pending").or(page.getByTestId("extraction-idle")).or(page.getByTestId("extraction-review"));
+    await expect(pendingOrIdle).toBeVisible({ timeout: 10_000 });
+    if (await page.getByTestId("extraction-pending").isVisible()) {
+      await expect(page.getByTestId("extraction-start")).toBeDisabled();
+      await expect(page.getByTestId("extraction-stop")).toBeVisible();
+    }
+    await page.keyboard.press("Escape");
+    const skip = page.getByTestId("wizard-skip-ocr");
+    if (await skip.isVisible()) {
+      await skip.click();
+      await expect(page.getByTestId("wizard-skip-ocr-dialog")).toBeVisible();
+      await page.getByTestId("wizard-skip-ocr-yes").click();
+      await expect(page.getByTestId("wizard-skip-ocr-dialog")).toHaveCount(0);
+      await expect(page.getByTestId("wizard-ocr-manual-hint")).toBeVisible();
     }
   });
 
