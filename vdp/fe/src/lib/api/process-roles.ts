@@ -31,9 +31,22 @@ export type ProcessRolesResponse = {
   note?: string;
 };
 
+/** Coerce null/missing capabilities so UI never crashes on disabled roles. */
+export function normalizeProcessRoles(data: ProcessRolesResponse): ProcessRolesResponse {
+  return {
+    ...data,
+    capabilities: data.capabilities ?? [],
+    roles: (data.roles ?? []).map((row) => ({
+      ...row,
+      capabilities: row.capabilities ?? [],
+    })),
+  };
+}
+
 /** GET process-roles snapshot for CTA continuity in app mode. */
-export function getProcessRoles(): Promise<ProcessRolesResponse> {
-  return apiFetch<ProcessRolesResponse>("/api/v1/process-roles");
+export async function getProcessRoles(): Promise<ProcessRolesResponse> {
+  const data = await apiFetch<ProcessRolesResponse>("/api/v1/process-roles");
+  return normalizeProcessRoles(data);
 }
 
 /** Root PUT one role participation (enabled/mandatory/caps). */

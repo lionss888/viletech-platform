@@ -24,7 +24,8 @@ BANK_WEBHOOK_URL=
 EXTRACTION_PRIMARY=docling
 EXTRACTION_FALLBACK=fixture
 EXTRACTION_DOCLING_URL=http://docling:5001
-OCR_TIMEOUT_MS=120000
+OCR_TIMEOUT_MS=180000
+GATEWAY_TIMEOUT=180
 # DOCLING_IMAGE=quay.io/docling-project/docling-serve-cpu:latest
 
 # On-host verify after Images/Deploy: curl extraction /health expects primary equals docling;

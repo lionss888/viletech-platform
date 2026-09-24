@@ -30,12 +30,16 @@ func (s *Server) handleProcessRolesGet(w http.ResponseWriter, r *http.Request, p
 	}
 	roles := make([]map[string]any, 0, len(view.Snapshot.Roles))
 	for _, cfg := range view.Snapshot.SortedByPriority() {
+		caps := cfg.Capabilities
+		if caps == nil {
+			caps = []formpayment.Capability{}
+		}
 		roles = append(roles, map[string]any{
 			"role":         cfg.Role,
 			"enabled":      cfg.Enabled,
 			"priority":     cfg.Priority,
 			"influence":    cfg.Influence,
-			"capabilities": cfg.Capabilities,
+			"capabilities": caps,
 			"removable":    cfg.Removable(),
 			"mandatory":    cfg.Mandatory,
 		})

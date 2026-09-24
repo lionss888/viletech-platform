@@ -25,7 +25,8 @@ type DoclingPrimary struct {
 func NewDocling(baseURL string) *DoclingPrimary {
 	return &DoclingPrimary{
 		BaseURL: strings.TrimRight(strings.TrimSpace(baseURL), "/"),
-		HTTP:    &http.Client{Timeout: 110 * time.Second},
+		// Under hub OCR_TIMEOUT_MS (180s) and core GATEWAY_TIMEOUT (180s).
+		HTTP:    &http.Client{Timeout: 170 * time.Second},
 	}
 }
 
@@ -96,7 +97,7 @@ func (d *DoclingPrimary) postJSON(ctx context.Context, url string, body any) (ma
 	req.Header.Set("Content-Type", "application/json")
 	client := d.HTTP
 	if client == nil {
-		client = &http.Client{Timeout: 110 * time.Second}
+		client = &http.Client{Timeout: 170 * time.Second}
 	}
 	res, err := client.Do(req)
 	if err != nil {

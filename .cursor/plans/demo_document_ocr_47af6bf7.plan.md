@@ -4,22 +4,22 @@ overview: Закрыть живой цикл распознавания загр
 todos:
   - id: repro-gap
     content: "Локальный repro: attach без content_base64 в OCR payload (логи hub/extraction)"
-    status: pending
+    status: cancelled
   - id: core-payload
     content: "Core: обогатить ocr.requested (attach + StartExtraction) байтами blob + unit"
-    status: pending
+    status: cancelled
   - id: smoke-local
     content: "Local: Yandex .env + extraction-yandex-smoke + browser upload→HITL"
-    status: pending
+    status: cancelled
   - id: e2e-unit-gate
     content: Unit/E2E + make check-env-parity + make ci-pr-pilot
-    status: pending
+    status: cancelled
   - id: ops-alpha
     content: "Alpha: YANDEX_*/EXTRACTION_* в .env.deploy, bind, redeploy, on-host smoke + UI"
-    status: pending
+    status: cancelled
   - id: docs-honesty
     content: Обновить runbook/staging-env/deploy-env/known-gaps; docs-format-check
-    status: pending
+    status: cancelled
 isProject: false
 ---
 

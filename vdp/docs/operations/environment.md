@@ -56,7 +56,7 @@ Default 120 per minute.
 
 ## GATEWAY_TIMEOUT
 
-Default 15 seconds.
+Default 15 seconds in core code. Compose sets 180 so synchronous OCR via hub inbox is not canceled before OCR_TIMEOUT_MS. Keep GATEWAY_TIMEOUT at least OCR_TIMEOUT_MS divided by 1000.
 
 ## MAIL_URL hub
 

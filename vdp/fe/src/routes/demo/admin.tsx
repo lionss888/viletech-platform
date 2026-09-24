@@ -125,7 +125,7 @@ export function AdminPage() {
             enabled: row.enabled,
             mandatory: row.mandatory,
             influence: row.influence,
-            capabilities: [...row.capabilities],
+            capabilities: [...(row.capabilities ?? [])],
           });
         } else {
           setRoleTemplate(null);

@@ -25,9 +25,13 @@ GoldRecord: gold_id, form_payment_id, organization_id, primary_out, shadow_out, 
 
 OCR_URL — hub to extraction POST /recognize.
 
-OCR_TIMEOUT_MS — hub OCR plugin timeout (default 120000). Other adapters keep EXTERNAL_TIMEOUT_MS.
+OCR_TIMEOUT_MS — hub OCR plugin timeout (default 180000). Other adapters keep EXTERNAL_TIMEOUT_MS.
 
-FE wizard poll uses OCR_POLL_TIMEOUT_MS equals 165000 so a late degraded callback after hub timeout can still populate HITL. Do not set FE poll equal to or below hub OCR_TIMEOUT_MS.
+GATEWAY_TIMEOUT — core HubPublisher HTTP timeout in seconds (compose default 180). Inbox OCR is synchronous; keep GATEWAY_TIMEOUT at least OCR_TIMEOUT_MS divided by 1000 or the request cancels early (~15s code default without compose).
+
+FE wizard poll uses OCR_POLL_TIMEOUT_MS equals 225000 so a late degraded callback after hub timeout can still populate HITL. Do not set FE poll equal to or below hub OCR_TIMEOUT_MS.
+
+Docling PRIMARY HTTP client timeout is 170s (under hub OCR budget).
 
 EXTRACTION_PRIMARY — docling | yandex | fixture | own. Pilot default equals docling.
 
