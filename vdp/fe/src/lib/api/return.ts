@@ -1,5 +1,7 @@
 // Return episode API (новый контур возврата после исполнения).
 
+import { ApiError, apiFetch } from "./client";
+
 export interface RateHistoryEntry {
   rate: string;
   set_at: string;
@@ -94,186 +96,114 @@ export interface ProvReturnRepeatExecuteRequest {
 
 /**
  * Get return episode for a form.
- * Returns null if no return episode exists yet.
+ * Core returns 200 with active:false when none; 404→null kept as a defensive edge.
  */
 export async function getReturnEpisode(formId: string): Promise<ReturnEpisode | null> {
-  const response = await fetch(`/api/v1/forms/${formId}/return/episode`);
-  if (response.status === 404) {
-    return null;
+  try {
+    return await apiFetch<ReturnEpisode>(`/api/v1/forms/${formId}/return/episode`);
+  } catch (err) {
+    if (err instanceof ApiError && err.status === 404) {
+      return null;
+    }
+    throw err;
   }
-  if (!response.ok) {
-    throw new Error(`Failed to get return episode: ${response.statusText}`);
-  }
-  return response.json();
 }
 
-/**
- * Provider reports return after payment execution (stage 1).
- * Guards: import only, after execution, one active episode.
- */
-export async function provReturnReport(
+/** Provider reports return after payment execution (stage 1). */
+export function provReturnReport(
   formId: string,
-  data: ProvReturnReportRequest
-): Promise<any> {
-  const response = await fetch(`/api/v1/forms/${formId}/return/report`, {
+  data: ProvReturnReportRequest,
+): Promise<Record<string, unknown>> {
+  return apiFetch(`/api/v1/forms/${formId}/return/report`, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
     body: JSON.stringify(data),
   });
-  if (!response.ok) {
-    throw new Error(`Failed to report return: ${response.statusText}`);
-  }
-  return response.json();
 }
 
-/**
- * Manager asks client for clarification (stage 2).
- * Guards: episode active, only manager, question required.
- */
-export async function mgrReturnClarify(
+/** Manager asks client for clarification (stage 2). */
+export function mgrReturnClarify(
   formId: string,
-  data: MgrReturnClarifyRequest
-): Promise<any> {
-  const response = await fetch(`/api/v1/forms/${formId}/return/clarify`, {
+  data: MgrReturnClarifyRequest,
+): Promise<Record<string, unknown>> {
+  return apiFetch(`/api/v1/forms/${formId}/return/clarify`, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
     body: JSON.stringify(data),
   });
-  if (!response.ok) {
-    throw new Error(`Failed to clarify: ${response.statusText}`);
-  }
-  return response.json();
 }
 
-/**
- * Client replies to manager's clarification question (stage 2).
- * Guards: episode active, only client (form owner), answer required.
- */
-export async function clientReturnClarifyReply(
+/** Client replies to manager's clarification question (stage 2). */
+export function clientReturnClarifyReply(
   formId: string,
-  data: ClientReturnClarifyReplyRequest
-): Promise<any> {
-  const response = await fetch(`/api/v1/forms/${formId}/return/clarify-reply`, {
+  data: ClientReturnClarifyReplyRequest,
+): Promise<Record<string, unknown>> {
+  return apiFetch(`/api/v1/forms/${formId}/return/clarify-reply`, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
     body: JSON.stringify(data),
   });
-  if (!response.ok) {
-    throw new Error(`Failed to reply: ${response.statusText}`);
-  }
-  return response.json();
 }
 
-/**
- * Manager sets exchange rate for return to client (stage 3).
- * Guards: episode active, only manager, rate required and valid decimal.
- */
-export async function mgrReturnToClientRate(
+/** Manager sets exchange rate for return to client (stage 3). */
+export function mgrReturnToClientRate(
   formId: string,
-  data: MgrReturnToClientRateRequest
-): Promise<any> {
-  const response = await fetch(`/api/v1/forms/${formId}/return/to-client/rate`, {
+  data: MgrReturnToClientRateRequest,
+): Promise<Record<string, unknown>> {
+  return apiFetch(`/api/v1/forms/${formId}/return/to-client/rate`, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
     body: JSON.stringify(data),
   });
-  if (!response.ok) {
-    throw new Error(`Failed to set rate: ${response.statusText}`);
-  }
-  return response.json();
 }
 
-/**
- * Client gives consent with letter (stage 3).
- * Guards: episode active, only client, consent_file_id required.
- */
-export async function clientReturnConsent(
+/** Client gives consent with letter (stage 3). */
+export function clientReturnConsent(
   formId: string,
-  data: ClientReturnConsentRequest
-): Promise<any> {
-  const response = await fetch(`/api/v1/forms/${formId}/return/to-client/consent`, {
+  data: ClientReturnConsentRequest,
+): Promise<Record<string, unknown>> {
+  return apiFetch(`/api/v1/forms/${formId}/return/to-client/consent`, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
     body: JSON.stringify(data),
   });
-  if (!response.ok) {
-    throw new Error(`Failed to give consent: ${response.statusText}`);
-  }
-  return response.json();
 }
 
-/**
- * Client refuses rate with reason (stage 3).
- * Guards: episode active, only client, reason required.
- */
-export async function clientReturnRefuse(
+/** Client refuses rate with reason (stage 3). */
+export function clientReturnRefuse(
   formId: string,
-  data: ClientReturnRefuseRequest
-): Promise<any> {
-  const response = await fetch(`/api/v1/forms/${formId}/return/to-client/refuse`, {
+  data: ClientReturnRefuseRequest,
+): Promise<Record<string, unknown>> {
+  return apiFetch(`/api/v1/forms/${formId}/return/to-client/refuse`, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
     body: JSON.stringify(data),
   });
-  if (!response.ok) {
-    throw new Error(`Failed to refuse: ${response.statusText}`);
-  }
-  return response.json();
 }
 
-/**
- * Manager executes RUB payment (stage 3).
- * CRITICAL: requires client consent letter.
- */
-export async function mgrReturnToClientExecute(
+/** Manager executes RUB payment (stage 3). */
+export function mgrReturnToClientExecute(
   formId: string,
-  data: MgrReturnToClientExecuteRequest
-): Promise<any> {
-  const response = await fetch(`/api/v1/forms/${formId}/return/to-client/execute`, {
+  data: MgrReturnToClientExecuteRequest,
+): Promise<Record<string, unknown>> {
+  return apiFetch(`/api/v1/forms/${formId}/return/to-client/execute`, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
     body: JSON.stringify(data),
   });
-  if (!response.ok) {
-    throw new Error(`Failed to execute payment: ${response.statusText}`);
-  }
-  return response.json();
 }
 
-/**
- * Manager initiates repeat payment (stage 4).
- * Guards: episode active, only manager, comment required.
- */
-export async function mgrReturnRepeat(
+/** Manager initiates repeat payment (stage 4). */
+export function mgrReturnRepeat(
   formId: string,
-  data: MgrReturnRepeatRequest
-): Promise<any> {
-  const response = await fetch(`/api/v1/forms/${formId}/return/repeat`, {
+  data: MgrReturnRepeatRequest,
+): Promise<Record<string, unknown>> {
+  return apiFetch(`/api/v1/forms/${formId}/return/repeat`, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
     body: JSON.stringify(data),
   });
-  if (!response.ok) {
-    throw new Error(`Failed to initiate repeat: ${response.statusText}`);
-  }
-  return response.json();
 }
 
-/**
- * Provider executes repeat payment (stage 4).
- * Guards: episode active, only assigned provider, payment_file_id required.
- */
-export async function provReturnRepeatExecute(
+/** Provider executes repeat payment (stage 4). */
+export function provReturnRepeatExecute(
   formId: string,
-  data: ProvReturnRepeatExecuteRequest
-): Promise<any> {
-  const response = await fetch(`/api/v1/forms/${formId}/return/repeat/execute`, {
+  data: ProvReturnRepeatExecuteRequest,
+): Promise<Record<string, unknown>> {
+  return apiFetch(`/api/v1/forms/${formId}/return/repeat/execute`, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
     body: JSON.stringify(data),
   });
-  if (!response.ok) {
-    throw new Error(`Failed to execute repeat: ${response.statusText}`);
-  }
-  return response.json();
 }

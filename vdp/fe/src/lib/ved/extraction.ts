@@ -37,7 +37,8 @@ export type ExtractionResult = {
 };
 
 /** Wizard / card poll: wait this long for ExtractionResult before honest fail. */
-export const OCR_POLL_TIMEOUT_MS = 120_000;
+/** Wizard OCR poll budget (ms). Above hub OCR_TIMEOUT_MS (120s) so degraded callback can land. */
+export const OCR_POLL_TIMEOUT_MS = 165_000;
 
 /** Wizard OCR banner states (honest UX). */
 export type OcrBannerState =

@@ -4,19 +4,19 @@ overview: "Закрепить диагностику пути распознав
 todos:
   - id: ocr-path-make
     content: "make ocr-path-gate: docling-smoke + Playwright только OCR-spec; fail если compose не поднят"
-    status: pending
+    status: completed
   - id: ocr-path-e2e
     content: "e2e/ocr-wizard-path.spec.ts: filechooser upload → done или fail-баннер, fail-fast на вечный pending"
-    status: pending
+    status: completed
   - id: ocr-path-local-qg
     content: "Local QG кнопка + Callout + TRIAGE: OCR path до ручного UAT"
-    status: pending
+    status: completed
   - id: ocr-path-process-docs
     content: "Шаблон среза + DoD OCR-плана: ocr-path-gate до Acceptance руками"
-    status: pending
+    status: completed
   - id: ocr-path-verify-fix
     content: check-env-parity → ocr-path-gate; при red — product fix; ci-main + notify-mgmt
-    status: pending
+    status: completed
 isProject: false
 ---
 

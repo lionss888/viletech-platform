@@ -4,15 +4,14 @@ overview: "Закрыть обратную связь по OCR: честный U
 todos:
   - id: wizard-honesty-copy
     content: "ExtractionReviewPanel: честный banner/help при canConfirm=false; unit Dialog"
-    status: pending
+    status: completed
   - id: docling-regex-conf
     content: "docling_primary: regex Invoice#/company + confidence boost; Go table tests"
-    status: pending
+    status: completed
   - id: e2e-qg-notify
     content: ocr-wizard-path e2e; check-env-parity → ci-pr-pilot (+ ci-main); notify-mgmt
-    status: pending
-isProject: false
----
+    status: completed
+isProject: false---
 
 # OCR: честность мастера + качество Docling
 

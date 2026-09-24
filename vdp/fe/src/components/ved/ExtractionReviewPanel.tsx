@@ -201,9 +201,9 @@ export function ExtractionReviewPanel({
         </div>
         {!draft?.meta.confirmed ? (
           <p className="text-xs text-muted-foreground" data-testid="extraction-help">
-            Распознавание читает загруженные документы и подставляет сумму, валюту, реквизиты и позиции в
-            форму. Заявка при этом никуда не отправляется — вы сможете проверить и исправить каждое поле до
-            подтверждения. Перезапуск заменит текущие распознанные данные новыми.
+            {canConfirm
+              ? "Распознавание читает загруженные документы и подставляет сумму, валюту, реквизиты и позиции в форму. Заявка при этом никуда не отправляется — вы сможете проверить и исправить каждое поле до подтверждения. Перезапуск заменит текущие распознанные данные новыми."
+              : "Распознавание читает загруженные документы и подставляет сумму, валюту, реквизиты и позиции в форму. В мастере поля правятся в форме заявки; здесь — просмотр результата и перезапуск. Подтверждение распознавания на этом шаге недоступно."}
           </p>
         ) : (
           <p className="text-xs text-muted-foreground" data-testid="extraction-help">
@@ -245,22 +245,28 @@ export function ExtractionReviewPanel({
         {!embedded ? <h2 className="text-sm font-semibold text-foreground">Распознанные данные</h2> : null}
         <p className="text-xs text-muted-foreground">
           {draft.meta.engine_id ?? "engine"}
-          {draft.meta.engine_id === "docling" ? " · пилот Docling" : ""} · проверьте позиции перед
-          подтверждением
+          {draft.meta.engine_id === "docling" ? " · пилот Docling" : ""}
+          {canConfirm && !confirmed ? " · проверьте позиции перед подтверждением" : ""}
         </p>
       </div>
       {!confirmed ? controlBar : null}
       <p className="text-xs text-muted-foreground">
         Поле без правки помечено «распознано». Если значение изменили — «изменено». Цвет строки с низкой уверенностью
         это не заменяет.
-        {draft.meta.engine_id === "docling"
+        {draft.meta.engine_id === "docling" && canConfirm
           ? " Пустые поля на пилоте Docling — норма: дозаполните вручную перед подтверждением."
+          : ""}
+        {draft.meta.engine_id === "docling" && !canConfirm
+          ? " Пустые поля на пилоте Docling — норма: дозаполните вручную в форме заявки."
           : ""}
       </p>
       {!canConfirm && !confirmed ? (
-        <p className="text-xs text-muted-foreground">
-          Сейчас подтверждение недоступно для вашей роли или статуса — дождитесь своего шага или правьте
-          параметры после возврата.
+        <p
+          className="rounded-md border border-border bg-muted/40 px-2 py-1.5 text-xs text-muted-foreground"
+          data-testid="extraction-view-only-banner"
+        >
+          В мастере поля правятся в форме; здесь просмотр и перезапуск. Подтверждение распознавания на этом шаге
+          недоступно.
         </p>
       ) : null}
       <div className="grid gap-2 sm:grid-cols-2" data-testid="extraction-header-fields">

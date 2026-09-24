@@ -4,22 +4,22 @@ overview: "Build tag integration, make test-integration, расширение Po
 todos:
   - id: rh1-build-tag
     content: "//go:build integration для *_integration_test.go; make test-integration"
-    status: pending
+    status: completed
   - id: rh1-core-tests
     content: Расширить store_integration + outbox postgres round-trip (core)
-    status: pending
+    status: completed
   - id: rh1-hub-tests
     content: Расширить inbox postgres idempotency (hub)
-    status: pending
+    status: completed
   - id: rh1-ci-step
     content: Postgres service container в CI job integration (до compose-e2e)
-    status: pending
+    status: completed
   - id: rh1-docs
     content: Раздел memory vs postgres vs compose в testing.md
-    status: pending
+    status: completed
   - id: rh1-gate
     content: "DoD: ≥5 integration tests green в CI без skip"
-    status: pending
+    status: completed
 isProject: false
 ---
 

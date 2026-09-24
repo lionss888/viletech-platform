@@ -124,6 +124,7 @@ export function FormDetail() {
       return getReturnEpisode(formId);
     },
     enabled: mode === "app" && Boolean(formId),
+    retry: false,
   });
 
   const form = useMemo(() => {

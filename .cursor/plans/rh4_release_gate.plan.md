@@ -4,25 +4,25 @@ overview: "make release-gate агрегирует все gate'ы; vdp-release CI
 todos:
   - id: rh4-make-release-gate
     content: Makefile release-gate = integration-gate + playwright + test-integration + docs-format-check
-    status: pending
+    status: completed
   - id: rh4-ci-release
     content: workflow vdp-release.yml или job на tag / workflow_dispatch
-    status: pending
+    status: completed
   - id: rh4-observability-doc
     content: vdp/docs/operations/observability.md — correlation id, semantic alerts
-    status: pending
+    status: completed
   - id: rh4-known-gaps
     content: Обновить known-gaps.md — что RH закрыл / что остаётся
-    status: pending
+    status: completed
   - id: rh4-readiness
     content: Обновить pilot/readiness-and-limits.md — pilot ~75% honesty
-    status: pending
+    status: completed
   - id: rh4-master-dod
     content: Закрыть global DoD в vdp_reliability_master.plan.md todos
-    status: pending
+    status: completed
   - id: rh4-gate
     content: "DoD: make release-gate green на clean clone + compose"
-    status: pending
+    status: completed
 isProject: false
 ---
 

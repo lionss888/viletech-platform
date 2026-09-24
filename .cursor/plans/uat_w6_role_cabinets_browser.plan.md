@@ -4,27 +4,26 @@ overview: "Закрыть живой браузерный UAT кабинетов
 todos:
   - id: w6-mgr-continuity
     content: "Browser: manager@ login → очередь → approve/reject continuity на заявке User"
-    status: pending
+    status: completed
   - id: w6-ico-eco
     content: "Browser: ico@ / eco@ (или continuity note) org/form review; зафиксировать F8 если slot off"
-    status: pending
+    status: completed
   - id: w6-provider-acl
     content: "Browser: provider@ карточка без колонки Клиент/ПДн; accept/execute/confirm CTA"
-    status: pending
+    status: completed
   - id: w6-root-cancel
     content: "Browser: root@ cancel draft/card по канону (согласовать с W5 path)"
-    status: pending
+    status: completed
   - id: w6-treasurer-spot
     content: "Browser: treasurer@ confirm на import advance payment_received (awaits-treasurer)"
-    status: pending
+    status: completed
   - id: w6-findings-waves
     content: "Новые findings → журнал; при багах — отдельные волны или дописать W4/W5"
-    status: pending
+    status: completed
   - id: w6-gate
     content: "check-env-parity; при новых e2e вне smoke → ci-main; иначе ci-pr-pilot если @pilot-matrix"
-    status: pending
-isProject: false
----
+    status: completed
+isProject: false---
 
 # UAT Волна 6: браузерные кабинеты ролей
 

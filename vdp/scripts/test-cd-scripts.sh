@@ -58,6 +58,9 @@ echo "$DRY" | grep -qi '\.cursor/' && fail "dry-run must strip .cursor paths"
 echo "== precommit-mgmt-notify must run docs-format-check =="
 grep -q 'docs-format-check' scripts/precommit-mgmt-notify.sh || fail "precommit-mgmt-notify.sh must invoke docs-format-check"
 grep -q 'make test' scripts/precommit-mgmt-notify.sh || fail "precommit-mgmt-notify.sh must invoke make test"
+grep -E -q '\(vdp/\)\?fe/' scripts/precommit-mgmt-notify.sh || fail "precommit-mgmt-notify.sh must path-check staged fe/"
+grep -q 'npm test' scripts/precommit-mgmt-notify.sh || fail "precommit-mgmt-notify.sh must invoke npm test for staged fe/"
+bash -n scripts/precommit-mgmt-notify.sh || fail "precommit-mgmt-notify.sh bash -n failed"
 
 echo "== ci-mgmt-notify gate-summary pass =="
 GATE_PASS="$(

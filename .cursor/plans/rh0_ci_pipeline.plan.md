@@ -4,16 +4,16 @@ overview: "GitHub Actions: jobs fast (unit), integration (compose-e2e), playwrig
 todos:
   - id: rh0-workflow
     content: Создать .github/workflows/vdp-ci.yml с jobs fast/integration/playwright/docs
-    status: pending
+    status: completed
   - id: rh0-ci-doc
     content: Документ vdp/docs/operations/ci.md — topology, triggers, branch protection
-    status: pending
+    status: completed
   - id: rh0-known-gaps
     content: Обновить known-gaps пункт CI CD (GitHub primary)
-    status: pending
+    status: completed
   - id: rh0-gate
     content: "DoD: pipeline green на main; integration и playwright — раздельные jobs"
-    status: pending
+    status: completed
 isProject: false
 ---
 

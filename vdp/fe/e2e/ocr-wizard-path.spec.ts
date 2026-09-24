@@ -4,8 +4,8 @@ import { assertCoreHealthy } from "./helpers/api";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
-/** Poll timeout in FE is 120s; allow small headroom for create + first paint. */
-const OCR_TERMINAL_TIMEOUT_MS = 135_000;
+/** Poll timeout in FE is 165s; allow headroom for create + late degraded callback. */
+const OCR_TERMINAL_TIMEOUT_MS = 195_000;
 
 const FE_ROOT = path.dirname(fileURLToPath(import.meta.url));
 /** Prefer compose-playwright mount; fall back to workspace path for host runs. */
@@ -82,9 +82,23 @@ test.describe("OCR wizard product path", () => {
     const degraded = page.getByTestId("wizard-ocr-progress-degraded");
     if (await degraded.isVisible()) {
       await expect(degraded).not.toContainText(/подставятся сами/i);
+      await page.getByTestId("wizard-extraction-dialog-trigger").click();
+      // Modal portals content; wrapper testid stays aria-hidden — assert panel inside dialog.
+      await expect(page.getByRole("dialog")).toBeVisible({ timeout: 10_000 });
+      await expect(page.getByTestId("extraction-review")).toBeVisible();
+      await expect(page.getByTestId("extraction-meta")).toBeVisible();
+      await expect(page.getByTestId("extraction-view-only-banner")).toBeVisible();
+      await expect(page.getByRole("button", { name: /Подтвердить распознавание/i })).toHaveCount(0);
+      await page.keyboard.press("Escape");
     }
     const done = page.getByTestId("wizard-ocr-progress-done");
     if (await done.isVisible()) {
+      await page.getByTestId("wizard-extraction-dialog-trigger").click();
+      await expect(page.getByRole("dialog")).toBeVisible({ timeout: 10_000 });
+      await expect(page.getByTestId("extraction-review")).toBeVisible();
+      await expect(page.getByTestId("extraction-view-only-banner")).toBeVisible();
+      await expect(page.getByRole("button", { name: /Подтвердить распознавание/i })).toHaveCount(0);
+      await page.keyboard.press("Escape");
       await page.getByRole("button", { name: "Далее" }).click();
       await page.getByRole("button", { name: "Далее" }).click();
       await expect(page.getByTestId("wizard-terms-step")).toBeVisible({ timeout: 15_000 });
