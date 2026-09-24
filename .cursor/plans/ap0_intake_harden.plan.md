@@ -1,16 +1,16 @@
 ---
 name: AP0 Intake harden
-overview: "Матрица триггер→HITL/thread, unit на media-only, README honesty. Модуль инструменты/поток-вводных."
+overview: Матрица триггер→HITL/thread, unit на media-only, README honesty. Модуль инструменты/поток-вводных.
 todos:
   - id: ap0-matrix
     content: Зафиксировать матрицу триггер→inbox/HITL vs thread-only + /help copy
-    status: pending
+    status: completed
   - id: ap0-tests
     content: Unit classify + media-only path; make test green
-    status: pending
+    status: completed
   - id: ap0-readme
     content: README honesty совпадает с поведением
-    status: pending
+    status: completed
 isProject: false
 ---
 
@@ -29,6 +29,6 @@ isProject: false
 
 ## DoD
 
-- [ ] Unit на classify + media без триггера
-- [ ] README honesty
-- [ ] `make test` зелёный
+- [x] Unit на classify + media без триггера
+- [x] README honesty
+- [x] `make test` зелёный

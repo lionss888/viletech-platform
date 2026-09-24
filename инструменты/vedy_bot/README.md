@@ -119,7 +119,11 @@ Optional demo mocks: `VITE_INTAKE_DEMO=1` (default is live Go API).
 
 ## Analytics boundary
 
-In-process package `internal/analytics`: one `Bundle` DTO (class, confidence, summary, conflicts, estimate) on HITL cards and planfile/API. Not a separate docker service; no external LLM HTTP.
+In-process package `internal/analytics` only — **not** a docker/HTTP analytics service and not an external LLM.
+
+Public DTO: `analytics.Bundle` (alias `Result`) with `class`, `confidence`, `summary`, `conflicts`, `estimate`.
+Pipeline writes one contract (`Run` → card.`Analytics`, inbox via `ToInbox`, planfile via `DocumentFromAnalytics` / `ToPlan`).
+Console `GET /api/cards` returns card JSON including the `analytics` object.
 
 ## Tests
 
@@ -129,14 +133,15 @@ In-process package `internal/analytics`: one `Bundle` DTO (class, confidence, su
 
 ## Trigger matrix
 
+Канон в коде: `normalize.RouteOf` / `CreatesHITLCard` (см. `internal/normalize/route.go`).
+`/help` в чате повторяет ту же матрицу менеджеру.
+
 | Вход | Лента (thread) | Inbox / HITL |
 |---|---|---|
 | `@бот` или `/vvod` (+ текст и/или медиа) | да | да (HITL при `-hitl`) |
 | Сообщение/медиа без триггера | да | нет |
 | `/help` | да (справка) | нет |
 | Стикеры / голосовые | нет | нет |
-
-Код маршрута: `normalize.RouteOf` / `CreatesHITLCard`.
 
 ## Honesty gaps
 
@@ -147,7 +152,7 @@ In-process package `internal/analytics`: one `Bundle` DTO (class, confidence, su
 - Stand start is operator console / operator TG only; manager sees sanitized status text without commands/paths.
 - Lovable preview alone is not the live console until `fe/src/lib/api` is wired and vedy_bot is running — preview mocks ≠ production thread.
 - Embed vanilla UI under `internal/console/ui/` is fallback only when SPA upstream/static is absent.
-- Stickers/voice are not ingested.
+- Stickers/voice are not ingested (вне AP0 scope; не попадают в inbox).
 - Media without intake trigger (`@bot` / `/vvod`) is mirrored into the thread only — it does not create an inbox HITL card.
 - Bot API does not return history from before the poller started; the console is a live mirror from process start.
 - Console is operator-only (bearer token on loopback), not a VED cabinet; second TG operator chat is optional (`TELEGRAM_OPERATOR_CHAT_IDS`) — console remains the mirror.

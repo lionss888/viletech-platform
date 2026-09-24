@@ -1,16 +1,16 @@
 ---
 name: AP1 Analytics boundary
-overview: "Единый DTO анализа на границе pipeline→card/planfile/API; in-process пакет, не отдельный сервис."
+overview: Единый DTO анализа на границе pipeline→card/planfile/API; in-process пакет, не отдельный сервис.
 todos:
   - id: ap1-dto
     content: Публичный Result/Bundle DTO class+confidence+summary+conflicts+estimate
-    status: pending
+    status: completed
   - id: ap1-wire
     content: Pipeline пишет один контракт; API отдаёт метаданные
-    status: pending
+    status: completed
   - id: ap1-tests
     content: Table-driven unit на маппинг; README analytics=in-process
-    status: pending
+    status: completed
 isProject: false
 ---
 
@@ -29,6 +29,6 @@ isProject: false
 
 ## DoD
 
-- [ ] Один DTO на границе
-- [ ] Unit маппинга
-- [ ] README: analytics = in-process
+- [x] Один DTO на границе
+- [x] Unit маппинга
+- [x] README: analytics = in-process

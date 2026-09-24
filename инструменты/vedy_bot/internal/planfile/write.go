@@ -8,6 +8,8 @@ import (
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/viletech/tools/vedy_bot/internal/analytics"
 )
 
 // TodoStatus matches Cursor plan frontmatter todos.
@@ -56,6 +58,23 @@ type Document struct {
 	Todos          int
 	Hours          float64
 	PlanTodos      []TodoItem
+}
+
+// DocumentFromAnalytics maps the analytics boundary Bundle into a planfile Document.
+func DocumentFromAnalytics(cardID, status, summary, proposal string, b analytics.Bundle) Document {
+	meta := b.ToPlan()
+	return Document{
+		CardID:         cardID,
+		Status:         status,
+		Class:          meta.Class,
+		Summary:        summary,
+		Proposal:       proposal,
+		TimelinePhrase: meta.TimelinePhrase,
+		Conflicts:      meta.Conflicts,
+		EngineerNote:   meta.EngineerNote,
+		Todos:          meta.Todos,
+		Hours:          meta.Hours,
+	}
 }
 
 // Dir under workspace: .cursor/plans/тгбот

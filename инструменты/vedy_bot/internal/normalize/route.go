@@ -1,6 +1,14 @@
 package normalize
 
 // Route is where an inbound update goes after Classify.
+//
+// Canonical trigger matrix (AP0):
+//
+//	| Trigger                         | Route         | Inbox / HITL |
+//	|---------------------------------|---------------|--------------|
+//	| mention (@bot) / vvod (/vvod)   | intake        | yes          |
+//	| help (/help)                    | help          | no           |
+//	| none (plain text / media only)  | thread_only   | no           |
 type Route string
 
 const (

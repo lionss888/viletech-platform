@@ -6,6 +6,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/viletech/tools/vedy_bot/internal/analytics"
 	"github.com/viletech/tools/vedy_bot/internal/planfile"
 )
 
@@ -79,5 +80,23 @@ func TestPlanRoundTrip(t *testing.T) {
 	}
 	if got.Path != path {
 		t.Fatalf("path=%s want %s", got.Path, path)
+	}
+}
+
+func TestDocumentFromAnalytics(t *testing.T) {
+	t.Parallel()
+	b := analytics.Run("@bot #баг падает кнопка оплаты на экране кабинета", "bot")
+	doc := planfile.DocumentFromAnalytics("card-1-2", "awaiting_approve", "sum", "prop", b)
+	if doc.CardID != "card-1-2" || doc.Proposal != "prop" {
+		t.Fatalf("doc=%+v", doc)
+	}
+	if doc.Class != b.Class {
+		t.Fatalf("class=%q want %q", doc.Class, b.Class)
+	}
+	if doc.TimelinePhrase != b.Estimate.ManagerPhrase {
+		t.Fatalf("timeline=%q", doc.TimelinePhrase)
+	}
+	if doc.Todos != b.Estimate.Todos {
+		t.Fatalf("todos=%d", doc.Todos)
 	}
 }

@@ -162,6 +162,85 @@ func TestPullMediaOnPhotoWithoutTriggerGoesToThreadOnly(t *testing.T) {
 	}
 }
 
+func TestHelpDoesNotCreateInbox(t *testing.T) {
+	t.Parallel()
+	home := t.TempDir()
+	st := store.New(home)
+	fm := &fakeMsg{}
+	p := &Pipeline{
+		Store:     st,
+		Messenger: fm,
+		ChatIDs:   map[int64]struct{}{-100: {}},
+		BotUser:   "vdp_intake_bot",
+	}
+	u := telegram.Update{
+		UpdateID: 100,
+		Message: &telegram.Message{
+			MessageID: 8,
+			Chat:      telegram.Chat{ID: -100},
+			Text:      "/help",
+		},
+	}
+	ok, err := p.HandleUpdate(context.Background(), u)
+	if err != nil || !ok {
+		t.Fatalf("ok=%v err=%v", ok, err)
+	}
+	if len(fm.texts) != 1 {
+		t.Fatalf("want help reply, got %v", fm.texts)
+	}
+	reply := fm.texts[0]
+	for _, needle := range []string{"inbox", "лента", "/vvod", "медиа без триггера"} {
+		if !strings.Contains(reply, needle) {
+			t.Fatalf("help copy missing %q in %q", needle, reply)
+		}
+	}
+	inbox, _ := st.ListInboxRecent(10)
+	if len(inbox) != 0 {
+		t.Fatalf("help must not create inbox, got %d", len(inbox))
+	}
+}
+
+func TestPhotoWithVvodCaptionCreatesInbox(t *testing.T) {
+	t.Parallel()
+	home := t.TempDir()
+	st := store.New(home)
+	fm := &fakeMsg{}
+	media := &fakeMedia{data: []byte("jpeg-bytes")}
+	p := &Pipeline{
+		Store:     st,
+		Messenger: fm,
+		Media:     media,
+		ChatIDs:   map[int64]struct{}{-100: {}},
+		BotUser:   "vdp_intake_bot",
+	}
+	u := telegram.Update{
+		UpdateID: 101,
+		Message: &telegram.Message{
+			MessageID: 9,
+			Chat:      telegram.Chat{ID: -100},
+			Caption:   "/vvod screenshot of bug",
+			Photo:     []telegram.PhotoSize{{FileID: "fid-cap", Width: 800, Height: 600, FileSize: 10}},
+		},
+	}
+	ok, err := p.HandleUpdate(context.Background(), u)
+	if err != nil || !ok {
+		t.Fatalf("ok=%v err=%v", ok, err)
+	}
+	inbox, err := st.ListInboxRecent(10)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(inbox) != 1 {
+		t.Fatalf("want one inbox record, got %d", len(inbox))
+	}
+	if inbox[0].Trigger != "vvod" {
+		t.Fatalf("trigger=%q", inbox[0].Trigger)
+	}
+	if len(inbox[0].Attachments) != 1 {
+		t.Fatalf("want photo attachment, got %+v", inbox[0].Attachments)
+	}
+}
+
 func TestIngestConsoleMirrorDoesNotDuplicate(t *testing.T) {
 	t.Parallel()
 	home := t.TempDir()

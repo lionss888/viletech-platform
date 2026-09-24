@@ -85,9 +85,9 @@ const helpText = `Шаблон ввода (отметьте бота @… или
 6) срочность (низкая/средняя/высокая)
 
 Что куда попадает:
-• @бот или /vvod (+ текст/вложение) → inbox и HITL (если включён)
+• @бот или /vvod (+ текст и/или медиа) → inbox и HITL (если включён -hitl)
 • обычное сообщение или медиа без триггера → только лента консоли, без карточки
-• /help → эта справка
+• /help → эта справка (без inbox/HITL)
 • стикеры/голосовые — не принимаются`
 
 // ConsoleIngest is an operator message from the local console.
@@ -187,15 +187,17 @@ func (p *Pipeline) HandleUpdate(ctx context.Context, u telegram.Update) (bool, e
 		_ = p.Store.MarkSeen(u.UpdateID)
 		return false, nil
 	}
-	if trig == normalize.TriggerNone {
+	switch normalize.RouteOf(trig) {
+	case normalize.RouteThreadOnly:
+		// Plain chat / media without @bot|/vvod: thread mirror only (no inbox/HITL).
 		_ = p.Store.MarkSeen(u.UpdateID)
 		return false, nil
-	}
-	if trig == normalize.TriggerHelp {
+	case normalize.RouteHelp:
 		_, _ = p.sendAndMirror(ctx, msg.Chat.ID, msg.MessageID, "help", comms.SanitizeManager(helpText))
 		_ = p.Store.MarkSeen(u.UpdateID)
 		return true, nil
 	}
+	// RouteIntake: @bot / /vvod → inbox (+ HITL when enabled).
 	if p.WithHITL && p.Cards != nil {
 		handled, err := p.tryHITLDecision(ctx, msg, fromUser)
 		if err != nil {
@@ -223,13 +225,13 @@ func (p *Pipeline) HandleUpdate(ctx context.Context, u telegram.Update) (bool, e
 		Attachments:  atts,
 	}
 	bundle := analytics.Run(text, p.BotUser)
-	analysis := bundle.AnalyzeResult()
 	if p.WithAnalyze || p.WithHITL {
-		rec.Class = analysis.Class
-		rec.Confidence = string(analysis.Confidence)
-		rec.Chars = analysis.Chars
-		rec.Tags = analysis.Tags
-		if analysis.Confidence == analyze.ConfidenceLow {
+		meta := bundle.ToInbox()
+		rec.Class = meta.Class
+		rec.Confidence = meta.Confidence
+		rec.Chars = meta.Chars
+		rec.Tags = meta.Tags
+		if bundle.LowConfidence() {
 			rec.Kind = "clarify"
 		}
 	}
@@ -248,7 +250,7 @@ func (p *Pipeline) HandleUpdate(ctx context.Context, u telegram.Update) (bool, e
 			ack = comms.Accepted()
 		}
 	case p.WithAnalyze:
-		ack = formatAnalyzeReply(analysis)
+		ack = formatAnalyzeReply(bundle.AnalyzeResult())
 	}
 	ack = comms.SanitizeManager(ack)
 	if _, err := p.sendAndMirror(ctx, msg.Chat.ID, msg.MessageID, "proposal", ack); err != nil {
@@ -338,12 +340,12 @@ func (p *Pipeline) IngestConsole(ctx context.Context, in ConsoleIngest) (Console
 		rec.Kind = "intake"
 		rec.Trigger = "vvod"
 		bundle := analytics.Run(text, p.BotUser)
-		analysis := bundle.AnalyzeResult()
 		if p.WithAnalyze || p.WithHITL {
-			rec.Class = analysis.Class
-			rec.Confidence = string(analysis.Confidence)
-			rec.Chars = analysis.Chars
-			rec.Tags = analysis.Tags
+			meta := bundle.ToInbox()
+			rec.Class = meta.Class
+			rec.Confidence = meta.Confidence
+			rec.Chars = meta.Chars
+			rec.Tags = meta.Tags
 		}
 		if err := p.Store.AppendInbox(rec); err != nil {
 			return ConsoleResult{}, err
@@ -362,7 +364,7 @@ func (p *Pipeline) IngestConsole(ctx context.Context, in ConsoleIngest) (Console
 			}
 			cardID = card.NewID(chatID, msgID)
 		} else if p.WithAnalyze {
-			ack = formatAnalyzeReply(analysis)
+			ack = formatAnalyzeReply(bundle.AnalyzeResult())
 		} else {
 			ack = comms.Accepted()
 		}
@@ -616,7 +618,6 @@ func (p *Pipeline) tryHITLDecision(ctx context.Context, msg *telegram.Message, f
 func (p *Pipeline) handleHITLIntake(ctx context.Context, msg *telegram.Message, fromUser, redacted string, bundle analytics.Bundle) (string, error) {
 	now := p.clock()
 	id := card.NewID(msg.Chat.ID, msg.MessageID)
-	analysis := bundle.AnalyzeResult()
 	conflictPlains := bundle.ConflictPlains()
 	bcopy := bundle
 	c := &card.Card{
@@ -625,7 +626,7 @@ func (p *Pipeline) handleHITLIntake(ctx context.Context, msg *telegram.Message, 
 		RootMessageID: msg.MessageID,
 		FromUsername:  fromUser,
 		Status:        card.StatusDraft,
-		Class:         analysis.Class,
+		Class:         bundle.Class,
 		Summary:       redacted,
 		Conflicts:     conflictPlains,
 		Analytics:     &bcopy,
@@ -642,7 +643,7 @@ func (p *Pipeline) handleHITLIntake(ctx context.Context, msg *telegram.Message, 
 		}
 		c.FallbackReason = err.Error()
 		_ = experience.Append(p.StoreHome(), experience.Event{
-			CardID: id, Kind: "fallback", Class: analysis.Class, Mode: p.EffectiveHITLMode(), FallbackReason: err.Error(),
+			CardID: id, Kind: "fallback", Class: bundle.Class, Mode: p.EffectiveHITLMode(), FallbackReason: err.Error(),
 		})
 		if p.EffectiveHITLMode() == "cursor" {
 			c.Status = card.StatusAwaitingClarify
@@ -655,17 +656,17 @@ func (p *Pipeline) handleHITLIntake(ctx context.Context, msg *telegram.Message, 
 }
 
 func (p *Pipeline) handleHITLIntakeRules(_ context.Context, msg *telegram.Message, fromUser, redacted string, bundle analytics.Bundle, c *card.Card) (string, error) {
-	analysis := bundle.AnalyzeResult()
 	conflictPlains := bundle.ConflictPlains()
+	plan := bundle.ToPlan()
 	rawText := msg.PrimaryText()
 	id := c.ID
-	if analysis.Confidence == analyze.ConfidenceLow && len(bundle.Conflicts) == 0 {
+	if bundle.LowConfidence() && len(bundle.Conflicts) == 0 {
 		c.Status = card.StatusAwaitingClarify
 		if err := p.Cards.Save(c); err != nil {
 			return "", err
 		}
-		_ = experience.Append(p.StoreHome(), experience.Event{CardID: id, Kind: "clarify", Class: analysis.Class, Mode: "rules"})
-		q := analysis.Question
+		_ = experience.Append(p.StoreHome(), experience.Event{CardID: id, Kind: "clarify", Class: bundle.Class, Mode: "rules"})
+		q := bundle.Question
 		if q == "" {
 			q = "Уточните, пожалуйста, одним предложением: это ошибка, доработка, вопрос по удобству или проверка связи?"
 		}
@@ -677,39 +678,30 @@ func (p *Pipeline) handleHITLIntakeRules(_ context.Context, msg *telegram.Messag
 			return "", err
 		}
 		_ = experience.Append(p.StoreHome(), experience.Event{
-			CardID: id, Kind: "conflict", Class: analysis.Class, Conflicts: conflictPlains, Mode: "rules",
+			CardID: id, Kind: "conflict", Class: bundle.Class, Conflicts: conflictPlains, Mode: "rules",
 		})
 		f := bundle.Conflicts[0]
 		return comms.ConflictWarn(f.Plain, f.Question), nil
 	}
-	prop := proposal.Summary(rawText, p.BotUser, analysis.Class)
+	prop := proposal.Summary(rawText, p.BotUser, bundle.Class)
 	c.Proposal = prop
-	c.TimelinePhrase = bundle.Estimate.ManagerPhrase
+	c.TimelinePhrase = plan.TimelinePhrase
 	c.Status = card.StatusAwaitingApprove
 	if err := p.Cards.Save(c); err != nil {
 		return "", err
 	}
 	if p.Workspace != "" {
-		_, err := planfile.WriteMarkdown(p.Workspace, planfile.Document{
-			CardID:         c.ID,
-			Status:         string(c.Status),
-			Class:          c.Class,
-			Summary:        c.Summary,
-			Proposal:       prop,
-			TimelinePhrase: bundle.Estimate.ManagerPhrase,
-			Conflicts:      conflictPlains,
-			EngineerNote:   bundle.Estimate.EngineerNote,
-			Todos:          bundle.Estimate.Todos,
-			Hours:          bundle.Estimate.Hours,
-		})
+		_, err := planfile.WriteMarkdown(p.Workspace, planfile.DocumentFromAnalytics(
+			c.ID, string(c.Status), c.Summary, prop, bundle,
+		))
 		if err != nil {
 			p.logger().Warn("plan write failed", "card_id", c.ID, "err", err)
 		}
 	}
 	_ = experience.Append(p.StoreHome(), experience.Event{
-		CardID: id, Kind: "proposal", Class: analysis.Class, TimelinePhrase: bundle.Estimate.ManagerPhrase, Mode: "rules",
+		CardID: id, Kind: "proposal", Class: bundle.Class, TimelinePhrase: plan.TimelinePhrase, Mode: "rules",
 	})
-	return comms.Proposal(prop, bundle.Estimate.ManagerPhrase), nil
+	return comms.Proposal(prop, plan.TimelinePhrase), nil
 }
 
 func (p *Pipeline) rewritePlan(c *card.Card) error {

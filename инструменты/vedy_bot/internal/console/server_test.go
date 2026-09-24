@@ -15,6 +15,7 @@ import (
 	"time"
 
 	"github.com/viletech/tools/vedy_bot/internal/agent"
+	"github.com/viletech/tools/vedy_bot/internal/analytics"
 	"github.com/viletech/tools/vedy_bot/internal/card"
 	"github.com/viletech/tools/vedy_bot/internal/pipeline"
 	"github.com/viletech/tools/vedy_bot/internal/store"
@@ -388,6 +389,53 @@ func TestMountUISPAUpstreamProxiesNonAPI(t *testing.T) {
 	mux.ServeHTTP(rr, req)
 	if rr.Code != http.StatusUnauthorized {
 		t.Fatalf("api want 401 got %d body=%s", rr.Code, rr.Body.String())
+	}
+}
+
+func TestCardsAPIIncludesAnalytics(t *testing.T) {
+	t.Parallel()
+	home := t.TempDir()
+	cards := card.NewStore(home)
+	b := analytics.Run("@bot #баг падает кнопка оплаты", "bot")
+	bcopy := b
+	c := &card.Card{
+		ID:        "card-analytics-1",
+		Status:    card.StatusAwaitingApprove,
+		ChatID:    -100,
+		Summary:   "sum",
+		Class:     b.Class,
+		Analytics: &bcopy,
+	}
+	if err := cards.Save(c); err != nil {
+		t.Fatal(err)
+	}
+	s := &Server{Token: "tok", Cards: cards}
+	req := httptest.NewRequest(http.MethodGet, "/api/cards", nil)
+	req.Header.Set("Authorization", "Bearer tok")
+	rr := httptest.NewRecorder()
+	s.auth(s.handleCards)(rr, req)
+	if rr.Code != http.StatusOK {
+		t.Fatalf("code=%d body=%s", rr.Code, rr.Body.String())
+	}
+	var payload struct {
+		Items []map[string]any `json:"items"`
+	}
+	if err := json.Unmarshal(rr.Body.Bytes(), &payload); err != nil {
+		t.Fatal(err)
+	}
+	if len(payload.Items) != 1 {
+		t.Fatalf("items=%d", len(payload.Items))
+	}
+	raw, ok := payload.Items[0]["analytics"].(map[string]any)
+	if !ok {
+		t.Fatalf("analytics missing: %#v", payload.Items[0])
+	}
+	if raw["class"] != b.Class {
+		t.Fatalf("class=%v want %s", raw["class"], b.Class)
+	}
+	est, ok := raw["estimate"].(map[string]any)
+	if !ok || est["manager_phrase"] == nil {
+		t.Fatalf("estimate missing: %#v", raw)
 	}
 }
 
