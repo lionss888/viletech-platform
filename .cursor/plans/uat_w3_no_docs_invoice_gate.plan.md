@@ -1,15 +1,15 @@
 ---
 name: UAT W3 no-docs invoice gate
-overview: "Путь «нет документов» не должен упираться в 409 invoice required на compliance без явного UX-гейта (F5)."
+overview: "Early submit gate superseded by wizard no-docs draft-only. Остаётся manager/ECO accept block until invoice attached (F5 residual)."
 todos:
   - id: w3-ux-gate
-    content: "Wizard/review: если no_documents — предупреждение что инвойс нужен до accept/approve"
-    status: pending
+    content: "Early wizard gate → superseded by wizard_no-docs_draft (draft-only, no submit)"
+    status: cancelled
   - id: w3-manager-cta
     content: "Карточка manager/continuity: disabled eco_accept + причина «нужен инвойс»"
     status: pending
   - id: w3-tests
-    content: "Unit/E2E: no_docs submit ok; approve blocked until invoice attached"
+    content: "Unit/E2E: approve blocked until invoice attached (submit no longer allowed on no_docs)"
     status: pending
   - id: w3-gate
     content: "check-env-parity → unit → ci-pr; ci-pr-pilot если ActionPanel copy"
@@ -21,12 +21,12 @@ isProject: false
 
 ## Источник
 
-UAT 2026-09-23 finding **F5**.
+UAT 2026-09-23 finding **F5**. Early client submit path **superseded** by `wizard_no-docs_draft` (2026-09-24): без документов клиент сохраняет только черновик; submit запрещён в UI и domain.
 
-## Acceptance
+## Acceptance (остаток)
 
-1. Клиент на пути «У меня нет документов» видит, что инвойс всё равно понадобится до приёмки комплаенсом (не сюрприз на 409).
-2. Manager/ECO primary accept disabled с причиной, пока нет invoice document.
+1. ~~Клиент на пути no_docs может submit~~ → **N/A**: draft-only (wizard_no-docs_draft).
+2. Manager/ECO primary accept disabled с причиной, пока нет invoice document (после появления документов / доработки).
 3. После attach invoice — accept проходит (существующий домен).
 4. Доменное правило «invoice required» **не** ослаблять ради UX.
 
@@ -35,6 +35,7 @@ UAT 2026-09-23 finding **F5**.
 - OCR prefill (W1)
 - Org hygiene (W2)
 - Снятие требования инвойса в домене
+- Повторная реализация draft-only wizard (уже в wizard_no-docs_draft)
 
 ## Сверка с `.cursor/rules`
 
@@ -46,17 +47,16 @@ UAT 2026-09-23 finding **F5**.
 
 | Слой | Действие |
 |---|---|
-| UI | Copy на wizard no_docs + review; disabled CTA reason |
+| UI | Disabled CTA reason на accept без инвойса |
 | FE | ActionPanel / form-detail next step |
-| Домен | без изменений правила invoice required |
+| Домен | без ослабления invoice required на accept |
 | API | без ослабления 409 |
-| Unit | copy/helper «needs invoice for accept» |
-| E2E | no_docs → submit → manager sees block; attach → accept |
-| Notify | «без инвойса заявку нельзя принять на проверке» |
+| Unit | helper «needs invoice for accept» |
+| E2E | attach → accept; no_docs submit уже запрещён отдельно |
 
 ## DoD / QG
 
 1. `make check-env-parity`
-2. Unit + e2e на gate
+2. Unit + e2e на accept gate
 3. Заявленный CI gate
-4. F5 закрыт в журнале
+4. F5 в журнале: early gate закрыт draft-only; residual = accept block

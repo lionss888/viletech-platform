@@ -30,6 +30,29 @@ export async function finishTermsAndReview(
 }
 
 /**
+ * Invoice-first path through docs → direction → parties.
+ * Replaces the former no-docs shortcut (draft-only; cannot reach parties).
+ */
+export async function fillInvoiceAndReachParties(
+  page: Page,
+  condition: "advance" | "postPayment" = "advance",
+  fileName: string = "wizard-invoice.pdf",
+): Promise<void> {
+  await expect(page.getByTestId("wizard-docs-step")).toBeVisible();
+  const pdf = Buffer.from(`%PDF-1.4 ${fileName}`);
+  await page.getByTestId("wizard-invoice-file").setInputFiles({
+    name: fileName,
+    mimeType: "application/pdf",
+    buffer: pdf,
+  });
+  await page.getByRole("button", { name: "Далее" }).click();
+  await expect(page.getByTestId("wizard-direction-step")).toBeVisible({ timeout: 30_000 });
+  await page.getByTestId("wizard-payment-condition").selectOption(condition);
+  await page.getByRole("button", { name: "Далее" }).click();
+  await expect(page.getByTestId("wizard-parties-step")).toBeVisible();
+}
+
+/**
  * Click save-draft on review. Fail-fast if the CTA testid is missing.
  */
 export async function saveWizardDraft(page: Page): Promise<void> {

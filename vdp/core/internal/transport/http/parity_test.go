@@ -15,7 +15,7 @@ func TestNestRoleFormActionAndParityEndpoints(t *testing.T) {
 	created := postJSON(t, core, token, "/api/v1/forms", map[string]string{"currency": "USD", "invoice_amount": "200", "no_documents": "true"})
 	// no_documents as string in map won't work for bool - create via raw
 	_ = created
-	body := []byte(`{"currency":"USD","invoice_amount":"200","no_documents":true,"contract_number":"C-1","contract_date":"2026-01-01"}`)
+	body := []byte(`{"currency":"USD","invoice_amount":"200","no_documents":false,"contract_number":"C-1","contract_date":"2026-01-01"}`)
 	req := httptest.NewRequest(http.MethodPost, "/api/v1/forms", bytes.NewReader(body))
 	req.Header.Set("Authorization", "Bearer "+token)
 	req.Header.Set("Content-Type", "application/json")
@@ -27,7 +27,7 @@ func TestNestRoleFormActionAndParityEndpoints(t *testing.T) {
 	var form map[string]any
 	_ = json.Unmarshal(res.Body.Bytes(), &form)
 	id, _ := form["id"].(string)
-	if form["no_documents"] != true {
+	if form["no_documents"] != false {
 		t.Fatalf("no_documents=%v", form["no_documents"])
 	}
 	postJSON(t, core, token, "/api/v1/forms/"+id+"/actions/recognize_complete", nil)

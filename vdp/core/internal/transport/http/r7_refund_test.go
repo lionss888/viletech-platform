@@ -14,7 +14,7 @@ func TestR7RefundHappyPathAndCancelInvariant(t *testing.T) {
 	manager := login(t, core, "manager@vdp.local", "manager")
 	eco := login(t, core, "eco@vdp.local", "eco")
 
-	body := []byte(`{"currency":"USD","invoice_amount":"1000","no_documents":true,"contract_number":"C-R7","contract_date":"2026-01-01"}`)
+	body := []byte(`{"currency":"USD","invoice_amount":"1000","no_documents":false,"contract_number":"C-R7","contract_date":"2026-01-01"}`)
 	req := httptest.NewRequest(http.MethodPost, "/api/v1/site/form-payment", bytes.NewReader(body))
 	req.Header.Set("Authorization", "Bearer "+user)
 	req.Header.Set("Content-Type", "application/json")
@@ -90,7 +90,7 @@ func TestR7RefundAuthZ(t *testing.T) {
 	eco := login(t, core, "eco@vdp.local", "eco")
 
 	// Create form and get to payment_received state with funds held
-	body := []byte(`{"currency":"USD","invoice_amount":"1000","no_documents":true,"contract_number":"C-R7-AUTHZ","contract_date":"2026-01-01"}`)
+	body := []byte(`{"currency":"USD","invoice_amount":"1000","no_documents":false,"contract_number":"C-R7-AUTHZ","contract_date":"2026-01-01"}`)
 	req := httptest.NewRequest(http.MethodPost, "/api/v1/site/form-payment", bytes.NewReader(body))
 	req.Header.Set("Authorization", "Bearer "+user)
 	req.Header.Set("Content-Type", "application/json")
@@ -155,7 +155,7 @@ func TestR7RefundStopAndCancel(t *testing.T) {
 	eco := login(t, core, "eco@vdp.local", "eco")
 
 	// Create form and get to refund_processing state
-	body := []byte(`{"currency":"EUR","invoice_amount":"500","no_documents":true,"contract_number":"C-R7-STOP","contract_date":"2026-01-01"}`)
+	body := []byte(`{"currency":"EUR","invoice_amount":"500","no_documents":false,"contract_number":"C-R7-STOP","contract_date":"2026-01-01"}`)
 	req := httptest.NewRequest(http.MethodPost, "/api/v1/site/form-payment", bytes.NewReader(body))
 	req.Header.Set("Authorization", "Bearer "+user)
 	req.Header.Set("Content-Type", "application/json")
@@ -211,7 +211,7 @@ func TestR7RefundInvariantBlocksCancelWithHeldFunds(t *testing.T) {
 	eco := login(t, core, "eco@vdp.local", "eco")
 
 	// Create form and get to payment_received with funds held
-	body := []byte(`{"currency":"USD","invoice_amount":"2000","no_documents":true,"contract_number":"C-R7-INV","contract_date":"2026-01-01"}`)
+	body := []byte(`{"currency":"USD","invoice_amount":"2000","no_documents":false,"contract_number":"C-R7-INV","contract_date":"2026-01-01"}`)
 	req := httptest.NewRequest(http.MethodPost, "/api/v1/site/form-payment", bytes.NewReader(body))
 	req.Header.Set("Authorization", "Bearer "+user)
 	req.Header.Set("Content-Type", "application/json")

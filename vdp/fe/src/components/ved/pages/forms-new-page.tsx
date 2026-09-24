@@ -38,6 +38,7 @@ import {
   deriveInvoiceCurrency,
   documentsLabel,
   mergeExtractionPrefill,
+  NO_DOCUMENTS_DRAFT_ALERT,
   WIZARD_STEP,
   WIZARD_STEP_CAPTIONS,
   WIZARD_STEPS,
@@ -243,12 +244,25 @@ export function NewForm() {
     role: session?.role ?? "user",
     hasDraft: Boolean(parseExtractionResult(ocrInvoiceJson)),
     status: "creating",
+    noDocuments: draft.noDocuments,
     hasDocuments: !draft.noDocuments && Boolean(formId),
   });
   const extractionTrigger = extractionTriggerLabel(extractionMode);
   function setField<K extends keyof typeof draft>(key: K, value: (typeof draft)[K]) {
     setDraft((prev) => ({ ...prev, [key]: value }));
     setInvalidFields((prev) => (prev.includes(key as string) ? prev.filter((k) => k !== key) : prev));
+  }
+
+  function enableNoDocumentsPath() {
+    setDraft((prev) => ({ ...prev, noDocuments: true, invoiceFile: null, contractFile: null }));
+    setInvalidFields([]);
+    setError(null);
+    setStep(WIZARD_STEP.terms);
+  }
+
+  function disableNoDocumentsPath() {
+    setField("noDocuments", false);
+    setStep(WIZARD_STEP.docs);
   }
 
   function setTouchedField(key: keyof WizardTouched, value: string) {
@@ -299,17 +313,24 @@ export function NewForm() {
         fields.push("amount");
         messages.push("Укажите сумму платежа больше нуля");
       }
-      if (draft.kind === "good" && !draft.hsCode.trim()) {
-        fields.push("hsCode");
-        messages.push(
-          hsCodes.length === 0
-            ? "Справочник кодов ТН ВЭД пуст — добавьте код в «Коды ТН ВЭД»"
-            : "Для товара выберите код ТН ВЭД из справочника",
-        );
-      }
-      if (draft.kind === "good" && draft.condition === "advance" && !draft.shipmentDate.trim() && !draft.contractDate.trim()) {
-        fields.push("shipmentDate");
-        messages.push("Для товара с авансом укажите дату отгрузки");
+      if (!draft.noDocuments) {
+        if (draft.kind === "good" && !draft.hsCode.trim()) {
+          fields.push("hsCode");
+          messages.push(
+            hsCodes.length === 0
+              ? "Справочник кодов ТН ВЭД пуст — добавьте код в «Коды ТН ВЭД»"
+              : "Для товара выберите код ТН ВЭД из справочника",
+          );
+        }
+        if (
+          draft.kind === "good" &&
+          draft.condition === "advance" &&
+          !draft.shipmentDate.trim() &&
+          !draft.contractDate.trim()
+        ) {
+          fields.push("shipmentDate");
+          messages.push("Для товара с авансом укажите дату отгрузки");
+        }
       }
     }
     if (messages.length === 0) return null;
@@ -333,7 +354,7 @@ export function NewForm() {
         clientCurrency: draft.clientCurrency,
         counterpartyCurrency: draft.counterpartyCurrency,
         hsCode: draft.hsCode || "—",
-        invoiceNumber: draft.noDocuments ? draft.contractNumber : draft.invoiceNumber || "—",
+        invoiceNumber: draft.invoiceNumber || draft.contractNumber || "—",
         shipmentDate: draft.shipmentDate || undefined,
         noDocuments: draft.noDocuments,
         invoiceFile: draft.invoiceFile ?? undefined,
@@ -381,9 +402,7 @@ export function NewForm() {
 
   async function syncFormFields(id: string): Promise<void> {
     const amount = String(draft.amount || "0").replace(/\s/g, "").replace(",", ".");
-    const contractNumber = draft.noDocuments
-      ? draft.contractNumber
-      : draft.contractNumber || draft.invoiceNumber || "";
+    const contractNumber = draft.contractNumber || draft.invoiceNumber || "";
     const patch: {
       invoice_amount: string;
       currency: string;
@@ -426,6 +445,10 @@ export function NewForm() {
       setOrgDialogOpen(true);
       return;
     }
+    if (finalizeMode === "submit" && draft.noDocuments) {
+      setError(NO_DOCUMENTS_DRAFT_ALERT);
+      return;
+    }
     const err = validateStep();
     if (err) {
       setError(err.message);
@@ -454,7 +477,7 @@ export function NewForm() {
             clientCurrency: draft.clientCurrency,
             counterpartyCurrency: draft.counterpartyCurrency,
             hsCode: draft.hsCode || "—",
-            invoiceNumber: draft.noDocuments ? draft.contractNumber : draft.invoiceNumber || "—",
+            invoiceNumber: draft.invoiceNumber || draft.contractNumber || "—",
             shipmentDate: draft.shipmentDate || undefined,
             noDocuments: draft.noDocuments,
             invoiceFile: draft.invoiceFile ?? undefined,
@@ -489,28 +512,45 @@ export function NewForm() {
       }
     >
       <div className="panel p-4">
-        <ol className="flex flex-wrap gap-2" data-testid="wizard-steps">
-          {WIZARD_STEPS.map((label, i) => (
-            <li
-              key={label}
-              className={cn(
-                "rounded-md px-2.5 py-1 text-xs font-semibold",
-                i === step ? "bg-primary text-primary-foreground" : i < step ? "bg-done-soft text-done" : "text-subtle-foreground",
-              )}
-            >
-              {i + 1}. {label}
-            </li>
-          ))}
-        </ol>
-        <p className="mt-3 text-xs text-muted-foreground" data-testid="wizard-step-caption">
-          <span className="font-semibold text-foreground">{WIZARD_STEPS[step] ?? ""}: </span>
-          {WIZARD_STEP_CAPTIONS[WIZARD_STEPS[step] ?? "Документы"]}
-        </p>
+        {draft.noDocuments ? (
+          <div data-testid="wizard-steps">
+            <p className="rounded-md bg-primary px-2.5 py-1 text-xs font-semibold text-primary-foreground inline-block">
+              Черновик без документов
+            </p>
+            <p className="mt-3 text-xs text-muted-foreground" data-testid="wizard-step-caption">
+              Укажите ориентировочную сумму и валюты, затем сохраните черновик.
+            </p>
+          </div>
+        ) : (
+          <>
+            <ol className="flex flex-wrap gap-2" data-testid="wizard-steps">
+              {WIZARD_STEPS.map((label, i) => (
+                <li
+                  key={label}
+                  className={cn(
+                    "rounded-md px-2.5 py-1 text-xs font-semibold",
+                    i === step
+                      ? "bg-primary text-primary-foreground"
+                      : i < step
+                        ? "bg-done-soft text-done"
+                        : "text-subtle-foreground",
+                  )}
+                >
+                  {i + 1}. {label}
+                </li>
+              ))}
+            </ol>
+            <p className="mt-3 text-xs text-muted-foreground" data-testid="wizard-step-caption">
+              <span className="font-semibold text-foreground">{WIZARD_STEPS[step] ?? ""}: </span>
+              {WIZARD_STEP_CAPTIONS[WIZARD_STEPS[step] ?? "Документы"]}
+            </p>
+          </>
+        )}
       </div>
 
       <div className="panel mt-4 w-full p-5 lg:w-3/4">
         {error && <p className="mb-4 rounded-md bg-destructive-soft px-2 py-1.5 text-xs text-destructive">{error}</p>}
-        {ocrProgressVisible && ocrBannerState && step > WIZARD_STEP.docs && (
+        {ocrProgressVisible && ocrBannerState && step > WIZARD_STEP.docs && !draft.noDocuments && (
           <OcrProgress
             state={ocrBannerState}
             onHide={() => {
@@ -555,6 +595,10 @@ export function NewForm() {
                     onPick={(file) => onFilePick("invoiceFile", file)}
                   />
                 </FileField>
+                <p className="text-xs text-muted-foreground" data-testid="wizard-invoice-ocr-help">
+                  Чаще достаточно инвойса. После «Далее» распознавание пойдёт в фоне; статус и предзаполнение
+                  появятся на следующих шагах. Если сервис недоступен — заполните сумму и реквизиты вручную.
+                </p>
                 <FileField label="Контракт (PDF, до 15 МБ) — необязательно">
                   <FilePickButton
                     file={draft.contractFile}
@@ -563,49 +607,7 @@ export function NewForm() {
                     onPick={(file) => onFilePick("contractFile", file)}
                   />
                 </FileField>
-                <p className="text-xs text-muted-foreground">
-                  Чаще достаточно инвойса. После «Далее» распознавание пойдёт в фоне; статус и предзаполнение
-                  появятся на следующих шагах. Если сервис недоступен — заполните сумму и реквизиты вручную.
-                </p>
               </>
-            )}
-            {draft.noDocuments && (
-              <div
-                className="flex flex-wrap items-center gap-3 rounded-md border border-wait/40 bg-wait-soft px-3 py-2.5"
-                data-testid="wizard-no-documents-alert"
-              >
-                <p className="min-w-0 flex-1 text-sm text-wait">
-                  Вы отметили, что документов пока нет — это нормально, заявку можно заполнить и так. Если инвойс или
-                  контракт появятся, добавьте их: распознавание попробует подставить доступные поля (не гарантируется).
-                </p>
-                <button
-                  type="button"
-                  onClick={() => setField("noDocuments", false)}
-                  className="rounded-md bg-primary px-3 py-2 text-sm font-semibold text-primary-foreground hover:opacity-90"
-                >
-                  Добавить документы
-                </button>
-              </div>
-            )}
-            {draft.noDocuments && (
-              <div className="grid gap-4 sm:grid-cols-2">
-                <Field label="Номер контракта" invalid={invalidFields.includes("contractNumber")}>
-                  <input
-                    value={draft.contractNumber}
-                    onChange={(e) => setTouchedField("contractNumber", e.target.value)}
-                    placeholder="КТ-2026-0001"
-                    className="field font-mono"
-                  />
-                </Field>
-                <Field label="Дата контракта" invalid={invalidFields.includes("contractDate")}>
-                  <input
-                    type="date"
-                    value={draft.contractDate}
-                    onChange={(e) => setField("contractDate", e.target.value)}
-                    className="field"
-                  />
-                </Field>
-              </div>
             )}
             <OrganizationPickDialog
               open={orgDialogOpen}
@@ -618,7 +620,7 @@ export function NewForm() {
           </div>
         )}
 
-        {step === WIZARD_STEP.direction && (
+        {step === WIZARD_STEP.direction && !draft.noDocuments && (
           <div className="grid gap-4 sm:grid-cols-3" data-testid="wizard-direction-step">
             <Field label="Направление">
               <select
@@ -650,7 +652,7 @@ export function NewForm() {
           </div>
         )}
 
-        {step === WIZARD_STEP.parties && (
+        {step === WIZARD_STEP.parties && !draft.noDocuments && (
           <div className="grid gap-4" data-testid="wizard-parties-step">
             {!hasClientOrg && (
               <p
@@ -744,94 +746,139 @@ export function NewForm() {
         )}
 
         {step === WIZARD_STEP.terms && (
-          <div className="grid gap-4 sm:grid-cols-2" data-testid="wizard-terms-step">
-            <Field label="Сумма инвойса" invalid={invalidFields.includes("amount")}>
-              <input
-                value={draft.amount}
-                onChange={(e) => setTouchedField("amount", e.target.value)}
-                inputMode="decimal"
-                placeholder="сумма"
-                className="field font-mono"
-                data-testid="wizard-amount"
-              />
-            </Field>
-            <Field label="Валюта клиента">
-              <select
-                value={draft.clientCurrency}
-                onChange={(e) => setField("clientCurrency", e.target.value)}
-                className="field"
-                data-testid="wizard-client-currency"
+          <div className="grid gap-4" data-testid="wizard-terms-step">
+            {draft.noDocuments && (
+              <div
+                className="flex flex-col gap-3 rounded-md border border-wait/40 bg-wait-soft px-3 py-3 sm:flex-row sm:items-start"
+                data-testid="wizard-no-documents-alert"
               >
-                {currencyOptions.length === 0 && <option value="">Нет валют в справочнике</option>}
-                {currencyOptions.map((c) => (
-                  <option key={c.code} value={c.code}>
-                    {c.code} · {c.title}
-                  </option>
-                ))}
-              </select>
-            </Field>
-            <Field label="Валюта контрагента">
-              <select
-                value={draft.counterpartyCurrency}
-                onChange={(e) => setTouchedField("counterpartyCurrency", e.target.value)}
-                className="field"
-                data-testid="wizard-counterparty-currency"
-              >
-                {currencyOptions.length === 0 && <option value="">Нет валют в справочнике</option>}
-                {currencyOptions.map((c) => (
-                  <option key={c.code} value={c.code}>
-                    {c.code} · {c.title}
-                  </option>
-                ))}
-              </select>
-            </Field>
-            {draft.kind === "good" && (
-              <Field label="Код ТН ВЭД" invalid={invalidFields.includes("hsCode")}>
-                <select
-                  value={draft.hsCode}
-                  onChange={(e) => setTouchedField("hsCode", e.target.value)}
-                  className="field font-mono"
-                  aria-label="Код ТН ВЭД из справочника"
+                <p className="min-w-0 flex-1 text-sm text-wait">{NO_DOCUMENTS_DRAFT_ALERT}</p>
+                <button
+                  type="button"
+                  onClick={() => disableNoDocumentsPath()}
+                  className="shrink-0 rounded-md bg-primary px-3 py-2 text-sm font-semibold text-primary-foreground hover:opacity-90"
+                  data-testid="wizard-add-documents"
                 >
-                  <option value="">
-                    {hsCodes.length === 0 ? "Справочник пуст — откройте «Коды ТН ВЭД»" : "Выберите из справочника"}
-                  </option>
-                  {hsCodes.map((h) => (
-                    <option key={h.code} value={h.code}>
-                      {h.code} · {h.title}
+                  Добавить документы
+                </button>
+              </div>
+            )}
+            {!hasClientOrg && draft.noDocuments && (
+              <p className="rounded-md bg-muted/60 px-3 py-2 text-xs text-muted-foreground">
+                Нет организации клиента.{" "}
+                <button
+                  type="button"
+                  className="font-semibold text-accent hover:underline"
+                  onClick={() => setOrgDialogOpen(true)}
+                >
+                  Создать организацию
+                </button>{" "}
+                — без неё черновик сохранить нельзя.
+              </p>
+            )}
+            <div className="grid gap-4 sm:grid-cols-2">
+              <Field label="Сумма инвойса" invalid={invalidFields.includes("amount")}>
+                <input
+                  value={draft.amount}
+                  onChange={(e) => setTouchedField("amount", e.target.value)}
+                  inputMode="decimal"
+                  placeholder="сумма"
+                  className="field font-mono"
+                  data-testid="wizard-amount"
+                />
+              </Field>
+              <Field label="Валюта клиента">
+                <select
+                  value={draft.clientCurrency}
+                  onChange={(e) => setField("clientCurrency", e.target.value)}
+                  className="field"
+                  data-testid="wizard-client-currency"
+                >
+                  {currencyOptions.length === 0 && <option value="">Нет валют в справочнике</option>}
+                  {currencyOptions.map((c) => (
+                    <option key={c.code} value={c.code}>
+                      {c.code} · {c.title}
                     </option>
                   ))}
                 </select>
               </Field>
-            )}
-            {draft.kind === "good" && draft.condition === "advance" && (
-              <Field
-                label="Дата отгрузки"
-                invalid={invalidFields.includes("shipmentDate")}
-                {...(draft.contractDate && !draft.shipmentDate
-                  ? { hint: "Подставлена дата контракта с шага «Документы» — измените, если отгрузка в другой день" }
-                  : {})}
-              >
-                <input
-                  type="date"
-                  value={draft.shipmentDate || draft.contractDate}
-                  onChange={(e) => setField("shipmentDate", e.target.value)}
+              <Field label="Валюта контрагента">
+                <select
+                  value={draft.counterpartyCurrency}
+                  onChange={(e) => setTouchedField("counterpartyCurrency", e.target.value)}
                   className="field"
-                />
+                  data-testid="wizard-counterparty-currency"
+                >
+                  {currencyOptions.length === 0 && <option value="">Нет валют в справочнике</option>}
+                  {currencyOptions.map((c) => (
+                    <option key={c.code} value={c.code}>
+                      {c.code} · {c.title}
+                    </option>
+                  ))}
+                </select>
               </Field>
-            )}
-            <Field label="Номер инвойса">
-              <input
-                value={draft.invoiceNumber}
-                onChange={(e) => setTouchedField("invoiceNumber", e.target.value)}
-                placeholder="номер"
-                className="field font-mono"
+              {!draft.noDocuments && draft.kind === "good" && (
+                <Field label="Код ТН ВЭД" invalid={invalidFields.includes("hsCode")}>
+                  <select
+                    value={draft.hsCode}
+                    onChange={(e) => setTouchedField("hsCode", e.target.value)}
+                    className="field font-mono"
+                    aria-label="Код ТН ВЭД из справочника"
+                  >
+                    <option value="">
+                      {hsCodes.length === 0 ? "Справочник пуст — откройте «Коды ТН ВЭД»" : "Выберите из справочника"}
+                    </option>
+                    {hsCodes.map((h) => (
+                      <option key={h.code} value={h.code}>
+                        {h.code} · {h.title}
+                      </option>
+                    ))}
+                  </select>
+                </Field>
+              )}
+              {!draft.noDocuments && draft.kind === "good" && draft.condition === "advance" && (
+                <Field
+                  label="Дата отгрузки"
+                  invalid={invalidFields.includes("shipmentDate")}
+                  {...(draft.contractDate && !draft.shipmentDate
+                    ? {
+                        hint: "Подставлена дата контракта с шага «Документы» — измените, если отгрузка в другой день",
+                      }
+                    : {})}
+                >
+                  <input
+                    type="date"
+                    value={draft.shipmentDate || draft.contractDate}
+                    onChange={(e) => setField("shipmentDate", e.target.value)}
+                    className="field"
+                  />
+                </Field>
+              )}
+              {!draft.noDocuments && (
+                <Field label="Номер инвойса">
+                  <input
+                    value={draft.invoiceNumber}
+                    onChange={(e) => setTouchedField("invoiceNumber", e.target.value)}
+                    placeholder="номер"
+                    className="field font-mono"
+                  />
+                </Field>
+              )}
+            </div>
+            {draft.noDocuments && (
+              <OrganizationPickDialog
+                open={orgDialogOpen}
+                onOpenChange={setOrgDialogOpen}
+                role={session?.role}
+                organizations={organizations}
+                selectedId={draft.organizationId}
+                onSelect={(id) => setField("organizationId", id)}
               />
-            </Field>
+            )}
           </div>
         )}
 
-        {step === WIZARD_STEP.review && (
+        {step === WIZARD_STEP.review && !draft.noDocuments && (
           <div className="grid gap-4" data-testid="wizard-review-step">
             {!draft.noDocuments &&
               ocrBannerState === "pending" && (
@@ -872,7 +919,7 @@ export function NewForm() {
 
         <div className="mt-6 flex flex-col gap-2">
           <div className="flex items-center gap-2">
-            {step > 0 && (
+            {!draft.noDocuments && step > 0 && (
               <button
                 type="button"
                 onClick={() => setStep(step - 1)}
@@ -882,7 +929,17 @@ export function NewForm() {
               </button>
             )}
             <div className="flex flex-1 flex-wrap gap-2">
-              {step < WIZARD_STEPS.length - 1 ? (
+              {draft.noDocuments ? (
+                <button
+                  type="button"
+                  onClick={() => void finalize("draft")}
+                  disabled={submitting}
+                  data-testid="wizard-save-draft"
+                  className="flex-1 rounded-md bg-primary px-4 py-2.5 text-sm font-semibold text-primary-foreground disabled:opacity-50"
+                >
+                  {submitting ? "Сохранение…" : "Сохранить черновик"}
+                </button>
+              ) : step < WIZARD_STEPS.length - 1 ? (
                 <button
                   type="button"
                   onClick={() => void nextStep()}
@@ -915,17 +972,14 @@ export function NewForm() {
               )}
             </div>
           </div>
-          {step === WIZARD_STEP.docs && (
+          {step === WIZARD_STEP.docs && !draft.noDocuments && (
             <button
               type="button"
-              onClick={() => setField("noDocuments", !draft.noDocuments)}
-              className={cn(
-                "w-full rounded-md px-4 py-2.5 text-sm font-semibold",
-                draft.noDocuments ? "bg-[#C45D02]/[0.08] text-[#C45D02]" : "bg-muted text-muted-foreground",
-              )}
+              onClick={() => enableNoDocumentsPath()}
+              className="w-full rounded-md bg-muted px-4 py-2.5 text-sm font-semibold text-muted-foreground"
               data-testid="wizard-no-documents"
             >
-              {draft.noDocuments ? "✓ У меня нет документов" : "У меня нет документов"}
+              У меня нет документов
             </button>
           )}
           {step === WIZARD_STEP.review && !draft.noDocuments && (

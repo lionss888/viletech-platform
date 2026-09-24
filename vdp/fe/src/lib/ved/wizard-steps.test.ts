@@ -5,6 +5,7 @@ import {
   deriveInvoiceCurrency,
   documentsLabel,
   mergeExtractionPrefill,
+  NO_DOCUMENTS_DRAFT_ALERT,
   paymentMethodToCondition,
   validateDocsStep,
   WIZARD_STEP_CAPTIONS,
@@ -91,11 +92,20 @@ describe("wizard-steps", () => {
     expect(documentsLabel(false, true, true)).toBe("Инвойс + контракт");
   });
 
-  it("validateDocsStep requires invoice or no-docs contract fields", () => {
+  it("validateDocsStep requires invoice; no-docs path needs no contract fields", () => {
     expect(validateDocsStep({ noDocuments: false, invoiceFile: null })).not.toBeNull();
+    expect(validateDocsStep({ noDocuments: true, contractNumber: "", contractDate: "" })).toBeNull();
     expect(
       validateDocsStep({ noDocuments: true, contractNumber: "C-1", contractDate: "2026-01-01" }),
     ).toBeNull();
-    expect(validateDocsStep({ noDocuments: true, contractNumber: "", contractDate: "" })).not.toBeNull();
+  });
+
+  it("labels no-documents as draft", () => {
+    expect(documentsLabel(true, false, false)).toBe("Без файлов (черновик)");
+  });
+
+  it("exposes draft-only alert copy", () => {
+    expect(NO_DOCUMENTS_DRAFT_ALERT).toMatch(/черновик/i);
+    expect(NO_DOCUMENTS_DRAFT_ALERT).toMatch(/менеджеру/i);
   });
 });

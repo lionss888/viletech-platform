@@ -92,7 +92,8 @@
 
 ### F5 — no_documents → 409 invoice required на accept
 
-- **Severity:** major → **W3**
+- **Severity:** major → **W3** (остаток: disabled accept без инвойса)
+- **Update 2026-09-24:** early gate закрыт планом wizard no-docs draft-only — без документов клиент сохраняет только черновик; submit запрещён в UI и domain. F5 residual = manager/ECO accept block до attach invoice.
 
 ### F6 — Путаница Инвойс / Контракт на карточке
 
@@ -156,4 +157,15 @@
 | 13:39 | treasurer@ | dashboard «Казначей»; очередь 4 | OK spot | — |
 
 Gate W6: без новых e2e в этой волне → journal-only; path gate не требуется сверх уже идущего ci-main на push.
+
+### Wizard no-docs draft-only 2026-09-24
+
+| Finding | Итог |
+|---|---|
+| FB-A help под инвойсом | OK — порядок invoice → help → contract |
+| FB-B/C draft-only + алерт | OK — один экран сумма/валюты; submit UI+API forbidden |
+| FB-D без contract#/date | OK |
+| FB-E/F hide OCR + layout | OK — extractionPanelMode hide; slim terms |
+| FB-G только сумма+валюты | OK |
+| F5 early | superseded draft-only; residual W3 accept gate |
 

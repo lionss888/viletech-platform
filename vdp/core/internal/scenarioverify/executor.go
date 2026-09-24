@@ -333,7 +333,7 @@ func (e *Executor) createProbeForm(tok tokens, suffix string) (string, error) {
 	created, err := e.post(tok.user, "/api/v1/site/form-payment", map[string]any{
 		"currency":        "USD",
 		"invoice_amount":  "100",
-		"no_documents":    true,
+		"no_documents":    false,
 		"contract_number": "probe-" + suffix,
 		"contract_date":   "2026-08-01",
 	})

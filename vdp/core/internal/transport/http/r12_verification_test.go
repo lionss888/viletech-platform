@@ -133,7 +133,7 @@ func TestR12UserToProviderE2EPath(t *testing.T) {
 	manager := login(t, core, "manager@vdp.local", "manager")
 	provider := login(t, core, "provider@vdp.local", "provider")
 
-	body := []byte(`{"currency":"USD","invoice_amount":"500","no_documents":true,"contract_number":"E2E-1","contract_date":"2026-08-01"}`)
+	body := []byte(`{"currency":"USD","invoice_amount":"500","no_documents":false,"contract_number":"E2E-1","contract_date":"2026-08-01"}`)
 	req := httptest.NewRequest(http.MethodPost, "/api/v1/site/form-payment", bytes.NewReader(body))
 	req.Header.Set("Authorization", "Bearer "+user)
 	req.Header.Set("Content-Type", "application/json")
@@ -186,7 +186,7 @@ func TestR12UserToProviderE2EPath(t *testing.T) {
 	}
 
 	// Refund branch smoke on a second form that holds funds
-	body2 := []byte(`{"currency":"EUR","invoice_amount":"100","no_documents":true}`)
+	body2 := []byte(`{"currency":"EUR","invoice_amount":"100","no_documents":false}`)
 	req2 := httptest.NewRequest(http.MethodPost, "/api/v1/site/form-payment", bytes.NewReader(body2))
 	req2.Header.Set("Authorization", "Bearer "+user)
 	req2.Header.Set("Content-Type", "application/json")

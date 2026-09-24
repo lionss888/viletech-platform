@@ -475,11 +475,12 @@ func (s *CatalogService) AttachFileToForm(ctx context.Context, principal authz.P
 	_ = s.store.SaveDocument(ctx, formpayment.Document{
 		ID: s.newID(), FormPaymentID: formID, Type: kind, StorageKey: f.StorageKey, ContentHash: f.ContentHash,
 	})
+	form.NoDocuments = false
 	form.UpdatedAt = time.Now().UTC()
 	if err := s.store.SaveForm(ctx, form); err != nil {
 		return formpayment.Form{}, err
 	}
-	if firstAttach && !form.NoDocuments && s.box != nil {
+	if firstAttach && s.box != nil {
 		payload := BuildOCRPayload(ctx, s.store, s.Blobs(), form, map[string]any{
 			"status": string(form.Status),
 			"kind":   "first_attach",

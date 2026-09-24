@@ -13,7 +13,7 @@ func TestIMP3CommissionRewardModes(t *testing.T) {
 	user := login(t, core, "user@vdp.local", "user")
 	manager := login(t, core, "manager@vdp.local", "manager")
 
-	body := []byte(`{"currency":"USD","invoice_amount":"1000","no_documents":true,"contract_number":"C-IMP3","contract_date":"2026-03-01"}`)
+	body := []byte(`{"currency":"USD","invoice_amount":"1000","no_documents":false,"contract_number":"C-IMP3","contract_date":"2026-03-01"}`)
 	req := httptest.NewRequest(http.MethodPost, "/api/v1/site/form-payment", bytes.NewReader(body))
 	req.Header.Set("Authorization", "Bearer "+user)
 	req.Header.Set("Content-Type", "application/json")

@@ -10,7 +10,7 @@ import (
 
 func seedShipmentReadyForm(t *testing.T, core http.Handler, user, manager, eco string) string {
 	t.Helper()
-	body := []byte(`{"currency":"USD","invoice_amount":"1000","no_documents":true,"contract_number":"C-SHIP","contract_date":"2026-01-01"}`)
+	body := []byte(`{"currency":"USD","invoice_amount":"1000","no_documents":false,"contract_number":"C-SHIP","contract_date":"2026-01-01"}`)
 	req := httptest.NewRequest(http.MethodPost, "/api/v1/site/form-payment", bytes.NewReader(body))
 	req.Header.Set("Authorization", "Bearer "+user)
 	req.Header.Set("Content-Type", "application/json")

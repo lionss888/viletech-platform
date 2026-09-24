@@ -144,7 +144,6 @@ export async function createDraftForm(
   const created = (await authPost(tokens.user, "/api/v1/site/form-payment", {
     currency: opts.currency ?? "USD",
     invoice_amount: opts.invoice_amount ?? "750",
-    no_documents: true,
     contract_number: opts.contract_number ?? `PW-${suffix}`,
     contract_date: opts.contract_date ?? "2026-08-01",
   })) as { id: string };
@@ -376,7 +375,6 @@ export async function createPersistedDraftForm(
   const body: Record<string, unknown> = {
     currency: opts.currency,
     invoice_amount: opts.amount,
-    no_documents: true,
     contract_number: `PW-${suffix}`,
     contract_date: "2026-08-01",
   };

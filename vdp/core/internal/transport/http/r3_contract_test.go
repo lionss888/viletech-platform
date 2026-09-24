@@ -42,7 +42,7 @@ func TestR3ContractTypesTemplateManualAttachOnBehalf(t *testing.T) {
 		}
 	}
 
-	body := []byte(`{"currency":"USD","invoice_amount":"500","no_documents":true,"contract_number":"C-R3","contract_date":"2026-01-01"}`)
+	body := []byte(`{"currency":"USD","invoice_amount":"500","no_documents":false,"contract_number":"C-R3","contract_date":"2026-01-01"}`)
 	req := httptest.NewRequest(http.MethodPost, "/api/v1/site/form-payment", bytes.NewReader(body))
 	req.Header.Set("Authorization", "Bearer "+user)
 	req.Header.Set("Content-Type", "application/json")
@@ -76,7 +76,7 @@ func TestR3ContractTypesTemplateManualAttachOnBehalf(t *testing.T) {
 		t.Fatalf("contract=%v", contractObj["status"])
 	}
 
-	body2 := []byte(`{"currency":"USD","invoice_amount":"10","no_documents":true}`)
+	body2 := []byte(`{"currency":"USD","invoice_amount":"10","no_documents":false}`)
 	req2 := httptest.NewRequest(http.MethodPost, "/api/v1/site/form-payment", bytes.NewReader(body2))
 	req2.Header.Set("Authorization", "Bearer "+user)
 	req2.Header.Set("Content-Type", "application/json")

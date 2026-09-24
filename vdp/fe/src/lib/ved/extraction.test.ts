@@ -192,10 +192,10 @@ describe("extractionPanelMode", () => {
     ).toBe("idle");
   });
 
-  it("shows pending while creating even when no_documents", () => {
+  it("hides OCR panel when no_documents", () => {
     expect(
       extractionPanelMode({ role: "user", hasDraft: false, status: "creating", noDocuments: true }),
-    ).toBe("pending");
+    ).toBe("hide");
     expect(extractionPanelMode({ role: "user", hasDraft: false, status: "creating" })).toBe(
       "pending",
     );
@@ -210,7 +210,7 @@ describe("extractionPanelMode", () => {
         status: "draft",
         noDocuments: true,
       }),
-    ).toBe("idle");
+    ).toBe("hide");
     expect(
       extractionPanelMode({
         role: "user",

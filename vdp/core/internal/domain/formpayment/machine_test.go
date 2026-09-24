@@ -14,29 +14,31 @@ func TestApplyTable(t *testing.T) {
 		action      Action
 		role        domain.Role
 		orgApproved bool
+		noDocuments bool
 		want        Status
 		wantErr     bool
 	}{
-		{"creating to draft", StatusCreating, ActionRecognizeComplete, domain.RoleUser, false, StatusDraft, false},
-		{"draft to org wait", StatusDraft, ActionSubmit, domain.RoleUser, false, StatusOrganizationWaitingVerification, false},
-		{"draft to form wait if org approved", StatusDraft, ActionSubmit, domain.RoleUser, true, StatusFormWaitingVerification, false},
-		{"user cannot ico start", StatusOrganizationWaitingVerification, ActionICOStart, domain.RoleUser, false, "", true},
-		{"ico start", StatusOrganizationWaitingVerification, ActionICOStart, domain.RoleInternalComplianceOfficer, false, StatusOrganizationVerification, false},
-		{"ico approve", StatusOrganizationVerification, ActionICOApprove, domain.RoleInternalComplianceOfficer, false, StatusFormWaitingVerification, false},
-		{"eco start", StatusFormWaitingVerification, ActionECOStart, domain.RoleComplianceOfficer, true, StatusFormVerification, false},
-		{"eco alias role", StatusFormWaitingVerification, ActionECOStart, domain.RoleExternalComplianceOfficer, true, StatusFormVerification, false},
-		{"eco accept", StatusFormVerification, ActionECOAccept, domain.RoleComplianceOfficer, true, StatusFormAccepted, false},
-		{"provider cannot accept form", StatusFormVerification, ActionECOAccept, domain.RoleProvider, true, "", true},
-		{"manager send order", StatusFormAccepted, ActionManagerSendOrder, domain.RoleManager, true, StatusSigningOrder, false},
-		{"user upload contract", StatusContractWaiting, ActionUserUploadContract, domain.RoleUser, true, StatusContractVerification, false},
-		{"illegal skip completed", StatusDraft, ActionProviderSent, domain.RoleProvider, false, "", true},
+		{"creating to draft", StatusCreating, ActionRecognizeComplete, domain.RoleUser, false, false, StatusDraft, false},
+		{"draft to org wait", StatusDraft, ActionSubmit, domain.RoleUser, false, false, StatusOrganizationWaitingVerification, false},
+		{"draft to form wait if org approved", StatusDraft, ActionSubmit, domain.RoleUser, true, false, StatusFormWaitingVerification, false},
+		{"no documents cannot submit", StatusDraft, ActionSubmit, domain.RoleUser, true, true, "", true},
+		{"user cannot ico start", StatusOrganizationWaitingVerification, ActionICOStart, domain.RoleUser, false, false, "", true},
+		{"ico start", StatusOrganizationWaitingVerification, ActionICOStart, domain.RoleInternalComplianceOfficer, false, false, StatusOrganizationVerification, false},
+		{"ico approve", StatusOrganizationVerification, ActionICOApprove, domain.RoleInternalComplianceOfficer, false, false, StatusFormWaitingVerification, false},
+		{"eco start", StatusFormWaitingVerification, ActionECOStart, domain.RoleComplianceOfficer, true, false, StatusFormVerification, false},
+		{"eco alias role", StatusFormWaitingVerification, ActionECOStart, domain.RoleExternalComplianceOfficer, true, false, StatusFormVerification, false},
+		{"eco accept", StatusFormVerification, ActionECOAccept, domain.RoleComplianceOfficer, true, false, StatusFormAccepted, false},
+		{"provider cannot accept form", StatusFormVerification, ActionECOAccept, domain.RoleProvider, true, false, "", true},
+		{"manager send order", StatusFormAccepted, ActionManagerSendOrder, domain.RoleManager, true, false, StatusSigningOrder, false},
+		{"user upload contract", StatusContractWaiting, ActionUserUploadContract, domain.RoleUser, true, false, StatusContractVerification, false},
+		{"illegal skip completed", StatusDraft, ActionProviderSent, domain.RoleProvider, false, false, "", true},
 	}
 	for _, tc := range cases {
 		tc := tc
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
 			got, err := Apply(Command{
-				Form:        Form{Status: tc.from, Direction: DirectionImport},
+				Form:        Form{Status: tc.from, Direction: DirectionImport, NoDocuments: tc.noDocuments},
 				Action:      tc.action,
 				Role:        tc.role,
 				OrgApproved: tc.orgApproved,
