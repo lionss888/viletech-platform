@@ -247,3 +247,10 @@ export function patchAdminAccount(id: string, input: PatchAdminInput): Promise<C
     body: JSON.stringify(input),
   });
 }
+
+/** DELETE /api/v1/admin/account/{…} — soft-delete. */
+export function deleteAdminAccount(id: string): Promise<{ status: string }> {
+  return apiFetch<{ status: string }>(`/api/v1/admin/account/${id}`, {
+    method: "DELETE",
+  });
+}

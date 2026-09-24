@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 
 import { ManagerRouteHintPanel } from "@/components/ved/ManagerRouteHintPanel";
+import { Modal, ModalButton } from "@/components/ved/Modal";
 import { VedAppShell } from "@/components/ved/VedAppShell";
 import {
   findCapabilityLabel,
@@ -21,6 +22,11 @@ import { cn } from "@/lib/utils";
 
 const INFLUENCE_OPTIONS: ProcessRoleInfluence[] = ["actor", "observer", "none"];
 
+type TreasurerDisableDraft = {
+  mode: "skip" | "handoff";
+  handoffRole: string;
+};
+
 export function ProcessRolesPage() {
   const mode = usePlatformMode();
   const auth = useAuth();
@@ -35,6 +41,7 @@ export function ProcessRolesPage() {
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [capsOpen, setCapsOpen] = useState<string | null>(null);
+  const [treasurerDisable, setTreasurerDisable] = useState<TreasurerDisableDraft | null>(null);
 
   const reload = useCallback(async () => {
     if (mode !== "app") return;
@@ -111,8 +118,33 @@ export function ProcessRolesPage() {
 
   async function toggleEnabled(row: ProcessRoleRow) {
     const nextEnabled = !row.enabled;
+    if (nextEnabled) {
+      await patchRole(row.role, { enabled: true, disable_mode: "", handoff_role: "" });
+      return;
+    }
+    if (row.role === "treasurer") {
+      setTreasurerDisable({ mode: "skip", handoffRole: "manager" });
+      return;
+    }
     // Leaving the process clears mandatory so the toggle is never deadlocked.
-    await patchRole(row.role, nextEnabled ? { enabled: true } : { enabled: false, mandatory: false });
+    await patchRole(row.role, { enabled: false, mandatory: false });
+  }
+
+  async function confirmTreasurerDisable() {
+    if (!treasurerDisable) return;
+    const handoff =
+      treasurerDisable.mode === "skip" ? "manager" : treasurerDisable.handoffRole.trim();
+    if (treasurerDisable.mode === "handoff" && !handoff) {
+      setError("Выберите роль для перекладывания шагов казначея");
+      return;
+    }
+    await patchRole("treasurer", {
+      enabled: false,
+      mandatory: false,
+      disable_mode: treasurerDisable.mode,
+      handoff_role: handoff,
+    });
+    setTreasurerDisable(null);
   }
 
   async function toggleMandatory(row: ProcessRoleRow) {
@@ -300,6 +332,75 @@ export function ProcessRolesPage() {
           </table>
         </div>
       </div>
+
+      <Modal
+        open={treasurerDisable !== null}
+        onOpenChange={(open) => {
+          if (!open) setTreasurerDisable(null);
+        }}
+        title="Выключить казначея"
+        description="Шаги казначея остаются в статусной машине. Укажите, кто их исполняет, или пропуск — менеджер."
+        footer={
+          <>
+            <ModalButton variant="quiet" className="w-full sm:w-auto" onClick={() => setTreasurerDisable(null)}>
+              Отмена
+            </ModalButton>
+            <ModalButton className="w-full sm:w-auto" disabled={busy} onClick={() => void confirmTreasurerDisable()}>
+              Выключить
+            </ModalButton>
+          </>
+        }
+      >
+        {treasurerDisable ? (
+          <div className="space-y-3 text-sm" data-testid="treasurer-disable-dialog">
+            <label className="flex items-start gap-2">
+              <input
+                type="radio"
+                name="treasurer-disable-mode"
+                checked={treasurerDisable.mode === "skip"}
+                onChange={() => setTreasurerDisable({ mode: "skip", handoffRole: "manager" })}
+              />
+              <span>
+                <span className="font-medium">Пропустить роль</span>
+                <span className="mt-0.5 block text-xs text-muted-foreground">
+                  Менеджер подтверждает поступление и связанные шаги казначея.
+                </span>
+              </span>
+            </label>
+            <label className="flex items-start gap-2">
+              <input
+                type="radio"
+                name="treasurer-disable-mode"
+                checked={treasurerDisable.mode === "handoff"}
+                onChange={() =>
+                  setTreasurerDisable({
+                    mode: "handoff",
+                    handoffRole: rows.find((r) => r.role === "manager" && r.enabled)?.role ?? "manager",
+                  })
+                }
+              />
+              <span className="font-medium">Переложить на роль</span>
+            </label>
+            {treasurerDisable.mode === "handoff" ? (
+              <select
+                className="field w-full text-sm"
+                value={treasurerDisable.handoffRole}
+                onChange={(e) =>
+                  setTreasurerDisable((prev) => (prev ? { ...prev, handoffRole: e.target.value } : prev))
+                }
+              >
+                {rows
+                  .filter((r) => r.role !== "treasurer" && r.enabled && r.influence === "actor")
+                  .map((r) => (
+                    <option key={r.role} value={r.role}>
+                      {r.role}
+                    </option>
+                  ))}
+              </select>
+            ) : null}
+          </div>
+        ) : null}
+      </Modal>
     </VedAppShell>
   );
 }

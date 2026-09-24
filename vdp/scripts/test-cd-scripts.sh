@@ -302,13 +302,17 @@ fi
 if grep -nE '[^_](/api/v1/eco/form-payment/)' scripts/compose-e2e.sh | grep -vE 'try_(put|post)|#'; then
   fail "compose-e2e must not hard-call /eco/form-payment without try_ (use e2e-continuity.sh)"
 fi
-# Treasurer IMP path: snapshot branch, never force-enable local process-roles.
-grep -q 'process-roles treasurer slot' scripts/compose-e2e.sh \
-  || fail "compose-e2e must check process-roles treasurer slot before IMP1/IMP2"
-grep -q 'soft_skip IMP1/IMP2 reason=treasurer_slot_off' scripts/compose-e2e.sh \
-  || fail "compose-e2e must soft_skip IMP1/IMP2 when treasurer slot off"
-if grep -nE 'admin/process-roles/treasurer' scripts/compose-e2e.sh | grep -vE '^[^:]*:[0-9]+:[[:space:]]*#'; then
-  fail "compose-e2e must not PUT admin/process-roles/treasurer (no force-enable)"
+# Treasurer IMP path: explicit dual-config A(on/TREAS) + B(skip/MGR); never soft_skip as success.
+grep -q 'process-roles treasurer slot (IMP1/IMP2 dual-config)' scripts/compose-e2e.sh \
+  || fail "compose-e2e must declare treasurer dual-config IMP slot"
+grep -q 'dual-config A treasurer on via TREAS_T' scripts/compose-e2e.sh \
+  || fail "compose-e2e must run dual-config A (treasurer on)"
+grep -q 'dual-config B treasurer skip via manager' scripts/compose-e2e.sh \
+  || fail "compose-e2e must run dual-config B (skip via manager)"
+grep -q 'run_imp_pair' scripts/compose-e2e.sh \
+  || fail "compose-e2e must use run_imp_pair for disposition-aware IMP"
+if grep -nE 'soft_skip IMP1/IMP2 reason=treasurer_slot_off' scripts/compose-e2e.sh; then
+  fail "compose-e2e must not soft_skip IMP1/IMP2 when treasurer slot off"
 fi
 
 echo "== VDP CI: integration on every PR; Images waits CI on main =="

@@ -118,3 +118,24 @@ export function canContinuityAdvance(
   if (!actor?.enabled || actor.influence !== "actor") return false;
   return (actor.capabilities ?? []).includes("manager.ops");
 }
+
+/** Recipient of CapTreasurerOps when treasurer is disabled with skip/handoff disposition. */
+export function treasurerOpsRecipient(rows: ProcessRoleRow[] | undefined): string | undefined {
+  const treas = findProcessRole(rows, "treasurer");
+  if (!treas || treas.enabled) return undefined;
+  if (treas.disable_mode === "skip") return "manager";
+  if (treas.disable_mode === "handoff" && treas.handoff_role) return treas.handoff_role;
+  return undefined;
+}
+
+/** Viewer may run treasurer.* UI actions via explicit disposition (not silent continuity). */
+export function canTreasurerDispositionAdvance(rows: ProcessRoleRow[] | undefined, actorRole: string): boolean {
+  const recipient = treasurerOpsRecipient(rows);
+  if (!recipient || recipient !== actorRole) return false;
+  const actor = findProcessRole(rows, actorRole);
+  if (!actor?.enabled || actor.influence !== "actor") return false;
+  if (findProcessRole(rows, "treasurer")?.disable_mode === "skip") {
+    return (actor.capabilities ?? []).includes("manager.ops");
+  }
+  return true;
+}

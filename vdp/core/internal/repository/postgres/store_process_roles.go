@@ -24,7 +24,8 @@ func (s *Store) GetProcessPolicySnapshot(ctx context.Context) (formpayment.Proce
 		return formpayment.DefaultProcessPolicySnapshot(), nil
 	}
 	rows, err := s.db.QueryContext(ctx, `
-		SELECT role, enabled, COALESCE(mandatory, FALSE), priority, influence, capabilities
+		SELECT role, enabled, COALESCE(mandatory, FALSE), priority, influence, capabilities,
+			COALESCE(disable_mode, ''), COALESCE(handoff_role, '')
 		FROM role_process_configs ORDER BY priority ASC, role ASC`)
 	if err != nil {
 		return formpayment.DefaultProcessPolicySnapshot(), nil
@@ -35,11 +36,11 @@ func (s *Store) GetProcessPolicySnapshot(ctx context.Context) (formpayment.Proce
 		snap.UpdatedBy = updatedBy.String
 	}
 	for rows.Next() {
-		var role, influence string
+		var role, influence, disableMode, handoffRole string
 		var enabled, mandatory bool
 		var priority int
 		var capsRaw []byte
-		if err := rows.Scan(&role, &enabled, &mandatory, &priority, &influence, &capsRaw); err != nil {
+		if err := rows.Scan(&role, &enabled, &mandatory, &priority, &influence, &capsRaw, &disableMode, &handoffRole); err != nil {
 			return formpayment.DefaultProcessPolicySnapshot(), nil
 		}
 		var caps []formpayment.Capability
@@ -51,9 +52,16 @@ func (s *Store) GetProcessPolicySnapshot(ctx context.Context) (formpayment.Proce
 		if !formpayment.IsProcessEligibleRole(parsed) {
 			continue
 		}
+		var handoff domain.Role
+		if handoffRole != "" {
+			if hr, hok := domain.ParseRole(handoffRole); hok {
+				handoff = hr
+			}
+		}
 		snap.Roles = append(snap.Roles, formpayment.RoleProcessConfig{
 			Role: parsed, Enabled: enabled, Mandatory: mandatory, Priority: priority,
 			Influence: formpayment.Influence(influence), Capabilities: caps,
+			DisableMode: formpayment.DisableMode(disableMode), HandoffRole: handoff,
 		})
 	}
 	if len(snap.Roles) == 0 {
@@ -82,12 +90,14 @@ func (s *Store) SaveProcessPolicySnapshot(ctx context.Context, snap formpayment.
 		}
 		caps, _ := json.Marshal(cfg.Capabilities)
 		_, err = tx.ExecContext(ctx, `
-			INSERT INTO role_process_configs (role, enabled, mandatory, priority, influence, capabilities, updated_at)
-			VALUES ($1,$2,$3,$4,$5,$6,NOW())
+			INSERT INTO role_process_configs (role, enabled, mandatory, priority, influence, capabilities, disable_mode, handoff_role, updated_at)
+			VALUES ($1,$2,$3,$4,$5,$6,$7,$8,NOW())
 			ON CONFLICT (role) DO UPDATE SET
 				enabled=EXCLUDED.enabled, mandatory=EXCLUDED.mandatory, priority=EXCLUDED.priority,
-				influence=EXCLUDED.influence, capabilities=EXCLUDED.capabilities, updated_at=NOW()`,
-			string(cfg.Role), cfg.Enabled, cfg.Mandatory, cfg.Priority, string(cfg.Influence), caps)
+				influence=EXCLUDED.influence, capabilities=EXCLUDED.capabilities,
+				disable_mode=EXCLUDED.disable_mode, handoff_role=EXCLUDED.handoff_role, updated_at=NOW()`,
+			string(cfg.Role), cfg.Enabled, cfg.Mandatory, cfg.Priority, string(cfg.Influence), caps,
+			string(cfg.DisableMode), string(cfg.HandoffRole))
 		if err != nil {
 			return err
 		}

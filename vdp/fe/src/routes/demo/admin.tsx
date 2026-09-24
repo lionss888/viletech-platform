@@ -528,8 +528,12 @@ export function AdminPage() {
                       </button>
                       <button
                         type="button"
-                        disabled={isApp}
-                        title={isApp ? "Удаление через API не поддерживается — используйте блокировку" : undefined}
+                        disabled={isApp && (u.id === auth.account?.id || u.id === session?.id)}
+                        title={
+                          isApp && (u.id === auth.account?.id || u.id === session?.id)
+                            ? "Нельзя удалить свою учётную запись"
+                            : undefined
+                        }
                         onClick={() => setRemoving(u)}
                         className="rounded-md bg-destructive-soft px-2 py-1 text-[11px] font-semibold text-destructive disabled:cursor-not-allowed disabled:opacity-40"
                       >
@@ -612,7 +616,11 @@ export function AdminPage() {
             <ModalButton
               variant="danger"
               onClick={() => {
-                if (removing) deleteUser(removing.id);
+                if (removing) {
+                  void Promise.resolve(deleteUser(removing.id)).catch((err: unknown) => {
+                    setNotice(err instanceof Error ? err.message : "Не удалось удалить");
+                  });
+                }
                 setRemoving(null);
               }}
             >

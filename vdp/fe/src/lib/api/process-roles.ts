@@ -16,6 +16,8 @@ export type ProcessRoleRow = {
   capabilities: string[];
   removable: boolean;
   mandatory: boolean;
+  disable_mode?: "" | "handoff" | "skip";
+  handoff_role?: string;
 };
 
 export type ProcessRolesResponse = {
@@ -49,7 +51,7 @@ export async function getProcessRoles(): Promise<ProcessRolesResponse> {
   return normalizeProcessRoles(data);
 }
 
-/** Root PUT one role participation (enabled/mandatory/caps). */
+/** Root PUT one role participation (enabled/mandatory/caps/disposition). */
 export function updateProcessRole(
   role: string,
   body: {
@@ -57,6 +59,8 @@ export function updateProcessRole(
     mandatory?: boolean;
     influence?: ProcessRoleInfluence;
     capabilities?: string[];
+    disable_mode?: "" | "handoff" | "skip";
+    handoff_role?: string;
   },
 ): Promise<{ version: number }> {
   return apiFetch(`/api/v1/admin/process-roles/${encodeURIComponent(role)}`, {

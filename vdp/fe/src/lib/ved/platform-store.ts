@@ -11,6 +11,7 @@ import {
   createHsCode,
   createOrganization,
   createAdminAccount,
+  deleteAdminAccount,
   deleteCounterparty,
   deleteOrganization,
   patchAdminAccount,
@@ -668,6 +669,17 @@ function useApiPlatformStore(): VedStore {
     [queryClient, users],
   );
 
+  const deleteUser = useCallback(
+    async (userId: string) => {
+      if (userId === auth.account?.id) {
+        throw new Error("Нельзя удалить свою учётную запись");
+      }
+      await deleteAdminAccount(userId);
+      await queryClient.invalidateQueries({ queryKey: ["admin-accounts"] });
+    },
+    [auth.account?.id, queryClient],
+  );
+
   const refs = useMemo(
     () => ({
       organizations: organizations as unknown as RefRecord[],
@@ -710,7 +722,7 @@ function useApiPlatformStore(): VedStore {
       toggleBlocked: toggleBlocked as VedStore["toggleBlocked"],
       createUser: createUser as VedStore["createUser"],
       updateUser: updateUser as VedStore["updateUser"],
-      deleteUser: (() => undefined) as VedStore["deleteUser"],
+      deleteUser: deleteUser as VedStore["deleteUser"],
       importUsers: (() => undefined) as VedStore["importUsers"],
       resetDemo: (() => undefined) as VedStore["resetDemo"],
     }),
@@ -720,6 +732,7 @@ function useApiPlatformStore(): VedStore {
       applyBulk,
       auth.ready,
       deleteDocument,
+      deleteUser,
       complianceTools,
       countries,
       createFormLocal,

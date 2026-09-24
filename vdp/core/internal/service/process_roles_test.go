@@ -43,6 +43,32 @@ func TestProcessRolesDisableClearsMandatory(t *testing.T) {
 	}
 }
 
+func TestProcessRolesTreasurerDisableRequiresDisposition(t *testing.T) {
+	store := repository.NewMemoryStore()
+	_ = seed.Dev(store)
+	svc := service.NewProcessRoleService(store)
+	root := authz.Principal{AccountID: seed.RootID, Role: domain.RoleRoot}
+	off := false
+	_, err := svc.UpdateRole(context.Background(), root, domain.RoleTreasurer, service.RoleConfigUpdate{Enabled: &off})
+	if err == nil {
+		t.Fatal("expected validation error without disposition")
+	}
+	mode := formpayment.DisableModeSkip
+	snap, err := svc.UpdateRole(context.Background(), root, domain.RoleTreasurer, service.RoleConfigUpdate{
+		Enabled: &off, DisableMode: &mode,
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	treas, ok := snap.ConfigFor(domain.RoleTreasurer)
+	if !ok || treas.Enabled || treas.DisableMode != formpayment.DisableModeSkip {
+		t.Fatalf("treasurer skip: %+v", treas)
+	}
+	if treas.HandoffRole != domain.RoleManager {
+		t.Fatalf("skip should default handoff_role=manager got %s", treas.HandoffRole)
+	}
+}
+
 func TestProcessRolesPriorities(t *testing.T) {
 	store := repository.NewMemoryStore()
 	svc := service.NewProcessRoleService(store)

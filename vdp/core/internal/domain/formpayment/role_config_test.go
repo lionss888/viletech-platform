@@ -64,6 +64,7 @@ func TestCannotDisableMandatoryRole(t *testing.T) {
 	err := formpayment.ValidateRoleConfigUpdate(
 		domain.RoleManager, false, true, formpayment.InfluenceActor,
 		[]formpayment.Capability{formpayment.CapFormView, formpayment.CapManagerOps},
+		"", "",
 	)
 	if err == nil {
 		t.Fatal("expected error disabling mandatory manager")
@@ -71,6 +72,7 @@ func TestCannotDisableMandatoryRole(t *testing.T) {
 	err = formpayment.ValidateRoleConfigUpdate(
 		domain.RoleInternalComplianceOfficer, false, false, formpayment.InfluenceActor,
 		[]formpayment.Capability{formpayment.CapFormView, formpayment.CapOrgCompliance},
+		"", "",
 	)
 	if err != nil {
 		t.Fatal(err)
@@ -78,6 +80,7 @@ func TestCannotDisableMandatoryRole(t *testing.T) {
 	err = formpayment.ValidateRoleConfigUpdate(
 		domain.RoleSales, false, false, formpayment.InfluenceObserver,
 		[]formpayment.Capability{formpayment.CapFormView, formpayment.CapSalesAttribution},
+		"", "",
 	)
 	if err != nil {
 		t.Fatal(err)
@@ -134,5 +137,68 @@ func TestDefaultSnapshotPilotSpine(t *testing.T) {
 	eco, ok := snap.ConfigFor(domain.RoleComplianceOfficer)
 	if !ok || eco.Enabled || eco.Mandatory {
 		t.Fatalf("ECO pilot: enabled=%v mandatory=%v", eco.Enabled, eco.Mandatory)
+	}
+}
+
+func TestTreasurerDisableRequiresDisposition(t *testing.T) {
+	t.Parallel()
+	caps := []formpayment.Capability{formpayment.CapFormView, formpayment.CapTreasurerOps}
+	err := formpayment.ValidateRoleConfigUpdate(
+		domain.RoleTreasurer, false, false, formpayment.InfluenceActor, caps, "", "",
+	)
+	if err == nil {
+		t.Fatal("expected error disabling treasurer without disposition")
+	}
+	err = formpayment.ValidateRoleConfigUpdate(
+		domain.RoleTreasurer, false, false, formpayment.InfluenceActor, caps, formpayment.DisableModeSkip, "",
+	)
+	if err != nil {
+		t.Fatal(err)
+	}
+	err = formpayment.ValidateRoleConfigUpdate(
+		domain.RoleTreasurer, false, false, formpayment.InfluenceActor, caps, formpayment.DisableModeHandoff, domain.RoleManager,
+	)
+	if err != nil {
+		t.Fatal(err)
+	}
+}
+
+func TestTreasurerSkipAllowsManagerConfirm(t *testing.T) {
+	t.Parallel()
+	snap := formpayment.DefaultProcessPolicySnapshot()
+	for i := range snap.Roles {
+		if snap.Roles[i].Role == domain.RoleTreasurer {
+			snap.Roles[i].Enabled = false
+			snap.Roles[i].Mandatory = false
+			snap.Roles[i].DisableMode = formpayment.DisableModeSkip
+			snap.Roles[i].HandoffRole = domain.RoleManager
+		}
+	}
+	if formpayment.RoleMayPerformWithConfig(domain.RoleTreasurer, formpayment.ActionTreasurerConfirm, &snap) {
+		t.Fatal("disabled treasurer must not confirm")
+	}
+	if !formpayment.RoleMayPerformWithConfig(domain.RoleManager, formpayment.ActionTreasurerConfirm, &snap) {
+		t.Fatal("manager must confirm when treasurer skip disposition")
+	}
+	if formpayment.RoleMayPerformWithConfig(domain.RoleProvider, formpayment.ActionTreasurerConfirm, &snap) {
+		t.Fatal("provider must not confirm under treasurer skip")
+	}
+}
+
+func TestTreasurerHandoffAllowsRecipient(t *testing.T) {
+	t.Parallel()
+	snap := formpayment.DefaultProcessPolicySnapshot()
+	for i := range snap.Roles {
+		if snap.Roles[i].Role == domain.RoleTreasurer {
+			snap.Roles[i].Enabled = false
+			snap.Roles[i].DisableMode = formpayment.DisableModeHandoff
+			snap.Roles[i].HandoffRole = domain.RoleProvider
+		}
+	}
+	if !formpayment.RoleMayPerformWithConfig(domain.RoleProvider, formpayment.ActionTreasurerConfirm, &snap) {
+		t.Fatal("handoff recipient must confirm")
+	}
+	if formpayment.RoleMayPerformWithConfig(domain.RoleManager, formpayment.ActionTreasurerConfirm, &snap) {
+		t.Fatal("manager must not confirm when handoff is provider")
 	}
 }

@@ -59,6 +59,52 @@ func TestAccountCreateKindAndBusinessOverride(t *testing.T) {
 	}
 }
 
+func TestAccountSoftDeleteGuards(t *testing.T) {
+	t.Parallel()
+	store := repository.NewMemoryStore()
+	seed.MustDev(t, store)
+	svc := service.NewAccountService(store)
+	root := authz.Principal{AccountID: seed.RootID, Role: domain.RoleRoot, AccountKind: domain.AccountKindAdmin}
+	ctx := context.Background()
+
+	if err := svc.SoftDelete(ctx, root, seed.RootID); err == nil {
+		t.Fatal("cannot delete yourself")
+	}
+	if err := svc.SoftDelete(ctx, root, seed.UserID); err != nil {
+		t.Fatal(err)
+	}
+	list, err := svc.List(ctx, root)
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, row := range list {
+		if row["id"] == seed.UserID {
+			t.Fatal("soft-deleted user must not appear in admin list")
+		}
+	}
+	acc, err := store.AccountByID(ctx, seed.UserID)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if acc.Active || !acc.Blocked {
+		t.Fatalf("soft-delete flags: active=%v blocked=%v", acc.Active, acc.Blocked)
+	}
+	second, err := svc.CreateAdmin(ctx, root, service.AccountCreateInput{
+		Email: "root2@vdp.local", Password: "pass", Role: domain.RoleRoot, AccountKind: domain.AccountKindAdmin, FullName: "Root Two",
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	secondID, _ := second["id"].(string)
+	root2 := authz.Principal{AccountID: secondID, Role: domain.RoleRoot, AccountKind: domain.AccountKindAdmin}
+	if err := svc.SoftDelete(ctx, root2, seed.RootID); err != nil {
+		t.Fatal(err)
+	}
+	if err := svc.SoftDelete(ctx, root, secondID); err == nil {
+		t.Fatal("expected conflict deleting the last active root")
+	}
+}
+
 func TestProcessConfigExcludesRoot(t *testing.T) {
 	t.Parallel()
 	store := repository.NewMemoryStore()

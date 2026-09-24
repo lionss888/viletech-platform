@@ -17,9 +17,8 @@
 #   provider_return_to_manager — provider returns payment to manager
 #   manager_sets_deal_rate — manager POST /forms/{id}/rate
 #   health_core — health curl at start
-# IMP1/IMP2 (import advance/postpay treasurer): run only when process-roles has
-# treasurer enabled+actor; otherwise soft_skip (no force-enable; no treasurer.ops continuity).
-# Root on-demand runner: POST /api/v1/admin/scenario-runs (system.admin).
+# IMP1/IMP2 dual-config: A treasurer on (TREAS_T) + B skip (MGR_T); restore enabled after.
+# Never soft_skip IMP as success. Root on-demand: POST /api/v1/admin/scenario-runs.
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
@@ -361,89 +360,100 @@ if [[ -z "$RATE_VAL" ]]; then
 fi
 echo "manager_sets_deal_rate ok form=$ID10 rate=$RATE_VAL"
 
-# Continuity covers disabled ICO/ECO only — not treasurer.ops. Local process-roles
-# edits persist in postgres: branch IMP1/IMP2 on snapshot instead of force-enable.
-echo "== process-roles treasurer slot (IMP1/IMP2) =="
-TREAS_IN_PROCESS=$(curl -sf -H "Authorization: Bearer $ROOT_T" "$BASE/api/v1/process-roles" \
-  | python3 -c '
-import json,sys
-snap=json.load(sys.stdin)
-for r in snap.get("roles") or []:
-  if r.get("role")=="treasurer":
-    ok=bool(r.get("enabled")) and r.get("influence")=="actor"
-    print("yes" if ok else "no")
-    raise SystemExit(0)
-print("no")
-')
-ID11="soft_skip"
-ID12="soft_skip"
-if [[ "$TREAS_IN_PROCESS" == "yes" ]]; then
-  echo "== IMP1_import_advance_treasurer (P5) =="
-  FORM11=$(auth_post "$USER_T" /api/v1/site/form-payment \
-    '{"direction":"import","payment_method":"advance","currency":"USD","invoice_amount":"1000","no_documents":false,"contract_number":"IMP1-ADV"}')
-  ID11=$(echo "$FORM11" | python3 -c 'import sys,json; print(json.load(sys.stdin)["id"])')
-  auth_post "$USER_T" "/api/v1/forms/$ID11/actions/recognize_complete" '{}' >/dev/null
-  auth_put "$USER_T" "/api/v1/site/form-payment/$ID11/form/accept"
-  advance_compliance "$ID11"
-  auth_put "$MGR_T" "/api/v1/manager/form-payment/$ID11/order/signing"
-  auth_put "$USER_T" "/api/v1/site/form-payment/$ID11/order"
-  auth_put "$MGR_T" "/api/v1/manager/form-payment/$ID11/order/start"
-  auth_put "$MGR_T" "/api/v1/manager/form-payment/$ID11/order/accept"
-  auth_put "$MGR_T" "/api/v1/manager/form-payment/$ID11/payment/received"
-  auth_post "$MGR_T" "/api/v1/forms/$ID11/provider" \
-    '{"provider_id":"55555555-5555-5555-5555-555555555555","client_agreed":true}' >/dev/null
-  # Import advance: treasurer confirms RUB coverage → payment_processing (not mgr payment_start)
-  curl -sf -X PATCH "$BASE/api/v1/treasurer/form-payment/$ID11/confirm-payment" \
-    -H "Authorization: Bearer $TREAS_T" -H 'Content-Type: application/json' -d '{}' >/dev/null
-  ST11=$(form_status "$MGR_T" "/api/v1/manager/form-payment/$ID11")
-  if [[ "$ST11" != "payment_processing" ]]; then
-    echo "FAIL IMP1 treas confirm status=$ST11 want payment_processing form=$ID11" >&2
-    exit 1
-  fi
-  echo "IMP1_import_advance_treasurer ok form=$ID11"
+# Treasurer IMP1/IMP2 dual-config: A enabled→TREAS_T; B skip→MGR_T; restore seed on after.
+# Snapshot without disposition is healed only via explicit PUT skip/on — never soft_skip.
+echo "== process-roles treasurer slot (IMP1/IMP2 dual-config) =="
+run_imp_pair() {
+  local confirm_token="$1"
+  local actor_label="$2"
+  local tag="$3"
 
-  echo "== IMP2_import_postpay_RATE_ON_PP (P5) =="
-  FORM12=$(auth_post "$USER_T" /api/v1/site/form-payment \
-    '{"direction":"import","payment_method":"post_payment","currency":"USD","invoice_amount":"800","no_documents":false,"contract_number":"IMP2-PP"}')
-  ID12=$(echo "$FORM12" | python3 -c 'import sys,json; print(json.load(sys.stdin)["id"])')
-  auth_post "$USER_T" "/api/v1/forms/$ID12/actions/recognize_complete" '{}' >/dev/null
-  auth_put "$USER_T" "/api/v1/site/form-payment/$ID12/form/accept"
-  advance_compliance "$ID12"
-  auth_put "$MGR_T" "/api/v1/manager/form-payment/$ID12/order/signing"
-  auth_put "$USER_T" "/api/v1/site/form-payment/$ID12/order"
-  auth_put "$MGR_T" "/api/v1/manager/form-payment/$ID12/order/start"
-  auth_put "$MGR_T" "/api/v1/manager/form-payment/$ID12/order/accept"
-  auth_post "$MGR_T" "/api/v1/forms/$ID12/provider" \
+  echo "== IMP1_import_advance_treasurer ($tag) =="
+  local form11
+  form11=$(auth_post "$USER_T" /api/v1/site/form-payment \
+    "{\"direction\":\"import\",\"payment_method\":\"advance\",\"currency\":\"USD\",\"invoice_amount\":\"1000\",\"no_documents\":false,\"contract_number\":\"IMP1-${tag}\"}")
+  local id11
+  id11=$(echo "$form11" | python3 -c 'import sys,json; print(json.load(sys.stdin)["id"])')
+  auth_post "$USER_T" "/api/v1/forms/$id11/actions/recognize_complete" '{}' >/dev/null
+  auth_put "$USER_T" "/api/v1/site/form-payment/$id11/form/accept"
+  advance_compliance "$id11"
+  auth_put "$MGR_T" "/api/v1/manager/form-payment/$id11/order/signing"
+  auth_put "$USER_T" "/api/v1/site/form-payment/$id11/order"
+  auth_put "$MGR_T" "/api/v1/manager/form-payment/$id11/order/start"
+  auth_put "$MGR_T" "/api/v1/manager/form-payment/$id11/order/accept"
+  auth_put "$MGR_T" "/api/v1/manager/form-payment/$id11/payment/received"
+  auth_post "$MGR_T" "/api/v1/forms/$id11/provider" \
     '{"provider_id":"55555555-5555-5555-5555-555555555555","client_agreed":true}' >/dev/null
-  # Postpay: mgr starts, provider executes first (no RUB yet)
-  auth_put "$MGR_T" "/api/v1/manager/form-payment/$ID12/payment/start"
-  auth_put "$PROV_T" "/api/v1/provider/form-payment/$ID12/payment/start"
-  auth_put "$PROV_T" "/api/v1/provider/form-payment/$ID12/payment/sent"
-  ST12A=$(form_status "$MGR_T" "/api/v1/manager/form-payment/$ID12")
-  if [[ "$ST12A" != "payment_sent" ]]; then
-    echo "FAIL IMP2 provider sent status=$ST12A want payment_sent form=$ID12" >&2
+  curl -sf -X PATCH "$BASE/api/v1/treasurer/form-payment/$id11/confirm-payment" \
+    -H "Authorization: Bearer $confirm_token" -H 'Content-Type: application/json' -d '{}' >/dev/null
+  local st11
+  st11=$(form_status "$MGR_T" "/api/v1/manager/form-payment/$id11")
+  if [[ "$st11" != "payment_processing" ]]; then
+    echo "FAIL IMP1 ($tag) status=$st11 want payment_processing form=$id11 actor=$actor_label" >&2
     exit 1
   fi
-  # Manager: rate + commission → advance order
-  auth_post "$MGR_T" "/api/v1/forms/$ID12/rate" '{"value":"95","currency":"USD","source":"manual"}' >/dev/null
-  auth_post "$MGR_T" "/api/v1/forms/$ID12/commission" '{"reward_mode":"percent","fee_percent":"1.5","fee_currency":"USD"}' >/dev/null
-  auth_put "$MGR_T" "/api/v1/manager/form-payment/$ID12/order-advance/signing"
-  auth_put "$USER_T" "/api/v1/site/form-payment/$ID12/order-advance"
-  auth_put "$MGR_T" "/api/v1/manager/form-payment/$ID12/order-advance/start"
-  auth_put "$MGR_T" "/api/v1/manager/form-payment/$ID12/order-advance/accept"
-  auth_put "$MGR_T" "/api/v1/manager/form-payment/$ID12/payment/received"
-  # Treasurer confirm for RATE_ON_PP → report_waiting (not payment_processing)
-  curl -sf -X PATCH "$BASE/api/v1/treasurer/form-payment/$ID12/confirm-payment" \
-    -H "Authorization: Bearer $TREAS_T" -H 'Content-Type: application/json' -d '{}' >/dev/null
-  ST12B=$(form_status "$MGR_T" "/api/v1/manager/form-payment/$ID12")
-  if [[ "$ST12B" != "report_waiting" ]]; then
-    echo "FAIL IMP2 treas confirm postpay status=$ST12B want report_waiting form=$ID12" >&2
+  echo "IMP1_import_advance_treasurer ok form=$id11 actor=$actor_label tag=$tag"
+  ID11="$id11"
+
+  echo "== IMP2_import_postpay_RATE_ON_PP ($tag) =="
+  local form12
+  form12=$(auth_post "$USER_T" /api/v1/site/form-payment \
+    "{\"direction\":\"import\",\"payment_method\":\"post_payment\",\"currency\":\"USD\",\"invoice_amount\":\"800\",\"no_documents\":false,\"contract_number\":\"IMP2-${tag}\"}")
+  local id12
+  id12=$(echo "$form12" | python3 -c 'import sys,json; print(json.load(sys.stdin)["id"])')
+  auth_post "$USER_T" "/api/v1/forms/$id12/actions/recognize_complete" '{}' >/dev/null
+  auth_put "$USER_T" "/api/v1/site/form-payment/$id12/form/accept"
+  advance_compliance "$id12"
+  auth_put "$MGR_T" "/api/v1/manager/form-payment/$id12/order/signing"
+  auth_put "$USER_T" "/api/v1/site/form-payment/$id12/order"
+  auth_put "$MGR_T" "/api/v1/manager/form-payment/$id12/order/start"
+  auth_put "$MGR_T" "/api/v1/manager/form-payment/$id12/order/accept"
+  auth_post "$MGR_T" "/api/v1/forms/$id12/provider" \
+    '{"provider_id":"55555555-5555-5555-5555-555555555555","client_agreed":true}' >/dev/null
+  auth_put "$MGR_T" "/api/v1/manager/form-payment/$id12/payment/start"
+  auth_put "$PROV_T" "/api/v1/provider/form-payment/$id12/payment/start"
+  auth_put "$PROV_T" "/api/v1/provider/form-payment/$id12/payment/sent"
+  local st12a
+  st12a=$(form_status "$MGR_T" "/api/v1/manager/form-payment/$id12")
+  if [[ "$st12a" != "payment_sent" ]]; then
+    echo "FAIL IMP2 ($tag) provider sent status=$st12a want payment_sent form=$id12" >&2
     exit 1
   fi
-  echo "IMP2_import_postpay_RATE_ON_PP ok form=$ID12"
-else
-  echo "soft_skip IMP1/IMP2 reason=treasurer_slot_off (enabled+actor required; no treasurer.ops continuity yet)"
-fi
+  auth_post "$MGR_T" "/api/v1/forms/$id12/rate" '{"value":"95","currency":"USD","source":"manual"}' >/dev/null
+  auth_post "$MGR_T" "/api/v1/forms/$id12/commission" '{"reward_mode":"percent","fee_percent":"1.5","fee_currency":"USD"}' >/dev/null
+  auth_put "$MGR_T" "/api/v1/manager/form-payment/$id12/order-advance/signing"
+  auth_put "$USER_T" "/api/v1/site/form-payment/$id12/order-advance"
+  auth_put "$MGR_T" "/api/v1/manager/form-payment/$id12/order-advance/start"
+  auth_put "$MGR_T" "/api/v1/manager/form-payment/$id12/order-advance/accept"
+  auth_put "$MGR_T" "/api/v1/manager/form-payment/$id12/payment/received"
+  curl -sf -X PATCH "$BASE/api/v1/treasurer/form-payment/$id12/confirm-payment" \
+    -H "Authorization: Bearer $confirm_token" -H 'Content-Type: application/json' -d '{}' >/dev/null
+  local st12b
+  st12b=$(form_status "$MGR_T" "/api/v1/manager/form-payment/$id12")
+  if [[ "$st12b" != "report_waiting" ]]; then
+    echo "FAIL IMP2 ($tag) treas confirm status=$st12b want report_waiting form=$id12 actor=$actor_label" >&2
+    exit 1
+  fi
+  echo "IMP2_import_postpay_RATE_ON_PP ok form=$id12 actor=$actor_label tag=$tag"
+  ID12="$id12"
+}
+
+echo "== dual-config A treasurer on via TREAS_T =="
+curl -sf -X PUT "$BASE/api/v1/admin/process-roles/treasurer" \
+  -H "Authorization: Bearer $ROOT_T" -H 'Content-Type: application/json' \
+  -d '{"enabled":true,"disable_mode":"","handoff_role":""}' >/dev/null
+run_imp_pair "$TREAS_T" "treasurer" "on"
+
+echo "== dual-config B treasurer skip via manager =="
+curl -sf -X PUT "$BASE/api/v1/admin/process-roles/treasurer" \
+  -H "Authorization: Bearer $ROOT_T" -H 'Content-Type: application/json' \
+  -d '{"enabled":false,"disable_mode":"skip"}' >/dev/null
+run_imp_pair "$MGR_T" "manager" "skip"
+
+curl -sf -X PUT "$BASE/api/v1/admin/process-roles/treasurer" \
+  -H "Authorization: Bearer $ROOT_T" -H 'Content-Type: application/json' \
+  -d '{"enabled":true,"disable_mode":"","handoff_role":""}' >/dev/null
+echo "dual-config restored treasurer enabled (seed default for pilot)"
 
 curl -sf -X POST "$BASE/api/v1/internal/outbox/flush" -H "X-VDP-S2S: $S2S" >/dev/null
 echo "RH10 compose E2E green (main=$ID RD7=$ID3 RD8=$ID4 RH2=$ID6 P5=$ID8 ret=$ID9 rate=$ID10 IMP1=$ID11 IMP2=$ID12)"

@@ -458,3 +458,66 @@ export async function listCounterpartiesApi(token: string): Promise<Array<{ id: 
   const json = (await res.json()) as { items?: Array<{ id: string; name: string }> } | Array<{ id: string; name: string }>;
   return Array.isArray(json) ? json : (json.items ?? []);
 }
+
+type ProcessRoleSnapRow = {
+  role?: string;
+  enabled?: boolean;
+  influence?: string;
+  disable_mode?: string;
+  handoff_role?: string;
+};
+
+/**
+ * Who should run treasurer.* UI steps from process-roles snapshot.
+ * on → treasurer; skip → manager; handoff → handoff_role (manager|treasurer only for SeedRole).
+ */
+export async function resolveTreasurerActorRole(rootToken: string): Promise<"treasurer" | "manager"> {
+  const res = await fetch(`${CORE_URL}/api/v1/process-roles`, {
+    headers: { Authorization: `Bearer ${rootToken}` },
+  });
+  if (!res.ok) {
+    throw new Error(`process-roles ${res.status}`);
+  }
+  const snap = (await res.json()) as { roles?: ProcessRoleSnapRow[] };
+  const treas = (snap.roles ?? []).find((r) => r.role === "treasurer");
+  if (!treas) {
+    throw new Error("process-roles missing treasurer row");
+  }
+  if (treas.enabled && treas.influence === "actor") {
+    return "treasurer";
+  }
+  if (treas.disable_mode === "skip") {
+    return "manager";
+  }
+  if (treas.disable_mode === "handoff" && treas.handoff_role === "manager") {
+    return "manager";
+  }
+  if (treas.disable_mode === "handoff" && treas.handoff_role === "treasurer") {
+    throw new Error("invalid handoff treasurer→treasurer");
+  }
+  throw new Error(
+    `treasurer slot has no runnable disposition (enabled=${String(treas.enabled)} mode=${treas.disable_mode ?? ""})`,
+  );
+}
+
+/** Set treasurer enabled or skip disposition (root). Restores influence actor when enabling. */
+export async function setTreasurerDisposition(
+  rootToken: string,
+  mode: "on" | "skip",
+): Promise<void> {
+  const body =
+    mode === "on"
+      ? { enabled: true, disable_mode: "", handoff_role: "" }
+      : { enabled: false, disable_mode: "skip" };
+  const res = await fetch(`${CORE_URL}/api/v1/admin/process-roles/treasurer`, {
+    method: "PUT",
+    headers: {
+      Authorization: `Bearer ${rootToken}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(body),
+  });
+  if (!res.ok) {
+    throw new Error(`PUT process-roles/treasurer ${res.status}: ${await res.text()}`);
+  }
+}
