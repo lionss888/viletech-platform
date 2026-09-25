@@ -153,6 +153,7 @@ func TestScrubFormForProviderClearsPII(t *testing.T) {
 	form := formpayment.Form{
 		ID:          "form-scrub-test",
 		AccountID:   "user-with-passport",
+		AccountName: "John Doe",
 		InvoiceJSON: `{"passport":"YY123456","full_name":"John Doe","phone":"+1234567890"}`,
 		DocsJSON: formpayment.EncodeDocRefs([]formpayment.DocFileRef{
 			{FileID: "invoice", Kind: "invoice", Label: "Invoice"},
@@ -179,6 +180,10 @@ func TestScrubFormForProviderClearsPII(t *testing.T) {
 	// Only deal documents should remain (invoice + payment)
 	if len(refs) != 2 {
 		t.Errorf("Expected 2 deal documents after scrubbing, got %d", len(refs))
+	}
+
+	if scrubbed.AccountName != "" {
+		t.Error("AccountName (client) must be cleared for provider")
 	}
 }
 

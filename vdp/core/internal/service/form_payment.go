@@ -300,6 +300,7 @@ func (s *FormPaymentService) TransitionWithComment(ctx context.Context, principa
 	}
 	s.maybeEnqueueBankWebhook(ctx, next, payload)
 	s.emitManagerOps(ctx, principal, next, action, history.ID)
+	s.enrichPartyNames(ctx, &next)
 	return next, nil
 }
 
@@ -452,13 +453,16 @@ func (s *FormPaymentService) Get(ctx context.Context, principal authz.Principal,
 		return formpayment.Form{}, err
 	}
 	form.UnpackDocsJSON()
+	s.enrichPartyNames(ctx, &form)
 	return form, nil
 }
 
 func (s *FormPaymentService) List(ctx context.Context, principal authz.Principal) []formpayment.Form {
 	out := make([]formpayment.Form, 0)
+	nameCache := make(map[string]string)
 	for _, form := range s.store.ListForms(ctx) {
 		if formpayment.CanSeeForm(principal.Role, principal.AccountID, form) {
+			s.enrichPartyNamesCached(ctx, &form, nameCache)
 			if principal.Role == domain.RoleProvider || principal.Role == domain.RoleSeniorProvider {
 				form = formpayment.ScrubFormForProvider(form)
 			}
@@ -466,6 +470,45 @@ func (s *FormPaymentService) List(ctx context.Context, principal authz.Principal
 		}
 	}
 	return out
+}
+
+// enrichPartyNames attaches display names for owner / manager / provider from accounts.
+// Names are for the cabinet projection only; they are not AuthZ and not a full account dump.
+func (s *FormPaymentService) enrichPartyNames(ctx context.Context, form *formpayment.Form) {
+	s.enrichPartyNamesCached(ctx, form, nil)
+}
+
+func (s *FormPaymentService) enrichPartyNamesCached(ctx context.Context, form *formpayment.Form, cache map[string]string) {
+	if form == nil {
+		return
+	}
+	form.AccountName = s.accountDisplayNameCached(ctx, form.AccountID, cache)
+	form.ManagerName = s.accountDisplayNameCached(ctx, form.ManagerID, cache)
+	form.ProviderName = s.accountDisplayNameCached(ctx, form.ProviderID, cache)
+}
+
+func (s *FormPaymentService) accountDisplayName(ctx context.Context, accountID string) string {
+	return s.accountDisplayNameCached(ctx, accountID, nil)
+}
+
+func (s *FormPaymentService) accountDisplayNameCached(ctx context.Context, accountID string, cache map[string]string) string {
+	if accountID == "" {
+		return ""
+	}
+	if cache != nil {
+		if name, ok := cache[accountID]; ok {
+			return name
+		}
+	}
+	acct, err := s.store.AccountByID(ctx, accountID)
+	name := ""
+	if err == nil {
+		name = strings.TrimSpace(acct.FullName)
+	}
+	if cache != nil {
+		cache[accountID] = name
+	}
+	return name
 }
 
 func (s *FormPaymentService) SetRate(ctx context.Context, principal authz.Principal, formID string, rate formpayment.Rate) (formpayment.Form, error) {

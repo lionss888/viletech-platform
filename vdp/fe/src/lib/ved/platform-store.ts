@@ -153,10 +153,15 @@ function useApiPlatformStore(): VedStore {
       const mapped = mapCoreFormToPaymentForm(form);
       return {
         ...mapped,
-        ownerName: resolveClientName(form.account_id, accounts, {
-          role: auth.role ?? undefined,
-          name: auth.displayName,
-        }),
+        ownerName: resolveClientName(
+          form.account_id,
+          accounts,
+          {
+            role: auth.role ?? undefined,
+            name: auth.displayName,
+          },
+          form.account_name ?? mapped.ownerName,
+        ),
       };
     });
   }, [formsQuery.data, usersQuery.data, auth.role, auth.displayName]);

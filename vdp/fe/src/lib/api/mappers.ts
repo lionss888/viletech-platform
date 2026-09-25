@@ -85,33 +85,60 @@ type NamedAccount = { id: string; name: string; role?: string };
 
 /**
  * Client column: the user-role owner of the form.
+ * Prefer the form projection name (account_name) so every role sees the same label without admin accounts.
  * Never the signed-in root, manager, or provider. User viewer may keep their own name so the list filter still matches.
  */
 export function resolveClientName(
   accountId: string | undefined,
   users: NamedAccount[],
   viewer?: { role?: string; name?: string },
+  projectionName?: string,
 ): string {
+  const projected = projectionName?.trim();
+  if (projected && !isAccountUuid(projected)) return projected;
   const owner = users.find((user) => user.id === accountId && user.role === "user");
   if (owner?.name && !isAccountUuid(owner.name)) return owner.name;
   if (viewer?.role === "user" && viewer.name && !isAccountUuid(viewer.name)) return viewer.name;
   return "Клиент не найден";
 }
 
-/** Assigned person. Missing id is «не назначен». A set id without a name is not a UUID and not «не назначен». */
+/** Assigned person. Prefer projection name; missing id is «не назначен». */
 export function assignedManagerLabel(accountId: string | undefined, users: NamedAccount[], knownName?: string): string {
   if (!accountId) return "не назначен";
-  const name = users.find((user) => user.id === accountId)?.name ?? knownName;
+  const projected = knownName?.trim();
+  if (projected && !isAccountUuid(projected)) return projected;
+  const name = users.find((user) => user.id === accountId)?.name;
   if (name && !isAccountUuid(name)) return name;
   return "имя не найдено";
 }
 
-/** Provider line. Never a UUID. */
+/** Provider line. Prefer projection name. Never a UUID. */
 export function assignedProviderLabel(accountId: string | undefined, users: NamedAccount[], knownName?: string): string {
   if (!accountId) return "не назначен";
-  const name = users.find((user) => user.id === accountId)?.name ?? knownName;
+  const projected = knownName?.trim();
+  if (projected && !isAccountUuid(projected)) return projected;
+  const name = users.find((user) => user.id === accountId)?.name;
   if (name && !isAccountUuid(name)) return name;
   return "не назначен";
+}
+
+/** Participants widget labels from form projection (same for all roles that can see the widget). */
+export function participantsLabels(
+  form: {
+    ownerAccountId?: string;
+    ownerName?: string;
+    managerId?: string;
+    managerName?: string;
+    providerId?: string;
+    providerName?: string;
+  },
+  users: NamedAccount[] = [],
+): { client: string; manager: string; provider: string } {
+  return {
+    client: resolveClientName(form.ownerAccountId, users, undefined, form.ownerName),
+    manager: assignedManagerLabel(form.managerId, users, form.managerName),
+    provider: assignedProviderLabel(form.providerId, users, form.providerName),
+  };
 }
 
 /** Red return banner only while the form is actually on correction and the reason is human. */
@@ -337,6 +364,11 @@ export function mapCoreFormToPaymentForm(
 ): PaymentForm {
   const id = normalizeFormId(form.id);
   const shortId = id.length > 8 ? id.slice(0, 8) : id;
+  const projectedOwner = form.account_name?.trim();
+  const resolvedOwner =
+    projectedOwner && !isAccountUuid(projectedOwner) ? projectedOwner : ownerName;
+  const projectedManager = form.manager_name?.trim();
+  const projectedProvider = form.provider_name?.trim();
   return {
     id,
     number: `ВЭД-${shortId}`,
@@ -355,11 +387,13 @@ export function mapCoreFormToPaymentForm(
     pogKind: form.pog_kind || undefined,
     contractNumber: form.contract_number || undefined,
     ownerAccountId: form.account_id || undefined,
-    ownerName,
+    ownerName: resolvedOwner,
     managerId: form.manager_id || undefined,
-    managerName: undefined,
+    managerName:
+      projectedManager && !isAccountUuid(projectedManager) ? projectedManager : undefined,
     providerId: form.provider_id || undefined,
-    providerName: undefined,
+    providerName:
+      projectedProvider && !isAccountUuid(projectedProvider) ? projectedProvider : undefined,
     channel: form.channel === "bank" ? "bank" : form.channel === "ui" ? "ui" : undefined,
     correlationId: form.correlation_id || undefined,
     agentId: form.agent_id || undefined,

@@ -34,11 +34,15 @@ func ApplyImportPostpayDefaults(form *Form) {
 type Form struct {
 	ID                     string     `json:"id"`
 	AccountID              string     `json:"account_id"`
+	// Display names for cabinet participants (filled on read, not persisted as columns).
+	AccountName            string     `json:"account_name,omitempty"`
 	OrganizationID         string     `json:"organization_id"`
 	OnBehalfOrganizationID string     `json:"on_behalf_organization_id,omitempty"`
 	ProviderID             string     `json:"provider_id,omitempty"`
+	ProviderName           string     `json:"provider_name,omitempty"`
 	AgentID                string     `json:"agent_id,omitempty"`
 	ManagerID              string     `json:"manager_id,omitempty"`
+	ManagerName            string     `json:"manager_name,omitempty"`
 	CounterpartyID         string     `json:"counterparty_id,omitempty"`
 	ContractID             string     `json:"contract_id,omitempty"`
 	ActiveOrderID          string     `json:"active_order_id,omitempty"`

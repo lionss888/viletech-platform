@@ -8,6 +8,7 @@ import {
   parseDocsJson,
   assignedManagerLabel,
   assignedProviderLabel,
+  participantsLabels,
   rejectFromHistory,
   resolveClientName,
   showReturnBanner,
@@ -251,6 +252,30 @@ describe("mapCoreFormToPaymentForm manager", () => {
     expect(mapped.managerId).toBe("mgr-uuid");
     expect(mapped.managerName).toBeUndefined();
   });
+
+  it("maps party display names from form projection", () => {
+    const form = {
+      id: "ca3dcfcd-dd3d-e79d-1910-9c885e5f397b",
+      account_id: "11111111-1111-1111-1111-111111111111",
+      account_name: "Ivan Petrov",
+      organization_id: "o1",
+      manager_id: "22222222-2222-2222-2222-222222222222",
+      manager_name: "Manager Seed",
+      provider_id: "55555555-5555-5555-5555-555555555555",
+      provider_name: "Provider Seed",
+      status: "form_verification",
+      direction: "import",
+      kind: "good",
+      invoice_amount: "10",
+      currency: "USD",
+      created_at: "2026-01-01T00:00:00Z",
+      updated_at: "2026-01-01T00:00:00Z",
+    } as CoreForm;
+    const mapped = mapCoreFormToPaymentForm(form);
+    expect(mapped.ownerName).toBe("Ivan Petrov");
+    expect(mapped.managerName).toBe("Manager Seed");
+    expect(mapped.providerName).toBe("Provider Seed");
+  });
 });
 
 describe("nextStepHint", () => {
@@ -354,6 +379,32 @@ describe("card facts from extraction", () => {
     );
     expect(assignedManagerLabel("22222222-2222-2222-2222-222222222222", [{ id: "22222222-2222-2222-2222-222222222222", name: "Manager Seed" }])).toBe(
       "Manager Seed",
+    );
+  });
+
+  it("uses form projection names without admin accounts list", () => {
+    const projected = {
+      ownerAccountId: "11111111-1111-1111-1111-111111111111",
+      ownerName: "Ivan Petrov",
+      managerId: "22222222-2222-2222-2222-222222222222",
+      managerName: "Manager Seed",
+      providerId: "55555555-5555-5555-5555-555555555555",
+      providerName: "Provider Seed",
+    };
+    const withRootUsers = participantsLabels(projected, [
+      { id: "11111111-1111-1111-1111-111111111111", name: "Ivan Petrov", role: "user" },
+      { id: "22222222-2222-2222-2222-222222222222", name: "Manager Seed", role: "manager" },
+      { id: "55555555-5555-5555-5555-555555555555", name: "Provider Seed", role: "provider" },
+    ]);
+    const withoutUsers = participantsLabels(projected, []);
+    expect(withoutUsers).toEqual(withRootUsers);
+    expect(withoutUsers).toEqual({
+      client: "Ivan Petrov",
+      manager: "Manager Seed",
+      provider: "Provider Seed",
+    });
+    expect(resolveClientName(projected.ownerAccountId, [], { role: "ico" }, projected.ownerName)).toBe(
+      "Ivan Petrov",
     );
   });
 });

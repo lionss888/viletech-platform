@@ -39,6 +39,7 @@ func (s *FormPaymentService) AssignDeadline(ctx context.Context, principal authz
 	if s.bus != nil {
 		s.bus.Publish(form.ID, "deadline_changed", payload)
 	}
+	s.enrichPartyNames(ctx, &form)
 	return form, nil
 }
 
@@ -73,6 +74,7 @@ func (s *FormPaymentService) AssignProvider(ctx context.Context, principal authz
 			}
 		}
 	}
+	s.enrichPartyNames(ctx, &form)
 	return form, nil
 }
 

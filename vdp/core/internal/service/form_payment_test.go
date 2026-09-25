@@ -107,6 +107,60 @@ func TestCreateToICOPath(t *testing.T) {
 	}
 }
 
+func TestGetEnrichesPartyNames(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+	store := repository.NewStore()
+	seed.MustDev(t, store)
+	svc := service.NewFormPaymentService(store, outbox.NewMemoryStore(), seqID())
+	user := authz.Principal{AccountID: seed.UserID, Role: domain.RoleUser, OrganizationID: seed.OrgID}
+	manager := authz.Principal{AccountID: seed.ManagerID, Role: domain.RoleManager}
+	form, err := svc.Create(ctx, user, service.CreateInput{InvoiceAmount: "10", Currency: "USD"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	form, err = svc.AssignProvider(ctx, manager, form.ID, seed.ProviderID, true)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if form.AccountName != "Ivan Petrov" {
+		t.Fatalf("assign response account_name=%q", form.AccountName)
+	}
+	if form.ManagerName != "Manager Seed" {
+		t.Fatalf("assign response manager_name=%q", form.ManagerName)
+	}
+	if form.ProviderName != "Provider Seed" {
+		t.Fatalf("assign response provider_name=%q", form.ProviderName)
+	}
+	ico := authz.Principal{AccountID: seed.ICOID, Role: domain.RoleInternalComplianceOfficer}
+	got, err := svc.Get(ctx, ico, form.ID)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got.AccountName != "Ivan Petrov" || got.ManagerName != "Manager Seed" || got.ProviderName != "Provider Seed" {
+		t.Fatalf("ico get names: account=%q manager=%q provider=%q", got.AccountName, got.ManagerName, got.ProviderName)
+	}
+	listed := svc.List(ctx, ico)
+	found := false
+	for _, item := range listed {
+		if item.ID == form.ID {
+			found = true
+			if item.AccountName != "Ivan Petrov" {
+				t.Fatalf("list account_name=%q", item.AccountName)
+			}
+		}
+	}
+	if !found {
+		t.Fatal("form missing from ico list")
+	}
+	provider := authz.Principal{AccountID: seed.ProviderID, Role: domain.RoleProvider}
+	for _, item := range svc.List(ctx, provider) {
+		if item.ID == form.ID && item.AccountName != "" {
+			t.Fatalf("provider list must scrub account_name, got %q", item.AccountName)
+		}
+	}
+}
+
 func seqID() func() string {
 	n := 0
 	return func() string {
