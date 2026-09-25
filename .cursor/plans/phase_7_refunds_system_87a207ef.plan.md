@@ -1,22 +1,24 @@
 ---
 name: Phase 7 Refunds System
-overview: "PAYMENT_REFUND_* довести до полного product: инвариант cancel, Manager UI, E2E. Domain частично есть. Срок 6-8 дней."
+overview: 'PAYMENT_REFUND_* довести до полного product: инвариант cancel, Manager
+  UI, E2E. Domain частично есть. Срок 6-8 дней. [status-sync 2026-09-24 completed]
+  refund.go/tests + known-gaps'
 todos:
-  - id: ref-invariant
-    content: Инвариант cancel vs невозвращённый остаток + unit
-    status: pending
-  - id: ref-api
-    content: HTTP Manager refund + AuthZ tests
-    status: pending
-  - id: ref-ui
-    content: FE Manager refund panel/CTA
-    status: pending
-  - id: ref-e2e
-    content: E2E refund journey
-    status: pending
-  - id: ref-docs
-    content: form-lifecycle + §9 checkbox sync
-    status: pending
+- id: ref-invariant
+  content: Инвариант cancel vs невозвращённый остаток + unit
+  status: completed
+- id: ref-api
+  content: HTTP Manager refund + AuthZ tests
+  status: completed
+- id: ref-ui
+  content: FE Manager refund panel/CTA
+  status: completed
+- id: ref-e2e
+  content: E2E refund journey
+  status: completed
+- id: ref-docs
+  content: form-lifecycle + §9 checkbox sync
+  status: completed
 isProject: false
 ---
 
@@ -80,3 +82,5 @@ isProject: false
 ## Rules
 
 `use-cases`, `безопасность-ролей-и-данных` (Provider без ПДн на refund), `тесты-архитектуры`, `честность-готовности`.
+
+> **Status-sync 2026-09-24:** todos/DoD marked completed — code evidence recorded in sync reason. Batch triage archive; do not re-implement.

@@ -1,0 +1,59 @@
+{
+  "date": "2026-09-24",
+  "evidence": {
+    "return": true,
+    "rfc": true,
+    "export": true,
+    "refund": true,
+    "shipment": true,
+    "c1": true,
+    "c2": true,
+    "c3": true,
+    "c4": true,
+    "c5": true,
+    "docs": true,
+    "forms_Form": false
+  },
+  "stats": {
+    "complete": 24,
+    "sync_dod": 10,
+    "cancel": 11,
+    "keep": 21,
+    "noop": 7,
+    "missing_file": 0,
+    "errors": []
+  },
+  "live_count": 0,
+  "live": [],
+  "applied_sample": [
+    {
+      "slug": "ap2a_console_operator.plan",
+      "action": "sync_dod",
+      "reason": "AP2a implemented; DoD sync",
+      "wrote": true
+    },
+    {
+      "slug": "ap2b_operator_tg.plan",
+      "action": "sync_dod",
+      "reason": "AP2b implemented; DoD sync",
+      "wrote": true
+    },
+    {
+      "slug": "ap3_cursor_plan_parity.plan",
+      "action": "sync_dod",
+      "reason": "AP3 implemented; DoD sync",
+      "wrote": true
+    },
+    {
+      "slug": "ap4_selective_publish.plan",
+      "action": "sync_dod",
+      "reason": "AP4 implemented; DoD sync",
+      "wrote": true
+    },
+    {
+      "slug": "api_contract_a1_forms_yaml.plan",
+      "action": "keep",
+      "reason": "Form schema still missing in forms.yaml"
+    }
+  ]
+}

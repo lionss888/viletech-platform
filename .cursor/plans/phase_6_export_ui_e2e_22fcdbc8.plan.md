@@ -1,22 +1,24 @@
 ---
 name: Phase 6 Export UI E2E
-overview: Export кабинеты FE + pilot-matrix browser ladder. После Phase 5 domain. Срок 4-6 дней.
+overview: Export кабинеты FE + pilot-matrix browser ladder. После Phase 5 domain.
+  Срок 4-6 дней. [status-sync 2026-09-24 completed] pilot-matrix-export + known-gaps
+  Phase6
 todos:
-  - id: exp-ui-cta
-    content: FE wizard/actions export + treasurer CTA
-    status: pending
-  - id: exp-ui-unit
-    content: FE unit export projection
-    status: pending
-  - id: exp-e2e
-    content: "@pilot-matrix export ladder spec"
-    status: pending
-  - id: exp-ci
-    content: compose-e2e / path-filter export surface
-    status: pending
-  - id: exp-ui-docs
-    content: Docs e2e matrix + gaps export browser
-    status: pending
+- id: exp-ui-cta
+  content: FE wizard/actions export + treasurer CTA
+  status: completed
+- id: exp-ui-unit
+  content: FE unit export projection
+  status: completed
+- id: exp-e2e
+  content: '@pilot-matrix export ladder spec'
+  status: completed
+- id: exp-ci
+  content: compose-e2e / path-filter export surface
+  status: completed
+- id: exp-ui-docs
+  content: Docs e2e matrix + gaps export browser
+  status: completed
 isProject: false
 ---
 
@@ -62,3 +64,5 @@ isProject: false
 ## Rules
 
 `playwright-e2e`, `ui-web-практики`, `fe-interaction-contracts` (если upload), `vdp-ci-local-gate` → `ci-pr-pilot` при закрытии фазы.
+
+> **Status-sync 2026-09-24:** todos/DoD marked completed — code evidence recorded in sync reason. Batch triage archive; do not re-implement.

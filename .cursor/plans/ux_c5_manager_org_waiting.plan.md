@@ -1,16 +1,18 @@
 ---
 name: UX C5 Manager org waiting UX
-overview: "Не выдавать ICO-действия менеджеру; явный Следующий шаг + согласованный empty state и счётчики."
+overview: Не выдавать ICO-действия менеджеру; явный Следующий шаг + согласованный
+  empty state и счётчики. [status-sync 2026-09-24 completed] nextStepHint/waitingActorLabel
+  in mappers.ts + tests
 todos:
-  - id: c5-hint
-    content: nextStepHint by role + NextStep block on detail
-    status: pending
-  - id: c5-empty
-    content: ActionPanel empty state names waiting role
-    status: pending
-  - id: c5-test
-    content: Unit tests for next-step / waiting actor
-    status: pending
+- id: c5-hint
+  content: nextStepHint by role + NextStep block on detail
+  status: completed
+- id: c5-empty
+  content: ActionPanel empty state names waiting role
+  status: completed
+- id: c5-test
+  content: Unit tests for next-step / waiting actor
+  status: completed
 isProject: false
 ---
 
@@ -27,6 +29,8 @@ isProject: false
 - Не менять семантику «Требуют моего действия» (пусто для manager — корректно)
 
 ## DoD
-- [ ] Менеджер понимает, кто действует
-- [ ] Фильтр «мои действия» по-прежнему без этой заявки
+- [x] Менеджер понимает, кто действует
+- [x] Фильтр «мои действия» по-прежнему без этой заявки
 ---
+
+> **Status-sync 2026-09-24:** todos/DoD marked completed — code evidence recorded in sync reason. Batch triage archive; do not re-implement.

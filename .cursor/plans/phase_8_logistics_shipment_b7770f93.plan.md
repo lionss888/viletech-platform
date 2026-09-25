@@ -1,25 +1,27 @@
 ---
 name: Phase 8 Logistics Shipment
-overview: "SHIPMENT_* как явная ветка (не happy path report→completed): domain polish, UI, E2E. Частично в SM. Срок 7-9 дней."
+overview: 'SHIPMENT_* как явная ветка (не happy path report→completed): domain polish,
+  UI, E2E. Частично в SM. Срок 7-9 дней. [status-sync 2026-09-24 completed] ShipmentPanel
+  + pilot-matrix-shipment.spec.ts + known-gaps'
 todos:
-  - id: ship-contract
-    content: "Contract docs: shipment ветка vs report completed"
-    status: pending
-  - id: ship-domain
-    content: Domain/unit shipment transitions polish
-    status: pending
-  - id: ship-api
-    content: HTTP + compose shipment branch
-    status: pending
-  - id: ship-ui
-    content: FE CTA/copy shipment Manager/User
-    status: pending
-  - id: ship-e2e
-    content: E2E shipment branch pilot-matrix
-    status: pending
-  - id: ship-docs
-    content: known-gaps/readiness logistics honesty
-    status: pending
+- id: ship-contract
+  content: 'Contract docs: shipment ветка vs report completed'
+  status: completed
+- id: ship-domain
+  content: Domain/unit shipment transitions polish
+  status: completed
+- id: ship-api
+  content: HTTP + compose shipment branch
+  status: completed
+- id: ship-ui
+  content: FE CTA/copy shipment Manager/User
+  status: completed
+- id: ship-e2e
+  content: E2E shipment branch pilot-matrix
+  status: completed
+- id: ship-docs
+  content: known-gaps/readiness logistics honesty
+  status: completed
 isProject: false
 ---
 
@@ -72,3 +74,5 @@ isProject: false
 ## Rules
 
 `ui-web-практики` (guided next step), `use-cases`, `тесты-архитектуры`, `честность-готовности`.
+
+> **Status-sync 2026-09-24:** todos/DoD marked completed — code evidence recorded in sync reason. Batch triage archive; do not re-implement.

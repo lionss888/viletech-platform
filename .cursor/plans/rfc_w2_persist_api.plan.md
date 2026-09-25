@@ -1,22 +1,24 @@
 ---
 name: RFC W2 Persist API
-overview: "Persist mandatory + pilot compliance seed; HTTP PUT/GET; каталог capabilities с title/description для UI."
+overview: Persist mandatory + pilot compliance seed; HTTP PUT/GET; каталог capabilities
+  с title/description для UI. [status-sync 2026-09-24 completed] process_roles HTTP
+  + api client
 todos:
-  - id: w2-migration-017
-    content: "017: column mandatory, backfill, ICO/ECO off, DELETE root, bump version"
-    status: pending
-  - id: w2-store
-    content: "Postgres + memory store read/write mandatory"
-    status: pending
-  - id: w2-service-http
-    content: "UpdateRole accepts mandatory; GET from config; filter admin roles"
-    status: pending
-  - id: w2-cap-catalog
-    content: "GET process-roles: capabilities_catalog id+title+description (RU)"
-    status: pending
-  - id: w2-tests
-    content: "Service/HTTP tests mandatory toggle + root absent + catalog present"
-    status: pending
+- id: w2-migration-017
+  content: '017: column mandatory, backfill, ICO/ECO off, DELETE root, bump version'
+  status: completed
+- id: w2-store
+  content: Postgres + memory store read/write mandatory
+  status: completed
+- id: w2-service-http
+  content: UpdateRole accepts mandatory; GET from config; filter admin roles
+  status: completed
+- id: w2-cap-catalog
+  content: 'GET process-roles: capabilities_catalog id+title+description (RU)'
+  status: completed
+- id: w2-tests
+  content: Service/HTTP tests mandatory toggle + root absent + catalog present
+  status: completed
 isProject: false
 ---
 
@@ -76,7 +78,9 @@ isProject: false
 
 ## DoD W2
 
-- [ ] Migration применяется на clean + existing DB
-- [ ] GET без root; PUT mandatory работает; disable+mandatory=true → 400
-- [ ] Catalog с title/description на каждый business cap
-- [ ] Service/HTTP tests green
+- [x] Migration применяется на clean + existing DB
+- [x] GET без root; PUT mandatory работает; disable+mandatory=true → 400
+- [x] Catalog с title/description на каждый business cap
+- [x] Service/HTTP tests green
+
+> **Status-sync 2026-09-24:** todos/DoD marked completed — code evidence recorded in sync reason. Batch triage archive; do not re-implement.

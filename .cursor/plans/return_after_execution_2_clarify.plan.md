@@ -1,40 +1,43 @@
 ---
 name: Возврат этап 2 Уточнение
-overview: "Промежуточный шаг: менеджер → клиент → менеджер. Сделку не закрывает. После ответа снова точка решения. Domain цикл + HTTP + FE формы + E2E круг. Общий FilePickButton."
+overview: 'Промежуточный шаг: менеджер → клиент → менеджер. Сделку не закрывает. После
+  ответа снова точка решения. Domain цикл + HTTP + FE формы + E2E круг. Общий FilePickButton.
+  [status-sync 2026-09-24 completed] return-episode-stage2-clarify.spec.ts'
 todos:
-  - id: domain-clarify-flow
-    content: Цикл менеджер спросил → клиент ответил → снова менеджер в точке решения
-    status: pending
-  - id: domain-no-terminal
-    content: Guard запрет завершения эпизода уточнением (не терминал)
-    status: pending
-  - id: unit-tests
-    content: Unit на клиент не выбирает ветку, уточнение не закрывает эпизод
-    status: pending
-  - id: http-two-actions
-    content: POST /return/clarify (менеджер) + POST /return/clarify-reply (клиент)
-    status: pending
-  - id: http-authz
-    content: HTTP AuthZ тесты (клиент не может clarify, менеджер не может reply от имени клиента)
-    status: pending
-  - id: fe-manager-form
-    content: Форма вопроса менеджера (текст обязателен, документ опционально)
-    status: pending
-  - id: fe-client-form
-    content: Форма ответа клиента (текст обязателен, документ опционально)
-    status: pending
-  - id: fe-shared-file
-    content: Использовать общий FilePickButton из fe-interaction-contracts
-    status: pending
-  - id: e2e-cycle
-    content: E2E менеджер спросил → клиент ответил → менеджер снова видит факт
-    status: pending
-  - id: e2e-gesture
-    content: E2E жест файла через filechooser, не только setInputFiles
-    status: pending
-  - id: gate
-    content: make check-env-parity затем make ci-pr-pilot зелёный
-    status: pending
+- id: domain-clarify-flow
+  content: Цикл менеджер спросил → клиент ответил → снова менеджер в точке решения
+  status: completed
+- id: domain-no-terminal
+  content: Guard запрет завершения эпизода уточнением (не терминал)
+  status: completed
+- id: unit-tests
+  content: Unit на клиент не выбирает ветку, уточнение не закрывает эпизод
+  status: completed
+- id: http-two-actions
+  content: POST /return/clarify (менеджер) + POST /return/clarify-reply (клиент)
+  status: completed
+- id: http-authz
+  content: HTTP AuthZ тесты (клиент не может clarify, менеджер не может reply от имени
+    клиента)
+  status: completed
+- id: fe-manager-form
+  content: Форма вопроса менеджера (текст обязателен, документ опционально)
+  status: completed
+- id: fe-client-form
+  content: Форма ответа клиента (текст обязателен, документ опционально)
+  status: completed
+- id: fe-shared-file
+  content: Использовать общий FilePickButton из fe-interaction-contracts
+  status: completed
+- id: e2e-cycle
+  content: E2E менеджер спросил → клиент ответил → менеджер снова видит факт
+  status: completed
+- id: e2e-gesture
+  content: E2E жест файла через filechooser, не только setInputFiles
+  status: completed
+- id: gate
+  content: make check-env-parity затем make ci-pr-pilot зелёный
+  status: completed
 isProject: false
 ---
 
@@ -379,3 +382,5 @@ test('manager clarify → client reply → manager decision', async ({ page, log
 - **Этап 4:** Повторить платёж (параллельно невозможен с 3)
 
 Этапы 3 и 4 строго последовательны (общие поля).
+
+> **Status-sync 2026-09-24:** todos/DoD marked completed — code evidence recorded in sync reason. Batch triage archive; do not re-implement.

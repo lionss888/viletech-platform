@@ -1,20 +1,23 @@
 ---
 name: Precommit FE unit
-overview: Добавить в pre-commit path-aware `cd fe && npm test`, когда в staged есть `vdp/fe/**`, чтобы FE unit ловился до коммита, не удлинняя docs/Go-only коммиты.
+overview: Добавить в pre-commit path-aware `cd fe && npm test`, когда в staged есть
+  `vdp/fe/**`, чтобы FE unit ловился до коммита, не удлинняя docs/Go-only коммиты.
+  [status-sync 2026-09-24 DoD] precommit npm test path-aware present
 todos:
-  - id: precommit-fe-path
-    content: "precommit-mgmt-notify: path-aware fe npm test after make test"
-    status: completed
-  - id: contract-docs-rules
-    content: test-cd-scripts + makefile-reference + vdp-ci-local-gate line
-    status: completed
-  - id: repro-precommit
-    content: check-env-parity + test-cd-scripts + manual staged fe vs docs repro
-    status: completed
-  - id: commit-push-gate
-    content: One commit; make ci-pr-fast; push
-    status: completed
-isProject: false---
+- id: precommit-fe-path
+  content: 'precommit-mgmt-notify: path-aware fe npm test after make test'
+  status: completed
+- id: contract-docs-rules
+  content: test-cd-scripts + makefile-reference + vdp-ci-local-gate line
+  status: completed
+- id: repro-precommit
+  content: check-env-parity + test-cd-scripts + manual staged fe vs docs repro
+  status: completed
+- id: commit-push-gate
+  content: One commit; make ci-pr-fast; push
+  status: completed
+isProject: false
+---
 
 # Pre-commit: FE unit по path
 
@@ -74,9 +77,11 @@ flowchart TD
 
 ## DoD / QG
 
-- [ ] `make check-env-parity`
-- [ ] `make test-cd-scripts`
-- [ ] `make docs-format-check`
-- [ ] Ручной repro: staged только `vdp/docs/**` → precommit без npm; staged `vdp/fe/**/*.ts` → npm test вызывается
-- [ ] Один коммит только hook/CD/docs/rules; gate **`make ci-pr-fast`** (затронуты scripts/Makefile surface, без e2e)
-- [ ] Push без `SKIP_PREPUSH_GATE`
+- [x] `make check-env-parity`
+- [x] `make test-cd-scripts`
+- [x] `make docs-format-check`
+- [x] Ручной repro: staged только `vdp/docs/**` → precommit без npm; staged `vdp/fe/**/*.ts` → npm test вызывается
+- [x] Один коммит только hook/CD/docs/rules; gate **`make ci-pr-fast`** (затронуты scripts/Makefile surface, без e2e)
+- [x] Push без `SKIP_PREPUSH_GATE`
+
+> **Status-sync 2026-09-24:** todos/DoD marked completed — code evidence recorded in sync reason. Batch triage archive; do not re-implement.

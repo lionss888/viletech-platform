@@ -1,22 +1,25 @@
 ---
 name: RFC W4 Process Roles UX
-overview: "Экран «Роли процесса»: inline влияние и «в процессе», toggle обязательная, человекопонятные права из catalog; root скрыт."
+overview: 'Экран «Роли процесса»: inline влияние и «в процессе», toggle обязательная,
+  человекопонятные права из catalog; root скрыт. [status-sync 2026-09-24 completed]
+  process-roles.tsx / process-roles-page'
 todos:
-  - id: w4-api-client
-    content: "process-roles.ts: mandatory, catalog types, update body influence/enabled/mandatory/caps"
-    status: pending
-  - id: w4-inline-controls
-    content: "Inline select влияния + toggle «в процессе» + toggle обязательная; disable rules"
-    status: pending
-  - id: w4-human-caps
-    content: "Колонка/редактор прав: title+description; id вторично (tooltip/mono)"
-    status: pending
-  - id: w4-copy-ux
-    content: "Подписи: порядок≠этапы; правка глобальна; root вне процесса"
-    status: pending
-  - id: w4-vitest
-    content: "Vitest: disable blocked when mandatory; labels render; no root row"
-    status: pending
+- id: w4-api-client
+  content: 'process-roles.ts: mandatory, catalog types, update body influence/enabled/mandatory/caps'
+  status: completed
+- id: w4-inline-controls
+  content: Inline select влияния + toggle «в процессе» + toggle обязательная; disable
+    rules
+  status: completed
+- id: w4-human-caps
+  content: 'Колонка/редактор прав: title+description; id вторично (tooltip/mono)'
+  status: completed
+- id: w4-copy-ux
+  content: 'Подписи: порядок≠этапы; правка глобальна; root вне процесса'
+  status: completed
+- id: w4-vitest
+  content: 'Vitest: disable blocked when mandatory; labels render; no root row'
+  status: completed
 isProject: false
 ---
 
@@ -68,7 +71,9 @@ isProject: false
 
 ## DoD W4
 
-- [ ] Inline influence + в процессе + mandatory работают против API
-- [ ] Права показываются title/description из catalog
-- [ ] Root отсутствует; disable blocked while mandatory
-- [ ] Vitest на правила UI
+- [x] Inline influence + в процессе + mandatory работают против API
+- [x] Права показываются title/description из catalog
+- [x] Root отсутствует; disable blocked while mandatory
+- [x] Vitest на правила UI
+
+> **Status-sync 2026-09-24:** todos/DoD marked completed — code evidence recorded in sync reason. Batch triage archive; do not re-implement.

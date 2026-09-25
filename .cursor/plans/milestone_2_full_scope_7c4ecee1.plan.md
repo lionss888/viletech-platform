@@ -1,22 +1,29 @@
 ---
 name: Milestone 2 Full Scope
-overview: "Критерии 100% scope вводных после Phase 5-8: export+refunds+shipment ветка, тесты, docs, §9 sync."
+overview: 'SUPERSEDED/cancelled 2026-09-24: criteria index; phases closed in known-gaps.
+  Was: Критерии 100% scope вводных после Phase 5-8: export+refunds+shipment ветка,
+  тесты, docs, §9 sync.'
 todos:
-  - id: m2-precheck
-    content: Verify Phase 5-8 DoD closed
-    status: pending
-  - id: m2-gate
-    content: ci-pr-pilot + export/refund/shipment regress
-    status: pending
-  - id: m2-vvodnye
-    content: §9 вводных sync галочки vs gaps
-    status: pending
-  - id: m2-docs
-    content: readiness/known-gaps full-scope honesty
-    status: pending
-  - id: m2-notify
-    content: notify-mgmt done Milestone 2
-    status: pending
+- id: m2-precheck
+  content: 'Verify Phase 5-8 DoD closed [cancelled 2026-09-24: criteria index; phases
+    closed in known-gaps]'
+  status: cancelled
+- id: m2-gate
+  content: 'ci-pr-pilot + export/refund/shipment regress [cancelled 2026-09-24: criteria
+    index; phases closed in known-gaps]'
+  status: cancelled
+- id: m2-vvodnye
+  content: '§9 вводных sync галочки vs gaps [cancelled 2026-09-24: criteria index;
+    phases closed in known-gaps]'
+  status: cancelled
+- id: m2-docs
+  content: 'readiness/known-gaps full-scope honesty [cancelled 2026-09-24: criteria
+    index; phases closed in known-gaps]'
+  status: cancelled
+- id: m2-notify
+  content: 'notify-mgmt done Milestone 2 [cancelled 2026-09-24: criteria index; phases
+    closed in known-gaps]'
+  status: cancelled
 isProject: false
 ---
 
@@ -62,3 +69,5 @@ Logistics-as-product, POSTPAY_FIXED_RATE, Nest data migration, analytics/assista
 ## Rules
 
 `честность-готовности`, `планирование-сверка-с-rules`, `vdp-ci-local-gate`, `mgmt-tg-notify`.
+
+> **Status-sync 2026-09-24:** cancelled as obsolete/superseded — see todo notes / overview. Do not execute this plan as a product wave.

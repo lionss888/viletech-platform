@@ -1,16 +1,17 @@
 ---
 name: AP3 Cursor plan parity
-overview: planfile .plan.md frontmatter+todos как Cursor; GET/PUT /api/plans; React editor round-trip.
+overview: planfile .plan.md frontmatter+todos как Cursor; GET/PUT /api/plans; React
+  editor round-trip. [status-sync 2026-09-24 DoD] AP3 implemented; DoD sync
 todos:
-  - id: ap3-model
-    content: PlanDoc parse/write YAML frontmatter + todos
-    status: completed
-  - id: ap3-api
-    content: GET/PUT /api/plans + HITL пишет совместимый .plan.md
-    status: completed
-  - id: ap3-ui
-    content: React todos editor + unit round-trip
-    status: completed
+- id: ap3-model
+  content: PlanDoc parse/write YAML frontmatter + todos
+  status: completed
+- id: ap3-api
+  content: GET/PUT /api/plans + HITL пишет совместимый .plan.md
+  status: completed
+- id: ap3-ui
+  content: React todos editor + unit round-trip
+  status: completed
 isProject: false
 ---
 
@@ -25,6 +26,8 @@ isProject: false
 
 ## DoD
 
-- [ ] Валидный frontmatter+todos
-- [ ] UI round-trip
-- [ ] Unit parse/write
+- [x] Валидный frontmatter+todos
+- [x] UI round-trip
+- [x] Unit parse/write
+
+> **Status-sync 2026-09-24:** todos/DoD marked completed — code evidence recorded in sync reason. Batch triage archive; do not re-implement.

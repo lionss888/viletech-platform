@@ -1,19 +1,22 @@
 ---
 name: RFC W1 Domain Mandatory
-overview: "Домен: RoleProcessConfig.Mandatory в snapshot; root не process-eligible; seed пилота ICO/ECO off; Validate без «methodology fixed in code»."
+overview: 'Домен: RoleProcessConfig.Mandatory в snapshot; root не process-eligible;
+  seed пилота ICO/ECO off; Validate без «methodology fixed in code». [status-sync
+  2026-09-24 completed] Mandatory in role_config + units'
 todos:
-  - id: w1-struct-mandatory
-    content: "Добавить Mandatory в RoleProcessConfig + DefaultProcessPolicySnapshot (без root; ICO/ECO off)"
-    status: pending
-  - id: w1-resolve-mandatory
-    content: "IsMandatoryProcessRole(role, snap) из config; StageBindings только seed/fallback"
-    status: pending
-  - id: w1-validate
-    content: "ValidateRoleConfigUpdate: смена mandatory OK; disable только если !mandatory"
-    status: pending
-  - id: w1-unit
-    content: "Unit role_config / effective / account_rbac под новую семантику"
-    status: pending
+- id: w1-struct-mandatory
+  content: Добавить Mandatory в RoleProcessConfig + DefaultProcessPolicySnapshot (без
+    root; ICO/ECO off)
+  status: completed
+- id: w1-resolve-mandatory
+  content: IsMandatoryProcessRole(role, snap) из config; StageBindings только seed/fallback
+  status: completed
+- id: w1-validate
+  content: 'ValidateRoleConfigUpdate: смена mandatory OK; disable только если !mandatory'
+  status: completed
+- id: w1-unit
+  content: Unit role_config / effective / account_rbac под новую семантику
+  status: completed
 isProject: false
 ---
 
@@ -49,6 +52,8 @@ isProject: false
 
 ## DoD W1
 
-- [ ] Domain compiles; unit green
-- [ ] Default snapshot без root; ICO/ECO disabled+non-mandatory
-- [ ] Нет утверждения «паритет 100%» — только domain gate
+- [x] Domain compiles; unit green
+- [x] Default snapshot без root; ICO/ECO disabled+non-mandatory
+- [x] Нет утверждения «паритет 100%» — только domain gate
+
+> **Status-sync 2026-09-24:** todos/DoD marked completed — code evidence recorded in sync reason. Batch triage archive; do not re-implement.

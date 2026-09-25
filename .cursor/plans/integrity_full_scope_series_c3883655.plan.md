@@ -1,28 +1,39 @@
 ---
 name: Integrity Full Scope Series
-overview: "Серия планов без дублей: сначала сверка и закрытие устаревших P4–P8/R3/R5/R10/IMP, затем исполнение M1 и M2 с явным критерием «100% in-scope вводных», плюс только недостающие child-планы (Bank partner, §9 honesty, AD/DP шаблоны). POSTPAY_FIXED_RATE и logistics-as-product — вне серии."
+overview: 'SUPERSEDED/cancelled 2026-09-24: series orchestrator, not product wave.
+  Was: Серия планов без дублей: сначала сверка и закрытие устаревших P4–P8/R3/R5/R10/IMP,
+  затем исполнение M1 и M2 с явным критерием «100% in-scope вводных», плюс только
+  недостающие child-планы (Bank partner, §9 honesty, AD/DP шаблоны). POSTPAY_FIXED_RATE
+  и logistics-as-product — вне серии.'
 todos:
-  - id: create-h0-integrity
-    content: Создать integrity_prod_readiness_sync plan + verify-матрица P5–P8/R5/§9
-    status: pending
-  - id: mark-stale-done
-    content: "После verify: completed на P4–P8 в child + master; R5/IMP9 hygiene"
-    status: pending
-  - id: keep-m1-m2-ocr
-    content: Не дублировать M1/M2/demo_ocr — оставить needs_work
-    status: pending
-  - id: create-bank-partner
-    content: Создать bank_partner_api_wave plan (сверх R10)
-    status: pending
-  - id: create-ad-dp
-    content: Создать feedback_ad_dp_templates plan
-    status: pending
-  - id: create-product-decisions
-    content: Создать product_open_decisions plan (REPORT_ACCEPTED / ВИ / FIXED_RATE defer)
-    status: pending
-  - id: define-100pct-dod
-    content: Зафиксировать 100%=M2 in-scope DoD в master overview + known-gaps residual
-    status: pending
+- id: create-h0-integrity
+  content: 'Создать integrity_prod_readiness_sync plan + verify-матрица P5–P8/R5/§9
+    [cancelled 2026-09-24: series orchestrator, not product wave]'
+  status: cancelled
+- id: mark-stale-done
+  content: 'После verify: completed на P4–P8 в child + master; R5/IMP9 hygiene [cancelled
+    2026-09-24: series orchestrator, not product wave]'
+  status: cancelled
+- id: keep-m1-m2-ocr
+  content: 'Не дублировать M1/M2/demo_ocr — оставить needs_work [cancelled 2026-09-24:
+    series orchestrator, not product wave]'
+  status: cancelled
+- id: create-bank-partner
+  content: 'Создать bank_partner_api_wave plan (сверх R10) [cancelled 2026-09-24:
+    series orchestrator, not product wave]'
+  status: cancelled
+- id: create-ad-dp
+  content: 'Создать feedback_ad_dp_templates plan [cancelled 2026-09-24: series orchestrator,
+    not product wave]'
+  status: cancelled
+- id: create-product-decisions
+  content: 'Создать product_open_decisions plan (REPORT_ACCEPTED / ВИ / FIXED_RATE
+    defer) [cancelled 2026-09-24: series orchestrator, not product wave]'
+  status: cancelled
+- id: define-100pct-dod
+  content: 'Зафиксировать 100%=M2 in-scope DoD в master overview + known-gaps residual
+    [cancelled 2026-09-24: series orchestrator, not product wave]'
+  status: cancelled
 isProject: false
 ---
 
@@ -181,3 +192,5 @@ DoD 100% M2:
 1. Создать 4 новых plan-файла + обновить master/children статусы по шаблону H0 (без исполнения code gates в том же шаге, если пользователь просил только планы).
 2. Если пользователь сказал «закончить работы» включая код: H0 verify → mark done → M1 → M2 → parallel Bank/OCR/AD-DP.
 3. На каждом закрытии milestone — `notify-mgmt` продуктовым языком.
+
+> **Status-sync 2026-09-24:** cancelled as obsolete/superseded — see todo notes / overview. Do not execute this plan as a product wave.

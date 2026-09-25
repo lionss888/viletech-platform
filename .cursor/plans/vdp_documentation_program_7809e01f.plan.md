@@ -1,34 +1,43 @@
 ---
 name: VDP documentation program
-overview: Создать структурированную документацию в vdp/docs/ и точку входа vdp/README.md с жёстким форматом (только h1–h3 и p, без оформительских символов), консолидировав разрозненные материалы для разработчиков и пилотной передачи заказчику.
+overview: Создать структурированную документацию в vdp/docs/ и точку входа vdp/README.md
+  с жёстким форматом (только h1–h3 и p, без оформительских символов), консолидировав
+  разрозненные материалы для разработчиков и пилотной передачи заказчику. [status-sync
+  2026-09-24 completed] vdp/docs/** + format.md + docs-format-check.sh
 todos:
-  - id: doc0-scaffold
-    content: "DOC0: vdp/README.md + vdp/docs/ index + docs/conventions/format.md (h1–h3, p only)"
-    status: pending
-  - id: doc2-dev-guide
-    content: "DOC2: getting-started, testing, makefile-reference (формат h1–h3, p)"
-    status: pending
-  - id: doc6-pilot
-    content: "DOC6: pilot/readiness-and-limits, uat-scenarios, known-gaps (формат h1–h3, p)"
-    status: pending
-  - id: doc1-architecture
-    content: "DOC1: architecture/overview, contexts-and-data, app-vs-demo (формат h1–h3, p)"
-    status: pending
-  - id: doc3-domain
-    content: "DOC3: roles-and-authz, form-lifecycle, documents-and-uploads (формат h1–h3, p)"
-    status: pending
-  - id: doc5-product-copy
-    content: "DOC5: copy-glossary, role-cabinets, provider-data-boundary (формат h1–h3, p)"
-    status: pending
-  - id: doc4-api
-    content: "DOC4: api/overview + openapi expansion (формат h1–h3, p)"
-    status: pending
-  - id: doc7-operations
-    content: "DOC7: docker-compose, environment, staging-checklist, CI doc (формат h1–h3, p)"
-    status: pending
-  - id: doc-format-lint
-    content: "DOC-gate: скрипт или тест проверки vdp/docs/**/*.md на запрещённую разметку"
-    status: pending
+- id: doc0-scaffold
+  content: 'DOC0: vdp/README.md + vdp/docs/ index + docs/conventions/format.md (h1–h3,
+    p only)'
+  status: completed
+- id: doc2-dev-guide
+  content: 'DOC2: getting-started, testing, makefile-reference (формат h1–h3, p)'
+  status: completed
+- id: doc6-pilot
+  content: 'DOC6: pilot/readiness-and-limits, uat-scenarios, known-gaps (формат h1–h3,
+    p)'
+  status: completed
+- id: doc1-architecture
+  content: 'DOC1: architecture/overview, contexts-and-data, app-vs-demo (формат h1–h3,
+    p)'
+  status: completed
+- id: doc3-domain
+  content: 'DOC3: roles-and-authz, form-lifecycle, documents-and-uploads (формат h1–h3,
+    p)'
+  status: completed
+- id: doc5-product-copy
+  content: 'DOC5: copy-glossary, role-cabinets, provider-data-boundary (формат h1–h3,
+    p)'
+  status: completed
+- id: doc4-api
+  content: 'DOC4: api/overview + openapi expansion (формат h1–h3, p)'
+  status: completed
+- id: doc7-operations
+  content: 'DOC7: docker-compose, environment, staging-checklist, CI doc (формат h1–h3,
+    p)'
+  status: completed
+- id: doc-format-lint
+  content: 'DOC-gate: скрипт или тест проверки vdp/docs/**/*.md на запрещённую разметку'
+  status: completed
 isProject: false
 ---
 
@@ -388,3 +397,5 @@ DOC7 .cursor/plans/doc7_vdp_operations.plan.md — 1 д
 Master-index опционально: .cursor/plans/vdp_documentation_master.plan.md.
 
 Общая оценка: 5–7 рабочих дней последовательно; около 4 дней при параллели DOC2+DOC6 и отложенном DOC7. DOC-format-lint +0.25 д.
+
+> **Status-sync 2026-09-24:** todos/DoD marked completed — code evidence recorded in sync reason. Batch triage archive; do not re-implement.

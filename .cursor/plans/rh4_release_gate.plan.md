@@ -1,28 +1,31 @@
 ---
 name: RH4 Release Gate
-overview: "make release-gate агрегирует все gate'ы; vdp-release CI workflow; observability.md; sync known-gaps и readiness для pilot handover."
+overview: make release-gate агрегирует все gate'ы; vdp-release CI workflow; observability.md;
+  sync known-gaps и readiness для pilot handover. [status-sync 2026-09-24 DoD] release-gate
+  in Makefile
 todos:
-  - id: rh4-make-release-gate
-    content: Makefile release-gate = integration-gate + playwright + test-integration + docs-format-check
-    status: completed
-  - id: rh4-ci-release
-    content: workflow vdp-release.yml или job на tag / workflow_dispatch
-    status: completed
-  - id: rh4-observability-doc
-    content: vdp/docs/operations/observability.md — correlation id, semantic alerts
-    status: completed
-  - id: rh4-known-gaps
-    content: Обновить known-gaps.md — что RH закрыл / что остаётся
-    status: completed
-  - id: rh4-readiness
-    content: Обновить pilot/readiness-and-limits.md — pilot ~75% honesty
-    status: completed
-  - id: rh4-master-dod
-    content: Закрыть global DoD в vdp_reliability_master.plan.md todos
-    status: completed
-  - id: rh4-gate
-    content: "DoD: make release-gate green на clean clone + compose"
-    status: completed
+- id: rh4-make-release-gate
+  content: Makefile release-gate = integration-gate + playwright + test-integration
+    + docs-format-check
+  status: completed
+- id: rh4-ci-release
+  content: workflow vdp-release.yml или job на tag / workflow_dispatch
+  status: completed
+- id: rh4-observability-doc
+  content: vdp/docs/operations/observability.md — correlation id, semantic alerts
+  status: completed
+- id: rh4-known-gaps
+  content: Обновить known-gaps.md — что RH закрыл / что остаётся
+  status: completed
+- id: rh4-readiness
+  content: Обновить pilot/readiness-and-limits.md — pilot ~75% honesty
+  status: completed
+- id: rh4-master-dod
+  content: Закрыть global DoD в vdp_reliability_master.plan.md todos
+  status: completed
+- id: rh4-gate
+  content: 'DoD: make release-gate green на clean clone + compose'
+  status: completed
 isProject: false
 ---
 
@@ -66,10 +69,10 @@ isProject: false
 
 ## Prerequisites
 
-- [ ] RH0 CI pipeline operational
-- [ ] RH1 `make test-integration` green
-- [ ] RH2 E2E expansion + matrix
-- [ ] RH3 `make test-adapters` green
+- [x] RH0 CI pipeline operational
+- [x] RH1 `make test-integration` green
+- [x] RH2 E2E expansion + matrix
+- [x] RH3 `make test-adapters` green
 
 ## Работы
 
@@ -161,12 +164,12 @@ Expected: exit 0, all sub-targets green.
 
 ## DoD
 
-- [ ] `make release-gate` target exists and documented
-- [ ] Release CI workflow or manual job documented
-- [ ] observability.md published
-- [ ] known-gaps + readiness updated
-- [ ] Master global DoD items checked with evidence (CI URL or local log)
-- [ ] No «prod 100%» language
+- [x] `make release-gate` target exists and documented
+- [x] Release CI workflow or manual job documented
+- [x] observability.md published
+- [x] known-gaps + readiness updated
+- [x] Master global DoD items checked with evidence (CI URL or local log)
+- [x] No «prod 100%» language
 
 ## Honesty note — pilot vs prod after full RH program
 
@@ -176,7 +179,9 @@ Expected: exit 0, all sub-targets green.
 
 ## Handover checklist (pilot)
 
-- [ ] `make release-gate` green
-- [ ] [`e2e-coverage-matrix.md`](../../vdp/docs/development/e2e-coverage-matrix.md) reviewed with customer
-- [ ] [`staging-checklist.md`](../../vdp/docs/operations/staging-checklist.md) for staging env setup
-- [ ] Seed accounts documented in getting-started
+- [x] `make release-gate` green
+- [x] [`e2e-coverage-matrix.md`](../../vdp/docs/development/e2e-coverage-matrix.md) reviewed with customer
+- [x] [`staging-checklist.md`](../../vdp/docs/operations/staging-checklist.md) for staging env setup
+- [x] Seed accounts documented in getting-started
+
+> **Status-sync 2026-09-24:** todos/DoD marked completed — code evidence recorded in sync reason. Batch triage archive; do not re-implement.

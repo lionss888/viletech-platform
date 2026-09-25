@@ -1,16 +1,21 @@
 ---
 name: VDP Role Debug Master
-overview: "Индекс программы: RD0–RD11 (отладка app-контура) + RW0–RW9 (копирайт по ролям, без root). Не исполнять целиком — работать дочерними планами."
+overview: 'SUPERSEDED/cancelled 2026-09-24: master index — do not execute. Was: Индекс
+  программы: RD0–RD11 (отладка app-контура) + RW0–RW9 (копирайт по ролям, без root).
+  Не исполнять целиком — работать дочерними планами.'
 todos:
-  - id: master-track-rd
-    content: Вести статус RD0–RD11 по DoD дочерних планов
-    status: pending
-  - id: master-track-rw
-    content: Вести статус RW0–RW9; root wording вне scope
-    status: pending
-  - id: master-global-dod
-    content: Закрыть глобальный DoD после RD10+RW9
-    status: pending
+- id: master-track-rd
+  content: 'Вести статус RD0–RD11 по DoD дочерних планов [cancelled 2026-09-24: master
+    index — do not execute]'
+  status: cancelled
+- id: master-track-rw
+  content: 'Вести статус RW0–RW9; root wording вне scope [cancelled 2026-09-24: master
+    index — do not execute]'
+  status: cancelled
+- id: master-global-dod
+  content: 'Закрыть глобальный DoD после RD10+RW9 [cancelled 2026-09-24: master index
+    — do not execute]'
+  status: cancelled
 isProject: false
 ---
 
@@ -115,3 +120,5 @@ flowchart TB
 | Role | Form ID | Status before | CTA | Expected | Actual | Layer | Fix PR |
 |------|---------|---------------|-----|----------|--------|-------|--------|
 | … | … | … | … | … | … | UI/bridge/core/copy | … |
+
+> **Status-sync 2026-09-24:** cancelled as obsolete/superseded — see todo notes / overview. Do not execute this plan as a product wave.

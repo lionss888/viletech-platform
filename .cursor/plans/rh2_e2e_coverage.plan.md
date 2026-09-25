@@ -1,31 +1,33 @@
 ---
 name: RH2 E2E Coverage
-overview: "Расширение compose-e2e (ICO, reject, refund) + Playwright (completed, manager-payment) + e2e-coverage-matrix.md. Без combinatorial role×status E2E."
+overview: Расширение compose-e2e (ICO, reject, refund) + Playwright (completed, manager-payment)
+  + e2e-coverage-matrix.md. Без combinatorial role×status E2E. [status-sync 2026-09-24
+  DoD] RH2 e2e coverage present
 todos:
-  - id: rh2-api-ico
-    content: compose-e2e — ветка ICO org-pending (org approve → form flow)
-    status: completed
-  - id: rh2-api-reject
-    content: compose-e2e — ECO reject → corrections → resubmit
-    status: completed
-  - id: rh2-api-refund
-    content: compose-e2e — refund полный цикл до payment_refund_sent smoke
-    status: completed
-  - id: rh2-pw-completed
-    content: Playwright completed-journey.spec.ts (UI до completed или manager close)
-    status: completed
-  - id: rh2-pw-payment
-    content: Playwright manager-payment.spec.ts — provider + payment CTA
-    status: completed
-  - id: rh2-matrix
-    content: vdp/docs/development/e2e-coverage-matrix.md
-    status: completed
-  - id: rh2-rd11-link
-    content: RD11 plan — note superseded by RH2 for expansion scope
-    status: completed
-  - id: rh2-gate
-    content: "DoD: новые journeys green локально и в CI"
-    status: completed
+- id: rh2-api-ico
+  content: compose-e2e — ветка ICO org-pending (org approve → form flow)
+  status: completed
+- id: rh2-api-reject
+  content: compose-e2e — ECO reject → corrections → resubmit
+  status: completed
+- id: rh2-api-refund
+  content: compose-e2e — refund полный цикл до payment_refund_sent smoke
+  status: completed
+- id: rh2-pw-completed
+  content: Playwright completed-journey.spec.ts (UI до completed или manager close)
+  status: completed
+- id: rh2-pw-payment
+  content: Playwright manager-payment.spec.ts — provider + payment CTA
+  status: completed
+- id: rh2-matrix
+  content: vdp/docs/development/e2e-coverage-matrix.md
+  status: completed
+- id: rh2-rd11-link
+  content: RD11 plan — note superseded by RH2 for expansion scope
+  status: completed
+- id: rh2-gate
+  content: 'DoD: новые journeys green локально и в CI'
+  status: completed
 isProject: false
 ---
 
@@ -72,7 +74,7 @@ isProject: false
 - [x] RD10 `make integration-gate` green
 - [x] RD11: 4 spec (happy, reject, provider-acl, bank-badge)
 - [x] RW9 copy consistency (stable labels for Playwright)
-- [ ] RH0 CI playwright job
+- [x] RH0 CI playwright job
 
 ## Текущее покрытие (baseline)
 
@@ -164,11 +166,11 @@ CI: integration + playwright jobs green.
 
 ## DoD
 
-- [ ] compose-e2e: ICO + reject + refund full sections green
-- [ ] ≥2 new Playwright specs green
-- [ ] e2e-coverage-matrix.md published
-- [ ] known-gaps E2E sections updated
-- [ ] No claim «full matrix covered» in docs
+- [x] compose-e2e: ICO + reject + refund full sections green
+- [x] ≥2 new Playwright specs green
+- [x] e2e-coverage-matrix.md published
+- [x] known-gaps E2E sections updated
+- [x] No claim «full matrix covered» in docs
 
 ## Honesty note
 
@@ -179,3 +181,5 @@ CI: integration + playwright jobs green.
 - [`vdp/fe/src/lib/ved/actions.ts`](../../vdp/fe/src/lib/ved/actions.ts) — CTA matrix
 - [`vdp/core/internal/domain/formpayment/status.go`](../../vdp/core/internal/domain/formpayment/status.go) — status enum
 - [`vdp/fe/e2e/fixtures/auth.fixture.ts`](../../vdp/fe/e2e/fixtures/auth.fixture.ts)
+
+> **Status-sync 2026-09-24:** todos/DoD marked completed — code evidence recorded in sync reason. Batch triage archive; do not re-implement.

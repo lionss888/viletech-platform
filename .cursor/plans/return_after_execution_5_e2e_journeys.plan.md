@@ -1,28 +1,31 @@
 ---
 name: Возврат этап 5 Сквозные кабинеты
-overview: "Два маршрута E2E (уточнить→вернуть; повторить→снова сообщить) + регресс + копирайт + иерархия + пустые состояния. Новый домен не добавлять, только стык. Pilot-matrix green, platform mounts на месте."
+overview: Два маршрута E2E (уточнить→вернуть; повторить→снова сообщить) + регресс
+  + копирайт + иерархия + пустые состояния. Новый домен не добавлять, только стык.
+  Pilot-matrix green, platform mounts на месте. [status-sync 2026-09-24 completed]
+  return-episode-e2e-journeys.spec.ts
 todos:
-  - id: copywriting
-    content: Один термин (заявка), кнопки глагол+объект, «следующий шаг» из матрицы
-    status: pending
-  - id: hierarchy
-    content: Статус и сумма возврата → ветка → документы; один primary
-    status: pending
-  - id: journey-a
-    content: E2E маршрут А (сообщить → уточнить → вернуть клиенту)
-    status: pending
-  - id: journey-b
-    content: E2E маршрут Б (сообщить → повторить → новая платёжка → снова сообщить)
-    status: pending
-  - id: regression
-    content: pilot-matrix-refund.spec.ts + platform mounts зелёные
-    status: pending
-  - id: empty-states
-    content: Нет факта → провайдер видит когда недоступно; нет письма → ошибка
-    status: pending
-  - id: gate
-    content: make check-env-parity затем make ci-pr-pilot зелёный
-    status: pending
+- id: copywriting
+  content: Один термин (заявка), кнопки глагол+объект, «следующий шаг» из матрицы
+  status: completed
+- id: hierarchy
+  content: Статус и сумма возврата → ветка → документы; один primary
+  status: completed
+- id: journey-a
+  content: E2E маршрут А (сообщить → уточнить → вернуть клиенту)
+  status: completed
+- id: journey-b
+  content: E2E маршрут Б (сообщить → повторить → новая платёжка → снова сообщить)
+  status: completed
+- id: regression
+  content: pilot-matrix-refund.spec.ts + platform mounts зелёные
+  status: completed
+- id: empty-states
+  content: Нет факта → провайдер видит когда недоступно; нет письма → ошибка
+  status: completed
+- id: gate
+  content: make check-env-parity затем make ci-pr-pilot зелёный
+  status: completed
 isProject: false
 ---
 
@@ -366,3 +369,5 @@ test('full journey B: report → repeat → new payment → report again', async
 - Экспорт (если потребуется)
 - Интеграция с почтовым продуктом (письмо-согласие как email-флоу)
 - Дополнительные сценарии (частичный возврат как отдельная ветка — сейчас вне scope)
+
+> **Status-sync 2026-09-24:** todos/DoD marked completed — code evidence recorded in sync reason. Batch triage archive; do not re-implement.

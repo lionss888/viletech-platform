@@ -1,22 +1,26 @@
 ---
 name: RFC W5 Admin User Form
-overview: "Форма пользователя 2B: аккаунт + глобальная process-policy выбранной роли + overrides; human caps; admin без process participation."
+overview: 'Форма пользователя 2B: аккаунт + глобальная process-policy выбранной роли
+  + overrides; human caps; admin без process participation. [status-sync 2026-09-24
+  completed] demo/admin.tsx + process-roles API'
 todos:
-  - id: w5-account-block
-    content: "Сохранить/дотянуть блок аккаунта kind+role+org+API patch"
-    status: pending
-  - id: w5-role-template-block
-    content: "Блок шаблона роли: enabled/mandatory/influence/caps через process-roles API + warning"
-    status: pending
-  - id: w5-overrides-block
-    content: "Блок A+B overrides на аккаунте; system только для admin; locked root caps"
-    status: pending
-  - id: w5-save-flow
-    content: "Save: PATCH account + PUT process-role; явные ошибки; disabled Save пока invalid"
-    status: pending
-  - id: w5-vitest
-    content: "Vitest/form tests: warning global; admin hides process block"
-    status: pending
+- id: w5-account-block
+  content: Сохранить/дотянуть блок аккаунта kind+role+org+API patch
+  status: completed
+- id: w5-role-template-block
+  content: 'Блок шаблона роли: enabled/mandatory/influence/caps через process-roles
+    API + warning'
+  status: completed
+- id: w5-overrides-block
+  content: Блок A+B overrides на аккаунте; system только для admin; locked root caps
+  status: completed
+- id: w5-save-flow
+  content: 'Save: PATCH account + PUT process-role; явные ошибки; disabled Save пока
+    invalid'
+  status: completed
+- id: w5-vitest
+  content: 'Vitest/form tests: warning global; admin hides process block'
+  status: completed
 isProject: false
 ---
 
@@ -65,7 +69,9 @@ isProject: false
 
 ## DoD W5
 
-- [ ] Из формы можно сменить mandatory/enabled/influence роли и увидеть эффект на process-roles
-- [ ] Overrides сохраняются на аккаунт
-- [ ] Warning о глобальности виден
-- [ ] Admin path без process block
+- [x] Из формы можно сменить mandatory/enabled/influence роли и увидеть эффект на process-roles
+- [x] Overrides сохраняются на аккаунт
+- [x] Warning о глобальности виден
+- [x] Admin path без process block
+
+> **Status-sync 2026-09-24:** todos/DoD marked completed — code evidence recorded in sync reason. Batch triage archive; do not re-implement.

@@ -1,37 +1,48 @@
 ---
 name: VDP Prod Readiness Master
-overview: "Мастер-индекс prod readiness: Phase 1–8 + Milestone 1–2. Не исполнять целиком — открывать дочерний plan-файл по порядку. Ритм 3.8 todo/ч (ориентир 2026-08-25)."
+overview: 'SUPERSEDED/cancelled 2026-09-24: master index — do not execute. Was: Мастер-индекс
+  prod readiness: Phase 1–8 + Milestone 1–2. Не исполнять целиком — открывать дочерний
+  plan-файл по порядку. Ритм 3.8 todo/ч (ориентир 2026-08-25).'
 todos:
-  - id: phase1-docs-honesty
-    content: "P1: Docs honesty → phase_1_docs_honesty_5117c6f8 (уже закрыт import_docs_honesty_sync)"
-    status: completed
-  - id: phase2-security
-    content: "P2: Security → phase_2_security_hardening_140a1ecf (закрыт: AuthZ/ACL/PII/secrets/backup docs)"
-    status: completed
-  - id: phase3-staging
-    content: "P3: Staging → phase_3_staging_readiness_d70c6ff0 (закрыт: local live DOCS/MAIL smoke; alpha SSH key ops leftover)"
-    status: completed
-  - id: phase4-ops
-    content: "P4: Ops → phase_4_ops_excellence_20962059 (следующий)"
-    status: pending
-  - id: milestone-prod
-    content: "M1: Prod go-live → milestone_1_prod_go_live_38e889e1 (после P1–P4)"
-    status: pending
-  - id: phase5-export
-    content: "P5: Export domain → phase_5_export_domain_dffbc889"
-    status: pending
-  - id: phase6-export-ui
-    content: "P6: Export UI/E2E → phase_6_export_ui_e2e_22fcdbc8"
-    status: pending
-  - id: phase7-refunds
-    content: "P7: Refunds → phase_7_refunds_system_87a207ef"
-    status: pending
-  - id: phase8-logistics
-    content: "P8: Logistics/shipment → phase_8_logistics_shipment_b7770f93"
-    status: pending
-  - id: milestone-full-scope
-    content: "M2: Full scope → milestone_2_full_scope_7c4ecee1 (после P5–P8)"
-    status: pending
+- id: phase1-docs-honesty
+  content: 'P1: Docs honesty → phase_1_docs_honesty_5117c6f8 (уже закрыт import_docs_honesty_sync)'
+  status: completed
+- id: phase2-security
+  content: 'P2: Security → phase_2_security_hardening_140a1ecf (закрыт: AuthZ/ACL/PII/secrets/backup
+    docs)'
+  status: completed
+- id: phase3-staging
+  content: 'P3: Staging → phase_3_staging_readiness_d70c6ff0 (закрыт: local live DOCS/MAIL
+    smoke; alpha SSH key ops leftover)'
+  status: completed
+- id: phase4-ops
+  content: 'P4: Ops → phase_4_ops_excellence_20962059 (следующий) [cancelled 2026-09-24:
+    master index — do not execute]'
+  status: cancelled
+- id: milestone-prod
+  content: 'M1: Prod go-live → milestone_1_prod_go_live_38e889e1 (после P1–P4) [cancelled
+    2026-09-24: master index — do not execute]'
+  status: cancelled
+- id: phase5-export
+  content: 'P5: Export domain → phase_5_export_domain_dffbc889 [cancelled 2026-09-24:
+    master index — do not execute]'
+  status: cancelled
+- id: phase6-export-ui
+  content: 'P6: Export UI/E2E → phase_6_export_ui_e2e_22fcdbc8 [cancelled 2026-09-24:
+    master index — do not execute]'
+  status: cancelled
+- id: phase7-refunds
+  content: 'P7: Refunds → phase_7_refunds_system_87a207ef [cancelled 2026-09-24: master
+    index — do not execute]'
+  status: cancelled
+- id: phase8-logistics
+  content: 'P8: Logistics/shipment → phase_8_logistics_shipment_b7770f93 [cancelled
+    2026-09-24: master index — do not execute]'
+  status: cancelled
+- id: milestone-full-scope
+  content: 'M2: Full scope → milestone_2_full_scope_7c4ecee1 (после P5–P8) [cancelled
+    2026-09-24: master index — do not execute]'
+  status: cancelled
 isProject: false
 ---
 
@@ -110,3 +121,5 @@ flowchart LR
 - Vendor URL в P3 — внешняя зависимость по сроку.
 - P7/P8 domain уже частично в formpayment — не переписывать с нуля, дожимать product+E2E.
 - Ops-side backup encryption: runbook есть; фактическая верификация на инфра — в P4 / M1 handover.
+
+> **Status-sync 2026-09-24:** cancelled as obsolete/superseded — see todo notes / overview. Do not execute this plan as a product wave.

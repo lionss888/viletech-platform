@@ -1,25 +1,27 @@
 ---
 name: RH1 Postgres Integration
-overview: "Build tag integration, make test-integration, расширение Postgres-тестов core/hub, CI postgres service. Снижает риск memory green / postgres broken."
+overview: Build tag integration, make test-integration, расширение Postgres-тестов
+  core/hub, CI postgres service. Снижает риск memory green / postgres broken. [status-sync
+  2026-09-24 DoD] RH1 integration tests present
 todos:
-  - id: rh1-build-tag
-    content: "//go:build integration для *_integration_test.go; make test-integration"
-    status: completed
-  - id: rh1-core-tests
-    content: Расширить store_integration + outbox postgres round-trip (core)
-    status: completed
-  - id: rh1-hub-tests
-    content: Расширить inbox postgres idempotency (hub)
-    status: completed
-  - id: rh1-ci-step
-    content: Postgres service container в CI job integration (до compose-e2e)
-    status: completed
-  - id: rh1-docs
-    content: Раздел memory vs postgres vs compose в testing.md
-    status: completed
-  - id: rh1-gate
-    content: "DoD: ≥5 integration tests green в CI без skip"
-    status: completed
+- id: rh1-build-tag
+  content: //go:build integration для *_integration_test.go; make test-integration
+  status: completed
+- id: rh1-core-tests
+  content: Расширить store_integration + outbox postgres round-trip (core)
+  status: completed
+- id: rh1-hub-tests
+  content: Расширить inbox postgres idempotency (hub)
+  status: completed
+- id: rh1-ci-step
+  content: Postgres service container в CI job integration (до compose-e2e)
+  status: completed
+- id: rh1-docs
+  content: Раздел memory vs postgres vs compose в testing.md
+  status: completed
+- id: rh1-gate
+  content: 'DoD: ≥5 integration tests green в CI без skip'
+  status: completed
 isProject: false
 ---
 
@@ -64,7 +66,7 @@ isProject: false
 
 - [x] `make test` green (memory)
 - [x] [`r0_gate_test.go`](../../vdp/core/internal/transport/http/r0_gate_test.go) — compose defaults postgres
-- [ ] RH0 CI job `integration` exists (or local postgres for dev)
+- [x] RH0 CI job `integration` exists (or local postgres for dev)
 
 ## Работы
 
@@ -148,11 +150,11 @@ CI: integration job shows ≥5 tests passed, 0 skipped (when service up).
 
 ## DoD
 
-- [ ] `make test-integration` target in Makefile
-- [ ] ≥5 integration tests pass in CI without skip
-- [ ] `make test` unchanged speed (no integration tag by default)
-- [ ] testing.md documents three layers
-- [ ] Gate test r0_gate still requires compose postgres default
+- [x] `make test-integration` target in Makefile
+- [x] ≥5 integration tests pass in CI without skip
+- [x] `make test` unchanged speed (no integration tag by default)
+- [x] testing.md documents three layers
+- [x] Gate test r0_gate still requires compose postgres default
 
 ## Honesty note
 
@@ -162,3 +164,5 @@ HTTP gate tests ([`smoke_test.go`](../../vdp/core/internal/transport/http/smoke_
 
 - [`vdp/core/internal/repository/memory.go`](../../vdp/core/internal/repository/memory.go) — MemoryStore comment
 - [`vdp/docker-compose.yml`](../../vdp/docker-compose.yml) — STORE_DRIVER=postgres comment
+
+> **Status-sync 2026-09-24:** todos/DoD marked completed — code evidence recorded in sync reason. Batch triage archive; do not re-implement.

@@ -1,16 +1,23 @@
 ---
 name: Intake Ollama dialogue
-overview: "Подключить локальные модели Ollama к vdp-intake: диалог в TG (уточнения, разбор текста) через порт LLM с fallback на правила; Ollama — отдельный сервис в compose-проекте vdp-intake; без автоисполнения работ и без смены статусов VDP."
+overview: 'SUPERSEDED/cancelled 2026-09-24: Ollama is extraction OCR, not TG intake
+  dialogue. Was: Подключить локальные модели Ollama к vdp-intake: диалог в TG (уточнения,
+  разбор текста) через порт LLM с fallback на правила; Ollama — отдельный сервис в
+  compose-проекте vdp-intake; без автоисполнения работ и без смены статусов VDP.'
 todos:
-  - id: f0-ollama-compose
-    content: "F0: сервис ollama в vdp-intake compose + volume + Makefile ensure-model + env wiring"
-    status: pending
-  - id: f1-dialog-port
-    content: "F1: internal/dialog Ollama client + pipeline Assist с fallback на rules + unit + sanitize"
-    status: pending
-  - id: f2-server-mirror
-    content: "F2: тот же compose на сервере; smoke @mention; без смешения с VDP release"
-    status: pending
+- id: f0-ollama-compose
+  content: 'F0: сервис ollama в vdp-intake compose + volume + Makefile ensure-model
+    + env wiring [cancelled 2026-09-24: Ollama is extraction OCR, not TG intake dialogue]'
+  status: cancelled
+- id: f1-dialog-port
+  content: 'F1: internal/dialog Ollama client + pipeline Assist с fallback на rules
+    + unit + sanitize [cancelled 2026-09-24: Ollama is extraction OCR, not TG intake
+    dialogue]'
+  status: cancelled
+- id: f2-server-mirror
+  content: 'F2: тот же compose на сервере; smoke @mention; без смешения с VDP release
+    [cancelled 2026-09-24: Ollama is extraction OCR, not TG intake dialogue]'
+  status: cancelled
 isProject: false
 ---
 
@@ -116,3 +123,5 @@ flowchart LR
 - Tech/пути/«выполнить?» в ответах менеджеру.
 - Shared DB с core/hub; смена статусов заявки из dialog.
 - Второй поллер на том же токене (host `go run` + container).
+
+> **Status-sync 2026-09-24:** cancelled as obsolete/superseded — see todo notes / overview. Do not execute this plan as a product wave.

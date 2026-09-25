@@ -1,19 +1,25 @@
 ---
 name: UAT W3 no-docs invoice gate
-overview: "Early submit gate superseded by wizard no-docs draft-only. Остаётся manager/ECO accept block until invoice attached (F5 residual)."
+overview: 'SUPERSEDED/cancelled 2026-09-24: superseded by wizard no-docs draft-only.
+  Was: Early submit gate superseded by wizard no-docs draft-only. Остаётся manager/ECO
+  accept block until invoice attached (F5 residual).'
 todos:
-  - id: w3-ux-gate
-    content: "Early wizard gate → superseded by wizard_no-docs_draft (draft-only, no submit)"
-    status: cancelled
-  - id: w3-manager-cta
-    content: "Карточка manager/continuity: disabled eco_accept + причина «нужен инвойс»"
-    status: pending
-  - id: w3-tests
-    content: "Unit/E2E: approve blocked until invoice attached (submit no longer allowed on no_docs)"
-    status: pending
-  - id: w3-gate
-    content: "check-env-parity → unit → ci-pr; ci-pr-pilot если ActionPanel copy"
-    status: pending
+- id: w3-ux-gate
+  content: Early wizard gate → superseded by wizard_no-docs_draft (draft-only, no
+    submit)
+  status: cancelled
+- id: w3-manager-cta
+  content: 'Карточка manager/continuity: disabled eco_accept + причина «нужен инвойс»
+    [cancelled 2026-09-24: superseded by wizard no-docs draft-only]'
+  status: cancelled
+- id: w3-tests
+  content: 'Unit/E2E: approve blocked until invoice attached (submit no longer allowed
+    on no_docs) [cancelled 2026-09-24: superseded by wizard no-docs draft-only]'
+  status: cancelled
+- id: w3-gate
+  content: 'check-env-parity → unit → ci-pr; ci-pr-pilot если ActionPanel copy [cancelled
+    2026-09-24: superseded by wizard no-docs draft-only]'
+  status: cancelled
 isProject: false
 ---
 
@@ -60,3 +66,5 @@ UAT 2026-09-23 finding **F5**. Early client submit path **superseded** by `wizar
 2. Unit + e2e на accept gate
 3. Заявленный CI gate
 4. F5 в журнале: early gate закрыт draft-only; residual = accept block
+
+> **Status-sync 2026-09-24:** cancelled as obsolete/superseded — see todo notes / overview. Do not execute this plan as a product wave.

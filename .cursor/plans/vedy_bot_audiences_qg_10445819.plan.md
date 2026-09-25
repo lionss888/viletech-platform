@@ -1,22 +1,30 @@
 ---
 name: vedy_bot audiences QG
-overview: "Мастер-программа vedy_bot как отдельный подключаемый модуль к ядру (сейчас vdp): три аудитории + Server QG. После approve — 16 дочерних plan-файлов VB0, VB0b, VB1–VB14 с QG Control. Исполнять по одному дочернему плану."
+overview: 'SUPERSEDED/cancelled 2026-09-24: master; use child P* plans. Was: Мастер-программа
+  vedy_bot как отдельный подключаемый модуль к ядру (сейчас vdp): три аудитории +
+  Server QG. После approve — 16 дочерних plan-файлов VB0, VB0b, VB1–VB14 с QG Control.
+  Исполнять по одному дочернему плану.'
 todos:
-  - id: materialize-master
-    content: Записать мастер .cursor/plans/vedy_bot_audiences_qg_master.plan.md (с CorePort)
-    status: pending
-  - id: materialize-vb0-vb6
-    content: Создать дочерние VB0, VB0b, VB1–VB6 (near) с QG Control + сверка rules + граница модуля/ядра
-    status: pending
-  - id: materialize-vb7-vb10
-    content: Создать дочерние plan-файлы VB7–VB10 (mid) с QG Control + сверка rules
-    status: pending
-  - id: materialize-vb11-vb14
-    content: Создать дочерние plan-файлы VB11–VB14 (long) с QG Control + сверка rules
-    status: pending
-  - id: index-verify
-    content: Сверить индекс мастер↔дети; CorePort в каждом релевантном VB*; Local QG RUN не сломан
-    status: pending
+- id: materialize-master
+  content: 'Записать мастер .cursor/plans/vedy_bot_audiences_qg_master.plan.md (с
+    CorePort) [cancelled 2026-09-24: master; use child P* plans]'
+  status: cancelled
+- id: materialize-vb0-vb6
+  content: 'Создать дочерние VB0, VB0b, VB1–VB6 (near) с QG Control + сверка rules
+    + граница модуля/ядра [cancelled 2026-09-24: master; use child P* plans]'
+  status: cancelled
+- id: materialize-vb7-vb10
+  content: 'Создать дочерние plan-файлы VB7–VB10 (mid) с QG Control + сверка rules
+    [cancelled 2026-09-24: master; use child P* plans]'
+  status: cancelled
+- id: materialize-vb11-vb14
+  content: 'Создать дочерние plan-файлы VB11–VB14 (long) с QG Control + сверка rules
+    [cancelled 2026-09-24: master; use child P* plans]'
+  status: cancelled
+- id: index-verify
+  content: 'Сверить индекс мастер↔дети; CorePort в каждом релевантном VB*; Local QG
+    RUN не сломан [cancelled 2026-09-24: master; use child P* plans]'
+  status: cancelled
 isProject: false
 ---
 
@@ -316,3 +324,5 @@ flowchart TB
 - **Старт исполнения:** 2026-09-14 **21:00 Europe/Moscow** (одноразовый wake в этой сессии).
 - До тика код/материализацию дочерних планов **не** начинать.
 - На тике: выполнить этот мастер — сначала materialize всех VB*, затем VB0 по порядку.
+
+> **Status-sync 2026-09-24:** cancelled as obsolete/superseded — see todo notes / overview. Do not execute this plan as a product wave.
