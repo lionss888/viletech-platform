@@ -4,13 +4,13 @@ overview: "Go helper в shared: загрузка Form-схемы из forms.yaml
 todos:
   - id: package-openapi
     content: "Пакет vdp/shared/openapi (или аналог): Load + ValidateNamedSchema"
-    status: pending
+    status: completed
   - id: unit-valid-invalid
     content: "Unit: валидный Form JSON ok; без status — ошибка"
-    status: pending
+    status: completed
   - id: go-mod-dep
-    content: "Минимальная зависимость jsonschema/yaml при необходимости; go test ./... в shared"
-    status: pending
+    content: Минимальная зависимость jsonschema/yaml при необходимости; go test ./... в shared
+    status: completed
 isProject: false
 ---
 
