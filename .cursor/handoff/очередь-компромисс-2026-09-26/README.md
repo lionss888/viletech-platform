@@ -4,8 +4,10 @@
 
 ## Статус на момент снимка
 
-- A1 (`forms.yaml` schemas) — реализован в коде: `vdp/shared/openapi/forms.yaml`
-- Дальше по очереди: карточка п.14, затем Stage A (A2→A4), UAT W2/W4/W5
+- A1 (`forms.yaml` schemas) — done: `vdp/shared/openapi/forms.yaml`
+- A2 (schema validate helper) — done: `vdp/shared/openapi` (`Load` / `LoadForms` / `ValidateNamedSchema`), unit valid/invalid
+- A3 (httptest schema assert) — done: `vdp/core/internal/transport/http/contract_schema_test.go` (health + create/get/action → Form)
+- Дальше по очереди: карточка п.14, затем Stage A **A4** (docs + `ci-pr-fast`), UAT W2/W4/W5
 - W7 и Stage B — позже; deploy/ops — не в ежедневной очереди
 
 Chat id / transcript: `ac80db37-0d65-4fe5-953d-15cb41e4282e`  
@@ -18,10 +20,10 @@ Chat id / transcript: `ac80db37-0d65-4fe5-953d-15cb41e4282e`
 
 2. Контракт Stage A  
    - мастер: `.cursor/plans/api_contract_lean_master.plan.md`  
-   - A1: `.cursor/plans/api_contract_a1_forms_yaml.plan.md`  
-   - A2: `.cursor/plans/api_contract_a2_schema_helper.plan.md` ← следующий implement  
-   - A3: `.cursor/plans/api_contract_a3_httptest.plan.md`  
-   - A4: `.cursor/plans/api_contract_a4_docs_qg.plan.md`
+   - A1: `.cursor/plans/api_contract_a1_forms_yaml.plan.md` — done  
+   - A2: `.cursor/plans/api_contract_a2_schema_helper.plan.md` — done  
+   - A3: `.cursor/plans/api_contract_a3_httptest.plan.md` — done  
+   - A4: `.cursor/plans/api_contract_a4_docs_qg.plan.md` ← следующий implement (закрытие Stage A)
 
 3. UAT точечно (после repro)  
    - W2: `.cursor/plans/uat_w2_parties_hygiene.plan.md`  
@@ -41,9 +43,21 @@ Chat id / transcript: `ac80db37-0d65-4fe5-953d-15cb41e4282e`
 
 Сводка: `.cursor/plans/live_backlog_after_status_sync.plan.md`
 
+## Canvas (Handoff Queue)
+
+Статусы **не** правятся вручную в canvas. Источник порядка: `queue.json`; done/next считаются из frontmatter todos планов.
+
+После закрытия плана из очереди:
+
+```sh
+make -C vdp sync-handoff-queue
+```
+
+Скрипт: `vdp/scripts/sync-handoff-queue-canvas.py` → пишет `handoff-queue.canvas.tsx` (в Cursor canvases + копия рядом с этим README).
+
 ## На другой машине
 
-1. `git pull` (нужен коммит этого handoff + `forms.yaml`, если ещё не в remote).
+1. `git pull` (нужен коммит этого handoff + A1–A3: `forms.yaml`, `vdp/shared/openapi`, `contract_schema_test.go`, если ещё не в remote).
 2. Планы уже в `.cursor/plans/` — открывайте по ссылкам выше.
 3. Живой Composer-чат Cursor **не** восстановится сам из `jsonl`. Варианты:
    - новый чат: «продолжи с handoff `.cursor/handoff/очередь-компромисс-2026-09-26/`» и приложите `README.md` / `chat-ac80db37.jsonl`;

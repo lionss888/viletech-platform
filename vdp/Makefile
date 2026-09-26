@@ -1,4 +1,4 @@
-.PHONY: deps test test-integration test-adapters build db-setup db-migrate compose-db-migrate run-hub run-core run smoke staging-smoke stop compose-up compose-up-prod compose-down compose-ps compose-e2e compose-fe-smoke compose-fe-refresh compose-fe-prod-smoke compose-playwright lovable-seed-check platform-mounts-check integration-gate playwright-e2e playwright-pilot playwright-pilot-matrix robot-matrix-check docs-format-check check-deploy-secrets release-gate image-build image-push image-build-push compose-release-config-check compose-release-up deploy-alpha deploy-beta deploy-gamma rollback-alpha rollback-beta rollback-gamma rollback-rehearsal-local test-cd-scripts notify-mgmt core-seed-reset install-git-hooks precommit-gate prepush-gate push-gate ci-pr-fast ci-pr ci-pr-pilot ci-main perf-gate ocr-path-gate
+.PHONY: deps test test-integration test-adapters build db-setup db-migrate compose-db-migrate run-hub run-core run smoke staging-smoke stop compose-up compose-up-prod compose-down compose-ps compose-e2e compose-fe-smoke compose-fe-refresh compose-fe-prod-smoke compose-playwright lovable-seed-check platform-mounts-check integration-gate playwright-e2e playwright-pilot playwright-pilot-matrix robot-matrix-check docs-format-check check-deploy-secrets release-gate image-build image-push image-build-push compose-release-config-check compose-release-up deploy-alpha deploy-beta deploy-gamma rollback-alpha rollback-beta rollback-gamma rollback-rehearsal-local test-cd-scripts notify-mgmt sync-handoff-queue core-seed-reset install-git-hooks precommit-gate prepush-gate push-gate ci-pr-fast ci-pr ci-pr-pilot ci-main perf-gate ocr-path-gate
 
 CORE_DIR := core
 HUB_DIR := hub
@@ -411,6 +411,11 @@ notify-mgmt:
 		$(if $(REVISION),--revision "$(REVISION)") \
 		$(if $(NEXT),--next "$(NEXT)") \
 		$(if $(DRY_RUN),--dry-run)
+
+# Rebuild Handoff Queue canvas from queue.json + plan frontmatter todos.
+sync-handoff-queue:
+	@chmod +x scripts/sync-handoff-queue-canvas.py
+	python3 scripts/sync-handoff-queue-canvas.py
 
 # Same surface as .githooks/pre-commit: env-parity → docs-format + unit + TG on fail.
 precommit-gate:

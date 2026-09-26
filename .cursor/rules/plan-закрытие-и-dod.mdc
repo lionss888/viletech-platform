@@ -21,6 +21,7 @@ alwaysApply: true
 2. Проставить `- [x]` в DoD и связанных листах в `.plan.md`.
 3. Проставить `completed` у todos в frontmatter.
 4. Только потом — «план закрыт» / parent orchestrator todo / notify.
+5. **Если план в handoff-очереди** (`.cursor/handoff/очередь-компромисс-*/queue.json`) — **MUST** обновить canvas: `make -C vdp sync-handoff-queue` (читает todos → пишет `handoff-queue.canvas.tsx`). Не правь статусы в canvas вручную.
 
 «Do NOT edit the plan file» во время **кода** не отменяет финальный **status-sync** плана при закрытии волны — если пользователь запретил править план до конца исполнения, в конце хода всё равно спроси или синхронизируй DoD+status, иначе план брошен.
 
@@ -30,5 +31,6 @@ alwaysApply: true
 - «Сделано» в чате без правок `.plan.md`.
 - Закрытие только orchestrator/batch triage при открытом DoD source-плана.
 - `completed` без проверяемого DoD (`честность-готовности`).
+- Handoff Queue canvas со статусом `next` на уже `completed` плане — забыли `make -C vdp sync-handoff-queue`.
 
 Связано: `честность-готовности`, `планирование-сверка-с-rules`, `правила-построения`.

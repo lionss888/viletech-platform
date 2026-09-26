@@ -1,19 +1,19 @@
 ---
 name: Live backlog after status-sync
-overview: 'После status-sync 2026-09-24: только 21 исходный план с open todos. Не
-  исполнять open_plans_batch_*.'
+overview: 'После A1–A3 (2026-09-26): Stage A next = A4. Live backlog sync — A1/A2/A3
+  done; не исполнять open_plans_batch_*.'
 todos:
 - id: live-01
-  content: 'api_contract_a1_forms_yaml.plan.md (3 open): нет schema Form в forms.yaml'
-  status: pending
+  content: 'api_contract_a1_forms_yaml.plan.md — done (Form schema in forms.yaml)'
+  status: completed
 - id: live-02
-  content: 'api_contract_a2_schema_helper.plan.md (3 open): после A1'
-  status: pending
+  content: 'api_contract_a2_schema_helper.plan.md — done (Load/ValidateNamedSchema)'
+  status: completed
 - id: live-03
-  content: 'api_contract_a3_httptest.plan.md (3 open): после A1/A2'
-  status: pending
+  content: 'api_contract_a3_httptest.plan.md — done (contract_schema_test health+forms)'
+  status: completed
 - id: live-04
-  content: 'api_contract_a4_docs_qg.plan.md (4 open): закрытие Stage A'
+  content: 'api_contract_a4_docs_qg.plan.md (4 open): закрытие Stage A ← next'
   status: pending
 - id: live-05
   content: 'api_contract_b1_golden.plan.md (2 open): Stage B golden'
@@ -80,10 +80,10 @@ isProject: false
 
 ## Очередь
 
-1. [api_contract_a1_forms_yaml](api_contract_a1_forms_yaml.plan.md) — 3 open — нет schema Form в forms.yaml
-2. [api_contract_a2_schema_helper](api_contract_a2_schema_helper.plan.md) — 3 open — после A1
-3. [api_contract_a3_httptest](api_contract_a3_httptest.plan.md) — 3 open — после A1/A2
-4. [api_contract_a4_docs_qg](api_contract_a4_docs_qg.plan.md) — 4 open — закрытие Stage A
+1. [api_contract_a1_forms_yaml](api_contract_a1_forms_yaml.plan.md) — done
+2. [api_contract_a2_schema_helper](api_contract_a2_schema_helper.plan.md) — done
+3. [api_contract_a3_httptest](api_contract_a3_httptest.plan.md) — done
+4. [api_contract_a4_docs_qg](api_contract_a4_docs_qg.plan.md) — 4 open — закрытие Stage A ← next
 5. [api_contract_b1_golden](api_contract_b1_golden.plan.md) — 2 open — Stage B golden
 6. [api_contract_b2_vitest](api_contract_b2_vitest.plan.md) — 3 open — Stage B Vitest
 7. [api_contract_b3_docs_qg](api_contract_b3_docs_qg.plan.md) — 4 open — закрытие Stage B
