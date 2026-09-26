@@ -9,6 +9,12 @@ NOTIFY="$ROOT/scripts/notify-mgmt.sh"
 REPO_ROOT="$(cd "$ROOT/.." && pwd)"
 cd "$ROOT"
 
+# GUI git clients (GitHub Desktop) often lack nvm/mise on PATH — pin Node like Makefile.
+PINNED_NODE_BIN="$("$ROOT/scripts/resolve-pinned-node.sh" 2>/dev/null || true)"
+if [ -n "${PINNED_NODE_BIN:-}" ]; then
+  export PATH="${PINNED_NODE_BIN}:${PATH}"
+fi
+
 REVISION="$(git -C "$REPO_ROOT" rev-parse --short HEAD 2>/dev/null || git rev-parse --short HEAD 2>/dev/null || echo local)"
 STATUS=passed
 CODE=0

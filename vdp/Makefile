@@ -17,6 +17,12 @@ export PATH := $(PINNED_GO_BIN):$(PATH)
 export GOROOT := $(shell cd "$(PINNED_GO_BIN)/.." && pwd)
 endif
 
+# Prefer Node matching fe/.nvmrc (GitHub Desktop / GUI hooks often have no nvm on PATH).
+PINNED_NODE_BIN := $(shell ./scripts/resolve-pinned-node.sh 2>/dev/null)
+ifneq ($(strip $(PINNED_NODE_BIN)),)
+export PATH := $(PINNED_NODE_BIN):$(PATH)
+endif
+
 export DATABASE_URL_CORE ?= postgres://vdp_core:vdp_core@localhost:5432/vdp_core?sslmode=disable
 export DATABASE_URL_HUB ?= postgres://vdp_hub:vdp_hub@localhost:5432/vdp_hub?sslmode=disable
 export STORE_DRIVER ?= postgres
