@@ -3,14 +3,14 @@ name: API contract A1 yaml
 overview: "Только расширение forms.yaml: components/schemas/Form и responses на 4 path’а. Без Go helper и без httptest."
 todos:
   - id: schema-form
-    content: "Добавить components/schemas/Form (+ Rate/Commission при необходимости) с required под CoreForm"
-    status: pending
+    content: Добавить components/schemas/Form (+ Rate/Commission при необходимости) с required под CoreForm
+    status: completed
   - id: path-responses
-    content: "Привязать responses к health, POST /forms, GET /forms/{id}, POST .../actions/{action}"
-    status: pending
+    content: Привязать responses к health, POST /forms, GET /forms/{id}, POST .../actions/{action}
+    status: completed
   - id: yaml-lint-sanity
-    content: "Проверить yaml валиден (parse); не трогать CI-скрипты в этом плане"
-    status: pending
+    content: Проверить yaml валиден (parse); не трогать CI-скрипты в этом плане
+    status: completed
 isProject: false
 ---
 

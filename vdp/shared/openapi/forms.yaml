@@ -9,6 +9,10 @@ paths:
       responses:
         "200":
           description: ok
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Health"
   /api/v1/auth/login:
     post:
       summary: Login
@@ -20,9 +24,56 @@ paths:
       summary: List forms
     post:
       summary: Create form
+      responses:
+        "200":
+          description: Created form
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Form"
+        "201":
+          description: Created form
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Form"
+  /api/v1/forms/{id}:
+    get:
+      summary: Get form by id
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Form
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Form"
   /api/v1/forms/{id}/actions/{action}:
     post:
       summary: Domain action transition
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: action
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Form after transition
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Form"
   /api/v1/{role}/form-payment/{id}/{path}:
     put:
       summary: Nest-parity role form action
@@ -39,3 +90,120 @@ paths:
   /api/v1/organizations/{id}/unblock-requests:
     post:
       summary: Request unblock for blocked organization
+components:
+  schemas:
+    Health:
+      type: object
+      required:
+        - status
+      properties:
+        status:
+          type: string
+        service:
+          type: string
+    Rate:
+      type: object
+      properties:
+        value:
+          type: string
+        currency:
+          type: string
+        source:
+          type: string
+    Commission:
+      type: object
+      properties:
+        reward_mode:
+          type: string
+        fee_amount:
+          type: string
+        fee_percent:
+          type: string
+        fee_fix:
+          type: string
+        fee_currency:
+          type: string
+    Form:
+      type: object
+      required:
+        - id
+        - account_id
+        - organization_id
+        - status
+        - direction
+        - kind
+        - created_at
+        - updated_at
+      properties:
+        id:
+          type: string
+        account_id:
+          type: string
+        account_name:
+          type: string
+        organization_id:
+          type: string
+        provider_id:
+          type: string
+        provider_name:
+          type: string
+        agent_id:
+          type: string
+        manager_id:
+          type: string
+        manager_name:
+          type: string
+        counterparty_id:
+          type: string
+        contract_id:
+          type: string
+        status:
+          type: string
+        direction:
+          type: string
+        kind:
+          type: string
+        channel:
+          type: string
+        correlation_id:
+          type: string
+        invoice_amount:
+          type: string
+        currency:
+          type: string
+        payment_method:
+          type: string
+        platform_postpay_mode:
+          type: string
+        rate_on_provider:
+          type: boolean
+        contract_number:
+          type: string
+        contract_date:
+          type: string
+        no_documents:
+          type: boolean
+        docs_json:
+          type: string
+        invoice_json:
+          type: string
+        confirmation_hash:
+          type: string
+        confirmation_file_id:
+          type: string
+        rate:
+          $ref: "#/components/schemas/Rate"
+        commission:
+          $ref: "#/components/schemas/Commission"
+        pog_status:
+          type: string
+        pog_file_id:
+          type: string
+        pog_kind:
+          type: string
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
