@@ -60,7 +60,7 @@ npm test в fe, make test, make compose-e2e. Команда make integration-gat
 
 ## ci-pr-fast и ci-pr
 
-Локальная страховка required checks VDP CI на pull_request. `make ci-pr-fast`: docs-format-check, test-cd-scripts, test-adapters, integration-gate. `make ci-pr`: то же плюс узкий Playwright (login-form, user-submit, provider-acl, reject-path) — как job playwright на PR. `make ci-pr-pilot`: ci-pr плюс тег @pilot-matrix (паритет GitHub path-filter). `make ci-main`: ci-pr-fast плюс полный Playwright без фильтра (как job playwright на push в main). Не заменяет `make release-gate` (полный suite / handover). Процесс агента: `.cursor/rules/vdp-ci-local-gate.mdc`. Local QG: PR Gate (smoke) это ci-pr, PR Gate (Pilot) это ci-pr-pilot, Main push (полный браузер) это ci-main.
+Локальная страховка required checks VDP CI на pull_request. `make ci-pr-fast`: docs-format-check, test-cd-scripts, test-adapters, integration-gate. `make ci-pr`: то же плюс узкий Playwright (login-form, user-submit, provider-acl, reject-path) — как job playwright на PR. `make ci-pr-pilot`: ci-pr плюс тег @pilot-matrix (паритет GitHub path-filter). `make ci-main`: ci-pr-fast плюс полный Playwright без фильтра (как job playwright на push в main). `make push-gate`: test-integration плюс ci-main — дефолт pre-push хука (полная страховка до push). Не заменяет `make release-gate` (полный suite / handover). Процесс агента: `.cursor/rules/vdp-ci-local-gate.mdc`. Local QG: перед Push это push-gate, Лестница заявки это ci-pr-pilot, Main push (полный браузер) это ci-main.
 
 ## playwright-e2e и compose-playwright
 
@@ -94,7 +94,11 @@ Browser E2E через Docker. Команды make playwright-e2e, make compose-
 
 ## precommit-gate
 
-Локальный хук-агрегат: сначала `check-env-parity` (Node и Go), затем `docs-format-check`, затем `make test`, затем path-aware `cd fe && npm test` только если в staged есть `fe/` или `vdp/fe/`, затем TG notify только при fail. Команда `make precommit-gate`. Хук `.githooks/pre-commit` вызывает тот же target. Не заменяет `ci-pr`.
+Локальный хук-агрегат: сначала `check-env-parity` (Node и Go), затем `docs-format-check`, затем `make test`, затем path-aware `cd fe && npm test` только если в staged есть `fe/` или `vdp/fe/`, затем TG notify только при fail. Команда `make precommit-gate`. Хук `.githooks/pre-commit` вызывает тот же target. Не заменяет `ci-pr` / `push-gate`.
+
+## push-gate и prepush-gate
+
+Дефолт перед Push: `make push-gate` = `test-integration` + `ci-main` (полный Playwright как на main). Хук `.githooks/pre-push` и Local QG «Проверить перед Push» вызывают `make prepush-gate` → тот же push-gate. Обход только `SKIP_PREPUSH_GATE=1`. Legacy path-aware (ci-pr / ci-pr-pilot / ci-main по путям): `PREPUSH_PATH_AWARE=1`. ~15–40 мин.
 
 ## compose-db-migrate
 

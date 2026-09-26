@@ -19,7 +19,7 @@ const RUN =
 
 const PRECOMMIT_PROMPT = `${RUN} Команда (ровно одна): cd vdp && make precommit-gate. Это тот же слой, что GitHub Desktop при Commit и .githooks/pre-commit: версии программ, оформление текстов, автоматические проверки кода.`;
 
-const PREPUSH_PROMPT = `${RUN} Команда (ровно одна): cd vdp && make prepush-gate. Это тот же слой, что GitHub Desktop при Push и .githooks/pre-push: path-aware — e2e вне узкого smoke → ci-main; лестница заявки → ci-pr-pilot; иначе ci-pr. Аварийный обход только SKIP_PREPUSH_GATE=1 (не рекомендуй без крайней нужды). Не коммить и не пушь сам.`;
+const PREPUSH_PROMPT = `${RUN} Команда (ровно одна): cd vdp && make prepush-gate. По умолчанию это make push-gate: postgres integration + ci-main (полный Playwright как на main). ~15–40 мин. Не path-aware урезание. Аварийный обход только SKIP_PREPUSH_GATE=1 (не рекомендуй). Legacy легче: PREPUSH_PATH_AWARE=1 (не рекомендуй). Не коммить и не пушь сам.`;
 
 const PILOT_PROMPT = `${RUN} Команда (ровно одна): cd vdp && make ci-pr-pilot. Это проверка перед публикацией на GitHub: код, тексты, поднятие локальной среды и проход сценариев в браузере по заявке (включая длинную лестницу ролей и Pilot Robot Matrix). Тот же уровень, что pre-push при касании ladder paths без e2e вне smoke.`;
 
@@ -84,10 +84,11 @@ const TRIAGE_PROMPT = `Local QG — подскажи проверку. Не за
 
 По git status и git diff скажи простым языком:
 1. Что менялось (экраны, правила заявки, тексты, только план).
-2. Какую кнопку нажать в Local QG (Путь распознавания / перед коммитом / перед Push / лестница / Main push полный браузер / без браузера / с браузером / До alpha / документация создать или тест / производительность / Pilot Robot Matrix).
+2. Какую кнопку нажать в Local QG (Путь распознавания / перед коммитом / перед Push (=полный push-gate) / лестница / Main push полный браузер / без браузера / с браузером / До alpha / документация создать или тест / производительность / Pilot Robot Matrix).
 3. Почему именно её, одной фразой.
 Если в diff есть forms-new, extraction, ocr-progress, create-review-copy, ocr-readiness, extraction-docling или e2e/ocr-wizard-path — первой рекомендуй «Путь распознавания» (ocr-path-gate) до ручного UAT клиента и до лестницы.
-Если в diff есть vdp/fe/e2e/** вне login-form, user-submit, provider-acl, reject-path — для merge-ready рекомендуй «Main push (полный браузер)» (ci-main), не только лестницу.
+Если готовитесь к Push — рекомендуй «Проверить перед Push» (push-gate = integration + ci-main), не только лестницу.
+Если в diff есть vdp/fe/e2e/** вне login-form, user-submit, provider-acl, reject-path — для merge-ready рекомендуй «Main push (полный браузер)» (ci-main) или «перед Push»; не только лестницу.
 Не коммить. Не пушь. Не запускай make.`;
 
 export default function LocalQG() {
@@ -113,13 +114,13 @@ export default function LocalQG() {
         vdp/docs/postmortems/TEMPLATE.txt + один prevention item в план.
       </Callout>
 
-      <Callout tone="info" title="Commit короткий · Push = gate · alpha отдельно">
+      <Callout tone="info" title="Commit короткий · Push = полный gate · alpha отдельно">
         GitHub Desktop при Commit гоняет короткий слой (как кнопка ниже). При
-        Push — path-aware: e2e вне smoke → ci-main; лестница → ci-pr-pilot;
-        иначе ci-pr. Это паритет PR/main на GitHub, не гарантия уже выкатанной
-        alpha. После merge смотрите «До alpha»: CI → Images → Deploy. Обход
+        Push — всегда make push-gate: integration + полный браузер (ci-main),
+        без урезания до smoke. Это страховка от красного VDP CI на GitHub, не
+        гарантия уже выкатанной alpha. После merge смотрите «До alpha». Обход
         Push только SKIP_PREPUSH_GATE=1. Не пушьте поверх уже идущего длинного
-        ci-pr-pilot / ci-main без крайней нужды.
+        gate без крайней нужды. ~15–40 мин на Push.
       </Callout>
 
       <Callout tone="warning" title="OCR: не звать человека до «Путь распознавания»">
@@ -150,9 +151,9 @@ export default function LocalQG() {
       <Stack gap={8}>
         <H2>2. Перед Push на GitHub</H2>
         <Text tone="secondary" size="small">
-          То же, что .githooks/pre-push: сам выбирает ci-main / ci-pr-pilot /
-          ci-pr по путям. Нажмите до Push в Desktop, чтобы ошибка была в чате.
-          ~15–40 мин при полном браузере или лестнице, меньше без них.
+          То же, что .githooks/pre-push: всегда push-gate (integration + полный
+          Playwright). Нажмите до Push в Desktop, чтобы ошибка была в чате.
+          ~15–40 мин.
         </Text>
         <Button
           onClick={() =>
@@ -162,7 +163,7 @@ export default function LocalQG() {
           Проверить перед Push
         </Button>
         <Text tone="tertiary" size="small">
-          Явно выбрать уровень:
+          Явно выбрать уровень (если не нужен полный push-gate):
         </Text>
         <Button
           onClick={() =>
@@ -571,8 +572,8 @@ export default function LocalQG() {
               Сейчас жмёте Commit в GitHub Desktop — «Проверить перед коммитом».
             </Text>
             <Text size="small">
-              Перед Push — «Проверить перед Push» (сам выберет ci-pr или
-              лестницу). Явно: «Лестница заявки» или короткая с браузером.
+              Перед Push — «Проверить перед Push» (всегда полный push-gate).
+              Явно короче: «Лестница заявки» или короткая с браузером.
             </Text>
             <Text size="small">
               После merge, alpha отстаёт — «Статус main → alpha».

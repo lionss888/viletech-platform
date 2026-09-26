@@ -1,4 +1,4 @@
-.PHONY: deps test test-integration test-adapters build db-setup db-migrate compose-db-migrate run-hub run-core run smoke staging-smoke stop compose-up compose-up-prod compose-down compose-ps compose-e2e compose-fe-smoke compose-fe-refresh compose-fe-prod-smoke compose-playwright lovable-seed-check platform-mounts-check integration-gate playwright-e2e playwright-pilot playwright-pilot-matrix robot-matrix-check docs-format-check check-deploy-secrets release-gate image-build image-push image-build-push compose-release-config-check compose-release-up deploy-alpha deploy-beta deploy-gamma rollback-alpha rollback-beta rollback-gamma rollback-rehearsal-local test-cd-scripts notify-mgmt core-seed-reset install-git-hooks precommit-gate prepush-gate ci-pr-fast ci-pr ci-pr-pilot ci-main perf-gate ocr-path-gate
+.PHONY: deps test test-integration test-adapters build db-setup db-migrate compose-db-migrate run-hub run-core run smoke staging-smoke stop compose-up compose-up-prod compose-down compose-ps compose-e2e compose-fe-smoke compose-fe-refresh compose-fe-prod-smoke compose-playwright lovable-seed-check platform-mounts-check integration-gate playwright-e2e playwright-pilot playwright-pilot-matrix robot-matrix-check docs-format-check check-deploy-secrets release-gate image-build image-push image-build-push compose-release-config-check compose-release-up deploy-alpha deploy-beta deploy-gamma rollback-alpha rollback-beta rollback-gamma rollback-rehearsal-local test-cd-scripts notify-mgmt core-seed-reset install-git-hooks precommit-gate prepush-gate push-gate ci-pr-fast ci-pr ci-pr-pilot ci-main perf-gate ocr-path-gate
 
 CORE_DIR := core
 HUB_DIR := hub
@@ -265,6 +265,15 @@ ci-main: ci-pr-fast
 	PLAYWRIGHT_ARGS= $(MAKE) playwright-e2e
 	@echo "ci-main green (local insurance for VDP CI playwright on main push)"
 
+# Pre-push default: postgres integration (GitHub job integration) + ci-main (full browser like main).
+# Used by .githooks/pre-push via scripts/prepush-gate.sh. Longer than path-aware ci-pr; intentional.
+# Does not replace release-gate (robot-matrix-check / second pilot-matrix pass / handover).
+push-gate:
+	$(MAKE) check-env-parity
+	$(MAKE) test-integration
+	$(MAKE) ci-main
+	@echo "push-gate green (full local insurance for GitHub VDP CI before push)"
+
 # Keep fe/src/lib/ved/mock.ts byte-identical to lovable-vdp/dev0; demo patches → demo-seed-overlay.ts.
 lovable-seed-check:
 	@chmod +x scripts/lovable-seed-check.sh
@@ -409,7 +418,7 @@ precommit-gate:
 	@chmod +x scripts/precommit-mgmt-notify.sh
 	./scripts/precommit-mgmt-notify.sh
 
-# Path-aware PR/main gate for push (ci-main / ci-pr-pilot / ci-pr). Used by .githooks/pre-push.
+# Default push insurance: push-gate (test-integration + ci-main). Legacy path-aware: PREPUSH_PATH_AWARE=1.
 # Bypass: SKIP_PREPUSH_GATE=1
 prepush-gate:
 	@chmod +x scripts/prepush-gate.sh scripts/pilot-matrix-paths-match.sh scripts/main-full-e2e-paths-match.sh

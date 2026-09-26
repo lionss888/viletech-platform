@@ -6,6 +6,19 @@ set -euo pipefail
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 cd "$ROOT"
 
+# GUI git clients (GitHub Desktop) often lack nvm/mise on PATH.
+PINNED_GO_BIN="$("$ROOT/scripts/resolve-pinned-go.sh" 2>/dev/null || true)"
+if [ -n "${PINNED_GO_BIN:-}" ]; then
+  export PATH="${PINNED_GO_BIN}:${PATH}"
+  if [ -d "${PINNED_GO_BIN}/../" ]; then
+    export GOROOT="$(cd "${PINNED_GO_BIN}/.." && pwd)"
+  fi
+fi
+PINNED_NODE_BIN="$("$ROOT/scripts/resolve-pinned-node.sh" 2>/dev/null || true)"
+if [ -n "${PINNED_NODE_BIN:-}" ]; then
+  export PATH="${PINNED_NODE_BIN}:${PATH}"
+fi
+
 echo "=== CI-PR Static Phase (run-all + parallel) ==="
 echo ""
 

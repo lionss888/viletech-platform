@@ -27,15 +27,23 @@ for h in pre-commit pre-push post-commit post-merge; do
 done
 
 EXPECTED_NODE="$(tr -d '[:space:]' <"$REPO_ROOT/vdp/fe/.nvmrc")"
+# Prefer resolve-pinned-node (same as Makefile / GUI wrappers) before bare PATH.
+PINNED_NODE_BIN=""
+if [ -x "$REPO_ROOT/vdp/scripts/resolve-pinned-node.sh" ]; then
+  PINNED_NODE_BIN="$("$REPO_ROOT/vdp/scripts/resolve-pinned-node.sh" 2>/dev/null || true)"
+fi
+if [ -n "$PINNED_NODE_BIN" ]; then
+  export PATH="${PINNED_NODE_BIN}:${PATH}"
+fi
 if command -v node >/dev/null 2>&1; then
   GOT="$(node --version | sed 's/^v//')"
   if [ "$GOT" = "$EXPECTED_NODE" ]; then
-    ok "node $GOT (= .nvmrc)"
+    ok "node $GOT (= .nvmrc${PINNED_NODE_BIN:+ via pinned bin})"
   else
     bad "node $GOT ≠ .nvmrc $EXPECTED_NODE"
   fi
 else
-  bad "node not on PATH"
+  bad "node not on PATH (install $EXPECTED_NODE or run apply-macos.sh --gui-wrappers)"
 fi
 
 if command -v go >/dev/null 2>&1; then
