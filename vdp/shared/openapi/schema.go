@@ -3,6 +3,7 @@ package openapi
 
 import (
 	"bytes"
+	_ "embed"
 	"encoding/json"
 	"fmt"
 	"os"
@@ -12,11 +13,19 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
+//go:embed forms.yaml
+var formsYAML []byte
+
 const formsResourceURL = "https://viletech.local/openapi/forms.json"
 
 // Document holds compiled JSON Schema definitions derived from OpenAPI components.schemas.
 type Document struct {
 	compiler *jsonschema.Compiler
+}
+
+// LoadForms loads the embedded forms OpenAPI document.
+func LoadForms() (*Document, error) {
+	return LoadBytes(formsYAML)
 }
 
 // Load reads an OpenAPI YAML file and prepares named component schemas for validation.

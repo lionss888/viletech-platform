@@ -1,16 +1,16 @@
 ---
 name: API contract A3 httptest
-overview: "Подключить schema assert к httptest create→get→action на 4 path’ах. Без docs и без полного ci-pr-fast."
+overview: Подключить schema assert к httptest create→get→action на 4 path’ах. Без docs и без полного ci-pr-fast.
 todos:
   - id: contract-test
     content: "Тест рядом со smoke_test: POST create, GET by id, POST action — Validate Form body"
-    status: pending
+    status: completed
   - id: health-assert
-    content: "Минимальный assert health 200 + shape из yaml"
-    status: pending
+    content: Минимальный assert health 200 + shape из yaml
+    status: completed
   - id: core-go-test
-    content: "cd vdp/core && go test ./internal/transport/http/... зелёный"
-    status: pending
+    content: cd vdp/core && go test ./internal/transport/http/... зелёный
+    status: completed
 isProject: false
 ---
 
