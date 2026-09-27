@@ -19,7 +19,7 @@
     },
     {
       "id": "card-14",
-      "order": "1",
+      "order": "—",
       "title": "Карточка, п.14",
       "lane": "daily",
       "note": "Участники без прочерков + gate",
@@ -32,7 +32,7 @@
     },
     {
       "id": "a2",
-      "order": "2",
+      "order": "—",
       "title": "A2 — schema helper",
       "lane": "daily",
       "note": "Load / ValidateNamedSchema",
@@ -45,7 +45,7 @@
     },
     {
       "id": "a3",
-      "order": "3",
+      "order": "—",
       "title": "A3 — httptest",
       "lane": "daily",
       "note": "health + create/get/action Form assert",
@@ -58,10 +58,10 @@
     },
     {
       "id": "a4",
-      "order": "4",
+      "order": "—",
       "title": "A4 — docs QG Stage A",
       "lane": "daily",
-      "note": "Закрытие Stage A",
+      "note": "Stage A закрыт: openapi.md + ci-pr-fast",
       "plans": [
         {
           "label": "a4_docs_qg",
@@ -70,41 +70,15 @@
       ]
     },
     {
-      "id": "uat-w2",
-      "order": "5",
-      "title": "UAT W2 parties hygiene",
+      "id": "uat-cabinet-hygiene",
+      "order": "1",
+      "title": "UAT cabinet hygiene (свод W2+W4+W5)",
       "lane": "daily",
-      "note": "Сначала repro в браузере",
+      "note": "F2/F3/F6/F7/F9/F11; сперва архив прочих планов, затем repro + фиксы; gate ci-main",
       "plans": [
         {
-          "label": "uat_w2",
-          "path": ".cursor/plans/uat_w2_parties_hygiene.plan.md"
-        }
-      ]
-    },
-    {
-      "id": "uat-w4",
-      "order": "6",
-      "title": "UAT W4 card field labels",
-      "lane": "daily",
-      "note": "Сначала repro",
-      "plans": [
-        {
-          "label": "uat_w4",
-          "path": ".cursor/plans/uat_w4_card_field_labels.plan.md"
-        }
-      ]
-    },
-    {
-      "id": "uat-w5",
-      "order": "7",
-      "title": "UAT W5 root cancel",
-      "lane": "daily",
-      "note": "Сначала repro",
-      "plans": [
-        {
-          "label": "uat_w5",
-          "path": ".cursor/plans/uat_w5_root_cancel.plan.md"
+          "label": "uat_cabinet_hygiene",
+          "path": ".cursor/plans/uat_cabinet_hygiene_2bc557a8.plan.md"
         }
       ]
     },
@@ -113,7 +87,7 @@
       "order": "—",
       "title": "UAT W7 browser ladders",
       "lane": "later",
-      "note": "Отдельный день",
+      "note": "Отдельный день; после cabinet hygiene",
       "plans": [
         {
           "label": "uat_w7",

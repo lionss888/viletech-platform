@@ -4,63 +4,47 @@
 
 ## Статус на момент снимка
 
-- A1 (`forms.yaml` schemas) — done: `vdp/shared/openapi/forms.yaml`
-- A2 (schema validate helper) — done: `vdp/shared/openapi` (`Load` / `LoadForms` / `ValidateNamedSchema`), unit valid/invalid
-- A3 (httptest schema assert) — done: `vdp/core/internal/transport/http/contract_schema_test.go` (health + create/get/action → Form)
-- Дальше по очереди: карточка п.14, затем Stage A **A4** (docs + `ci-pr-fast`), UAT W2/W4/W5
-- W7 и Stage B — позже; deploy/ops — не в ежедневной очереди
+- Stage A (A1–A4) — **done**: forms.yaml Form + 4 path’а; shared openapi helper; httptest contract assert; docs/openapi.md + `ci-pr-fast`
+- Карточка п.14 — done
+- W2 / W4 / W5 как отдельные планы — **superseded** сводным планом (не исполнять по отдельности)
+- **Next implement:** UAT cabinet hygiene (F2/F3/F6/F7/F9/F11)  
+  `.cursor/plans/uat_cabinet_hygiene_2bc557a8.plan.md`
+- Первый шаг того плана: архив прочих `.cursor/plans/*.plan.md` → `.cursor/plans/архив/` + эта очередь
+- W7, Stage B, ops/alpha — later
 
 Chat id / transcript: `ac80db37-0d65-4fe5-953d-15cb41e4282e`  
 Файл истории: `chat-ac80db37.jsonl` (рядом с этим README)
 
 ## Очередь планов
 
-1. Карточка, п.14  
-   `.cursor/plans/карточка_без_прочерков_e874f6dc.plan.md`
+1. **UAT cabinet hygiene** ← следующий implement  
+   `.cursor/plans/uat_cabinet_hygiene_2bc557a8.plan.md`  
+   Свод вместо W2+W4+W5. Scope: шум Inline Org / seed org first; смена CP не сбрасывает org; инвойс≠контракт на карточке; sticky create на detail; copy доработки docs-reject; root cancel draft рабочим path. Gate: `ci-main`. Сначала localhost repro.
 
-2. Контракт Stage A  
-   - мастер: `.cursor/plans/api_contract_lean_master.plan.md`  
-   - A1: `.cursor/plans/api_contract_a1_forms_yaml.plan.md` — done  
-   - A2: `.cursor/plans/api_contract_a2_schema_helper.plan.md` — done  
-   - A3: `.cursor/plans/api_contract_a3_httptest.plan.md` — done  
-   - A4: `.cursor/plans/api_contract_a4_docs_qg.plan.md` ← следующий implement (закрытие Stage A)
+2. Stage A (закрыт)  
+   - A1–A4 и lean master — done (`api_contract_*`)
 
-3. UAT точечно (после repro)  
-   - W2: `.cursor/plans/uat_w2_parties_hygiene.plan.md`  
-   - W4: `.cursor/plans/uat_w4_card_field_labels.plan.md`  
-   - W5: `.cursor/plans/uat_w5_root_cancel.plan.md`
+3. Later  
+   - W7: `.cursor/plans/uat_w7_browser_ladders_return.plan.md`  
+   - Stage B: B1/B2/B3  
+   - Ops/alpha: `.cursor/plans/vdp_blockers_and_deploy_99106aff.plan.md`
 
-4. Ops / alpha — не в ежедневной очереди  
-   `.cursor/plans/vdp_blockers_and_deploy_99106aff.plan.md`
-
-5. W7 — отдельный день  
-   `.cursor/plans/uat_w7_browser_ladders_return.plan.md`
-
-6. Stage B — после A, по желанию  
-   - B1: `.cursor/plans/api_contract_b1_golden.plan.md`  
-   - B2: `.cursor/plans/api_contract_b2_vitest.plan.md`  
-   - B3: `.cursor/plans/api_contract_b3_docs_qg.plan.md`
-
-Сводка: `.cursor/plans/live_backlog_after_status_sync.plan.md`
+Машиночитаемая очередь: `queue.json` (рядом). Старые W2/W4/W5 файлы ещё на диске до шага архива плана hygiene.
 
 ## Canvas (Handoff Queue)
 
-Статусы **не** правятся вручную в canvas. Источник порядка: `queue.json`; done/next считаются из frontmatter todos планов.
-
-После закрытия плана из очереди:
+Статусы **не** правятся вручную в canvas. Источник порядка: `queue.json`; done/next — из frontmatter todos планов.
 
 ```sh
 make -C vdp sync-handoff-queue
 ```
 
-Скрипт: `vdp/scripts/sync-handoff-queue-canvas.py` → пишет `handoff-queue.canvas.tsx` (в Cursor canvases + копия рядом с этим README).
+Скрипт: `vdp/scripts/sync-handoff-queue-canvas.py`.
 
 ## На другой машине
 
-1. `git pull` (нужен коммит этого handoff + A1–A3: `forms.yaml`, `vdp/shared/openapi`, `contract_schema_test.go`, если ещё не в remote).
-2. Планы уже в `.cursor/plans/` — открывайте по ссылкам выше.
-3. Живой Composer-чат Cursor **не** восстановится сам из `jsonl`. Варианты:
-   - новый чат: «продолжи с handoff `.cursor/handoff/очередь-компромисс-2026-09-26/`» и приложите `README.md` / `chat-ac80db37.jsonl`;
-   - либо полный/частичный merge через `перенос-среды` (если позже понадобится именно тот же UI-чат).
+1. `git pull` (handoff + Stage A + план `uat_cabinet_hygiene_2bc557a8`).
+2. Открыть сводный план выше; не гонять отдельно W2/W4/W5.
+3. Живой Composer-чат из `jsonl` сам не поднимется — новый чат с этим README / jsonl, либо `перенос-среды` если нужен тот же UI-чат.
 
 Не запускайте `./перенос-среды/собрать.sh` ради этого handoff — он перезапишет весь `snapshot/`.

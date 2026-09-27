@@ -50,7 +50,7 @@ const QUEUE: QueueRow[] = [
     note: "Form + $ref на 4 path’а в forms.yaml",
   },
   {
-    order: "1",
+    order: "—",
     item: "Карточка, п.14",
     plans: [
       {
@@ -62,7 +62,7 @@ const QUEUE: QueueRow[] = [
     note: "Участники без прочерков + gate",
   },
   {
-    order: "2",
+    order: "—",
     item: "A2 — schema helper",
     plans: [
       {
@@ -74,7 +74,7 @@ const QUEUE: QueueRow[] = [
     note: "Load / ValidateNamedSchema",
   },
   {
-    order: "3",
+    order: "—",
     item: "A3 — httptest",
     plans: [
       {
@@ -86,7 +86,7 @@ const QUEUE: QueueRow[] = [
     note: "health + create/get/action Form assert",
   },
   {
-    order: "4",
+    order: "—",
     item: "A4 — docs QG Stage A",
     plans: [
       {
@@ -95,43 +95,19 @@ const QUEUE: QueueRow[] = [
       }
     ],
     status: "done",
-    note: "Закрытие Stage A",
+    note: "Stage A закрыт: openapi.md + ci-pr-fast",
   },
   {
-    order: "5",
-    item: "UAT W2 parties hygiene",
+    order: "1",
+    item: "UAT cabinet hygiene (свод W2+W4+W5)",
     plans: [
       {
-        label: "uat_w2",
-        path: ".cursor/plans/uat_w2_parties_hygiene.plan.md",
+        label: "uat_cabinet_hygiene",
+        path: ".cursor/plans/uat_cabinet_hygiene_2bc557a8.plan.md",
       }
     ],
     status: "next",
-    note: "Сначала repro в браузере",
-  },
-  {
-    order: "6",
-    item: "UAT W4 card field labels",
-    plans: [
-      {
-        label: "uat_w4",
-        path: ".cursor/plans/uat_w4_card_field_labels.plan.md",
-      }
-    ],
-    status: "queued",
-    note: "Сначала repro",
-  },
-  {
-    order: "7",
-    item: "UAT W5 root cancel",
-    plans: [
-      {
-        label: "uat_w5",
-        path: ".cursor/plans/uat_w5_root_cancel.plan.md",
-      }
-    ],
-    status: "queued",
-    note: "Сначала repro",
+    note: "F2/F3/F6/F7/F9/F11; сперва архив прочих планов, затем repro + фиксы; gate ci-main",
   },
   {
     order: "—",
@@ -143,7 +119,7 @@ const QUEUE: QueueRow[] = [
       }
     ],
     status: "later",
-    note: "Отдельный день",
+    note: "Отдельный день; после cabinet hygiene",
   },
   {
     order: "—",
@@ -239,13 +215,13 @@ export default function HandoffQueue() {
 
       <Callout tone="info">
         Статусы из frontmatter todos планов (completed/cancelled = done). После
-        закрытия плана: make -C vdp sync-handoff-queue. Next: UAT W2 parties hygiene.
+        закрытия плана: make -C vdp sync-handoff-queue. Next: UAT cabinet hygiene (свод W2+W4+W5).
       </Callout>
 
       <Row gap={12} wrap>
         <Stat value={"done"} label={"A3 httptest"} tone="success" />
         <Stat value={"done"} label={"A4 docs QG Stage A"} tone="success" />
-        <Stat value={"UAT W2 parties hygiene"} label="Next implement" tone="info" />
+        <Stat value={"UAT cabinet hygiene (свод W2+W4+W5)"} label="Next implement" tone="info" />
       </Row>
 
       <Card>
