@@ -173,6 +173,18 @@ grep -q 'VDP_EXTRACTION_IMAGE' docker-compose.release.yml \
 grep -q 'VDP_EXTRACTION_IMAGE' scripts/deploy-compose-release.sh \
   || fail "deploy must require and pull VDP_EXTRACTION_IMAGE"
 
+echo "== image-build-push includes doctr pin (release --no-build) =="
+grep -q 'VDP_DOCTR_IMAGE=' scripts/image-build-push.sh \
+  || fail "image-build-push.sh must pin VDP_DOCTR_IMAGE"
+grep -q 'doctr-serve/Dockerfile' scripts/image-build-push.sh \
+  || fail "image-build-push.sh must build doctr image"
+grep -q 'VDP_DOCTR_IMAGE' docker-compose.release.yml \
+  || fail "release overlay must set doctr image from pin"
+grep -q 'VDP_DOCTR_IMAGE' scripts/deploy-compose-release.sh \
+  || fail "deploy must require VDP_DOCTR_IMAGE"
+grep -qE 'PULL_SVCS=.*doctr|pull .*doctr' scripts/deploy-compose-release.sh \
+  || fail "deploy must pull doctr service"
+
 echo "== deploy refuses an incomplete pin before touching the host =="
 write_pin "$TMP/partial.env" <<'EOF'
 IMAGE_TAG=sha-abc1234
