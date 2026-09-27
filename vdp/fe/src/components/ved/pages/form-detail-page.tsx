@@ -274,7 +274,7 @@ export function FormDetail() {
         ["Условие оплаты", form.condition === "advance" ? "Аванс" : "Постоплата"],
         ["Код ТН ВЭД", presentValue(form.hsCode) ?? "не указан"],
         ["Инвойс", presentValue(form.invoiceNumber) ?? "не указан"],
-        ...(form.contractNumber ? [["Договор", form.contractNumber] as [string, string]] : []),
+        ["Договор", presentValue(form.contractNumber) ?? "не указан"],
         ["Сумма", money(form.amountMinor, form.currency)],
         ...(form.clientCurrency ? [["Валюта клиента", form.clientCurrency] as [string, string]] : []),
         ...(form.counterpartyCurrency
@@ -537,8 +537,10 @@ export function FormDetail() {
                   <>
                     <p className="mt-2 text-sm text-muted-foreground">Контрагент не выбран</p>
                     <p className="mt-1 text-xs text-muted-foreground">
-                      Укажите контрагента здесь — иначе реквизиты получателя пустые. Справочник откроется
-                      в окне, без ухода с заявки.
+                      {String(form.status).includes("correction") &&
+                      (form.rejectMark || form.rejectText)
+                        ? "Если доработка про документы — сначала обновите файлы. Контрагента указывайте только если его действительно нет в заявке."
+                        : "Укажите контрагента здесь — иначе реквизиты получателя пустые. Справочник откроется в окне, без ухода с заявки."}
                     </p>
                     {canChangeParties && (
                       <button

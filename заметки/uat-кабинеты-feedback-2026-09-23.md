@@ -85,10 +85,12 @@
 ### F2 — Default организация = Inline Org*, не seed «ООО Пример»
 
 - **Severity:** major → **W2**
+- **Закрытие (cabinet hygiene):** `sortOrganizationsForWizard` / default seed «ООО Пример» + account org; e2e F2.
 
 ### F3 — Сброс org при смене CP
 
 - select-path: orgKept=true. **note** / regression в W2.
+- **Закрытие:** unit + e2e F3 (смена CP сохраняет org).
 
 ### F5 — no_documents → 409 invoice required на accept
 
@@ -98,10 +100,12 @@
 ### F6 — Путаница Инвойс / Контракт на карточке
 
 - **Severity:** major → **W4**
+- **Закрытие:** invoice → invoice_json.header; contract_number отдельно; labels на detail; e2e F6.
 
 ### F7 — Sticky «Создать заявку» на detail
 
 - **Severity:** minor → **W4**
+- **Закрытие:** create CTA/FAB скрыты на `/forms/:id`; e2e F7.
 
 ### F8 — ECO direct 403 при выключенном слоте
 
@@ -110,13 +114,13 @@
 ### F9 — «контрагент не указан» на доработке после docs-reject
 
 - **Severity:** major → **W4**
+- **Закрытие:** docs-reject → section documents; dashboard `контрагент выбран` при id без каталога; copy на detail.
 
 ### F11 — root_cancel: имя действия vs канон
 
 - `POST .../actions/root_cancel` → 403.  
-- Канон scenarioverify: `PUT /api/v1/manager/form-payment/{id}/cancel` от root → **canceled_by_manager** (OK).  
-- `POST .../actions/cancel` → canceled_by_user.  
-- **Severity:** major (docs/UI root_cancel_form vs живой path) → **W5** (сверить FE action-bridge / docs, не ломать manager cancel).
+- Канон: `cancel_by_manager` (UI `root_cancel_form`) или `PUT /api/v1/manager/form-payment/{id}/cancel` от root → **canceled_by_manager**.  
+- **Закрытие:** docs uat-scenarios + bridge test + e2e F11; не новый domain action.
 
 ### F12 — Bank без Idempotency-Key → 400
 

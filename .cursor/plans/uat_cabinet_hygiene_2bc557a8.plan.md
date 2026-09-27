@@ -4,31 +4,31 @@ overview: "Один план вместо W2+W4+W5: гигиена org/CP, ин�
 todos:
   - id: archive-plans
     content: Создать .cursor/plans/архив/; переместить все прочие *.plan.md; обновить queue.json + sync-handoff-queue + handoff README
-    status: pending
+    status: completed
   - id: repro-baseline
     content: Localhost repro F2/F6/F7/F9/F11 (и spot F3) до кода; зафиксировать скрин/DOM
-    status: pending
+    status: completed
   - id: fix-f2-org-sort
     content: Seed-first sort/default org в мастере + unit
-    status: pending
+    status: completed
   - id: fix-f3-test
     content: "Unit/E2E: смена CP сохраняет org"
-    status: pending
+    status: completed
   - id: fix-f6-invoice-contract
     content: Убрать invoice в contract_number в create/patch; labels на detail; unit/E2E
-    status: pending
+    status: completed
   - id: fix-f7-sticky-create
     content: Скрыть/ослабить create CTA/FAB на form detail
-    status: pending
+    status: completed
   - id: fix-f9-corrections-copy
     content: "Docs-reject: не misleading CP copy; dashboard/detail выровнять"
-    status: pending
+    status: completed
   - id: fix-f11-root-cancel
     content: Сверить FE/docs с cancel_by_manager path; E2E root cancel draft
-    status: pending
+    status: completed
   - id: qg-ci-main
     content: check-env-parity → unit → ci-main; закрыть DoD/журнал; notify-mgmt; sync-handoff-queue
-    status: pending
+    status: completed
 isProject: false
 ---
 

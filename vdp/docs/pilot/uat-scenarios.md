@@ -74,9 +74,9 @@ Seed logins из getting-started.md. Стек make compose-up. App contour /logi
 
 Шаг. /admin list accounts block unblock.
 
-Шаг. root_cancel on draft test form.
+Шаг. Отмена draft: UI root_cancel_form либо POST forms id actions cancel_by_manager, либо PUT manager form-payment id cancel от root. Не POST actions root_cancel.
 
-Ожидание. Admin API 200. Cancel transitions valid.
+Ожидание. Статус canceled_by_manager. Чужая роль получает явный запрет.
 
 ## Сценарий Reject corrections
 

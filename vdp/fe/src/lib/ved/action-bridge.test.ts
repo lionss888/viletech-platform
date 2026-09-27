@@ -19,6 +19,14 @@ describe("demoActionToCore", () => {
     expect(demoActionToCore("mgr_cancel")).toBe("cancel_by_manager");
   });
 
+  it("maps root cancel to cancel_by_manager (not root_cancel)", () => {
+    expect(demoActionToCore("root_cancel_form")).toBe("cancel_by_manager");
+    expect(resolveDemoAction("root_cancel_form")).toEqual({
+      kind: "transition",
+      coreAction: "cancel_by_manager",
+    });
+  });
+
   it("maps provider actions", () => {
     expect(demoActionToCore("prov_payment_sent")).toBe("provider_sent");
     expect(demoActionToCore("prov_payment_start")).toBe("provider_start");
