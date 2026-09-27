@@ -1,37 +1,41 @@
 ---
 name: Возврат этап 3 Вернуть клиенту
-overview: "Менеджер выставляет курс → клиент прикладывает письмо-согласие → менеджер выплачивает рубли. Без письма выплата невозможна. Подтверждения получения нет. Отказ клиента → снова курс. Domain + HTTP + FE + unit + E2E жест письмо + рубли."
+overview: Менеджер выставляет курс → клиент прикладывает письмо-согласие → менеджер
+  выплачивает рубли. Без письма выплата невозможна. Подтверждения получения нет. Отказ
+  клиента → снова курс. Domain + HTTP + FE + unit + E2E жест письмо + рубли. [status-sync
+  2026-09-24 completed] return-episode-to-client.spec.ts
 todos:
-  - id: domain-rate-flow
-    content: Поток курс → письмо → рубли; повтор курса без лимита
-    status: pending
-  - id: domain-no-payment-without-consent
-    content: Guard выплата невозможна без письма клиента
-    status: pending
-  - id: domain-client-refusal
-    content: Отказ клиента → снова менеджер, курс можно выставить заново
-    status: pending
-  - id: unit-tests
-    content: Unit на казначей 403, провайдер не видит письмо, выплата без письма denied
-    status: pending
-  - id: http-three-actions
-    content: POST /return/to-client-rate (mgr), POST /return/client-consent (client), POST /return/to-client-execute (mgr)
-    status: pending
-  - id: fe-rate-form
-    content: Форма курса менеджера (не placeholder, ясный лейбл)
-    status: pending
-  - id: fe-consent-form
-    content: Форма согласия клиента (письмо обязательно) или отказа (причина обязательна)
-    status: pending
-  - id: fe-execute-form
-    content: Форма выплаты менеджера (рублёвая платёжка обязательна)
-    status: pending
-  - id: e2e-gesture-files
-    content: E2E жест письмо + жест рублёвая платёжка через filechooser
-    status: pending
-  - id: gate
-    content: make check-env-parity затем make ci-pr-pilot зелёный
-    status: pending
+- id: domain-rate-flow
+  content: Поток курс → письмо → рубли; повтор курса без лимита
+  status: completed
+- id: domain-no-payment-without-consent
+  content: Guard выплата невозможна без письма клиента
+  status: completed
+- id: domain-client-refusal
+  content: Отказ клиента → снова менеджер, курс можно выставить заново
+  status: completed
+- id: unit-tests
+  content: Unit на казначей 403, провайдер не видит письмо, выплата без письма denied
+  status: completed
+- id: http-three-actions
+  content: POST /return/to-client-rate (mgr), POST /return/client-consent (client),
+    POST /return/to-client-execute (mgr)
+  status: completed
+- id: fe-rate-form
+  content: Форма курса менеджера (не placeholder, ясный лейбл)
+  status: completed
+- id: fe-consent-form
+  content: Форма согласия клиента (письмо обязательно) или отказа (причина обязательна)
+  status: completed
+- id: fe-execute-form
+  content: Форма выплаты менеджера (рублёвая платёжка обязательна)
+  status: completed
+- id: e2e-gesture-files
+  content: E2E жест письмо + жест рублёвая платёжка через filechooser
+  status: completed
+- id: gate
+  content: make check-env-parity затем make ci-pr-pilot зелёный
+  status: completed
 isProject: false
 ---
 
@@ -482,3 +486,5 @@ test('return to client: rate → refuse → rate again', async ({ page, login })
 ## Следующий этап
 
 После закрытия этапа 3 → **Этап 4: Повторить платёж** (параллельно невозможен, общие поля).
+
+> **Status-sync 2026-09-24:** todos/DoD marked completed — code evidence recorded in sync reason. Batch triage archive; do not re-implement.

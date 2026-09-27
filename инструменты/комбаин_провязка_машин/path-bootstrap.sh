@@ -31,3 +31,21 @@ fi
 if [ -n "${VDP_REPO_ROOT:-}" ] && [ -f "$VDP_REPO_ROOT/vdp/fe/.nvmrc" ] && command -v nvm >/dev/null 2>&1; then
   nvm use --silent "$(tr -d '[:space:]' <"$VDP_REPO_ROOT/vdp/fe/.nvmrc")" >/dev/null 2>&1 || true
 fi
+
+# Same resolver as Makefile / check-env-parity (portable ~/.local/node, nvm, mise, brew…)
+if [ -n "${VDP_REPO_ROOT:-}" ] && [ -x "$VDP_REPO_ROOT/vdp/scripts/resolve-pinned-node.sh" ]; then
+  _pinned_node_bin="$("$VDP_REPO_ROOT/vdp/scripts/resolve-pinned-node.sh" 2>/dev/null || true)"
+  if [ -n "${_pinned_node_bin:-}" ]; then
+    export PATH="${_pinned_node_bin}:${PATH}"
+  fi
+  unset _pinned_node_bin
+fi
+
+# Pinned Go from Makefile resolve-pinned-go (sdk/go1.22.x) when present
+if [ -n "${VDP_REPO_ROOT:-}" ] && [ -x "$VDP_REPO_ROOT/vdp/scripts/resolve-pinned-go.sh" ]; then
+  _pinned_go_bin="$("$VDP_REPO_ROOT/vdp/scripts/resolve-pinned-go.sh" 2>/dev/null || true)"
+  if [ -n "${_pinned_go_bin:-}" ]; then
+    export PATH="${_pinned_go_bin}:${PATH}"
+  fi
+  unset _pinned_go_bin
+fi

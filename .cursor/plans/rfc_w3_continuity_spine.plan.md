@@ -1,19 +1,20 @@
 ---
 name: RFC W3 Continuity Spine
-overview: "Преемственность U→M→P: выключенный слот не gate; включённый mandatory участник — gate; 1–4 без soft-lock и без BPM."
+overview: 'Преемственность U→M→P: выключенный слот не gate; включённый mandatory участник
+  — gate; 1–4 без soft-lock и без BPM. [status-sync 2026-09-24 completed] continuity_spine_test.go'
 todos:
-  - id: w3-gate-rule
-    content: "Правило: disabled process actor → слот не gate; manager/root advance"
-    status: pending
-  - id: w3-spine-actions
-    content: "Проверить/дотянуть AuthZ actions стержня user/manager/provider return paths"
-    status: pending
-  - id: w3-reenable-gate
-    content: "Enable+mandatory ICO/ECO снова требует их шаг; затем M→P"
-    status: pending
-  - id: w3-journey-tests
-    content: "Service journey tests a/b/c/d преемственности"
-    status: pending
+- id: w3-gate-rule
+  content: 'Правило: disabled process actor → слот не gate; manager/root advance'
+  status: completed
+- id: w3-spine-actions
+  content: Проверить/дотянуть AuthZ actions стержня user/manager/provider return paths
+  status: completed
+- id: w3-reenable-gate
+  content: Enable+mandatory ICO/ECO снова требует их шаг; затем M→P
+  status: completed
+- id: w3-journey-tests
+  content: Service journey tests a/b/c/d преемственности
+  status: completed
 isProject: false
 ---
 
@@ -64,6 +65,8 @@ isProject: false
 
 ## DoD W3
 
-- [ ] (a)–(e) green
-- [ ] Нет soft-lock на org/form waiting при disabled compliance
-- [ ] Честно: «стержень пилота», не «полный Nest lifecycle»
+- [x] (a)–(e) green
+- [x] Нет soft-lock на org/form waiting при disabled compliance
+- [x] Честно: «стержень пилота», не «полный Nest lifecycle»
+
+> **Status-sync 2026-09-24:** todos/DoD marked completed — code evidence recorded in sync reason. Batch triage archive; do not re-implement.

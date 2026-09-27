@@ -5,6 +5,8 @@ import {
   authPost,
   loginAllRoles,
   purgeDemoMockCounterparties,
+  resolveTreasurerActorRole,
+  setTreasurerDisposition,
   uploadAndAttachInvoice,
 } from "./helpers/api";
 import { clickAction, confirmModal } from "./helpers/click-action";
@@ -158,9 +160,10 @@ test.describe("Pilot robot matrix export treasurer flow @pilot-matrix", () => {
     await clickAction(page, /Запустить исполнение платежа/i);
     await expectFormStatus(page, "payment_processing", { timeout: 30_000 });
 
-    // 11. Treasurer confirms payment (export flow: payment_sent_treasurer)
+    // 11. Treasurer (or disposition recipient) confirms payment (export → payment_sent_treasurer)
+    const treasActor = await resolveTreasurerActorRole(tokens.root);
     await logout();
-    await loginAs("treasurer");
+    await loginAs(treasActor);
     await waitForFormDetail(page, formId);
     // Note: For export, treasurer_confirm transitions to payment_sent_treasurer instead of payment_processing
     await clickAction(page, /Подтвердить покрытие/);
@@ -180,12 +183,134 @@ test.describe("Pilot robot matrix export treasurer flow @pilot-matrix", () => {
     await confirmModal(page);
     await expectFormStatus(page, "signing_order_verification_treasurer", { timeout: 30_000 });
 
-    // 14. Treasurer completes the transaction
+    // 14. Disposition recipient completes the transaction
     await logout();
-    await loginAs("treasurer");
+    await loginAs(treasActor);
     await waitForFormDetail(page, formId);
     await clickAction(page, /Завершить сделку/i);
     await confirmModal(page);
     await expectFormStatus(page, "completed", { timeout: 30_000 });
+  });
+
+  test("export treasurer skip disposition via manager @pilot-matrix", async ({
+    page,
+    loginAs,
+    logout,
+  }) => {
+    test.setTimeout(420_000);
+    const { pack, packDir } = loadRobotPack();
+    const orderPdf = readRobotPdf(packDir, pack.docs.order_pdf);
+    const verificationPdf = readRobotPdf(packDir, pack.docs.report_pdf);
+    const tokens = await loginAllRoles();
+    await purgeDemoMockCounterparties(tokens.root);
+    await setTreasurerDisposition(tokens.root, "skip");
+    try {
+      expect(await resolveTreasurerActorRole(tokens.root)).toBe("manager");
+      const formId = await createExportDraftForm(
+        tokens.user,
+        pack.deal_fields.currency,
+        pack.deal_fields.contract_date,
+      );
+      await uploadAndAttachInvoice(tokens.user, formId);
+
+      await loginAs("user");
+      await waitForFormDetail(page, formId);
+      await clickAction(page, /^Отправить на проверку$/);
+      await expectFormStatus(page, AFTER_SUBMIT, { timeout: 30_000 });
+
+      await logout();
+      await loginAs("manager");
+      await waitForFormDetail(page, formId);
+      for (let i = 0; i < 6; i += 1) {
+        const status = await page.getByTestId("status-badge").first().getAttribute("data-status");
+        if (status === "form_accepted") break;
+        if (status === "organization_waiting_verification" || status === "form_waiting_verification") {
+          await clickAction(page, TAKE_IN_REVIEW);
+          await expect
+            .poll(async () => (await page.getByTestId("status-badge").first().getAttribute("data-status")) ?? "", {
+              timeout: 30_000,
+            })
+            .not.toBe(status!);
+          continue;
+        }
+        if (status === "organization_verification") {
+          const approve = page.getByRole("button", { name: APPROVE_ORG });
+          if (await approve.isVisible().catch(() => false)) {
+            await approve.click();
+          } else {
+            await clickAction(page, CONFIRM_FORM);
+          }
+          await expect
+            .poll(async () => (await page.getByTestId("status-badge").first().getAttribute("data-status")) ?? "", {
+              timeout: 30_000,
+            })
+            .not.toBe("organization_verification");
+          continue;
+        }
+        if (status === "form_verification") {
+          await clickAction(page, CONFIRM_FORM);
+          await expectFormStatus(page, "form_accepted", { timeout: 30_000 });
+          break;
+        }
+        throw new Error(`unexpected status in review ladder: ${status}`);
+      }
+      await expectFormStatus(page, "form_accepted", { timeout: 30_000 });
+
+      await clickAction(page, /Сформировать (доп\. )?поручение/i);
+      await expectFormStatus(page, "advance_signing_order", { timeout: 30_000 });
+
+      await logout();
+      await loginAs("user");
+      await waitForFormDetail(page, formId);
+      await clickAction(page, /Загрузить (доп\. )?поручение/i);
+      await attachModalFile(page, orderPdf, "advance-order.pdf");
+      await confirmModal(page);
+      await expectFormStatus(page, /^advance_signing_order_(waiting_verification|verification)$/, { timeout: 30_000 });
+
+      await logout();
+      await loginAs("manager");
+      await waitForFormDetail(page, formId);
+      let currentStatus = await page.getByTestId("status-badge").first().getAttribute("data-status");
+      if (currentStatus === "advance_signing_order_waiting_verification") {
+        await clickAction(page, /Взять (доп\. )?поручение в проверку/i);
+        await expectFormStatus(page, "advance_signing_order_verification", { timeout: 30_000 });
+      }
+      await clickAction(page, /Подтвердить (доп\. )?поручение/i);
+      await expectFormStatus(page, "advance_signing_order_accepted", { timeout: 30_000 });
+      await clickAction(page, /Подтвердить получение средств/i);
+      await expectFormStatus(page, "payment_received", { timeout: 30_000 });
+      await clickAction(page, /^Назначить платёжного провайдера$/);
+      const providerSelect = page.locator("label").filter({ hasText: /Провайдер исполнения/i }).locator("select");
+      await expect(providerSelect).toBeVisible({ timeout: 10_000 });
+      await expect.poll(async () => providerSelect.locator("option").count(), { timeout: 20_000 }).toBeGreaterThan(1);
+      await providerSelect.selectOption({ index: 1 });
+      await confirmModal(page);
+      await clickAction(page, /Запустить исполнение платежа/i);
+      await expectFormStatus(page, "payment_processing", { timeout: 30_000 });
+
+      // Skip disposition: manager keeps session and runs treasurer CTAs (continuity label).
+      await clickAction(page, /Подтвердить (покрытие|поступление)/);
+      await confirmModal(page);
+      await expectFormStatus(page, "payment_sent_treasurer", { timeout: 30_000 });
+      await clickAction(page, /Сформировать поручение казначея/i);
+      await expectFormStatus(page, "signing_order_treasurer", { timeout: 30_000 });
+
+      await logout();
+      await loginAs("user");
+      await waitForFormDetail(page, formId);
+      await clickAction(page, /Загрузить верификационный документ/i);
+      await attachModalFile(page, verificationPdf, "verification.pdf");
+      await confirmModal(page);
+      await expectFormStatus(page, "signing_order_verification_treasurer", { timeout: 30_000 });
+
+      await logout();
+      await loginAs("manager");
+      await waitForFormDetail(page, formId);
+      await clickAction(page, /Завершить сделку/i);
+      await confirmModal(page);
+      await expectFormStatus(page, "completed", { timeout: 30_000 });
+    } finally {
+      await setTreasurerDisposition(tokens.root, "on");
+    }
   });
 });

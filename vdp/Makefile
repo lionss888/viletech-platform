@@ -1,4 +1,4 @@
-.PHONY: deps test test-integration test-adapters build db-setup db-migrate compose-db-migrate run-hub run-core run smoke staging-smoke stop compose-up compose-up-prod compose-down compose-ps compose-e2e compose-fe-smoke compose-fe-refresh compose-fe-prod-smoke compose-playwright lovable-seed-check platform-mounts-check integration-gate playwright-e2e playwright-pilot playwright-pilot-matrix robot-matrix-check docs-format-check check-deploy-secrets release-gate image-build image-push image-build-push compose-release-config-check compose-release-up deploy-alpha deploy-beta deploy-gamma rollback-alpha rollback-beta rollback-gamma rollback-rehearsal-local test-cd-scripts notify-mgmt core-seed-reset install-git-hooks precommit-gate prepush-gate ci-pr-fast ci-pr ci-pr-pilot ci-main perf-gate ocr-path-gate
+.PHONY: deps test test-integration test-adapters build db-setup db-migrate compose-db-migrate run-hub run-core run smoke staging-smoke stop compose-up compose-up-prod compose-down compose-ps compose-e2e compose-fe-smoke compose-fe-refresh compose-fe-prod-smoke compose-playwright lovable-seed-check platform-mounts-check integration-gate playwright-e2e playwright-pilot playwright-pilot-matrix robot-matrix-check docs-format-check check-deploy-secrets release-gate image-build image-push image-build-push compose-release-config-check compose-release-up deploy-alpha deploy-beta deploy-gamma rollback-alpha rollback-beta rollback-gamma rollback-rehearsal-local test-cd-scripts notify-mgmt sync-handoff-queue core-seed-reset install-git-hooks precommit-gate prepush-gate push-gate ci-pr-fast ci-pr ci-pr-pilot ci-main perf-gate ocr-path-gate
 
 CORE_DIR := core
 HUB_DIR := hub
@@ -15,6 +15,12 @@ PINNED_GO_BIN := $(shell ./scripts/resolve-pinned-go.sh 2>/dev/null)
 ifneq ($(strip $(PINNED_GO_BIN)),)
 export PATH := $(PINNED_GO_BIN):$(PATH)
 export GOROOT := $(shell cd "$(PINNED_GO_BIN)/.." && pwd)
+endif
+
+# Prefer Node matching fe/.nvmrc (GitHub Desktop / GUI hooks often have no nvm on PATH).
+PINNED_NODE_BIN := $(shell ./scripts/resolve-pinned-node.sh 2>/dev/null)
+ifneq ($(strip $(PINNED_NODE_BIN)),)
+export PATH := $(PINNED_NODE_BIN):$(PATH)
 endif
 
 export DATABASE_URL_CORE ?= postgres://vdp_core:vdp_core@localhost:5432/vdp_core?sslmode=disable
@@ -45,7 +51,7 @@ test:
 	cd manager-ops && go test ./...
 	cd release-gate && go test ./...
 
-.PHONY: extraction-export-gold extraction-train-eval extraction-yandex-smoke extraction-docling-smoke extraction-ollama-ensure extraction-eval-own manager-ops-export
+.PHONY: extraction-export-gold extraction-train-eval extraction-yandex-smoke extraction-docling-smoke extraction-doctr-smoke extraction-ollama-ensure extraction-eval-own manager-ops-export
 extraction-export-gold:
 	cd extraction && go run ./cmd/export-gold -gold-dir="$${EXTRACTION_GOLD_DIR:-./.gold}" -out="$${EXTRACTION_EXPORT_DIR:-./.export}"
 
@@ -65,6 +71,10 @@ extraction-yandex-smoke:
 extraction-docling-smoke:
 	@chmod +x scripts/extraction-docling-smoke.sh
 	@./scripts/extraction-docling-smoke.sh
+
+extraction-doctr-smoke:
+	@chmod +x scripts/extraction-doctr-smoke.sh
+	@./scripts/extraction-doctr-smoke.sh
 
 # Before human OCR UAT: Docling smoke + wizard journey (pending must end in done or fail).
 # Requires compose-up. Does not run @pilot-matrix. New e2e is outside PR-smoke → merge-ready needs ci-main.
@@ -255,6 +265,15 @@ ci-main: ci-pr-fast
 	PLAYWRIGHT_ARGS= $(MAKE) playwright-e2e
 	@echo "ci-main green (local insurance for VDP CI playwright on main push)"
 
+# Pre-push default: postgres integration (GitHub job integration) + ci-main (full browser like main).
+# Used by .githooks/pre-push via scripts/prepush-gate.sh. Longer than path-aware ci-pr; intentional.
+# Does not replace release-gate (robot-matrix-check / second pilot-matrix pass / handover).
+push-gate:
+	$(MAKE) check-env-parity
+	$(MAKE) test-integration
+	$(MAKE) ci-main
+	@echo "push-gate green (full local insurance for GitHub VDP CI before push)"
+
 # Keep fe/src/lib/ved/mock.ts byte-identical to lovable-vdp/dev0; demo patches → demo-seed-overlay.ts.
 lovable-seed-check:
 	@chmod +x scripts/lovable-seed-check.sh
@@ -393,13 +412,18 @@ notify-mgmt:
 		$(if $(NEXT),--next "$(NEXT)") \
 		$(if $(DRY_RUN),--dry-run)
 
+# Rebuild Handoff Queue canvas from queue.json + plan frontmatter todos.
+sync-handoff-queue:
+	@chmod +x scripts/sync-handoff-queue-canvas.py
+	python3 scripts/sync-handoff-queue-canvas.py
+
 # Same surface as .githooks/pre-commit: env-parity → docs-format + unit + TG on fail.
 precommit-gate:
 	$(MAKE) check-env-parity
 	@chmod +x scripts/precommit-mgmt-notify.sh
 	./scripts/precommit-mgmt-notify.sh
 
-# Path-aware PR/main gate for push (ci-main / ci-pr-pilot / ci-pr). Used by .githooks/pre-push.
+# Default push insurance: push-gate (test-integration + ci-main). Legacy path-aware: PREPUSH_PATH_AWARE=1.
 # Bypass: SKIP_PREPUSH_GATE=1
 prepush-gate:
 	@chmod +x scripts/prepush-gate.sh scripts/pilot-matrix-paths-match.sh scripts/main-full-e2e-paths-match.sh

@@ -9,8 +9,10 @@ import {
   extractionAmountWarnings,
   extractionPanelMode,
   isLowConfidence,
+  layoutTextFromWarnings,
   orderExtractionWarnings,
   parseExtractionResult,
+  shortExtractionWarnings,
 } from "@/lib/ved/extraction";
 import { cn } from "@/lib/utils";
 
@@ -23,28 +25,72 @@ function CatalogPick({
   options,
   disabled,
   onChange,
+  onEnsureMissing,
 }: {
   value: string;
   options: { value: string; label: string }[];
   disabled: boolean;
   onChange: (value: string) => void;
+  /** When OCR value is missing from catalog — create and select it. */
+  onEnsureMissing?: (code: string) => Promise<{ value: string; label: string } | null>;
 }) {
-  const known = options.some((option) => option.value === value);
+  const [localOptions, setLocalOptions] = useState(options);
+  const [ensuring, setEnsuring] = useState(false);
+  const [ensureNote, setEnsureNote] = useState<string | null>(null);
+  useEffect(() => {
+    setLocalOptions(options);
+  }, [options]);
+  const known = localOptions.some((option) => option.value === value);
+
+  useEffect(() => {
+    if (!value || known || disabled || !onEnsureMissing || ensuring) return;
+    let cancelled = false;
+    setEnsuring(true);
+    void onEnsureMissing(value)
+      .then((created) => {
+        if (cancelled || !created) return;
+        setLocalOptions((prev) =>
+          prev.some((o) => o.value === created.value) ? prev : [...prev, created],
+        );
+        onChange(created.value);
+        setEnsureNote(`Код «${created.value}» добавлен в справочник и подставлен.`);
+      })
+      .finally(() => {
+        if (!cancelled) setEnsuring(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- run once per missing value
+  }, [value, known, disabled, onEnsureMissing]);
+
+  const selectValue = value && (known || Boolean(onEnsureMissing) || ensuring) ? value : known ? value : "";
+  const showProvisional = Boolean(value) && !known;
   return (
     <span className="mt-1 block min-w-0">
-      {!known && value ? (
+      {ensureNote ? <span className="mb-1 block text-[11px] text-muted-foreground">{ensureNote}</span> : null}
+      {!known && value && !onEnsureMissing ? (
         <span className="mb-1 block text-[11px] text-amber-700">
           Распознано «{value}» — нет в справочнике. Выберите ближайшее значение, код не сбрасывается сам.
         </span>
       ) : null}
+      {ensuring ? (
+        <span className="mb-1 block text-[11px] text-muted-foreground">Добавляем код в справочник…</span>
+      ) : null}
       <select
         className="w-full min-w-0 rounded-md border border-border bg-background px-2 py-1.5 text-sm"
-        value={known ? value : ""}
-        disabled={disabled}
+        value={selectValue || (showProvisional ? value : "")}
+        disabled={disabled || ensuring}
         onChange={(event) => onChange(event.target.value)}
+        data-testid="extraction-hs-pick"
       >
-        <option value="">{known ? "Не выбрано" : "Выберите из справочника"}</option>
-        {options.map((option) => (
+        <option value="">
+          {known || value ? "Не выбрано" : "Выберите из справочника"}
+        </option>
+        {showProvisional ? (
+          <option value={value}>{value} · OCR</option>
+        ) : null}
+        {localOptions.map((option) => (
           <option key={option.value} value={option.value}>
             {option.label}
           </option>
@@ -71,6 +117,8 @@ export type ExtractionReviewPanelProps = {
   formAmountMinor?: number;
   formCurrency?: string;
   documentKind?: string;
+  /** Ensure missing HS code in catalog (AuthZ H1). */
+  onEnsureHsCode?: (code: string) => Promise<{ value: string; label: string } | null>;
 };
 
 /**
@@ -92,6 +140,7 @@ export function ExtractionReviewPanel({
   formAmountMinor,
   formCurrency,
   documentKind,
+  onEnsureHsCode,
 }: ExtractionReviewPanelProps) {
   const qc = useQueryClient();
   const parsed = parseExtractionResult(invoiceJson);
@@ -183,27 +232,32 @@ export function ExtractionReviewPanel({
           <button
             type="button"
             className="rounded-md bg-primary px-3 py-1.5 text-xs font-semibold text-primary-foreground disabled:opacity-50"
-            disabled={startMut.isPending}
+            disabled={startMut.isPending || mode === "pending"}
             onClick={requestStartExtraction}
+            data-testid="extraction-start"
+            title={mode === "pending" ? "Распознавание уже выполняется" : undefined}
           >
             {draft ? "Перезапустить распознавание" : "Запустить распознавание"}
           </button>
-          {draft && !draft.meta.confirmed ? (
+          {mode === "pending" || (draft && !draft.meta.confirmed) ? (
             <button
               type="button"
               className="rounded-md bg-destructive-soft px-3 py-1.5 text-xs font-semibold text-destructive disabled:opacity-50"
               disabled={cancelMut.isPending}
               onClick={() => cancelMut.mutate()}
+              data-testid="extraction-stop"
             >
-              Отменить распознавание
+              {mode === "pending" && !draft ? "Остановить распознавание" : "Отменить распознавание"}
             </button>
           ) : null}
         </div>
         {!draft?.meta.confirmed ? (
           <p className="text-xs text-muted-foreground" data-testid="extraction-help">
-            {canConfirm
-              ? "Распознавание читает загруженные документы и подставляет сумму, валюту, реквизиты и позиции в форму. Заявка при этом никуда не отправляется — вы сможете проверить и исправить каждое поле до подтверждения. Перезапуск заменит текущие распознанные данные новыми."
-              : "Распознавание читает загруженные документы и подставляет сумму, валюту, реквизиты и позиции в форму. В мастере поля правятся в форме заявки; здесь — просмотр результата и перезапуск. Подтверждение распознавания на этом шаге недоступно."}
+            {mode === "pending"
+              ? "Распознавание уже выполняется. Можно остановить или дождаться результата здесь."
+              : canConfirm
+                ? "Распознавание читает загруженные документы и подставляет сумму, валюту, реквизиты и позиции в форму. Заявка при этом никуда не отправляется — вы сможете проверить и исправить каждое поле до подтверждения. Перезапуск заменит текущие распознанные данные новыми."
+                : "Распознавание читает загруженные документы и подставляет сумму, валюту, реквизиты и позиции в форму. В мастере поля правятся в форме заявки; здесь — просмотр результата и перезапуск."}
           </p>
         ) : (
           <p className="text-xs text-muted-foreground" data-testid="extraction-help">
@@ -230,7 +284,9 @@ export function ExtractionReviewPanel({
   if (!draft) return null;
 
   const confirmed = Boolean(draft.meta.confirmed);
-  const editable = canConfirm && !confirmed;
+  const editable = !confirmed;
+  const layoutText = layoutTextFromWarnings(draft.warnings);
+  const shortWarnings = shortExtractionWarnings(draft.warnings);
   const updateHeader = (key: keyof ExtractionResult["header"], value: string) => {
     setDraft({ ...draft, header: { ...draft.header, [key]: value } });
   };
@@ -339,6 +395,7 @@ export function ExtractionReviewPanel({
             value={draft.header.hs_codes?.[0] ?? ""}
             options={hsOptions}
             disabled={!editable}
+            onEnsureMissing={onEnsureHsCode}
             onChange={(value) =>
               setDraft({
                 ...draft,
@@ -425,6 +482,7 @@ export function ExtractionReviewPanel({
                     value={row.hs_code ?? ""}
                     options={hsOptions}
                     disabled={!editable}
+                    onEnsureMissing={onEnsureHsCode}
                     onChange={(value) => updateLine(idx, { hs_code: value })}
                   />
                   <span className="block text-[10px] text-muted-foreground">
@@ -448,12 +506,20 @@ export function ExtractionReviewPanel({
             .filter(Boolean)
             .join(" · ") || "Дополнительные сведения о документе не распознаны."}
         </p>
-        {draft.warnings && draft.warnings.length > 0 ? (
+        {shortWarnings.length > 0 ? (
           <ul className="list-disc space-y-0.5 pl-4 text-amber-600" data-testid="extraction-warnings">
-            {draft.warnings.map((warning, i) => (
+            {shortWarnings.map((warning, i) => (
               <li key={i}>{warning}</li>
             ))}
           </ul>
+        ) : null}
+        {layoutText ? (
+          <details className="rounded-md border border-border bg-muted/40 px-2 py-1.5" data-testid="extraction-layout-text">
+            <summary className="cursor-pointer text-xs font-medium text-foreground">Текст документа</summary>
+            <pre className="mt-2 max-h-48 overflow-auto whitespace-pre-wrap break-words font-mono text-[11px] text-muted-foreground">
+              {layoutText}
+            </pre>
+          </details>
         ) : null}
       </div>
       {(documentKind === "order"
@@ -469,14 +535,19 @@ export function ExtractionReviewPanel({
           ))}
         </ul>
       ) : null}
-      {!confirmed && canConfirm ? (
+      {!confirmed && (canConfirm || embedded) ? (
         <button
           type="button"
           className="rounded-md bg-accent px-3 py-2 text-sm font-medium text-accent-foreground disabled:opacity-50"
           disabled={mutation.isPending}
           onClick={() => mutation.mutate()}
+          data-testid="extraction-confirm"
         >
-          {mutation.isPending ? "Сохранение…" : "Подтвердить распознавание"}
+          {mutation.isPending
+            ? "Сохранение…"
+            : embedded
+              ? "Подставить в заявку"
+              : "Подтвердить распознавание"}
         </button>
       ) : confirmed ? (
         <div className="space-y-2">

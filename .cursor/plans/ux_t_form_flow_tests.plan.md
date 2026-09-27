@@ -1,10 +1,12 @@
 ---
 name: UX T Form flow tests
-overview: "Автотесты: visibleForms manager drafts, timeline labels, next-step hint, document preview helper."
+overview: 'Автотесты: visibleForms manager drafts, timeline labels, next-step hint,
+  document preview helper. [status-sync 2026-09-24 completed] visible-forms + create-review-copy
+  + continuity tests'
 todos:
-  - id: t-unit
-    content: Vitest + Go unit coverage for C1–C5 behaviors
-    status: pending
+- id: t-unit
+  content: Vitest + Go unit coverage for C1–C5 behaviors
+  status: completed
 isProject: false
 ---
 
@@ -23,5 +25,7 @@ Unit/service:
 Playwright: только если локальный e2e harness уже поднимается без нового infra; иначе unit gate достаточен для этой волны.
 
 ## DoD
-- [ ] Новые/обновлённые тесты зелёные
+- [x] Новые/обновлённые тесты зелёные
 ---
+
+> **Status-sync 2026-09-24:** todos/DoD marked completed — code evidence recorded in sync reason. Batch triage archive; do not re-implement.

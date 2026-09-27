@@ -6,6 +6,7 @@ import {
   createPaymentAgentApi,
   loginAllRoles,
   purgeDemoMockCounterparties,
+  resolveTreasurerActorRole,
   uploadAndAttachInvoice,
 } from "./helpers/api";
 import { clickAction, confirmModal } from "./helpers/click-action";
@@ -181,8 +182,9 @@ test.describe("Pilot robot matrix full UI ladder @pilot-matrix", () => {
     await expect(page.getByRole("button", { name: /^Запустить исполнение платежа$/ })).toHaveCount(0);
     await expect(page.getByTestId("awaits-treasurer")).toBeVisible({ timeout: 15_000 });
 
+    const treasActor = await resolveTreasurerActorRole(tokens.root);
     await logout();
-    await loginAs("treasurer");
+    await loginAs(treasActor);
     await waitForFormDetail(page, formId);
     await clickAction(page, /^Подтвердить покрытие$/);
     // IMP7: test optional execution_deadline input

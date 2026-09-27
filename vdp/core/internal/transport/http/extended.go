@@ -34,6 +34,7 @@ func (s *Server) registerExtendedRoutes() {
 	s.mux.HandleFunc("POST /api/v1/agents", s.withAuth(s.handleCreateAgent))
 	s.mux.HandleFunc("GET /api/v1/agents", s.withAuth(s.handleListAgents))
 	s.mux.HandleFunc("POST /api/v1/hs-codes", s.withAuth(s.handleCreateHs))
+	s.mux.HandleFunc("POST /api/v1/hs-codes/ensure", s.withAuth(s.handleEnsureHs))
 	s.mux.HandleFunc("GET /api/v1/hs-codes", s.withAuth(s.handleListHs))
 	s.mux.HandleFunc("POST /api/v1/currencies", s.withAuth(s.handleCreateCurrency))
 	s.mux.HandleFunc("GET /api/v1/currencies", s.withAuth(s.handleListCurrencies))
@@ -149,6 +150,19 @@ func (s *Server) handleCreateHs(w http.ResponseWriter, r *http.Request, principa
 		return
 	}
 	writeJSON(w, http.StatusCreated, h)
+}
+
+func (s *Server) handleEnsureHs(w http.ResponseWriter, r *http.Request, principal authz.Principal) {
+	var body struct {
+		Code string `json:"code"`
+	}
+	_ = json.NewDecoder(r.Body).Decode(&body)
+	h, err := s.catalog.EnsureHsCodeFromOCR(r.Context(), principal, body.Code)
+	if err != nil {
+		writeError(w, err)
+		return
+	}
+	writeJSON(w, http.StatusOK, h)
 }
 
 func (s *Server) handleListHs(w http.ResponseWriter, r *http.Request, principal authz.Principal) {

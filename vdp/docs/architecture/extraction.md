@@ -5,11 +5,11 @@ Manual entry always remains. Status machine stays in core; extraction is a plugi
 
 ## Architecture
 
-PRIMARY (client-visible prefill): Docling serve (EXTRACTION_PRIMARY equals docling) on the current pilot, or Yandex Vision OCR plus AI Studio, or fixture without keys, or own (Ollama) for dev/canary after wiring.
+PRIMARY (client-visible prefill): Docling serve (EXTRACTION_PRIMARY equals docling) on the current pilot. FALLBACK equals docTR HTTP sidecar (EXTRACTION_FALLBACK equals doctr). Yandex Vision plus AI Studio and fixture remain available for non-demo paths but are not the default compose runtime. Own (Ollama) is for dev/canary after wiring.
 
 SHADOW: Docling HTTP when EXTRACTION_SHADOW_URL is set; otherwise deterministic stub. On the Docling PRIMARY pilot shadow stays stub (one engine). Not shown in UI.
 
-HITL: operator edits line items and confirms; hard labels live in human_out.
+HITL: operator edits line items and confirms; hard labels live in human_out. Wizard pending shows Stop not Start; Skip OCR continues recognition in background with optional manual fill.
 
 Gold: JSONL under EXTRACTION_GOLD_DIR (includes layout_text for SFT).
 
@@ -31,13 +31,15 @@ GATEWAY_TIMEOUT — core HubPublisher HTTP timeout in seconds (compose default 1
 
 FE wizard poll uses OCR_POLL_TIMEOUT_MS equals 225000 so a late degraded callback after hub timeout can still populate HITL. Do not set FE poll equal to or below hub OCR_TIMEOUT_MS.
 
-Docling PRIMARY HTTP client timeout is 170s (under hub OCR budget).
+Docling PRIMARY HTTP client timeout is 90s. docTR FALLBACK HTTP client timeout is 70s. Together they fit under hub OCR_TIMEOUT_MS / GATEWAY_TIMEOUT of 180s. Unhealthy Docling skips straight to docTR. Total primary plus fallback failure returns degraded schema for HITL, not silent fixture money.
 
-EXTRACTION_PRIMARY — docling | yandex | fixture | own. Pilot default equals docling.
+EXTRACTION_PRIMARY — docling | doctr | yandex | fixture | own. Pilot default equals docling.
 
-EXTRACTION_FALLBACK — fixture (pilot and commercial wire) or yandex when own is primary.
+EXTRACTION_FALLBACK — doctr on demo compose. Optional yandex or fixture for non-demo paths only.
 
 EXTRACTION_DOCLING_URL — docling-serve base (compose: http://docling:5001).
+
+EXTRACTION_DOCTR_URL — doctr-serve base (compose: http://doctr:5002).
 
 EXTRACTION_SHADOW_URL — Docling HTTP for shadow; empty means stub.
 
@@ -49,9 +51,9 @@ OLLAMA_BASE_URL / OLLAMA_MODEL / OWN_FEW_SHOT_K — own via host Ollama (default
 
 OWN_MODEL_PATH — artifact dir (metrics.json may set ollama_model tag).
 
-Secrets: copy .env.example to .env. Rotate leaked keys. Smoke: make extraction-docling-smoke (pilot) or make extraction-yandex-smoke. Own ensure: make extraction-ollama-ensure (pull once if missing).
+Secrets: copy .env.example to .env. Rotate leaked keys. Smoke: make extraction-docling-smoke and make extraction-doctr-smoke. Own ensure: make extraction-ollama-ensure (pull once if missing).
 
-Docling PRIMARY maps markdown or text to header fields with light heuristics; empty fields are normal and HITL fills them. meta.engine_id equals docling.
+Docling and docTR map text to header fields with shared MapInvoiceText heuristics; empty fields are normal and HITL fills them. meta.engine_id equals docling or doctr. Missing TN VED codes from OCR can be ensured via POST /api/v1/hs-codes/ensure (user on own form, manager, root) then substituted in the catalog pick.
 
 ## Model cache (no re-download on rebuild)
 

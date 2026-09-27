@@ -32,9 +32,9 @@ Unit postgres integration compose-e2e полный browser suite plus pilot-matr
 
 ## Document extraction (dual-track)
 
-Commercial path (Yandex PRIMARY plus HITL gold plus shadow): wired in compose behind hub OCR_URL; fixture without keys. Live Yandex: set YANDEX_* in gitignored .env, EXTRACTION_PRIMARY equals yandex, EXTRACTION_FALLBACK equals fixture; smoke make extraction-yandex-smoke.
+Commercial path (Yandex PRIMARY plus HITL gold plus shadow): optional behind hub OCR_URL with YANDEX_* keys. Live Yandex: set YANDEX_* in gitignored .env, EXTRACTION_PRIMARY equals yandex; smoke make extraction-yandex-smoke.
 
-Pilot PRIMARY equals Docling (EXTRACTION_PRIMARY equals docling, EXTRACTION_DOCLING_URL, OCR_TIMEOUT_MS equals 180000, GATEWAY_TIMEOUT equals 180). Yandex is not PRIMARY on this pilot. Smoke: make extraction-docling-smoke. HITL confirm remains mandatory.
+Pilot PRIMARY equals Docling with docTR FALLBACK (EXTRACTION_PRIMARY equals docling, EXTRACTION_FALLBACK equals doctr, EXTRACTION_DOCLING_URL, EXTRACTION_DOCTR_URL, OCR_TIMEOUT_MS equals 180000, GATEWAY_TIMEOUT equals 180). Yandex is not PRIMARY on this pilot. Smoke: make extraction-docling-smoke and make extraction-doctr-smoke. HITL confirm remains mandatory. Demo runtime does not force fixture money on total OCR fail.
 
 Own CPU: Ollama plus few-shot testable; prod PRIMARY own not ready until Wave E eval. EXTRACTION_PRIMARY equals own without eval report equals partial readiness only. Weights equals Wave E (lora_recipe.md).
 

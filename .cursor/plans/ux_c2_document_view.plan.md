@@ -1,13 +1,14 @@
 ---
 name: UX C2 Document view
-overview: "Добавить действие «Посмотреть» рядом со «Скачать» в списке документов app-контура."
+overview: Добавить действие «Посмотреть» рядом со «Скачать» в списке документов app-контура.
+  [status-sync 2026-09-24 completed] DocumentViewer.tsx
 todos:
-  - id: c2-ui
-    content: DocumentViewer — Посмотреть via blob/iframe modal
-    status: pending
-  - id: c2-test
-    content: Unit/helper test на preview fetch path
-    status: pending
+- id: c2-ui
+  content: DocumentViewer — Посмотреть via blob/iframe modal
+  status: completed
+- id: c2-test
+  content: Unit/helper test на preview fetch path
+  status: completed
 isProject: false
 ---
 
@@ -23,6 +24,8 @@ isProject: false
 - Preview: auth fetch → blob URL → modal iframe (PDF)
 
 ## DoD
-- [ ] Обе кнопки на строке документа
-- [ ] PDF открывается в modal без утечки токена в query string страницы
+- [x] Обе кнопки на строке документа
+- [x] PDF открывается в modal без утечки токена в query string страницы
 ---
+
+> **Status-sync 2026-09-24:** todos/DoD marked completed — code evidence recorded in sync reason. Batch triage archive; do not re-implement.

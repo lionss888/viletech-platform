@@ -6,6 +6,7 @@ import (
 	"log/slog"
 	"os"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/viletech/vdp/extraction/internal/engine"
@@ -18,19 +19,20 @@ import (
 
 // Config for extraction worker.
 type Config struct {
-	Primary          string
-	Fallback         string
-	ShadowURL        string
-	GoldDir          string
-	DoclingURL       string
-	YandexAPIKey     string
-	YandexFolderID   string
-	YandexModelURI   string
-	OwnModelPath     string
-	OllamaBaseURL    string
-	OllamaModel      string
-	OwnFewShotK      int
-	Log              *slog.Logger
+	Primary        string
+	Fallback       string
+	ShadowURL      string
+	GoldDir        string
+	DoclingURL     string
+	DocTRURL       string
+	YandexAPIKey   string
+	YandexFolderID string
+	YandexModelURI string
+	OwnModelPath   string
+	OllamaBaseURL  string
+	OllamaModel    string
+	OwnFewShotK    int
+	Log            *slog.Logger
 }
 
 // Service runs recognize + gold flywheel.
@@ -54,15 +56,7 @@ func New(cfg Config) *Service {
 	}
 	store := gold.NewStore(goldDir)
 	primary := pickPrimary(cfg, store, log)
-	var fallback engine.Primary = engine.FixturePrimary{}
-	switch cfg.Fallback {
-	case "yandex":
-		if cfg.YandexAPIKey != "" && cfg.YandexFolderID != "" {
-			fallback = engine.NewYandex(cfg.YandexAPIKey, cfg.YandexFolderID, cfg.YandexModelURI)
-		}
-	case "fixture":
-		fallback = engine.FixturePrimary{}
-	}
+	fallback := pickFallback(cfg, log)
 	var shadow engine.Shadow = engine.StubShadow{}
 	if cfg.ShadowURL != "" {
 		shadow = engine.DoclingShadow{URL: cfg.ShadowURL}
@@ -78,16 +72,23 @@ func New(cfg Config) *Service {
 }
 
 func pickPrimary(cfg Config, store *gold.Store, log *slog.Logger) engine.Primary {
-	switch cfg.Primary {
+	switch strings.ToLower(strings.TrimSpace(cfg.Primary)) {
 	case "docling":
 		if cfg.DoclingURL == "" {
-			log.Warn("EXTRACTION_PRIMARY=docling without EXTRACTION_DOCLING_URL; forcing fixture")
-			return engine.FixturePrimary{}
+			log.Warn("EXTRACTION_PRIMARY=docling without EXTRACTION_DOCLING_URL; unavailable")
+			return engine.UnavailablePrimary{Reason: "EXTRACTION_DOCLING_URL missing"}
 		}
 		return engine.NewDocling(cfg.DoclingURL)
+	case "doctr":
+		if cfg.DocTRURL == "" {
+			log.Warn("EXTRACTION_PRIMARY=doctr without EXTRACTION_DOCTR_URL; unavailable")
+			return engine.UnavailablePrimary{Reason: "EXTRACTION_DOCTR_URL missing"}
+		}
+		return engine.NewDocTR(cfg.DocTRURL)
 	case "yandex":
 		if cfg.YandexAPIKey == "" || cfg.YandexFolderID == "" {
-			return engine.FixturePrimary{}
+			log.Warn("EXTRACTION_PRIMARY=yandex without keys; unavailable")
+			return engine.UnavailablePrimary{Reason: "YANDEX_* missing"}
 		}
 		return engine.NewYandex(cfg.YandexAPIKey, cfg.YandexFolderID, cfg.YandexModelURI)
 	case "own":
@@ -107,8 +108,36 @@ func pickPrimary(cfg Config, store *gold.Store, log *slog.Logger) engine.Primary
 			return engine.OwnFromArtifact{Path: cfg.OwnModelPath}
 		}
 		return engine.OwnStub{}
-	default:
+	case "fixture":
+		// Legacy/tests only — not the demo runtime path.
 		return engine.FixturePrimary{}
+	default:
+		log.Warn("unknown EXTRACTION_PRIMARY; unavailable", "primary", cfg.Primary)
+		return engine.UnavailablePrimary{Reason: "unknown primary"}
+	}
+}
+
+func pickFallback(cfg Config, log *slog.Logger) engine.Primary {
+	switch strings.ToLower(strings.TrimSpace(cfg.Fallback)) {
+	case "doctr":
+		if cfg.DocTRURL == "" {
+			log.Warn("EXTRACTION_FALLBACK=doctr without EXTRACTION_DOCTR_URL; unavailable")
+			return engine.UnavailablePrimary{Reason: "EXTRACTION_DOCTR_URL missing"}
+		}
+		return engine.NewDocTR(cfg.DocTRURL)
+	case "yandex":
+		if cfg.YandexAPIKey != "" && cfg.YandexFolderID != "" {
+			return engine.NewYandex(cfg.YandexAPIKey, cfg.YandexFolderID, cfg.YandexModelURI)
+		}
+		log.Warn("EXTRACTION_FALLBACK=yandex without keys; unavailable")
+		return engine.UnavailablePrimary{Reason: "YANDEX_* missing"}
+	case "fixture":
+		return engine.FixturePrimary{}
+	case "", "none", "off":
+		return engine.UnavailablePrimary{Reason: "fallback disabled"}
+	default:
+		log.Warn("unknown EXTRACTION_FALLBACK; unavailable", "fallback", cfg.Fallback)
+		return engine.UnavailablePrimary{Reason: "unknown fallback"}
 	}
 }
 
@@ -138,24 +167,31 @@ func (s *Service) Recognize(ctx context.Context, req RecognizeRequest) (Recogniz
 		in.LayoutText = layout
 	}
 
+	// Budget B: skip Docling when unhealthy so FALLBACK gets the remaining window.
+	if s.primary.Name() == "docling" && s.cfg.DoclingURL != "" {
+		probeCtx, cancel := context.WithTimeout(ctx, 2*time.Second)
+		ok := ProbeDoclingReachable(probeCtx, s.cfg.DoclingURL, nil)
+		cancel()
+		if !ok {
+			s.log.Warn("docling unhealthy; skipping to fallback")
+			metrics.Default.PrimaryFail.Add(1)
+			return s.runFallback(ctx, in, "docling_unhealthy")
+		}
+	}
+
 	result, err := s.primary.Extract(ctx, in)
 	mode := s.primary.Name()
-	ml := mode == "yandex" || mode == "own" || mode == "docling"
+	ml := mode == "yandex" || mode == "own" || mode == "docling" || mode == "doctr"
 	if err != nil && s.fallback != nil && s.fallback.Name() != s.primary.Name() {
-		s.log.Warn("primary failed, fallback", "err", err, "primary", s.primary.Name())
+		s.log.Warn("primary failed, fallback", "err", err, "primary", s.primary.Name(), "fallback", s.fallback.Name())
 		metrics.Default.PrimaryFail.Add(1)
-		result, err = s.fallback.Extract(ctx, in)
-		mode = s.fallback.Name() + "_fallback"
-		ml = false
-		if err == nil {
-			result.Meta.EngineID = mode
-			result.Warnings = append(result.Warnings, "degraded", "primary_fallback")
-		}
+		return s.runFallback(ctx, in, "primary_error")
 	}
 	if err != nil {
 		metrics.Default.PrimaryFail.Add(1)
-		result = extraction.DegradedResult(in.FormPaymentID, extraction.EngineFixtureError, "primary_error")
-		mode = "fixture_error"
+		eng := extraction.ClassifyOCRFailEngine(err)
+		result = extraction.DegradedResult(in.FormPaymentID, eng, "primary_error")
+		mode = eng
 		ml = false
 	} else {
 		metrics.Default.PrimarySuccess.Add(1)
@@ -166,6 +202,32 @@ func (s *Service) Recognize(ctx context.Context, req RecognizeRequest) (Recogniz
 
 	go s.runShadowGold(in, result)
 
+	return RecognizeResponse{
+		Status: "recognized",
+		Mode:   mode,
+		ML:     ml,
+		Fields: extraction.HubFields(result),
+	}, nil
+}
+
+func (s *Service) runFallback(ctx context.Context, in engine.Input, reason string) (RecognizeResponse, error) {
+	result, err := s.fallback.Extract(ctx, in)
+	mode := s.fallback.Name() + "_fallback"
+	ml := false
+	if err != nil {
+		metrics.Default.PrimaryFail.Add(1)
+		eng := extraction.ClassifyOCRFailEngine(err)
+		result = extraction.DegradedResult(in.FormPaymentID, eng, reason)
+		mode = eng
+	} else {
+		metrics.Default.PrimarySuccess.Add(1)
+		result.Meta.EngineID = mode
+		result.Warnings = append(result.Warnings, "degraded", "primary_fallback", reason)
+	}
+	result.Meta.FormPaymentID = in.FormPaymentID
+	result.Meta.EventID = in.EventID
+	result.Meta.ContentHash = extraction.ContentHash(result)
+	go s.runShadowGold(in, result)
 	return RecognizeResponse{
 		Status: "recognized",
 		Mode:   mode,

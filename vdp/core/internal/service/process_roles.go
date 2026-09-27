@@ -2,6 +2,7 @@ package service
 
 import (
 	"context"
+	"strings"
 	"time"
 
 	"github.com/viletech/vdp/core/internal/authz"
@@ -75,6 +76,8 @@ type RoleConfigUpdate struct {
 	Mandatory    *bool                    `json:"mandatory"`
 	Influence    *formpayment.Influence    `json:"influence"`
 	Capabilities *[]formpayment.Capability `json:"capabilities"`
+	DisableMode  *formpayment.DisableMode  `json:"disable_mode"`
+	HandoffRole  *string                   `json:"handoff_role"`
 }
 
 func (s *ProcessRoleService) UpdateRole(ctx context.Context, principal authz.Principal, role domain.Role, input RoleConfigUpdate) (formpayment.ProcessPolicySnapshot, error) {
@@ -97,12 +100,26 @@ func (s *ProcessRoleService) UpdateRole(ctx context.Context, principal authz.Pri
 		// Continuity: leaving the process clears mandatory in the same update (root may re-gate later).
 		if !*input.Enabled {
 			cfg.Mandatory = false
+		} else {
+			cfg.DisableMode = formpayment.DisableModeNone
+			cfg.HandoffRole = ""
+			// Re-enable restores actor template when prior disable left influence/caps empty.
+			if tmpl, tok := formpayment.DefaultTemplateForRole(role); tok {
+				if cfg.Influence != formpayment.InfluenceActor {
+					cfg.Influence = tmpl.Influence
+				}
+				if len(cfg.Capabilities) == 0 {
+					cfg.Capabilities = append([]formpayment.Capability(nil), tmpl.Capabilities...)
+				}
+			}
 		}
 	}
 	if input.Mandatory != nil {
 		cfg.Mandatory = *input.Mandatory
 		if *input.Mandatory {
 			cfg.Enabled = true
+			cfg.DisableMode = formpayment.DisableModeNone
+			cfg.HandoffRole = ""
 		}
 	}
 	if input.Influence != nil {
@@ -111,7 +128,28 @@ func (s *ProcessRoleService) UpdateRole(ctx context.Context, principal authz.Pri
 	if input.Capabilities != nil {
 		cfg.Capabilities = append([]formpayment.Capability(nil), (*input.Capabilities)...)
 	}
-	if err := formpayment.ValidateRoleConfigUpdate(role, cfg.Enabled, cfg.Mandatory, cfg.Influence, cfg.Capabilities); err != nil {
+	if input.DisableMode != nil {
+		cfg.DisableMode = *input.DisableMode
+	}
+	if input.HandoffRole != nil {
+		raw := strings.TrimSpace(*input.HandoffRole)
+		if raw == "" {
+			cfg.HandoffRole = ""
+		} else {
+			hr, ok := domain.ParseRole(raw)
+			if !ok {
+				return formpayment.ProcessPolicySnapshot{}, apperrors.New(apperrors.ErrCodeValidation, "unknown handoff_role")
+			}
+			cfg.HandoffRole = hr
+		}
+	}
+	if cfg.Enabled {
+		cfg.DisableMode = formpayment.DisableModeNone
+		cfg.HandoffRole = ""
+	} else if cfg.DisableMode == formpayment.DisableModeSkip && cfg.HandoffRole == "" {
+		cfg.HandoffRole = domain.RoleManager
+	}
+	if err := formpayment.ValidateRoleConfigUpdate(role, cfg.Enabled, cfg.Mandatory, cfg.Influence, cfg.Capabilities, cfg.DisableMode, cfg.HandoffRole); err != nil {
 		return formpayment.ProcessPolicySnapshot{}, err
 	}
 	for i := range snap.Roles {

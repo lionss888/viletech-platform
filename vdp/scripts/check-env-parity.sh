@@ -17,9 +17,25 @@ if [ -n "${PINNED_GO_BIN:-}" ]; then
   echo "Using pinned Go from ${PINNED_GO_BIN}"
 fi
 
+# Prefer Node matching vdp/fe/.nvmrc (GUI git clients often lack nvm on PATH).
+PINNED_NODE_BIN="$(./vdp/scripts/resolve-pinned-node.sh 2>/dev/null || true)"
+if [ -n "${PINNED_NODE_BIN:-}" ]; then
+  export PATH="${PINNED_NODE_BIN}:${PATH}"
+  echo "Using pinned Node from ${PINNED_NODE_BIN}"
+fi
+
 # Check Node.js version matches .nvmrc
 if [ -f vdp/fe/.nvmrc ]; then
   NVMRC_VERSION=$(tr -d '[:space:]' < vdp/fe/.nvmrc)
+  if ! command -v node >/dev/null 2>&1; then
+    echo "Node.js is not installed or not on PATH"
+    echo "   Required: $NVMRC_VERSION (see vdp/fe/.nvmrc)"
+    echo "Fix: nvm install $NVMRC_VERSION && nvm use $NVMRC_VERSION"
+    echo "Or:  mise use node@$NVMRC_VERSION"
+    echo "Or:  install portable Node under ~/.local/node/node-v${NVMRC_VERSION}-*"
+    echo "GitHub Desktop / GUI git: they do not load shell nvm — use one of the paths above."
+    exit 1
+  fi
   NODE_VERSION=$(node --version | sed 's/v//' | tr -d '[:space:]')
 
   if [ "$NODE_VERSION" != "$NVMRC_VERSION" ]; then

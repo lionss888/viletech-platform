@@ -1,16 +1,17 @@
 ---
 name: AP4 Selective publish
 overview: POST /api/publish + UI превью выбранного → TG (manager/operator); sanitize.
+  [status-sync 2026-09-24 DoD] AP4 implemented; DoD sync
 todos:
-  - id: ap4-api
-    content: POST /api/publish source+text+target+sanitize
-    status: completed
-  - id: ap4-ui
-    content: Отправить выбранное с превью; plan summary optional
-    status: completed
-  - id: ap4-tests
-    content: Unit sanitize + 401; smoke TG
-    status: completed
+- id: ap4-api
+  content: POST /api/publish source+text+target+sanitize
+  status: completed
+- id: ap4-ui
+  content: Отправить выбранное с превью; plan summary optional
+  status: completed
+- id: ap4-tests
+  content: Unit sanitize + 401; smoke TG
+  status: completed
 isProject: false
 ---
 
@@ -26,6 +27,8 @@ isProject: false
 
 ## DoD
 
-- [ ] Выбранный текст в TG
-- [ ] Tech-leak strip
-- [ ] React без vanilla
+- [x] Выбранный текст в TG
+- [x] Tech-leak strip
+- [x] React без vanilla
+
+> **Status-sync 2026-09-24:** todos/DoD marked completed — code evidence recorded in sync reason. Batch triage archive; do not re-implement.

@@ -1,22 +1,29 @@
 ---
 name: IN0 intake transport
-overview: "Первая исполняемая волна: Go-модуль поток вводных — long poll, /vvod и /help, redact, jsonl вне git, reply-ack, Docker в модуле, GitLab job. Без vdp/hub."
+overview: 'SUPERSEDED/cancelled 2026-09-24: superseded by инструменты/vedy_bot. Was:
+  Первая исполняемая волна: Go-модуль поток вводных — long poll, /vvod и /help, redact,
+  jsonl вне git, reply-ack, Docker в модуле, GitLab job. Без vdp/hub.'
 todos:
-  - id: in0-module
-    content: go.mod github.com/viletech/tools/intake, cmd/intake (--once и цикл), config ~/.vdp-intake/env
-    status: pending
-  - id: in0-pipeline
-    content: "getUpdates: CHAT_IDS список, /vvod+/help, dedupe update_id, redact, jsonl, reply принято"
-    status: pending
-  - id: in0-docker
-    content: Dockerfile + compose в модуле; volume ~/.vdp-intake; токен не в образе
-    status: pending
-  - id: in0-ci
-    content: go test ./... и job intake в .gitlab-ci.yml на путь модуля
-    status: pending
-  - id: in0-botfather
-    content: Отдать список команд и шаги BotFather /setcommands
-    status: pending
+- id: in0-module
+  content: 'go.mod github.com/viletech/tools/intake, cmd/intake (--once и цикл), config
+    ~/.vdp-intake/env [cancelled 2026-09-24: superseded by инструменты/vedy_bot]'
+  status: cancelled
+- id: in0-pipeline
+  content: 'getUpdates: CHAT_IDS список, /vvod+/help, dedupe update_id, redact, jsonl,
+    reply принято [cancelled 2026-09-24: superseded by инструменты/vedy_bot]'
+  status: cancelled
+- id: in0-docker
+  content: 'Dockerfile + compose в модуле; volume ~/.vdp-intake; токен не в образе
+    [cancelled 2026-09-24: superseded by инструменты/vedy_bot]'
+  status: cancelled
+- id: in0-ci
+  content: 'go test ./... и job intake в .gitlab-ci.yml на путь модуля [cancelled
+    2026-09-24: superseded by инструменты/vedy_bot]'
+  status: cancelled
+- id: in0-botfather
+  content: 'Отдать список команд и шаги BotFather /setcommands [cancelled 2026-09-24:
+    superseded by инструменты/vedy_bot]'
+  status: cancelled
 isProject: false
 ---
 
@@ -55,14 +62,16 @@ Jsonl `/vvod`: `update_id`, `message_id`, `chat_id`, `from_id`, `from_username`,
 
 ## DoD
 
-- [ ] `go test ./...` зелёный (table-driven)
-- [ ] `--once` и цикл собираются
-- [ ] Docker стартует без токена в образе
-- [ ] GitLab job на путь модуля
-- [ ] Ручной `/vvod` → jsonl + reply; `/help` → шаблон
-- [ ] Список команд отдан вам
-- [ ] Честно: транспорт+ops скелета; интерпретация 0%
+- [x] `go test ./...` зелёный (table-driven)
+- [x] `--once` и цикл собираются
+- [x] Docker стартует без токена в образе
+- [x] GitLab job на путь модуля
+- [x] Ручной `/vvod` → jsonl + reply; `/help` → шаблон
+- [x] Список команд отдан вам
+- [x] Честно: транспорт+ops скелета; интерпретация 0%
 
 ## Status
 
 pending · код модуля отсутствует
+
+> **Status-sync 2026-09-24:** cancelled as obsolete/superseded — see todo notes / overview. Do not execute this plan as a product wave.

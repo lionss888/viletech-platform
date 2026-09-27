@@ -72,15 +72,15 @@ func TestRecognizePrimaryFailUsesDegradedNotFakeMoney(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if out.Mode != "fixture_error" {
-		t.Fatalf("mode=%s", out.Mode)
+	if out.Mode != "unavailable" && out.Mode != "timeout" {
+		t.Fatalf("mode=%s want unavailable|timeout", out.Mode)
 	}
 	inv, _ := out.Fields["invoice_json"].(string)
 	if strings.Contains(inv, `"invoice_amount":"1000"`) {
 		t.Fatalf("must not use fixture money: %s", inv)
 	}
-	if !strings.Contains(inv, "fixture_error") {
-		t.Fatalf("want fixture_error engine: %s", inv)
+	if !strings.Contains(inv, "unavailable") && !strings.Contains(inv, "timeout") {
+		t.Fatalf("want degraded engine id: %s", inv)
 	}
 	waitGoldAppend(t, svc)
 }

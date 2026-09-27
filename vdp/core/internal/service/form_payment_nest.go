@@ -22,13 +22,12 @@ func (s *FormPaymentService) TransitionByNestPath(ctx context.Context, principal
 	return s.Transition(ctx, principal, formID, action)
 }
 
-// TreasurerConfirmPayment confirms client RUB coverage (import advance) or export cover path.
-// Optional deadline is stored before the status transition (§10.2).
 // TreasurerConfirmPayment confirms RUB coverage for import advance (§10.2) or postpay RATE_ON_PP after advance order (§10.3).
 // For import advance: transition payment_received → payment_processing. For RATE_ON_PP: → report_waiting.
-// Optional deadline sets ExecutionDeadline before transition. Role: Treasurer or Root.
+// Optional deadline sets ExecutionDeadline before transition.
+// AuthZ: Treasurer, Root, or process-roles disposition recipient (skip→manager / handoff role).
 func (s *FormPaymentService) TreasurerConfirmPayment(ctx context.Context, principal authz.Principal, formID string, deadline *time.Time) (formpayment.Form, error) {
-	if err := authz.AuthorizeRoles(principal, domain.RoleTreasurer, domain.RoleRoot); err != nil {
+	if err := s.authorizeTreasurerOpsAction(ctx, principal, formpayment.ActionTreasurerConfirm); err != nil {
 		return formpayment.Form{}, err
 	}
 	if deadline != nil {
@@ -48,6 +47,19 @@ func (s *FormPaymentService) TreasurerConfirmPayment(ctx context.Context, princi
 		}
 	}
 	return s.Transition(ctx, principal, formID, formpayment.ActionTreasurerConfirm)
+}
+
+func (s *FormPaymentService) authorizeTreasurerOpsAction(ctx context.Context, principal authz.Principal, action formpayment.Action) error {
+	var policy *formpayment.ProcessPolicySnapshot
+	if s.roles != nil {
+		if snap, err := s.roles.GetSnapshot(ctx); err == nil {
+			policy = &snap
+		}
+	}
+	if formpayment.RoleMayPerformWithConfig(principal.Role, action, policy) {
+		return nil
+	}
+	return apperrors.ErrForbidden
 }
 
 // ApplyNestMeta handles Nest meta paths (important, generate, diadoc enqueue) without status change when possible.

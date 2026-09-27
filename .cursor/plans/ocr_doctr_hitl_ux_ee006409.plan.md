@@ -4,22 +4,22 @@ overview: "Рабочий демо-OCR: Docling PRIMARY + docTR FALLBACK без 
 todos:
   - id: runtime-doctr
     content: "Defaults docling/doctr; strip fixture/yandex; budget 90+70; fail\to degraded"
-    status: pending
+    status: completed
   - id: doctr-adapter
     content: Compose doctr + Go Primary + MapInvoiceText + smoke
-    status: pending
+    status: completed
   - id: ux-pending-controls
     content: "Pending: Start disabled + Stop; HITL unlock + collapsible raw text"
-    status: pending
+    status: completed
   - id: ux-skip-manual
     content: Skip OCR + manual confirm + Далее policy while pending
-    status: pending
+    status: completed
   - id: hs-ensure
     content: "HS missing \to Ensure (AuthZ H1) + substitute in CatalogPick"
-    status: pending
+    status: completed
   - id: gate-close
     content: env-parity + unit + docs-format + ci-pr-pilot; DoD+status; mgmt notify
-    status: pending
+    status: completed
 isProject: false
 ---
 

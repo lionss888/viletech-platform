@@ -1,9 +1,8 @@
 #!/usr/bin/env bash
-# Path-aware pre-push gate:
-# - e2e outside narrow PR-smoke → ci-main (main-push full Playwright parity)
-# - ladder surface (pilot-matrix paths) → ci-pr-pilot
-# - else → ci-pr
+# Pre-push: always full GitHub VDP CI insurance (no path-aware downgrade).
+# Runs make push-gate = test-integration + ci-main (static + compose-e2e + full Playwright).
 # Emergency bypass: SKIP_PREPUSH_GATE=1 (prints warn, exit 0).
+# Optional lighter path (not recommended): PREPUSH_PATH_AWARE=1 → old path-aware ladder.
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
@@ -16,6 +15,15 @@ if [ "${SKIP_PREPUSH_GATE:-0}" = "1" ]; then
   exit 0
 fi
 
+# Default: full insurance. Opt into legacy path-aware only with PREPUSH_PATH_AWARE=1.
+if [ "${PREPUSH_PATH_AWARE:-0}" != "1" ]; then
+  echo "prepush-gate: full insurance → make push-gate (test-integration + ci-main)"
+  echo "prepush-gate: ~15–40 min; bypass only SKIP_PREPUSH_GATE=1 (not recommended)"
+  cd "$ROOT"
+  exec make push-gate
+fi
+
+echo "WARNING: PREPUSH_PATH_AWARE=1 — using legacy path-aware gate (not full insurance)." >&2
 chmod +x "$MATCH" "$FULL_E2E" 2>/dev/null || true
 
 cd "$REPO_ROOT"
@@ -36,12 +44,11 @@ if [ -z "$base" ]; then
 fi
 
 changed="$(git diff --name-only "$base"...HEAD || true)"
-# Include unstaged/staged working tree vs HEAD so uncommitted push attempts still gate.
 wt="$(git diff --name-only HEAD 2>/dev/null || true)"
 staged="$(git diff --cached --name-only 2>/dev/null || true)"
 all_paths="$(printf '%s\n%s\n%s\n' "$changed" "$wt" "$staged" | sed '/^$/d' | sort -u)"
 
-echo "prepush-gate: base=$base"
+echo "prepush-gate: base=$base (path-aware mode)"
 if [ -z "$all_paths" ]; then
   echo "prepush-gate: no changed files vs base — running ci-pr"
   cd "$ROOT"
@@ -49,7 +56,7 @@ if [ -z "$all_paths" ]; then
 fi
 
 if printf '%s\n' "$all_paths" | "$FULL_E2E"; then
-  echo "prepush-gate: e2e outside PR-smoke → make ci-main (main-push Playwright parity)"
+  echo "prepush-gate: e2e outside PR-smoke → make ci-main"
   cd "$ROOT"
   exec make ci-main
 fi

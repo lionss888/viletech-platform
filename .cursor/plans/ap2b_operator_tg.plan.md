@@ -1,16 +1,17 @@
 ---
 name: AP2b Operator TG
 overview: TELEGRAM_OPERATOR_CHAT_IDS + router manager vs operator; консоль — зеркало.
+  [status-sync 2026-09-24 DoD] AP2b implemented; DoD sync
 todos:
-  - id: ap2b-config
-    content: Env TELEGRAM_OPERATOR_CHAT_IDS + config load test
-    status: completed
-  - id: ap2b-router
-    content: HITL reminders/agent digests → operator; ack → manager
-    status: completed
-  - id: ap2b-thread
-    content: Thread channel tag + console filter
-    status: completed
+- id: ap2b-config
+  content: Env TELEGRAM_OPERATOR_CHAT_IDS + config load test
+  status: completed
+- id: ap2b-router
+  content: HITL reminders/agent digests → operator; ack → manager
+  status: completed
+- id: ap2b-thread
+  content: Thread channel tag + console filter
+  status: completed
 isProject: false
 ---
 
@@ -26,6 +27,8 @@ isProject: false
 
 ## DoD
 
-- [ ] Два чата в env
-- [ ] Unit router
-- [ ] Honesty: консоль = зеркало
+- [x] Два чата в env
+- [x] Unit router
+- [x] Honesty: консоль = зеркало
+
+> **Status-sync 2026-09-24:** todos/DoD marked completed — code evidence recorded in sync reason. Batch triage archive; do not re-implement.

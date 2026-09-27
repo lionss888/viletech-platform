@@ -61,6 +61,7 @@ func ScrubFormForProvider(form Form) Form {
 	out := form
 	out.DocsJSON = ScrubDocsJSONForProvider(form.DocsJSON)
 	out.InvoiceJSON = ""
+	out.AccountName = "" // client name is PII for the provider cabinet
 	out.ReturnEpisode = form.ReturnEpisode.VisibleTo(domain.RoleProvider)
 	return out
 }

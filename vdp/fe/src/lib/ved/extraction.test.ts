@@ -10,10 +10,12 @@ import {
   isExtractionDraft,
   isLowConfidence,
   isOcrAuthLostError,
+  layoutTextFromWarnings,
   ocrBannerFromExtraction,
   ocrPollTimedOut,
   OCR_POLL_TIMEOUT_MS,
   parseExtractionResult,
+  shortExtractionWarnings,
 } from "./extraction";
 
 describe("parseExtractionResult", () => {
@@ -272,5 +274,14 @@ describe("extraction dialog copy", () => {
   it("picks modal on desktop and sheet on mobile", () => {
     expect(extractionShellVariant(false)).toBe("modal");
     expect(extractionShellVariant(true)).toBe("sheet");
+  });
+});
+
+describe("layout warnings helpers", () => {
+  it("extracts layout dump and keeps short warnings separate", () => {
+    const warnings = ["layout:RAW PAGE TEXT", "low confidence", "layout:PAGE 2"];
+    expect(layoutTextFromWarnings(warnings)).toContain("RAW PAGE TEXT");
+    expect(layoutTextFromWarnings(warnings)).toContain("PAGE 2");
+    expect(shortExtractionWarnings(warnings)).toEqual(["low confidence"]);
   });
 });

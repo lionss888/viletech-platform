@@ -1,19 +1,22 @@
 ---
 name: Возврат этап 0 Граница
-overview: "Зафиксировать границу между пилотным refund (удержанные средства) и новым контуром (деньги вернулись провайдеру после исполнения). Текст, без кода. Инварианты, что вне scope, два разных входа."
+overview: Зафиксировать границу между пилотным refund (удержанные средства) и новым
+  контуром (деньги вернулись провайдеру после исполнения). Текст, без кода. Инварианты,
+  что вне scope, два разных входа. [status-sync 2026-09-24 completed] return episode
+  domain+FE+e2e
 todos:
-  - id: boundary-doc
-    content: Описать два возврата в заметки или form-lifecycle.md
-    status: pending
-  - id: invariants
-    content: Список инвариантов нового контура
-    status: pending
-  - id: out-of-scope
-    content: Явный список что не входит в новый контур
-    status: pending
-  - id: naming
-    content: Префиксы действий и статусов (рабочие имена)
-    status: pending
+- id: boundary-doc
+  content: Описать два возврата в заметки или form-lifecycle.md
+  status: completed
+- id: invariants
+  content: Список инвариантов нового контура
+  status: completed
+- id: out-of-scope
+  content: Явный список что не входит в новый контур
+  status: completed
+- id: naming
+  content: Префиксы действий и статусов (рабочие имена)
+  status: completed
 isProject: false
 ---
 
@@ -187,3 +190,5 @@ isProject: false
 ## Следующий этап
 
 После закрытия этапа 0 → **Этап 1: Факт возврата у менеджера** (домен + HTTP + UI + тесты).
+
+> **Status-sync 2026-09-24:** todos/DoD marked completed — code evidence recorded in sync reason. Batch triage archive; do not re-implement.

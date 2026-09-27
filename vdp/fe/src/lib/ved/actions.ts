@@ -1,6 +1,7 @@
 import type { FormAction, FormStatus, VedRole } from "./types";
 import {
   canContinuityAdvance,
+  canTreasurerDispositionAdvance,
   capabilityForUiAction,
   findProcessRole,
   isProcessSlotDisabled,
@@ -317,6 +318,14 @@ function continuityInjectedActions(
   if (canContinuityAdvance(processRoles, role, "compliance_officer")) {
     injected.push(...(MATRIX.compliance_officer[status] ?? []));
   }
+  if (canTreasurerDispositionAdvance(processRoles, role)) {
+    const treasActs = (MATRIX.treasurer[status] ?? []).map((action) =>
+      action.id === "treas_confirm_payment"
+        ? { ...action, label: "Подтвердить поступление (без казначея)" }
+        : action,
+    );
+    injected.push(...treasActs);
+  }
   return withContinuityLabels(injected);
 }
 
@@ -343,6 +352,9 @@ function allowsContinuityUiAction(
   }
   if (cap === "form.compliance") {
     return canContinuityAdvance(processRoles, role, "compliance_officer");
+  }
+  if (cap === "treasurer.ops") {
+    return canTreasurerDispositionAdvance(processRoles, role);
   }
   return false;
 }
@@ -375,6 +387,9 @@ export function actionsFor(
       }
       if (cap === "form.compliance" && isProcessSlotDisabled(processRoles, "compliance_officer")) {
         return canContinuityAdvance(processRoles, "manager", "compliance_officer");
+      }
+      if (cap === "treasurer.ops" && isProcessSlotDisabled(processRoles, "treasurer")) {
+        return canTreasurerDispositionAdvance(processRoles, "manager") || canTreasurerDispositionAdvance(processRoles, role);
       }
       return false;
     });

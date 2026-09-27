@@ -1,13 +1,14 @@
 ---
 name: UX C3 Manager hide drafts
-overview: "Менеджер не видит клиентские creating/draft в list/get и FE visibleForms."
+overview: Менеджер не видит клиентские creating/draft в list/get и FE visibleForms.
+  [status-sync 2026-09-24 completed] visible-forms.test.ts
 todos:
-  - id: c3-core
-    content: CanSeeForm exclude creating/draft for manager + Go tests
-    status: pending
-  - id: c3-fe
-    content: visibleForms filter + vitest
-    status: pending
+- id: c3-core
+  content: CanSeeForm exclude creating/draft for manager + Go tests
+  status: completed
+- id: c3-fe
+  content: visibleForms filter + vitest
+  status: completed
 isProject: false
 ---
 
@@ -23,6 +24,8 @@ isProject: false
 - Update `TestCanSeeFormZones` + visible-forms.test.ts
 
 ## DoD
-- [ ] Manager list/get draft → deny
-- [ ] Manager видит organization_waiting_verification+
+- [x] Manager list/get draft → deny
+- [x] Manager видит organization_waiting_verification+
 ---
+
+> **Status-sync 2026-09-24:** todos/DoD marked completed — code evidence recorded in sync reason. Batch triage archive; do not re-implement.

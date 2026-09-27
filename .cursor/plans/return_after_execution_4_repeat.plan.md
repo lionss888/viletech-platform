@@ -1,34 +1,39 @@
 ---
 name: Возврат этап 4 Повторить платёж
-overview: "Менеджер выбирает повтор → обязательный комментарий (клиент не видит) → провайдер исполняет заново → старая платёжка в истории. Контрагент не проверяется. Смена организации/счёта опционально. Без новой заявки. Domain + HTTP + FE + unit + E2E."
+overview: Менеджер выбирает повтор → обязательный комментарий (клиент не видит) →
+  провайдер исполняет заново → старая платёжка в истории. Контрагент не проверяется.
+  Смена организации/счёта опционально. Без новой заявки. Domain + HTTP + FE + unit
+  + E2E. [status-sync 2026-09-24 completed] ProviderReturnRepeatExecuteForm + repeat
+  e2e
 todos:
-  - id: domain-repeat-flow
-    content: Комментарий менеджера → провайдер исполняет → старая платёжка сохраняется
-    status: pending
-  - id: domain-no-new-form
-    content: Guard не создавать новую заявку, документы/комплаенс не повторяются
-    status: pending
-  - id: domain-no-recheck-counterparty
-    content: Контрагент не проверяется заново (даже при смене организации провайдера)
-    status: pending
-  - id: unit-tests
-    content: Unit на клиент не видит комментарий, идемпотентность исполнения
-    status: pending
-  - id: http-two-actions
-    content: POST /return/repeat (mgr) + POST /return/repeat-execute (prov)
-    status: pending
-  - id: fe-repeat-form
-    content: Форма повтора менеджера (комментарий обязателен, смена орг/счёта опционально)
-    status: pending
-  - id: fe-execute-form
-    content: Форма исполнения провайдера (новая платёжка)
-    status: pending
-  - id: e2e-flow
-    content: E2E повтор без второй заявки + после нового исполнения снова сообщить о возврате
-    status: pending
-  - id: gate
-    content: make check-env-parity затем make ci-pr-pilot зелёный
-    status: pending
+- id: domain-repeat-flow
+  content: Комментарий менеджера → провайдер исполняет → старая платёжка сохраняется
+  status: completed
+- id: domain-no-new-form
+  content: Guard не создавать новую заявку, документы/комплаенс не повторяются
+  status: completed
+- id: domain-no-recheck-counterparty
+  content: Контрагент не проверяется заново (даже при смене организации провайдера)
+  status: completed
+- id: unit-tests
+  content: Unit на клиент не видит комментарий, идемпотентность исполнения
+  status: completed
+- id: http-two-actions
+  content: POST /return/repeat (mgr) + POST /return/repeat-execute (prov)
+  status: completed
+- id: fe-repeat-form
+  content: Форма повтора менеджера (комментарий обязателен, смена орг/счёта опционально)
+  status: completed
+- id: fe-execute-form
+  content: Форма исполнения провайдера (новая платёжка)
+  status: completed
+- id: e2e-flow
+  content: E2E повтор без второй заявки + после нового исполнения снова сообщить о
+    возврате
+  status: completed
+- id: gate
+  content: make check-env-parity затем make ci-pr-pilot зелёный
+  status: completed
 isProject: false
 ---
 
@@ -424,3 +429,5 @@ test('client does not see repeat comment', async ({ page, login }) => {
 ## Следующий этап
 
 После закрытия этапов 1-4 → **Этап 5: Сквозные кабинеты** (два маршрута E2E + регресс + копирайт).
+
+> **Status-sync 2026-09-24:** todos/DoD marked completed — code evidence recorded in sync reason. Batch triage archive; do not re-implement.

@@ -39,6 +39,7 @@ func (s *Server) registerAuthAccountOrgRoutes() {
 	s.mux.HandleFunc("POST /api/v1/admin/account", s.withAuth(s.handleAdminAccountCreate))
 	s.mux.HandleFunc("GET /api/v1/admin/account/{id}", s.withAuth(s.handleAccountByID))
 	s.mux.HandleFunc("PATCH /api/v1/admin/account/{id}", s.withAuth(s.handleAdminAccountPatch))
+	s.mux.HandleFunc("DELETE /api/v1/admin/account/{id}", s.withAuth(s.handleAdminAccountDelete))
 
 	// Organization site
 	s.mux.HandleFunc("GET /api/v1/organization", s.withAuth(s.handleOrgList))
@@ -263,6 +264,14 @@ func (s *Server) handleAdminAccountPatch(w http.ResponseWriter, r *http.Request,
 		return
 	}
 	writeJSON(w, http.StatusOK, acc)
+}
+
+func (s *Server) handleAdminAccountDelete(w http.ResponseWriter, r *http.Request, principal authz.Principal) {
+	if err := s.accounts.SoftDelete(r.Context(), principal, r.PathValue("id")); err != nil {
+		writeError(w, err)
+		return
+	}
+	writeJSON(w, http.StatusOK, map[string]string{"status": "ok"})
 }
 
 func (s *Server) handleOrgList(w http.ResponseWriter, r *http.Request, principal authz.Principal) {

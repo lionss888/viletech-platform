@@ -42,9 +42,12 @@ required_keys = ["MGMT_NOTIFY_TOKEN", "MGMT_NOTIFY_CHAT_ID"]
 # Без токена: pre-commit gate всё равно обязателен; TG-notify на fail просто skip.
 
 [ladder]
-# После коммита, перед push/PR — не путать с pre-commit
+# После коммита, перед push — полная страховка (не путать с pre-commit)
 env_parity = "make -C vdp check-env-parity"
 precommit = "make -C vdp precommit-gate"
+push = "make -C vdp push-gate"
+# push-gate = test-integration + ci-main (полный Playwright). Хук pre-push вызывает это по умолчанию.
 pr_smoke = "make -C vdp ci-pr"
 pr_pilot = "make -C vdp ci-pr-pilot"
-# ci-pr-pilot обязателен если трогали vdp/fe/e2e/** или @pilot-matrix / ActionPanel / formpayment
+main_browser = "make -C vdp ci-main"
+# Обход хука только SKIP_PREPUSH_GATE=1. Legacy path-aware: PREPUSH_PATH_AWARE=1.

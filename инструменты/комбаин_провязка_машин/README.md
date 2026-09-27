@@ -52,6 +52,6 @@ bash "инструменты/комбаин_провязка_машин/verify.s
 
 ## Лестница после коммита
 
-Перед push/PR: `make -C vdp ci-pr`. Если трогали `vdp/fe/e2e/**` или pilot-matrix / ActionPanel / formpayment — `make -C vdp ci-pr-pilot`.
+Перед push хук гоняет `make -C vdp push-gate` (integration + полный Playwright). То же: Local QG «Проверить перед Push». Обход только `SKIP_PREPUSH_GATE=1`.
 
 Канон: `.cursor/rules/vdp-ci-local-gate.mdc`.

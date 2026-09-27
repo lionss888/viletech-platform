@@ -17,10 +17,14 @@ export type CoreCommission = {
 export type CoreForm = {
   id: string;
   account_id: string;
+  /** Display name of the form owner (filled on read). */
+  account_name?: string;
   organization_id: string;
   provider_id?: string;
+  provider_name?: string;
   agent_id?: string;
   manager_id?: string;
+  manager_name?: string;
   counterparty_id?: string;
   contract_id?: string;
   status: string;

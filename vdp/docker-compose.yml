@@ -87,6 +87,20 @@ services:
       retries: 20
       start_period: 90s
 
+  doctr:
+    build:
+      context: ./doctr-serve
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    expose:
+      - "5002"
+    healthcheck:
+      test: ["CMD-SHELL", "python -c \"import urllib.request; urllib.request.urlopen('http://127.0.0.1:5002/health')\" || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 12
+      start_period: 30s
+
   extraction:
     build:
       context: .
@@ -96,9 +110,10 @@ services:
     environment:
       PORT: "8093"
       EXTRACTION_PRIMARY: ${EXTRACTION_PRIMARY:-docling}
-      EXTRACTION_FALLBACK: ${EXTRACTION_FALLBACK:-fixture}
+      EXTRACTION_FALLBACK: ${EXTRACTION_FALLBACK:-doctr}
       EXTRACTION_SHADOW_URL: ${EXTRACTION_SHADOW_URL:-}
       EXTRACTION_DOCLING_URL: ${EXTRACTION_DOCLING_URL:-http://docling:5001}
+      EXTRACTION_DOCTR_URL: ${EXTRACTION_DOCTR_URL:-http://doctr:5002}
       EXTRACTION_GOLD_DIR: /var/vdp/extraction-gold
       YANDEX_API_KEY: ${YANDEX_API_KEY:-}
       YANDEX_FOLDER_ID: ${YANDEX_FOLDER_ID:-}
@@ -113,6 +128,9 @@ services:
       - "${EXTRACTION_BIND:-0.0.0.0}:8093:8093"
     depends_on:
       docling:
+        condition: service_healthy
+        required: false
+      doctr:
         condition: service_healthy
         required: false
     healthcheck:

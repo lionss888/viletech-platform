@@ -27,7 +27,7 @@ func (s *Server) registerNestFormPaymentRoutes() {
 			s.handleNestFormCollection(w, r, p, role)
 		}))
 		s.mux.HandleFunc("GET "+base+"/count", s.withAuth(func(w http.ResponseWriter, r *http.Request, p authz.Principal) {
-			if !nestRoleAllowed(p, role) {
+			if !nestRoleAllowedWithPolicy(p, role, s.nestPolicySnapshot(r)) {
 				writeError(w, apperrors.New(apperrors.ErrCodeForbidden, "role mismatch"))
 				return
 			}
@@ -40,7 +40,7 @@ func (s *Server) registerNestFormPaymentRoutes() {
 			s.handleNestFormSpecialGET(w, r, p, role, "by-order-accepted")
 		}))
 		s.mux.HandleFunc("GET "+base+"/by-order-accepted/count", s.withAuth(func(w http.ResponseWriter, r *http.Request, p authz.Principal) {
-			if !nestRoleAllowed(p, role) {
+			if !nestRoleAllowedWithPolicy(p, role, s.nestPolicySnapshot(r)) {
 				writeError(w, apperrors.New(apperrors.ErrCodeForbidden, "role mismatch"))
 				return
 			}
@@ -56,7 +56,7 @@ func (s *Server) registerNestFormPaymentRoutes() {
 			s.handleNestFormSpecialGET(w, r, p, role, "export/payment-received")
 		}))
 		s.mux.HandleFunc("POST "+base+"/import", s.withAuth(func(w http.ResponseWriter, r *http.Request, p authz.Principal) {
-			if !nestRoleAllowed(p, role) {
+			if !nestRoleAllowedWithPolicy(p, role, s.nestPolicySnapshot(r)) {
 				writeError(w, apperrors.New(apperrors.ErrCodeForbidden, "role mismatch"))
 				return
 			}
@@ -87,6 +87,10 @@ func (s *Server) registerNestFormPaymentRoutes() {
 }
 
 func nestRoleAllowed(principal authz.Principal, nestRole string) bool {
+	return nestRoleAllowedWithPolicy(principal, nestRole, nil)
+}
+
+func nestRoleAllowedWithPolicy(principal authz.Principal, nestRole string, snap *formpayment.ProcessPolicySnapshot) bool {
 	if principal.Role == domain.RoleRoot {
 		return true
 	}
@@ -102,7 +106,11 @@ func nestRoleAllowed(principal authz.Principal, nestRole string) bool {
 	case "ico":
 		return principal.Role == domain.RoleInternalComplianceOfficer
 	case "treasurer":
-		return principal.Role == domain.RoleTreasurer
+		if principal.Role == domain.RoleTreasurer {
+			return true
+		}
+		// Disposition recipient may call treasurer nest prefix for CapTreasurerOps actions.
+		return formpayment.RoleMayPerformWithConfig(principal.Role, formpayment.ActionTreasurerConfirm, snap)
 	case "admin":
 		return principal.Role == domain.RoleRoot
 	case "1c":
@@ -112,8 +120,19 @@ func nestRoleAllowed(principal authz.Principal, nestRole string) bool {
 	}
 }
 
+func (s *Server) nestPolicySnapshot(r *http.Request) *formpayment.ProcessPolicySnapshot {
+	if s.processRoles == nil {
+		return nil
+	}
+	snap, err := s.processRoles.GetSnapshot(r.Context())
+	if err != nil {
+		return nil
+	}
+	return &snap
+}
+
 func (s *Server) handleNestFormCollection(w http.ResponseWriter, r *http.Request, principal authz.Principal, nestRole string) {
-	if !nestRoleAllowed(principal, nestRole) {
+	if !nestRoleAllowedWithPolicy(principal, nestRole, s.nestPolicySnapshot(r)) {
 		writeError(w, apperrors.New(apperrors.ErrCodeForbidden, "role mismatch for nest form-payment"))
 		return
 	}
@@ -137,7 +156,7 @@ func (s *Server) handleNestFormCollection(w http.ResponseWriter, r *http.Request
 }
 
 func (s *Server) handleNestFormByID(w http.ResponseWriter, r *http.Request, principal authz.Principal, nestRole string) {
-	if !nestRoleAllowed(principal, nestRole) {
+	if !nestRoleAllowedWithPolicy(principal, nestRole, s.nestPolicySnapshot(r)) {
 		writeError(w, apperrors.New(apperrors.ErrCodeForbidden, "role mismatch for nest form-payment"))
 		return
 	}
@@ -175,7 +194,7 @@ func (s *Server) handleNestFormByID(w http.ResponseWriter, r *http.Request, prin
 }
 
 func (s *Server) handleNestFormPath(w http.ResponseWriter, r *http.Request, principal authz.Principal, nestRole string) {
-	if !nestRoleAllowed(principal, nestRole) {
+	if !nestRoleAllowedWithPolicy(principal, nestRole, s.nestPolicySnapshot(r)) {
 		writeError(w, apperrors.New(apperrors.ErrCodeForbidden, "role mismatch for nest form-payment"))
 		return
 	}

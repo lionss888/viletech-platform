@@ -232,6 +232,14 @@ export function createHsCode(input: CreateHsInput): Promise<CoreHsCode> {
   });
 }
 
+/** POST /api/v1/hs-codes/ensure — OCR missing code upsert (user allowed). */
+export function ensureHsCodeFromOcr(code: string): Promise<CoreHsCode> {
+  return apiFetch<CoreHsCode>("/api/v1/hs-codes/ensure", {
+    method: "POST",
+    body: JSON.stringify({ code }),
+  });
+}
+
 /** POST /api/v1/admin/account. */
 export function createAdminAccount(input: CreateAdminInput): Promise<CoreAdminAccount> {
   return apiFetch<CoreAdminAccount>("/api/v1/admin/account", {
@@ -245,5 +253,12 @@ export function patchAdminAccount(id: string, input: PatchAdminInput): Promise<C
   return apiFetch<CoreAdminAccount>(`/api/v1/admin/account/${id}`, {
     method: "PATCH",
     body: JSON.stringify(input),
+  });
+}
+
+/** DELETE /api/v1/admin/account/{…} — soft-delete. */
+export function deleteAdminAccount(id: string): Promise<{ status: string }> {
+  return apiFetch<{ status: string }>(`/api/v1/admin/account/${id}`, {
+    method: "DELETE",
   });
 }

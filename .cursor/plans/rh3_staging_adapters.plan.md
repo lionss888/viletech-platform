@@ -1,28 +1,30 @@
 ---
 name: RH3 Staging Adapters
-overview: "Hub docs/mail tests через httptest.Server (не stub-only); staging-checklist sync; make test-adapters; optional workflow_dispatch staging-smoke."
+overview: Hub docs/mail tests через httptest.Server (не stub-only); staging-checklist
+  sync; make test-adapters; optional workflow_dispatch staging-smoke. [status-sync
+  2026-09-24 DoD] RH3 adapters httptest present
 todos:
-  - id: rh3-docs-http-test
-    content: docs adapter test с DOCS_URL=httptest — assert POST payload + retries
-    status: completed
-  - id: rh3-mail-http-test
-    content: mail adapter test с MAIL_URL=httptest — assert notify payload
-    status: completed
-  - id: rh3-make-target
-    content: make test-adapters (hub adapter package tests)
-    status: completed
-  - id: rh3-staging-checklist
-    content: staging-checklist.md — CI vs staging-manual per integration
-    status: completed
-  - id: rh3-xlsx-honesty
-    content: XLSX stub flag or minimal valid bytes + known-gaps honesty
-    status: completed
-  - id: rh3-ci-step
-    content: test-adapters step в CI job fast или integration
-    status: completed
-  - id: rh3-gate
-    content: "DoD: adapter tests fail if only stub path covered"
-    status: completed
+- id: rh3-docs-http-test
+  content: docs adapter test с DOCS_URL=httptest — assert POST payload + retries
+  status: completed
+- id: rh3-mail-http-test
+  content: mail adapter test с MAIL_URL=httptest — assert notify payload
+  status: completed
+- id: rh3-make-target
+  content: make test-adapters (hub adapter package tests)
+  status: completed
+- id: rh3-staging-checklist
+  content: staging-checklist.md — CI vs staging-manual per integration
+  status: completed
+- id: rh3-xlsx-honesty
+  content: XLSX stub flag or minimal valid bytes + known-gaps honesty
+  status: completed
+- id: rh3-ci-step
+  content: test-adapters step в CI job fast или integration
+  status: completed
+- id: rh3-gate
+  content: 'DoD: adapter tests fail if only stub path covered'
+  status: completed
 isProject: false
 ---
 
@@ -70,7 +72,7 @@ isProject: false
 
 - [x] R8 hub adapters structure — [`vdp/hub/internal/adapters/`](../../vdp/hub/internal/adapters/)
 - [x] Existing stub tests — [`docs_test.go`](../../vdp/hub/internal/adapters/docs/docs_test.go)
-- [ ] RH0 CI for running adapter tests
+- [x] RH0 CI for running adapter tests
 
 ## Stub anchors (current)
 
@@ -149,11 +151,11 @@ cd vdp && make test   # regression
 
 ## DoD
 
-- [ ] docs + mail HTTP tests green (not stub-only coverage)
-- [ ] `make test-adapters` in Makefile + CI fast job
-- [ ] staging-checklist.md synced with CI column
-- [ ] XLSX honesty documented
-- [ ] known-gaps hub section updated
+- [x] docs + mail HTTP tests green (not stub-only coverage)
+- [x] `make test-adapters` in Makefile + CI fast job
+- [x] staging-checklist.md synced with CI column
+- [x] XLSX honesty documented
+- [x] known-gaps hub section updated
 
 ## Honesty note
 
@@ -163,3 +165,5 @@ cd vdp && make test   # regression
 
 - Hub 5xx → retry, form status unchanged in core (reference R8 DoD)
 - Timeout → explicit error, no silent success
+
+> **Status-sync 2026-09-24:** todos/DoD marked completed — code evidence recorded in sync reason. Batch triage archive; do not re-implement.

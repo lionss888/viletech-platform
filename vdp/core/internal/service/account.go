@@ -162,6 +162,9 @@ func (s *AccountService) List(ctx context.Context, principal authz.Principal) ([
 	}
 	out := make([]map[string]any, 0, len(items))
 	for _, a := range items {
+		if !a.Active {
+			continue
+		}
 		pub, err := s.publicWithEffective(ctx, a)
 		if err != nil {
 			return nil, err
@@ -169,6 +172,42 @@ func (s *AccountService) List(ctx context.Context, principal authz.Principal) ([
 		out = append(out, pub)
 	}
 	return out, nil
+}
+
+// SoftDelete deactivates an account (active=false, blocked=true, clear refresh). Cannot delete self or last active root.
+func (s *AccountService) SoftDelete(ctx context.Context, principal authz.Principal, id string) error {
+	if err := authz.RequireSystemCapability(principal, systemcap.CapAccountsManage); err != nil {
+		return err
+	}
+	if id == principal.AccountID {
+		return apperrors.New(apperrors.ErrCodeForbidden, "cannot delete yourself")
+	}
+	account, err := s.store.AccountByID(ctx, id)
+	if err != nil {
+		return err
+	}
+	if !account.Active {
+		return nil
+	}
+	if account.Role == domain.RoleRoot {
+		activeRoots := 0
+		all, listErr := s.store.ListAccounts(ctx)
+		if listErr != nil {
+			return listErr
+		}
+		for _, a := range all {
+			if a.Role == domain.RoleRoot && a.Active && !a.Blocked {
+				activeRoots++
+			}
+		}
+		if activeRoots <= 1 {
+			return apperrors.New(apperrors.ErrCodeConflict, "cannot delete the last active root")
+		}
+	}
+	account.Active = false
+	account.Blocked = true
+	account.RefreshToken = ""
+	return s.store.SaveAccount(ctx, account)
 }
 
 func (s *AccountService) Count(ctx context.Context, principal authz.Principal) (int, error) {

@@ -1,19 +1,21 @@
 ---
 name: RH0 CI Pipeline
-overview: "GitHub Actions: jobs fast (unit), integration (compose-e2e), playwright (отдельно), docs. CI/CD владеет gate'ами стабильности."
+overview: 'GitHub Actions: jobs fast (unit), integration (compose-e2e), playwright
+  (отдельно), docs. CI/CD владеет gate''ами стабильности. [status-sync 2026-09-24
+  DoD] RH0 CI jobs present; todos were completed'
 todos:
-  - id: rh0-workflow
-    content: Создать .github/workflows/vdp-ci.yml с jobs fast/integration/playwright/docs
-    status: completed
-  - id: rh0-ci-doc
-    content: Документ vdp/docs/operations/ci.md — topology, triggers, branch protection
-    status: completed
-  - id: rh0-known-gaps
-    content: Обновить known-gaps пункт CI CD (GitHub primary)
-    status: completed
-  - id: rh0-gate
-    content: "DoD: pipeline green на main; integration и playwright — раздельные jobs"
-    status: completed
+- id: rh0-workflow
+  content: Создать .github/workflows/vdp-ci.yml с jobs fast/integration/playwright/docs
+  status: completed
+- id: rh0-ci-doc
+  content: Документ vdp/docs/operations/ci.md — topology, triggers, branch protection
+  status: completed
+- id: rh0-known-gaps
+  content: Обновить known-gaps пункт CI CD (GitHub primary)
+  status: completed
+- id: rh0-gate
+  content: 'DoD: pipeline green на main; integration и playwright — раздельные jobs'
+  status: completed
 isProject: false
 ---
 
@@ -130,11 +132,11 @@ cd vdp && make playwright-e2e
 
 ## DoD
 
-- [ ] `.github/workflows/vdp-ci.yml` committed
-- [ ] `fast` блокирует PR при падении unit
-- [ ] `integration` и `playwright` — **разные jobs**, явно documented
-- [ ] `vdp/docs/operations/ci.md` опубликован
-- [ ] known-gaps CI пункт обновлён
+- [x] `.github/workflows/vdp-ci.yml` committed
+- [x] `fast` блокирует PR при падении unit
+- [x] `integration` и `playwright` — **разные jobs**, явно documented
+- [x] `vdp/docs/operations/ci.md` опубликован
+- [x] known-gaps CI пункт обновлён
 
 ## Honesty note
 
@@ -143,3 +145,5 @@ cd vdp && make playwright-e2e
 ## GitLab mirror (doc only)
 
 Stages: `fast` → `integration` → `playwright`. Services: docker:dind. Variables: `DATABASE_URL_*` для RH1 step.
+
+> **Status-sync 2026-09-24:** todos/DoD marked completed — code evidence recorded in sync reason. Batch triage archive; do not re-implement.

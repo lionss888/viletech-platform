@@ -1,46 +1,62 @@
 ---
 name: VDP roadmap R0-R12
-overview: Программа доведения vdp до проверяемого соответствия Nest backend-for-ved + вводные ВИ + расширение вводных. Несколько независимых планов R0–R12; правило честности готовности; критерии закрытия без ложного «100%».
+overview: 'SUPERSEDED/cancelled 2026-09-24: R0–R12 index; pilot gates already past.
+  Was: Программа доведения vdp до проверяемого соответствия Nest backend-for-ved +
+  вводные ВИ + расширение вводных. Несколько независимых планов R0–R12; правило честности
+  готовности; критерии закрытия без ложного «100%».'
 todos:
-  - id: create-r0
-    content: Создать plan-файл R0 Gate + honesty rule
-    status: pending
-  - id: create-r1
-    content: Создать plan-файл R1 FormPayment SM+API
-    status: pending
-  - id: create-r2
-    content: Создать plan-файл R2 Auth Account Org
-    status: pending
-  - id: create-r3
-    content: Создать plan-файл R3 Contracts+ПА
-    status: pending
-  - id: create-r4
-    content: Создать plan-файл R4 Docs domain
-    status: pending
-  - id: create-r5
-    content: Создать plan-файл R5 Multi-order
-    status: pending
-  - id: create-r6
-    content: Создать plan-файл R6 Rate/POG/Template
-    status: pending
-  - id: create-r7
-    content: Создать plan-файл R7 Refund
-    status: pending
-  - id: create-r8
-    content: Создать plan-файл R8 Hub real
-    status: pending
-  - id: create-r9
-    content: Создать plan-файл R9 Extended Nest
-    status: pending
-  - id: create-r10
-    content: Создать plan-файл R10 Bank API
-    status: pending
-  - id: create-r11
-    content: Создать plan-файл R11 Gap residual
-    status: pending
-  - id: create-r12
-    content: Создать plan-файл R12 Verification
-    status: pending
+- id: create-r0
+  content: 'Создать plan-файл R0 Gate + honesty rule [cancelled 2026-09-24: R0–R12
+    index; pilot gates already past]'
+  status: cancelled
+- id: create-r1
+  content: 'Создать plan-файл R1 FormPayment SM+API [cancelled 2026-09-24: R0–R12
+    index; pilot gates already past]'
+  status: cancelled
+- id: create-r2
+  content: 'Создать plan-файл R2 Auth Account Org [cancelled 2026-09-24: R0–R12 index;
+    pilot gates already past]'
+  status: cancelled
+- id: create-r3
+  content: 'Создать plan-файл R3 Contracts+ПА [cancelled 2026-09-24: R0–R12 index;
+    pilot gates already past]'
+  status: cancelled
+- id: create-r4
+  content: 'Создать plan-файл R4 Docs domain [cancelled 2026-09-24: R0–R12 index;
+    pilot gates already past]'
+  status: cancelled
+- id: create-r5
+  content: 'Создать plan-файл R5 Multi-order [cancelled 2026-09-24: R0–R12 index;
+    pilot gates already past]'
+  status: cancelled
+- id: create-r6
+  content: 'Создать plan-файл R6 Rate/POG/Template [cancelled 2026-09-24: R0–R12 index;
+    pilot gates already past]'
+  status: cancelled
+- id: create-r7
+  content: 'Создать plan-файл R7 Refund [cancelled 2026-09-24: R0–R12 index; pilot
+    gates already past]'
+  status: cancelled
+- id: create-r8
+  content: 'Создать plan-файл R8 Hub real [cancelled 2026-09-24: R0–R12 index; pilot
+    gates already past]'
+  status: cancelled
+- id: create-r9
+  content: 'Создать plan-файл R9 Extended Nest [cancelled 2026-09-24: R0–R12 index;
+    pilot gates already past]'
+  status: cancelled
+- id: create-r10
+  content: 'Создать plan-файл R10 Bank API [cancelled 2026-09-24: R0–R12 index; pilot
+    gates already past]'
+  status: cancelled
+- id: create-r11
+  content: 'Создать plan-файл R11 Gap residual [cancelled 2026-09-24: R0–R12 index;
+    pilot gates already past]'
+  status: cancelled
+- id: create-r12
+  content: 'Создать plan-файл R12 Verification [cancelled 2026-09-24: R0–R12 index;
+    pilot gates already past]'
+  status: cancelled
 isProject: false
 ---
 
@@ -120,3 +136,5 @@ flowchart LR
 ## Вне программы
 
 П.3 inventory прочих AMG-модулей; полный фронт; BDUI; иностр. PSP; логистика.
+
+> **Status-sync 2026-09-24:** cancelled as obsolete/superseded — see todo notes / overview. Do not execute this plan as a product wave.

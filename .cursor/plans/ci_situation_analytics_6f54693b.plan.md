@@ -1,22 +1,30 @@
 ---
 name: CI situation analytics
-overview: "Образ ситуации по красному gate: два PR, три класса сбоев, один реальный блокер merge (#36) — @pilot-matrix. Дальше — не «ещё раз подождать», а целевой разбор по аннотациям CI #104 и зелёный make ci-pr-pilot."
+overview: 'SUPERSEDED/cancelled 2026-09-24: one-shot CI analytics; not product backlog.
+  Was: Образ ситуации по красному gate: два PR, три класса сбоев, один реальный блокер
+  merge (#36) — @pilot-matrix. Дальше — не «ещё раз подождать», а целевой разбор по
+  аннотациям CI #104 и зелёный make ci-pr-pilot.'
 todos:
-  - id: stabilize-signal
-    content: Не пушить поверх длинного VDP CI; один чистый re-run/push после фикса
-    status: pending
-  - id: triage-104
-    content: "Разбор аннотаций #104: export CTA, confirmModal stuck, refund seed"
-    status: pending
-  - id: fix-root-causes
-    content: Чинить ActionPanel/bridge/API/seed или sync @pilot-matrix specs
-    status: pending
-  - id: gate-ci-pr-pilot
-    content: "make check-env-parity → unit → make ci-pr-pilot до merge #36"
-    status: pending
-  - id: main-pr35
-    content: "После зелёного #36 закрыть/поглотить #35 или срочно влить только ради main smoke"
-    status: pending
+- id: stabilize-signal
+  content: 'Не пушить поверх длинного VDP CI; один чистый re-run/push после фикса
+    [cancelled 2026-09-24: one-shot CI analytics; not product backlog]'
+  status: cancelled
+- id: triage-104
+  content: 'Разбор аннотаций #104: export CTA, confirmModal stuck, refund seed [cancelled
+    2026-09-24: one-shot CI analytics; not product backlog]'
+  status: cancelled
+- id: fix-root-causes
+  content: 'Чинить ActionPanel/bridge/API/seed или sync @pilot-matrix specs [cancelled
+    2026-09-24: one-shot CI analytics; not product backlog]'
+  status: cancelled
+- id: gate-ci-pr-pilot
+  content: 'make check-env-parity → unit → make ci-pr-pilot до merge #36 [cancelled
+    2026-09-24: one-shot CI analytics; not product backlog]'
+  status: cancelled
+- id: main-pr35
+  content: 'После зелёного #36 закрыть/поглотить #35 или срочно влить только ради
+    main smoke [cancelled 2026-09-24: one-shot CI analytics; not product backlog]'
+  status: cancelled
 isProject: false
 ---
 
@@ -136,3 +144,5 @@ flowchart TB
 ## Следующий шаг после approve этого плана
 
 Исполнение = волна фикса класса C по логу #104 (Agent mode), DoD = зелёный `ci-pr-pilot`, затем чистый push на #36 без cancel.
+
+> **Status-sync 2026-09-24:** cancelled as obsolete/superseded — see todo notes / overview. Do not execute this plan as a product wave.

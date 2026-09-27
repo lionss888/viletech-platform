@@ -42,6 +42,8 @@ func (s *Server) handleProcessRolesGet(w http.ResponseWriter, r *http.Request, p
 			"capabilities": caps,
 			"removable":    cfg.Removable(),
 			"mandatory":    cfg.Mandatory,
+			"disable_mode": cfg.DisableMode,
+			"handoff_role": cfg.HandoffRole,
 		})
 	}
 	writeJSON(w, http.StatusOK, map[string]any{

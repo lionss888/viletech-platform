@@ -96,4 +96,21 @@ func TestProcessRolesHTTP(t *testing.T) {
 	if rec.Code != http.StatusOK {
 		t.Fatalf("priorities: %d %s", rec.Code, rec.Body.String())
 	}
+
+	body, _ = json.Marshal(map[string]any{"enabled": false})
+	req = httptest.NewRequest(http.MethodPut, "/api/v1/admin/process-roles/treasurer", bytes.NewReader(body))
+	req.Header.Set("Authorization", "Bearer "+rootTok)
+	rec = httptest.NewRecorder()
+	h.ServeHTTP(rec, req)
+	if rec.Code == http.StatusOK {
+		t.Fatal("disable treasurer without disposition must fail")
+	}
+	body, _ = json.Marshal(map[string]any{"enabled": false, "disable_mode": "skip"})
+	req = httptest.NewRequest(http.MethodPut, "/api/v1/admin/process-roles/treasurer", bytes.NewReader(body))
+	req.Header.Set("Authorization", "Bearer "+rootTok)
+	rec = httptest.NewRecorder()
+	h.ServeHTTP(rec, req)
+	if rec.Code != http.StatusOK {
+		t.Fatalf("disable treasurer skip: %d %s", rec.Code, rec.Body.String())
+	}
 }

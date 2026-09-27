@@ -64,4 +64,58 @@ describe("actionsFor with process roles", () => {
     const ids = actionsFor("manager", "organization_waiting_verification", rows).map((a) => a.id);
     expect(ids).toContain("ico_form_start");
   });
+
+  it("injects treas CTA for manager on treasurer skip disposition", () => {
+    const rows: ProcessRoleRow[] = [
+      {
+        role: "treasurer",
+        enabled: false,
+        priority: 45,
+        influence: "none",
+        capabilities: ["form.view", "treasurer.ops"],
+        removable: true,
+        mandatory: false,
+        disable_mode: "skip",
+        handoff_role: "manager",
+      },
+      {
+        role: "manager",
+        enabled: true,
+        priority: 40,
+        influence: "actor",
+        capabilities: ["form.view", "manager.ops"],
+        removable: false,
+        mandatory: true,
+      },
+    ];
+    const mgrIds = actionsFor("manager", "payment_received", rows).map((a) => a.id);
+    expect(mgrIds).toContain("treas_confirm_payment");
+    const treasIds = actionsFor("treasurer", "payment_received", rows).map((a) => a.id);
+    expect(treasIds).not.toContain("treas_confirm_payment");
+  });
+
+  it("does not inject treas CTA when treasurer disabled without disposition", () => {
+    const rows: ProcessRoleRow[] = [
+      {
+        role: "treasurer",
+        enabled: false,
+        priority: 45,
+        influence: "none",
+        capabilities: ["form.view", "treasurer.ops"],
+        removable: true,
+        mandatory: false,
+      },
+      {
+        role: "manager",
+        enabled: true,
+        priority: 40,
+        influence: "actor",
+        capabilities: ["form.view", "manager.ops"],
+        removable: false,
+        mandatory: true,
+      },
+    ];
+    const mgrIds = actionsFor("manager", "payment_received", rows).map((a) => a.id);
+    expect(mgrIds).not.toContain("treas_confirm_payment");
+  });
 });

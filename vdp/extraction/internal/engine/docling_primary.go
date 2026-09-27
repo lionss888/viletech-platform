@@ -8,7 +8,6 @@ import (
 	"fmt"
 	"io"
 	"net/http"
-	"regexp"
 	"strings"
 	"time"
 
@@ -25,8 +24,8 @@ type DoclingPrimary struct {
 func NewDocling(baseURL string) *DoclingPrimary {
 	return &DoclingPrimary{
 		BaseURL: strings.TrimRight(strings.TrimSpace(baseURL), "/"),
-		// Under hub OCR_TIMEOUT_MS (180s) and core GATEWAY_TIMEOUT (180s).
-		HTTP:    &http.Client{Timeout: 170 * time.Second},
+		// Budget A: leave room for doctr FALLBACK within GATEWAY/OCR 180s.
+		HTTP: &http.Client{Timeout: 90 * time.Second},
 	}
 }
 
@@ -46,7 +45,7 @@ func (d *DoclingPrimary) Extract(ctx context.Context, in Input) (extraction.Resu
 	if text == "" {
 		text = "(empty document text)"
 	}
-	return MapDoclingText(in, text), nil
+	return MapInvoiceText(in, text, "docling"), nil
 }
 
 func (d *DoclingPrimary) convert(ctx context.Context, in Input) (string, error) {
@@ -97,7 +96,7 @@ func (d *DoclingPrimary) postJSON(ctx context.Context, url string, body any) (ma
 	req.Header.Set("Content-Type", "application/json")
 	client := d.HTTP
 	if client == nil {
-		client = &http.Client{Timeout: 170 * time.Second}
+		client = &http.Client{Timeout: 90 * time.Second}
 	}
 	res, err := client.Do(req)
 	if err != nil {
@@ -131,68 +130,4 @@ func collectDoclingMarkdown(raw map[string]any) string {
 		return v
 	}
 	return ""
-}
-
-var (
-	reInvoiceAmount = regexp.MustCompile(`(?i)(?:invoice\s*)?(?:amount|total|sum|итого|сумма)[^\d]{0,24}(\d[\d\s]*[.,]\d{2}|\d[\d\s]{2,})`)
-	reCurrency      = regexp.MustCompile(`\b(USD|EUR|GBP|CNY|RUB|CHF|JPY|AED|TRY)\b`)
-	// Invoice# / Invoice No. / Invoice-25918 / № / Inv. — avoid bare word "Invoice" as the number.
-	reInvoiceNo = regexp.MustCompile(`(?i)(?:invoice\s*(?:no\.?|number|#)|invoice[- ]|inv\.?\s*#?|сч[её]т(?:-фактура)?\s*№?|№)\s*[:#]?\s*([A-Z0-9][-A-Z0-9/]{2,})`)
-	reDateISO   = regexp.MustCompile(`\b(20\d{2}-\d{2}-\d{2})\b`)
-	reDateEU    = regexp.MustCompile(`\b(\d{1,2}[./]\d{1,2}[./]20\d{2})\b`)
-	// Prefer seller/vendor labels; bare "from" is too noisy. Name must start with uppercase
-	// (label match is case-insensitive; capture stays case-sensitive — avoid (?i) on whole pattern).
-	reCompany = regexp.MustCompile(`(?i:seller|vendor|продавец|поставщик|company\s*name)[:\s]+([A-ZА-Я][A-Za-zА-Яа-я0-9][^.\n]{1,60})`)
-)
-
-// MapDoclingText builds schema v1 from layout/markdown with light heuristics.
-func MapDoclingText(in Input, text string) extraction.Result {
-	r := extraction.Result{
-		SchemaVersion: extraction.SchemaVersion,
-		DocType:       "invoice",
-		Confidence:    0.35,
-		Header:        extraction.Header{},
-		LineItems:     []extraction.LineItem{},
-		Meta: extraction.Meta{
-			EngineID:      "docling",
-			ModelVersion:  "docling-serve",
-			FormPaymentID: in.FormPaymentID,
-			EventID:       in.EventID,
-			SourceFileID:  in.FileName,
-		},
-	}
-	if m := reInvoiceAmount.FindStringSubmatch(text); len(m) > 1 {
-		r.Header.InvoiceAmount = normalizeAmount(m[1])
-	}
-	if m := reCurrency.FindStringSubmatch(text); len(m) > 1 {
-		r.Header.Currency = strings.ToUpper(m[1])
-	}
-	if m := reInvoiceNo.FindStringSubmatch(text); len(m) > 1 {
-		r.Header.InvoiceNumber = strings.TrimSpace(m[1])
-	}
-	if m := reDateISO.FindStringSubmatch(text); len(m) > 1 {
-		r.Header.InvoiceDate = m[1]
-	} else if m := reDateEU.FindStringSubmatch(text); len(m) > 1 {
-		r.Header.InvoiceDate = m[1]
-	}
-	if m := reCompany.FindStringSubmatch(text); len(m) > 1 {
-		r.Header.CompanyName = strings.TrimSpace(m[1])
-	}
-	// Raise confidence when any commercial field was recovered so FE can treat as done + HITL review.
-	if strings.TrimSpace(r.Header.InvoiceAmount) != "" ||
-		strings.TrimSpace(r.Header.InvoiceNumber) != "" ||
-		strings.TrimSpace(r.Header.CompanyName) != "" ||
-		strings.TrimSpace(r.Header.Currency) != "" {
-		r.Confidence = 0.72
-	}
-	layout := truncate(text, 1800)
-	r.Warnings = []string{"docling_pilot", "layout:" + layout}
-	r.Meta.ContentHash = extraction.ContentHash(r)
-	return r
-}
-
-func normalizeAmount(raw string) string {
-	s := strings.ReplaceAll(raw, " ", "")
-	s = strings.ReplaceAll(s, ",", ".")
-	return s
 }

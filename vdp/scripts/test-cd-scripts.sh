@@ -302,13 +302,17 @@ fi
 if grep -nE '[^_](/api/v1/eco/form-payment/)' scripts/compose-e2e.sh | grep -vE 'try_(put|post)|#'; then
   fail "compose-e2e must not hard-call /eco/form-payment without try_ (use e2e-continuity.sh)"
 fi
-# Treasurer IMP path: snapshot branch, never force-enable local process-roles.
-grep -q 'process-roles treasurer slot' scripts/compose-e2e.sh \
-  || fail "compose-e2e must check process-roles treasurer slot before IMP1/IMP2"
-grep -q 'soft_skip IMP1/IMP2 reason=treasurer_slot_off' scripts/compose-e2e.sh \
-  || fail "compose-e2e must soft_skip IMP1/IMP2 when treasurer slot off"
-if grep -nE 'admin/process-roles/treasurer' scripts/compose-e2e.sh | grep -vE '^[^:]*:[0-9]+:[[:space:]]*#'; then
-  fail "compose-e2e must not PUT admin/process-roles/treasurer (no force-enable)"
+# Treasurer IMP path: explicit dual-config A(on/TREAS) + B(skip/MGR); never soft_skip as success.
+grep -q 'process-roles treasurer slot (IMP1/IMP2 dual-config)' scripts/compose-e2e.sh \
+  || fail "compose-e2e must declare treasurer dual-config IMP slot"
+grep -q 'dual-config A treasurer on via TREAS_T' scripts/compose-e2e.sh \
+  || fail "compose-e2e must run dual-config A (treasurer on)"
+grep -q 'dual-config B treasurer skip via manager' scripts/compose-e2e.sh \
+  || fail "compose-e2e must run dual-config B (skip via manager)"
+grep -q 'run_imp_pair' scripts/compose-e2e.sh \
+  || fail "compose-e2e must use run_imp_pair for disposition-aware IMP"
+if grep -nE 'soft_skip IMP1/IMP2 reason=treasurer_slot_off' scripts/compose-e2e.sh; then
+  fail "compose-e2e must not soft_skip IMP1/IMP2 when treasurer slot off"
 fi
 
 echo "== VDP CI: integration on every PR; Images waits CI on main =="
@@ -445,9 +449,12 @@ bash -n scripts/pilot-matrix-paths-match.sh || fail "pilot-matrix-paths-match.sh
 bash -n scripts/main-full-e2e-paths-match.sh || fail "main-full-e2e-paths-match.sh syntax"
 bash -n scripts/prepush-gate.sh || fail "prepush-gate.sh syntax"
 grep -q '^prepush-gate:' Makefile || fail "Makefile missing prepush-gate target"
+grep -q '^push-gate:' Makefile || fail "Makefile missing push-gate target"
 grep -q 'prepush-gate' ../.githooks/pre-push || fail ".githooks/pre-push must call prepush-gate"
+grep -q 'push-gate' scripts/prepush-gate.sh \
+  || fail "prepush-gate default must run make push-gate (full insurance)"
 grep -q 'main-full-e2e-paths-match' scripts/prepush-gate.sh \
-  || fail "prepush-gate must use main-full-e2e-paths-match for full suite escalation"
+  || fail "prepush-gate must keep main-full-e2e-paths-match for PREPUSH_PATH_AWARE=1"
 # Shared path pattern must still cover canonical ladder surfaces
 for needle in 'vdp/fe/e2e/' 'ActionPanel' 'formpayment' 'manager-payment'; do
   grep -q "$needle" scripts/pilot-matrix-paths.grep \

@@ -9,7 +9,12 @@ import (
 
 // ProbeDoclingReachable GETs docling /health with a short timeout.
 func ProbeDoclingReachable(ctx context.Context, doclingURL string, client *http.Client) bool {
-	base := strings.TrimRight(strings.TrimSpace(doclingURL), "/")
+	return ProbeHTTPReachable(ctx, doclingURL, client)
+}
+
+// ProbeHTTPReachable GETs {base}/health with a short timeout.
+func ProbeHTTPReachable(ctx context.Context, baseURL string, client *http.Client) bool {
+	base := strings.TrimRight(strings.TrimSpace(baseURL), "/")
 	if base == "" {
 		return false
 	}

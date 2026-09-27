@@ -1,0 +1,6 @@
+fastapi==0.115.6
+uvicorn[standard]==0.32.1
+pymupdf==1.25.1
+pillow==11.0.0
+# Optional heavy OCR (CPU). Image builds without it still serve PDF text extraction.
+# python-doctr[torch]==0.10.0

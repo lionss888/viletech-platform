@@ -4,6 +4,7 @@ import { useMemo, useState } from "react";
 
 import { getComplianceHistory, getForm, startExtraction } from "@/lib/api/forms";
 import { listExecutionProviders } from "@/lib/api/catalog";
+import { ensureHsCodeFromOcr } from "@/lib/api/catalog-mutations";
 import { getFormDiadocStatus } from "@/lib/api/notifications";
 import {
   assignedManagerLabel,
@@ -141,10 +142,15 @@ export function FormDetail() {
         apiDocs.some((d) => d.fileId) || storeDocs.every((d) => !d.fileId);
       return {
         ...mapped,
-        ownerName: resolveClientName(formQuery.data.account_id, users, {
-          role: auth.role ?? undefined,
-          name: auth.displayName,
-        }),
+        ownerName: resolveClientName(
+          formQuery.data.account_id,
+          users,
+          {
+            role: auth.role ?? undefined,
+            name: auth.displayName,
+          },
+          formQuery.data.account_name ?? mapped.ownerName,
+        ),
         documents: preferApi && apiDocs.length > 0 ? apiDocs : storeDocs.length > 0 ? storeDocs : apiDocs,
         ...reject,
       };
@@ -204,7 +210,9 @@ export function FormDetail() {
   if (!formId || (mode === "app" && formQuery.isLoading && !form)) {
     return (
       <VedAppShell title="Заявка">
-        <p className="text-sm text-muted-foreground">Загрузка…</p>
+        <p className="text-sm text-muted-foreground" data-testid="form-detail-loading">
+          Загрузка…
+        </p>
       </VedAppShell>
     );
   }
@@ -212,7 +220,7 @@ export function FormDetail() {
   if (!form) {
     return (
       <VedAppShell title="Заявка не найдена">
-        <div className="panel p-6 text-sm text-muted-foreground">
+        <div className="panel p-6 text-sm text-muted-foreground" data-testid="form-detail-unavailable">
           Заявка не найдена или недоступна вашей роли.{" "}
           <VedLink segment="/forms" className="font-semibold text-accent hover:underline">
             Вернуться в реестр
@@ -780,6 +788,14 @@ export function FormDetail() {
           formAmountMinor={form.amountMinor}
           formCurrency={form.currency}
           documentKind={visibleDocuments.some((d) => d.kind === "order") ? "order" : undefined}
+          onEnsureHsCode={async (code) => {
+            try {
+              const created = await ensureHsCodeFromOcr(code);
+              return { value: created.code, label: `${created.code} — ${created.description || "OCR"}` };
+            } catch {
+              return null;
+            }
+          }}
         />
       )}
     </VedAppShell>

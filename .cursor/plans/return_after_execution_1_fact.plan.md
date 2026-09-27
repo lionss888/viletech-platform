@@ -1,40 +1,44 @@
 ---
 name: Возврат этап 1 Факт
-overview: "Провайдер сообщает сумму возврата → менеджер видит факт. Три решения ещё не работают, мёртвых кнопок нет. Domain + HTTP + FE + unit + E2E базовый. Только импорт, один активный, идемпотентность."
+overview: Провайдер сообщает сумму возврата → менеджер видит факт. Три решения ещё
+  не работают, мёртвых кнопок нет. Domain + HTTP + FE + unit + E2E базовый. Только
+  импорт, один активный, идемпотентность. [status-sync 2026-09-24 completed] ProviderReturnReportPanel
+  + return_actions + e2e stage1
 todos:
-  - id: domain-fields
-    content: Поля эпизода возврата на Form (сумма, валюта, причина, кто, когда, признак активен)
-    status: pending
-  - id: domain-action
-    content: Действие prov_return_report + переход в mgr_return_decision
-    status: pending
-  - id: domain-guards
-    content: Вход только после исполнения, только импорт, один активный
-    status: pending
-  - id: unit-tests
-    content: Table-driven unit на отказы (до исполнения, экспорт, второй активный, идемпотентность)
-    status: pending
-  - id: http-routes
-    content: POST /forms/:id/return/report (провайдер) + AuthZ
-    status: pending
-  - id: http-tests
-    content: HTTP тесты на AuthZ и отказы
-    status: pending
-  - id: fe-provider-cta
-    content: Кнопка «Сообщить о возврате» у провайдера (сумма обязательна, причина опционально)
-    status: pending
-  - id: fe-manager-fact
-    content: Блок факта у менеджера (сумма, причина, без трёх кнопок)
-    status: pending
-  - id: fe-unit
-    content: FE unit на «три кнопки решения нет»
-    status: pending
-  - id: e2e-basic
-    content: E2E провайдер сообщает → менеджер видит сумму
-    status: pending
-  - id: gate
-    content: make check-env-parity затем make ci-pr-pilot зелёный
-    status: pending
+- id: domain-fields
+  content: Поля эпизода возврата на Form (сумма, валюта, причина, кто, когда, признак
+    активен)
+  status: completed
+- id: domain-action
+  content: Действие prov_return_report + переход в mgr_return_decision
+  status: completed
+- id: domain-guards
+  content: Вход только после исполнения, только импорт, один активный
+  status: completed
+- id: unit-tests
+  content: Table-driven unit на отказы (до исполнения, экспорт, второй активный, идемпотентность)
+  status: completed
+- id: http-routes
+  content: POST /forms/:id/return/report (провайдер) + AuthZ
+  status: completed
+- id: http-tests
+  content: HTTP тесты на AuthZ и отказы
+  status: completed
+- id: fe-provider-cta
+  content: Кнопка «Сообщить о возврате» у провайдера (сумма обязательна, причина опционально)
+  status: completed
+- id: fe-manager-fact
+  content: Блок факта у менеджера (сумма, причина, без трёх кнопок)
+  status: completed
+- id: fe-unit
+  content: FE unit на «три кнопки решения нет»
+  status: completed
+- id: e2e-basic
+  content: E2E провайдер сообщает → менеджер видит сумму
+  status: completed
+- id: gate
+  content: make check-env-parity затем make ci-pr-pilot зелёный
+  status: completed
 isProject: false
 ---
 
@@ -362,3 +366,5 @@ test('provider reports return → manager sees fact', async ({ page, login }) =>
 - **Этап 4:** Повторить платёж (комментарий → новое исполнение)
 
 Этапы 2-4 строго последовательны (общие поля на заявке).
+
+> **Status-sync 2026-09-24:** todos/DoD marked completed — code evidence recorded in sync reason. Batch triage archive; do not re-implement.

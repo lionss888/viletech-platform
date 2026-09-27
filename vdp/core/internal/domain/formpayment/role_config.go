@@ -17,6 +17,15 @@ const (
 	InfluenceNone     Influence = "none"
 )
 
+// DisableMode is set when a process role is turned off and steps must be reassigned or skipped.
+type DisableMode string
+
+const (
+	DisableModeNone    DisableMode = ""
+	DisableModeHandoff DisableMode = "handoff"
+	DisableModeSkip    DisableMode = "skip"
+)
+
 // RoleProcessConfig is root-editable participation of a role in the fixed process.
 type RoleProcessConfig struct {
 	Role         domain.Role  `json:"role"`
@@ -25,6 +34,9 @@ type RoleProcessConfig struct {
 	Priority     int          `json:"priority"`
 	Influence    Influence    `json:"influence"`
 	Capabilities []Capability `json:"capabilities"`
+	// DisableMode + HandoffRole apply when Enabled is false (treasurer disposition in this wave).
+	DisableMode DisableMode `json:"disable_mode,omitempty"`
+	HandoffRole domain.Role `json:"handoff_role,omitempty"`
 }
 
 // ProcessPolicySnapshot is the versioned role layer over the fixed status machine.
@@ -137,6 +149,9 @@ func RoleMayPerformWithConfig(role domain.Role, action Action, snap *ProcessPoli
 	if canAdvanceDisabledSlot(role, action, snap) {
 		return true
 	}
+	if canPerformDisabledTreasurerOps(role, action, snap) {
+		return true
+	}
 	return false
 }
 
@@ -175,6 +190,48 @@ func canAdvanceDisabledSlot(role domain.Role, action Action, snap *ProcessPolicy
 	return actor.HasCapability(CapManagerOps)
 }
 
+// TreasurerOpsRecipient returns who may perform CapTreasurerOps when treasurer is disabled with disposition.
+func TreasurerOpsRecipient(snap *ProcessPolicySnapshot) (domain.Role, bool) {
+	if snap == nil {
+		return "", false
+	}
+	treas, ok := snap.ConfigFor(domain.RoleTreasurer)
+	if !ok || treas.Enabled {
+		return "", false
+	}
+	switch treas.DisableMode {
+	case DisableModeSkip:
+		return domain.RoleManager, true
+	case DisableModeHandoff:
+		if treas.HandoffRole == "" {
+			return "", false
+		}
+		return treas.HandoffRole, true
+	default:
+		return "", false
+	}
+}
+
+// canPerformDisabledTreasurerOps grants CapTreasurerOps actions to the explicit disposition recipient.
+func canPerformDisabledTreasurerOps(role domain.Role, action Action, snap *ProcessPolicySnapshot) bool {
+	if CapabilityForAction(action) != CapTreasurerOps {
+		return false
+	}
+	recipient, ok := TreasurerOpsRecipient(snap)
+	if !ok || role != recipient {
+		return false
+	}
+	actor, ok := snap.ConfigFor(role)
+	if !ok || !actor.Enabled || actor.Influence != InfluenceActor {
+		return false
+	}
+	treas, _ := snap.ConfigFor(domain.RoleTreasurer)
+	if treas.DisableMode == DisableModeSkip {
+		return actor.HasCapability(CapManagerOps)
+	}
+	return true
+}
+
 // RoleMayPerformLegacy is the hard-coded matrix (kept for parity tests and empty snapshot).
 func RoleMayPerformLegacy(role domain.Role, action Action) bool {
 	if role == domain.RoleRoot {
@@ -197,8 +254,8 @@ func RoleMayPerformLegacy(role domain.Role, action Action) bool {
 	return false
 }
 
-// ValidateRoleConfigUpdate checks capabilities and mandatory disable rules.
-func ValidateRoleConfigUpdate(role domain.Role, enabled bool, mandatory bool, influence Influence, caps []Capability) error {
+// ValidateRoleConfigUpdate checks capabilities, mandatory disable rules, and treasurer disposition.
+func ValidateRoleConfigUpdate(role domain.Role, enabled bool, mandatory bool, influence Influence, caps []Capability, disableMode DisableMode, handoffRole domain.Role) error {
 	if !IsProcessEligibleRole(role) {
 		return apperrors.New(apperrors.ErrCodeValidation, "admin roles are not process participants")
 	}
@@ -220,17 +277,43 @@ func ValidateRoleConfigUpdate(role domain.Role, enabled bool, mandatory bool, in
 			return apperrors.New(apperrors.ErrCodeValidation, "unknown capability: "+string(c))
 		}
 	}
-	if enabled && influence == InfluenceActor {
-		hasSubmit := false
-		for _, c := range caps {
-			if c == CapFormSubmit {
-				hasSubmit = true
-				break
-			}
+	if enabled {
+		if disableMode != DisableModeNone || handoffRole != "" {
+			return apperrors.New(apperrors.ErrCodeValidation, "disable disposition only when role is disabled")
 		}
-		_ = hasSubmit
+		return nil
+	}
+	// Disabled: treasurer requires explicit disposition (handoff or skip). Other roles: no disposition in this wave.
+	if role == domain.RoleTreasurer {
+		return validateTreasurerDisableDisposition(disableMode, handoffRole)
+	}
+	if disableMode != DisableModeNone || handoffRole != "" {
+		return apperrors.New(apperrors.ErrCodeValidation, "disable disposition is only supported for treasurer")
 	}
 	return nil
+}
+
+func validateTreasurerDisableDisposition(disableMode DisableMode, handoffRole domain.Role) error {
+	switch disableMode {
+	case DisableModeSkip:
+		if handoffRole != "" && handoffRole != domain.RoleManager {
+			return apperrors.New(apperrors.ErrCodeValidation, "skip mode handoff_role must be manager or empty")
+		}
+		return nil
+	case DisableModeHandoff:
+		if handoffRole == "" {
+			return apperrors.New(apperrors.ErrCodeValidation, "handoff requires handoff_role")
+		}
+		if handoffRole == domain.RoleTreasurer {
+			return apperrors.New(apperrors.ErrCodeValidation, "cannot handoff treasurer to itself")
+		}
+		if !IsProcessEligibleRole(handoffRole) {
+			return apperrors.New(apperrors.ErrCodeValidation, "invalid handoff_role")
+		}
+		return nil
+	default:
+		return apperrors.New(apperrors.ErrCodeValidation, "disabling treasurer requires disable_mode skip or handoff")
+	}
 }
 
 // ApplyPriorityOrder rewrites priorities from an ordered role list (1-based steps of 10).

@@ -1,25 +1,27 @@
 ---
 name: Phase 5 Export Domain
-overview: "Export domain/API/tests: direction export, PAY_FROM_EXPORT treasurer, AuthZ. UI вне scope. Срок 5-7 дней по ритму."
+overview: 'Export domain/API/tests: direction export, PAY_FROM_EXPORT treasurer, AuthZ.
+  UI вне scope. Срок 5-7 дней по ритму. [status-sync 2026-09-24 completed] export_machine_test
+  + known-gaps Phase5'
 todos:
-  - id: exp-machine
-    content: State machine export + PAY_FROM_EXPORT treasurer transitions
-    status: pending
-  - id: exp-unit
-    content: Unit RoleMayPerform / transitions export
-    status: pending
-  - id: exp-api
-    content: Nest/API routes direction=export
-    status: pending
-  - id: exp-http
-    content: HTTP tests export happy + AuthZ deny
-    status: pending
-  - id: exp-docs
-    content: form-lifecycle + roles docs export section
-    status: pending
-  - id: exp-regress-imp
-    content: Regress IMP1-3 после export changes
-    status: pending
+- id: exp-machine
+  content: State machine export + PAY_FROM_EXPORT treasurer transitions
+  status: completed
+- id: exp-unit
+  content: Unit RoleMayPerform / transitions export
+  status: completed
+- id: exp-api
+  content: Nest/API routes direction=export
+  status: completed
+- id: exp-http
+  content: HTTP tests export happy + AuthZ deny
+  status: completed
+- id: exp-docs
+  content: form-lifecycle + roles docs export section
+  status: completed
+- id: exp-regress-imp
+  content: Regress IMP1-3 после export changes
+  status: completed
 isProject: false
 ---
 
@@ -81,3 +83,5 @@ FE кабинеты, Playwright, PDF export templates pixel, POSTPAY на export
 ## Rules
 
 `use-cases`, `безопасность-ролей-и-данных`, `тесты-архитектуры`, `честность-готовности`, `планирование-сверка-с-rules`.
+
+> **Status-sync 2026-09-24:** todos/DoD marked completed — code evidence recorded in sync reason. Batch triage archive; do not re-implement.

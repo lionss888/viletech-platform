@@ -22,8 +22,9 @@ BANK_WEBHOOK_URL=
 
 # Docling OCR pilot (PRIMARY). Yandex keys stay unset on this pilot.
 EXTRACTION_PRIMARY=docling
-EXTRACTION_FALLBACK=fixture
+EXTRACTION_FALLBACK=doctr
 EXTRACTION_DOCLING_URL=http://docling:5001
+EXTRACTION_DOCTR_URL=http://doctr:5002
 OCR_TIMEOUT_MS=180000
 GATEWAY_TIMEOUT=180
 # DOCLING_IMAGE=quay.io/docling-project/docling-serve-cpu:latest
