@@ -4,16 +4,16 @@ overview: "Закрытие Stage A: docs/api/openapi.md + check-env-parity + ci
 todos:
   - id: docs-a
     content: "openapi.md: Stage A live (4 path’а + helper); B/C/Pact later"
-    status: pending
+    status: completed
   - id: docs-format
-    content: "make docs-format-check"
-    status: pending
+    content: make docs-format-check
+    status: completed
   - id: env-parity
-    content: "make check-env-parity"
-    status: pending
+    content: make check-env-parity
+    status: completed
   - id: ci-pr-fast
-    content: "make ci-pr-fast зелёный; зафиксировать DoD Stage A"
-    status: pending
+    content: make ci-pr-fast зелёный; зафиксировать DoD Stage A
+    status: completed
 isProject: false
 ---
 
