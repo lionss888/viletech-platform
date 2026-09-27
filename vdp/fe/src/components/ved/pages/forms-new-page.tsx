@@ -33,8 +33,11 @@ import {
 } from "@/lib/ved/extraction";
 import { usePlatformBasePath, usePlatformMode } from "@/lib/ved/platform-mode";
 import { usePlatformStore } from "@/lib/ved/platform-store";
+import { formContractAndInvoiceFields } from "@/lib/ved/invoice-contract-fields";
+import { defaultWizardOrganizationId, sortOrganizationsForWizard } from "@/lib/ved/org-wizard-order";
 import { sortCurrencyRecords } from "@/lib/ved/sort-currencies";
 import type { FormCondition, FormDirection, FormKind } from "@/lib/ved/types";
+import { useAuth } from "@/lib/auth/session";
 import {
   conditionToPaymentMethod,
   deriveInvoiceCurrency,
@@ -53,6 +56,7 @@ type FinalizeMode = "draft" | "submit";
 
 export function NewForm() {
   const { organizations, counterparties, currencies, hsCodes, createForm, session } = usePlatformStore();
+  const auth = useAuth();
   const queryClient = useQueryClient();
   const navigate = useNavigate();
   const base = usePlatformBasePath();
@@ -92,16 +96,21 @@ export function NewForm() {
     invoiceFile: null as File | null,
     contractFile: null as File | null,
   });
+  const preferredOrgId = auth.account?.organization_id;
+  const wizardOrganizations = useMemo(
+    () => sortOrganizationsForWizard(organizations, preferredOrgId),
+    [organizations, preferredOrgId],
+  );
   const currencyOptions = useMemo(() => sortCurrencyRecords(currencies), [currencies]);
-  const hasClientOrg = organizations.length > 0;
+  const hasClientOrg = wizardOrganizations.length > 0;
   const derivedCurrency = deriveInvoiceCurrency(draft.clientCurrency, draft.counterpartyCurrency);
 
   useEffect(() => {
     setDraft((prev) => {
       const nextOrg =
-        prev.organizationId && organizations.some((o) => o.id === prev.organizationId)
+        prev.organizationId && wizardOrganizations.some((o) => o.id === prev.organizationId)
           ? prev.organizationId
-          : (organizations[0]?.id ?? "");
+          : defaultWizardOrganizationId(wizardOrganizations, preferredOrgId);
       const nextCp =
         prev.counterpartyId && counterparties.some((c) => c.id === prev.counterpartyId)
           ? prev.counterpartyId
@@ -130,7 +139,7 @@ export function NewForm() {
         counterpartyCurrency: nextCounterpartyCurrency,
       };
     });
-  }, [organizations, counterparties, hsCodes, currencyOptions]);
+  }, [wizardOrganizations, counterparties, hsCodes, currencyOptions, preferredOrgId]);
 
   const applyOcrPrefill = useCallback((invoiceJson: string | undefined | null): "done" | "degraded" | false => {
     const extraction = parseExtractionResult(invoiceJson);
@@ -359,7 +368,8 @@ export function NewForm() {
         clientCurrency: draft.clientCurrency,
         counterpartyCurrency: draft.counterpartyCurrency,
         hsCode: draft.hsCode || "—",
-        invoiceNumber: draft.invoiceNumber || draft.contractNumber || "—",
+        invoiceNumber: draft.invoiceNumber || "—",
+        contractNumber: draft.contractNumber || undefined,
         shipmentDate: draft.shipmentDate || undefined,
         noDocuments: draft.noDocuments,
         invoiceFile: draft.invoiceFile ?? undefined,
@@ -453,7 +463,11 @@ export function NewForm() {
 
   async function syncFormFields(id: string): Promise<void> {
     const amount = String(draft.amount || "0").replace(/\s/g, "").replace(",", ".");
-    const contractNumber = draft.contractNumber || draft.invoiceNumber || "";
+    const contractInvoice = formContractAndInvoiceFields({
+      contractNumber: draft.contractNumber,
+      invoiceNumber: draft.invoiceNumber,
+      existingInvoiceJson: ocrInvoiceJson,
+    });
     const patch: {
       invoice_amount: string;
       currency: string;
@@ -464,14 +478,15 @@ export function NewForm() {
       contract_date?: string;
       organization_id?: string;
       counterparty_id?: string;
+      invoice_json?: string;
     } = {
       invoice_amount: amount,
       currency: derivedCurrency,
       payment_method: conditionToPaymentMethod(draft.condition, draft.direction),
       direction: draft.direction,
       kind: draft.kind,
+      ...contractInvoice,
     };
-    if (contractNumber) patch.contract_number = contractNumber;
     const date = draft.shipmentDate || draft.contractDate;
     if (date) patch.contract_date = date;
     if (draft.organizationId) patch.organization_id = draft.organizationId;
@@ -528,7 +543,8 @@ export function NewForm() {
             clientCurrency: draft.clientCurrency,
             counterpartyCurrency: draft.counterpartyCurrency,
             hsCode: draft.hsCode || "—",
-            invoiceNumber: draft.invoiceNumber || draft.contractNumber || "—",
+            invoiceNumber: draft.invoiceNumber || "—",
+            contractNumber: draft.contractNumber || undefined,
             shipmentDate: draft.shipmentDate || undefined,
             noDocuments: draft.noDocuments,
             invoiceFile: draft.invoiceFile ?? undefined,
@@ -746,7 +762,7 @@ export function NewForm() {
                   disabled={!hasClientOrg}
                 >
                   {organizations.length === 0 && <option value="">Нет организаций</option>}
-                  {organizations.map((o) => (
+                  {wizardOrganizations.map((o) => (
                     <option key={o.id} value={o.id}>
                       {o.name} · ИНН {o.inn}
                     </option>

@@ -112,6 +112,9 @@ export function VedAppShell({ children, title, subtitle }: { children: ReactNode
 
   const dashTo = `${base}/dashboard` as AppRoute;
   const formsNewTo = `${base}/forms/new` as AppRoute;
+  const isFormDetail =
+    /\/forms\/(?!new(?:\/|$))[^/]+/.test(relPath) || /\/forms\/(?!new(?:\/|$))[^/]+/.test(pathname);
+  const showCreateCta = Boolean(role) && !isFormDetail;
 
   const footerText = isDemo
     ? `${BRAND_NAME} · сделок в системе: ${store.forms.length}`
@@ -134,7 +137,7 @@ export function VedAppShell({ children, title, subtitle }: { children: ReactNode
           </span>
         </Link>
 
-        {role && (
+        {showCreateCta && (
           <div className="mt-5">
             <button
               type="button"
@@ -358,7 +361,7 @@ export function VedAppShell({ children, title, subtitle }: { children: ReactNode
           )}
         </main>
 
-        {role && (
+        {showCreateCta && (
           <div className="shrink-0 border-t border-border bg-card px-4 pt-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] lg:hidden">
             <button
               type="button"

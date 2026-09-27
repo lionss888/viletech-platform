@@ -63,6 +63,8 @@ export type CreateFormInput = {
   contract_date?: string;
   organization_id?: string;
   counterparty_id?: string;
+  /** Optional seed invoice_json (header.invoice_number); never use contract_number for invoice. */
+  invoice_json?: string;
 };
 
 export type TransitionInput = {
@@ -157,6 +159,8 @@ export type PatchFormInput = {
   contract_date?: string;
   direction?: string;
   kind?: string;
+  /** Extraction / manual invoice payload; invoice number lives in header.invoice_number. */
+  invoice_json?: string;
 };
 
 /** Nest-compatible PATCH; nestPrefix is site|manager|admin|… matching the caller role. */

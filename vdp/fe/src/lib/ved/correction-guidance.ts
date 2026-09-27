@@ -1,5 +1,7 @@
 /** Guidance for client on form_waiting_corrections from reject mark/text. */
 
+import { isDocsCorrection } from "./counterparty-display";
+
 export type CorrectionHint = {
   id: string;
   title: string;
@@ -12,6 +14,12 @@ export function isRateCorrection(mark?: string, text?: string): boolean {
   return /курс|rate|fx|обмен/.test(blob);
 }
 
+function hintSection(mark?: string, text?: string): CorrectionHint["section"] {
+  if (isRateCorrection(mark, text)) return "rate";
+  if (isDocsCorrection(mark, text)) return "documents";
+  return "general";
+}
+
 /** User-facing correction hints from reject payload. */
 export function correctionHints(mark?: string, text?: string): CorrectionHint[] {
   const hints: CorrectionHint[] = [];
@@ -21,14 +29,14 @@ export function correctionHints(mark?: string, text?: string): CorrectionHint[] 
     hints.push({
       id: "mark",
       title: markTrim,
-      section: isRateCorrection(markTrim) ? "rate" : "general",
+      section: hintSection(markTrim),
     });
   }
   if (textTrim && textTrim !== markTrim) {
     hints.push({
       id: "text",
       title: textTrim,
-      section: isRateCorrection(undefined, textTrim) ? "rate" : "general",
+      section: hintSection(undefined, textTrim),
     });
   }
   if (hints.length === 0) {
@@ -43,6 +51,13 @@ export function correctionHints(mark?: string, text?: string): CorrectionHint[] 
       id: "rate",
       title: "Согласуйте курс в блоке ниже",
       section: "rate",
+    });
+  }
+  if (isDocsCorrection(mark, text) && !hints.some((h) => h.section === "documents")) {
+    hints.push({
+      id: "docs",
+      title: "Обновите или замените документы по замечанию — контрагент здесь ни при чём",
+      section: "documents",
     });
   }
   return hints;

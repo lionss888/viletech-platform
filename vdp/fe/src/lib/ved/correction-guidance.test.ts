@@ -14,4 +14,10 @@ describe("correction guidance", () => {
     expect(hints.some((h) => h.section === "rate")).toBe(true);
     expect(sectionLabel("rate")).toMatch(/Курс/);
   });
+
+  it("docs reject points at documents, not parties", () => {
+    const hints = correctionHints("docs", "уточните инвойс");
+    expect(hints.some((h) => h.section === "documents")).toBe(true);
+    expect(sectionLabel("documents")).toMatch(/Документ/);
+  });
 });

@@ -76,6 +76,26 @@ export async function authPost(token: string, path: string, body: Record<string,
   return res.json();
 }
 
+/** Nest-compatible PATCH for site form-payment (invoice_json, contract_number, …). */
+export async function patchFormApi(
+  token: string,
+  formId: string,
+  body: Record<string, unknown>,
+  nestPrefix = "site",
+): Promise<void> {
+  const res = await fetch(`${CORE_URL}/api/v1/${nestPrefix}/form-payment/${formId}`, {
+    method: "PATCH",
+    headers: {
+      Authorization: `Bearer ${token}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(body),
+  });
+  if (!res.ok) {
+    throw new Error(`PATCH form ${res.status}: ${await res.text()}`);
+  }
+}
+
 async function formStatus(token: string, path: string): Promise<string> {
   const res = await fetch(`${CORE_URL}${path}`, {
     headers: { Authorization: `Bearer ${token}` },

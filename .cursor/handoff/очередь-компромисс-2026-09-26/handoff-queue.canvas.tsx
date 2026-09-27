@@ -38,88 +38,16 @@ type QueueRow = {
 
 const QUEUE: QueueRow[] = [
   {
-    order: "—",
-    item: "A1 — forms.yaml schemas",
-    plans: [
-      {
-        label: "a1_forms_yaml",
-        path: ".cursor/plans/api_contract_a1_forms_yaml.plan.md",
-      }
-    ],
-    status: "done",
-    note: "Form + $ref на 4 path’а в forms.yaml",
-  },
-  {
-    order: "—",
-    item: "Карточка, п.14",
-    plans: [
-      {
-        label: "карточка_без_прочерков",
-        path: ".cursor/plans/карточка_без_прочерков_e874f6dc.plan.md",
-      }
-    ],
-    status: "done",
-    note: "Участники без прочерков + gate",
-  },
-  {
-    order: "—",
-    item: "A2 — schema helper",
-    plans: [
-      {
-        label: "a2_schema_helper",
-        path: ".cursor/plans/api_contract_a2_schema_helper.plan.md",
-      }
-    ],
-    status: "done",
-    note: "Load / ValidateNamedSchema",
-  },
-  {
-    order: "—",
-    item: "A3 — httptest",
-    plans: [
-      {
-        label: "a3_httptest",
-        path: ".cursor/plans/api_contract_a3_httptest.plan.md",
-      }
-    ],
-    status: "done",
-    note: "health + create/get/action Form assert",
-  },
-  {
-    order: "—",
-    item: "A4 — docs QG Stage A",
-    plans: [
-      {
-        label: "a4_docs_qg",
-        path: ".cursor/plans/api_contract_a4_docs_qg.plan.md",
-      }
-    ],
-    status: "done",
-    note: "Stage A закрыт: openapi.md + ci-pr-fast",
-  },
-  {
     order: "1",
-    item: "UAT cabinet hygiene (свод W2+W4+W5)",
-    plans: [
-      {
-        label: "uat_cabinet_hygiene",
-        path: ".cursor/plans/uat_cabinet_hygiene_2bc557a8.plan.md",
-      }
-    ],
-    status: "next",
-    note: "F2/F3/F6/F7/F9/F11; сперва архив прочих планов, затем repro + фиксы; gate ci-main",
-  },
-  {
-    order: "—",
     item: "UAT W7 browser ladders",
     plans: [
       {
         label: "uat_w7",
-        path: ".cursor/plans/uat_w7_browser_ladders_return.plan.md",
+        path: ".cursor/plans/архив/uat_w7_browser_ladders_return.plan.md",
       }
     ],
-    status: "later",
-    note: "Отдельный день; после cabinet hygiene",
+    status: "next",
+    note: "Next; план в архиве. Hygiene W2+W4+W5 закрыт (ci-main).",
   },
   {
     order: "—",
@@ -127,19 +55,19 @@ const QUEUE: QueueRow[] = [
     plans: [
       {
         label: "b1_golden",
-        path: ".cursor/plans/api_contract_b1_golden.plan.md",
+        path: ".cursor/plans/архив/api_contract_b1_golden.plan.md",
       },
       {
         label: "b2_vitest",
-        path: ".cursor/plans/api_contract_b2_vitest.plan.md",
+        path: ".cursor/plans/архив/api_contract_b2_vitest.plan.md",
       },
       {
         label: "b3_docs_qg",
-        path: ".cursor/plans/api_contract_b3_docs_qg.plan.md",
+        path: ".cursor/plans/архив/api_contract_b3_docs_qg.plan.md",
       }
     ],
     status: "later",
-    note: "После Stage A, по желанию",
+    note: "Планы в архиве",
   },
   {
     order: "—",
@@ -147,11 +75,11 @@ const QUEUE: QueueRow[] = [
     plans: [
       {
         label: "blockers_and_deploy",
-        path: ".cursor/plans/vdp_blockers_and_deploy_99106aff.plan.md",
+        path: ".cursor/plans/архив/vdp_blockers_and_deploy_99106aff.plan.md",
       }
     ],
     status: "later",
-    note: "Не в ежедневной очереди",
+    note: "План в архиве",
   },
 ];
 
@@ -215,13 +143,13 @@ export default function HandoffQueue() {
 
       <Callout tone="info">
         Статусы из frontmatter todos планов (completed/cancelled = done). После
-        закрытия плана: make -C vdp sync-handoff-queue. Next: UAT cabinet hygiene (свод W2+W4+W5).
+        закрытия плана: make -C vdp sync-handoff-queue. Next: UAT W7 browser ladders.
       </Callout>
 
       <Row gap={12} wrap>
-        <Stat value={"done"} label={"A3 httptest"} tone="success" />
-        <Stat value={"done"} label={"A4 docs QG Stage A"} tone="success" />
-        <Stat value={"UAT cabinet hygiene (свод W2+W4+W5)"} label="Next implement" tone="info" />
+        <Stat value={"—"} label={"—"} tone="success" />
+        <Stat value={"—"} label={"—"} tone="success" />
+        <Stat value={"UAT W7 browser ladders"} label="Next implement" tone="info" />
       </Row>
 
       <Card>

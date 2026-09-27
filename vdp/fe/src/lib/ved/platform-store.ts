@@ -71,6 +71,7 @@ import { mapCoreFormToPaymentForm, resolveClientName } from "@/lib/api/mappers";
 import { useAuth } from "@/lib/auth/session";
 import { resolveDemoAction } from "@/lib/ved/action-bridge";
 import { staticCatalogSeed } from "@/lib/ved/catalog-source";
+import { formContractAndInvoiceFields } from "@/lib/ved/invoice-contract-fields";
 import type { RefRecord, RegistryKey } from "@/lib/ved/registry";
 import { REGISTRIES } from "@/lib/ved/registry";
 import type { FormAction, PaymentForm, PlatformUser } from "@/lib/ved/types";
@@ -390,13 +391,17 @@ function useApiPlatformStore(): VedStore {
     async (draft: Partial<PaymentForm> & { invoiceFile?: File; contractFile?: File }): Promise<PaymentForm> => {
       const counterpartyId =
         draft.counterpartyId && draft.counterpartyId !== "—" ? draft.counterpartyId : undefined;
+      const contractInvoice = formContractAndInvoiceFields({
+        contractNumber: draft.contractNumber,
+        invoiceNumber: draft.invoiceNumber,
+      });
       const created = await createForm({
         direction: draft.direction ?? "import",
         kind: draft.kind ?? "good",
         invoice_amount: String((draft.amountMinor ?? 0) / 100),
         currency: draft.currency ?? "USD",
         no_documents: draft.noDocuments,
-        contract_number: draft.invoiceNumber,
+        contract_number: contractInvoice.contract_number,
         contract_date: draft.shipmentDate,
         organization_id: draft.organizationId !== "—" ? draft.organizationId : undefined,
         counterparty_id: counterpartyId,
@@ -412,6 +417,11 @@ function useApiPlatformStore(): VedStore {
       if (counterpartyId && created.counterparty_id !== counterpartyId) {
         await patchForm(created.id, nestFormPrefixForRole(auth.role ?? "user"), {
           counterparty_id: counterpartyId,
+        });
+      }
+      if (contractInvoice.invoice_json) {
+        await patchForm(created.id, nestFormPrefixForRole(auth.role ?? "user"), {
+          invoice_json: contractInvoice.invoice_json,
         });
       }
       if (draft.hsCode && draft.hsCode !== "—") {

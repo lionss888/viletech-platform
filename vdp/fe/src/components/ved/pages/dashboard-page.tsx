@@ -9,12 +9,13 @@ import { fetchPlatformHealth } from "@/lib/api/platform-health";
 import { effectiveActionsFor, effectiveActionsFormCtx } from "@/lib/ved/effective-actions";
 import { isComplianceRole, subjectState } from "@/lib/ved/compliance";
 import { workTotalsByCurrency } from "@/lib/ved/dashboard-totals";
+import { counterpartyListLabel } from "@/lib/ved/counterparty-display";
 import { money, relative } from "@/lib/ved/format";
 import { daysIdle, systemStats } from "@/lib/ved/health";
 import { useVedPaths } from "@/lib/ved/ved-paths";
 import { roleTitle } from "@/lib/ved/roles";
 import { displayStageId, stagesForProcess } from "@/lib/ved/process-stage-filters";
-import { cpByIdFrom, usePlatformStore, visibleForms } from "@/lib/ved/platform-store";
+import { usePlatformStore, visibleForms } from "@/lib/ved/platform-store";
 import { useProcessRolesRows } from "@/lib/ved/use-process-roles-snapshot";
 import type { VedRole } from "@/lib/ved/types";
 import { cn } from "@/lib/utils";
@@ -366,7 +367,7 @@ function RoleDashboard() {
                     <StatusBadge status={form.status} processRoles={processRoles} viewerRole={role} />
                   </span>
                   <span className="min-w-0 flex-1 basis-28 truncate text-xs text-muted-foreground">
-                    {cpByIdFrom(counterparties, form.counterpartyId)?.name ?? "контрагент не указан"}
+                    {counterpartyListLabel(counterparties, form.counterpartyId)}
                   </span>
                   <span className="shrink-0 font-mono text-xs whitespace-nowrap">{money(form.amountMinor, form.currency)}</span>
                   <span className="basis-full text-[11px] text-muted-foreground sm:basis-auto sm:shrink-0 sm:truncate">
@@ -413,7 +414,7 @@ function RoleDashboard() {
                 <StatusBadge status={form.status} processRoles={processRoles} viewerRole={role} />
               </span>
               <span className="col-span-2 min-w-0 truncate text-xs text-muted-foreground sm:order-none sm:col-span-1 sm:flex-1">
-                {cpByIdFrom(counterparties, form.counterpartyId)?.name ?? "контрагент не указан"}
+                {counterpartyListLabel(counterparties, form.counterpartyId)}
               </span>
               <span className="font-mono text-xs whitespace-nowrap">{money(form.amountMinor, form.currency)}</span>
               <span className="justify-self-end text-[11px] whitespace-nowrap text-muted-foreground">{relative(form.updatedAt)}</span>
