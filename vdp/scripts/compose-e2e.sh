@@ -85,29 +85,71 @@ auth_post "$MGR_T" "/api/v1/forms/$ID/provider" '{"provider_id":"55555555-5555-5
 
 echo "== docs generate (B.2) =="
 auth_post "$MGR_T" "/api/v1/forms/$ID/docs/generate" '{"kind":"import_order"}' >/dev/null
-curl -sf -X POST "$BASE/api/v1/internal/outbox/flush" -H "X-VDP-S2S: $S2S" >/dev/null
-export MGR_T ID BASE
+# POG is async (outbox → hub → docs-service → callback). Rate/commission may have
+# already enqueued docs.generate; a single flush can race. Poll flush+GET.
+export MGR_T ID BASE S2S
 python3 - <<'PY'
-import json, os, sys, urllib.request
+import json, os, sys, time, urllib.error, urllib.request
+
 base = os.environ.get("BASE", "http://127.0.0.1:8080")
 token = os.environ["MGR_T"]
 form_id = os.environ["ID"]
-req = urllib.request.Request(
-    f"{base}/api/v1/forms/{form_id}",
-    headers={"Authorization": f"Bearer {token}"},
+s2s = os.environ.get("S2S", "vdp-s2s-dev-secret")
+
+
+def flush() -> None:
+    req = urllib.request.Request(
+        f"{base}/api/v1/internal/outbox/flush",
+        data=b"",
+        method="POST",
+        headers={"X-VDP-S2S": s2s},
+    )
+    with urllib.request.urlopen(req, timeout=60) as resp:
+        resp.read()
+
+
+def load_form() -> dict:
+    req = urllib.request.Request(
+        f"{base}/api/v1/forms/{form_id}",
+        headers={"Authorization": f"Bearer {token}"},
+    )
+    with urllib.request.urlopen(req, timeout=30) as resp:
+        return json.load(resp)
+
+
+def pog_ok(form: dict) -> bool:
+    docs = form.get("docs_json") or ""
+    pog_file = form.get("pog_file_id") or ""
+    pog_status = form.get("pog_status") or ""
+    if pog_status == "success" and pog_file:
+        return True
+    return "success" in docs and (".pdf" in docs or bool(pog_file))
+
+
+last: dict = {}
+for attempt in range(1, 16):
+    try:
+        flush()
+    except (urllib.error.URLError, TimeoutError) as err:
+        print(f"docs generate flush attempt={attempt} err={err}", file=sys.stderr)
+    last = load_form()
+    if pog_ok(last):
+        pog_file = last.get("pog_file_id") or ""
+        if pog_file:
+            print(f"docs generate ok pog_file_id={pog_file}")
+        else:
+            print("docs generate ok (docs_json)")
+        sys.exit(0)
+    time.sleep(0.5)
+
+docs = last.get("docs_json") or ""
+pog_file = last.get("pog_file_id") or ""
+pog_status = last.get("pog_status") or ""
+print(
+    f"FAIL docs generate docs_json={docs!r} pog_status={pog_status!r} pog_file_id={pog_file!r}",
+    file=sys.stderr,
 )
-with urllib.request.urlopen(req) as resp:
-    form = json.load(resp)
-docs = form.get("docs_json") or ""
-pog_file = form.get("pog_file_id") or ""
-pog_status = form.get("pog_status") or ""
-if pog_status == "success" and pog_file:
-    print(f"docs generate ok pog_file_id={pog_file}")
-elif "success" in docs and (".pdf" in docs or pog_file):
-    print("docs generate ok (docs_json)")
-else:
-    print(f"FAIL docs generate docs_json={docs!r} pog_status={pog_status!r} pog_file_id={pog_file!r}", file=sys.stderr)
-    sys.exit(1)
+sys.exit(1)
 PY
 
 auth_put "$MGR_T" "/api/v1/manager/form-payment/$ID/order/signing"
