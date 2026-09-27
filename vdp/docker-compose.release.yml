@@ -33,6 +33,10 @@ services:
     volumes:
       - extraction_gold:/var/vdp/extraction-gold
 
+  doctr:
+    image: ${VDP_DOCTR_IMAGE:?set VDP_DOCTR_IMAGE to registry image@digest or :tag}
+    restart: unless-stopped
+
   docling:
     image: ${DOCLING_IMAGE:-quay.io/docling-project/docling-serve-cpu:latest}
     restart: unless-stopped

@@ -269,6 +269,8 @@ write-release-pin:
         echo "VDP_CORE_IMAGE=${REG}/vdp-core:${TAG}"
         echo "VDP_HUB_IMAGE=${REG}/vdp-hub:${TAG}"
         echo "VDP_DOCS_IMAGE=${REG}/vdp-docs:${TAG}"
+        echo "VDP_EXTRACTION_IMAGE=${REG}/vdp-extraction:${TAG}"
+        echo "VDP_DOCTR_IMAGE=${REG}/vdp-doctr:${TAG}"
         echo "VDP_MAIL_IMAGE=${REG}/vdp-mail:${TAG}"
         echo "VDP_SMS_IMAGE=${REG}/vdp-sms:${TAG}"
         echo "VDP_FE_IMAGE=${REG}/vdp-fe:${TAG}"

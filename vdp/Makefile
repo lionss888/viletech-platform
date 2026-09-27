@@ -350,6 +350,7 @@ compose-release-config-check:
 	VDP_HUB_IMAGE="$${VDP_HUB_IMAGE:-example.local/vdp-hub:check}" \
 	VDP_DOCS_IMAGE="$${VDP_DOCS_IMAGE:-example.local/vdp-docs:check}" \
 	VDP_EXTRACTION_IMAGE="$${VDP_EXTRACTION_IMAGE:-example.local/vdp-extraction:check}" \
+	VDP_DOCTR_IMAGE="$${VDP_DOCTR_IMAGE:-example.local/vdp-doctr:check}" \
 	VDP_MAIL_IMAGE="$${VDP_MAIL_IMAGE:-example.local/vdp-mail:check}" \
 	VDP_SMS_IMAGE="$${VDP_SMS_IMAGE:-example.local/vdp-sms:check}" \
 	VDP_FE_IMAGE="$${VDP_FE_IMAGE:-example.local/vdp-fe:check}" \
