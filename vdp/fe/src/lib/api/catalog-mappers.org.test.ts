@@ -102,6 +102,25 @@ describe("mapCoreCounterparty", () => {
     expect(actual.bank).toBe("—");
     expect(actual.swift).toBe("—");
   });
+  it("maps pending last_approval_status to not_approved for SubjectReview CTA", () => {
+    const actual = mapCoreCounterparty({
+      id: "cp-pending",
+      name: "Pending Co",
+      country: "CN",
+      last_approval_status: "pending",
+    });
+    expect(actual.status).toBe("not_approved");
+  });
+
+  it("maps approved last_approval_status for badge after manager approve", () => {
+    const actual = mapCoreCounterparty({
+      id: "cp-ok",
+      name: "Approved Co",
+      country: "CN",
+      last_approval_status: "approved",
+    });
+    expect(actual.status).toBe("approved");
+  });
 });
 
 describe("mapCoreAgent", () => {

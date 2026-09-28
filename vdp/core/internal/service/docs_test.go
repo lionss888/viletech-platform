@@ -171,6 +171,22 @@ func TestManagerCanSetCounterpartyApprovalUserCannot(t *testing.T) {
 	if approved.LastApprovalStatus != domain.CounterpartyApprovalApproved {
 		t.Fatalf("status=%s", approved.LastApprovalStatus)
 	}
+	listed, err := catalog.ListCounterpartiesFor(context.Background(), manager)
+	if err != nil {
+		t.Fatal(err)
+	}
+	found := false
+	for _, item := range listed {
+		if item.ID == cp.ID {
+			found = true
+			if item.LastApprovalStatus != domain.CounterpartyApprovalApproved {
+				t.Fatalf("list must carry approval after set, got %q", item.LastApprovalStatus)
+			}
+		}
+	}
+	if !found {
+		t.Fatal("approved counterparty missing from manager list")
+	}
 	if _, err := catalog.SetCounterpartyApproval(context.Background(), user, cp.ID, domain.CounterpartyApprovalApproved, "no"); err == nil {
 		t.Fatal("user must not set counterparty approval")
 	}

@@ -9,7 +9,7 @@ todos:
     content: Поиск других вхождений «без казначея» в FE/docs пилота
     status: pending
   - id: f6-qg
-    content: check-env-parity → ci-pr-pilot (ActionPanel copy); close DoD + notify
+    content: "check-env-parity → actions.ts = ladder → ci-pr-pilot (e2e вне smoke не трогать → не ci-main); close DoD + notify"
     status: pending
 isProject: false
 ---
@@ -44,7 +44,7 @@ Primary CTA поступления без скобок и без «без каз
 
 - UI/FE: actions.ts (+ тесты continuity/cta).
 - Домен/API: нет.
-- Gate: **`ci-pr-pilot`** (ActionPanel / continuity CTA).
+- Gate: **`ci-pr-pilot`** (`actions.ts` ∈ ladder; prepush path-aware).
 
 ## Rules
 
@@ -52,10 +52,12 @@ Primary CTA поступления без скобок и без «без каз
 
 ## DoD / QG
 
+Path-aware prepush: `vdp/fe/src/lib/ved/actions.ts` ∈ `pilot-matrix-paths.grep` → хук всегда выберет **`ci-pr-pilot`**. `ci-main` только если в том же diff e2e вне smoke (обычно вне scope). Полная страховка перед merge в main — opt-in `FULL_PREPUSH_GATE=1`, не default DoD волны.
+
 - [ ] Label без «(без казначея)»
 - [ ] `make check-env-parity`
 - [ ] Unit copy
-- [ ] `make ci-pr-pilot`
+- [ ] Gate: `make ci-pr-pilot` (ladder); e2e вне smoke в том же PR → `make ci-main`
 - [ ] DoD/todos; sync-handoff-queue; notify-mgmt
 
 ## Accept

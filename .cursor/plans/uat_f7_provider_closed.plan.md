@@ -11,8 +11,11 @@ todos:
   - id: f7-chips
     content: Сверить счётчик «Закрыто» / stage chip с новым scoped набором
     status: pending
+  - id: f7-tests
+    content: "Unit visibleForms; optional provider-registry e2e (вне smoke → ci-main)"
+    status: pending
   - id: f7-qg
-    content: check-env-parity → ci-pr (+ e2e при нужде); close DoD + notify
+    content: "check-env-parity → unit-only = ci-pr; registry e2e вне smoke = ci-main; prepush path-aware; close DoD + notify"
     status: pending
 isProject: false
 ---
@@ -59,10 +62,12 @@ isProject: false
 
 ## DoD / QG
 
+Path-aware prepush: `store.tsx` / `visibleForms` **не** ladder → unit-only = `ci-pr`. Optional registry e2e (не smoke) ⇒ DoD gate = **`ci-main`**, не «ci-pr плюс потом».
+
 - [ ] Localhost: provider видит completed assigned
 - [ ] `make check-env-parity`
 - [ ] Unit visibleForms обновлён
-- [ ] `make ci-pr` (новый e2e вне smoke → `ci-main`)
+- [ ] Gate: unit-only → `make ci-pr`; e2e вне smoke → `make ci-main`
 - [ ] DoD/todos; sync-handoff-queue; notify-mgmt
 
 ## Accept

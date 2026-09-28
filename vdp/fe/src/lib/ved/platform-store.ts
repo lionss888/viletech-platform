@@ -540,10 +540,22 @@ function useApiPlatformStore(): VedStore {
           banks: banksPayload,
         };
         if (canSetApproval && originalId) {
-          await setCounterpartyApproval(
+          const updated = await setCounterpartyApproval(
             originalId,
             status === "approved" ? "approved" : "rejected",
             String(record.complianceNote ?? ""),
+          );
+          // Patch cache immediately: list historically omitted approval fields; keep badge in sync.
+          queryClient.setQueryData<Awaited<ReturnType<typeof listCounterparties>>>(
+            ["counterparties"],
+            (prev) => {
+              const list = prev ?? [];
+              const at = list.findIndex((c) => c.id === originalId);
+              if (at < 0) return [...list, updated];
+              const next = [...list];
+              next[at] = { ...list[at], ...updated };
+              return next;
+            },
           );
         } else if (originalId) {
           await updateCounterparty(originalId, catalog);
@@ -553,10 +565,21 @@ function useApiPlatformStore(): VedStore {
             canPersistSubjectApproval(session?.role) &&
             (status === "approved" || status === "not_approved")
           ) {
-            await setCounterpartyApproval(
+            const updated = await setCounterpartyApproval(
               created.id,
               status === "approved" ? "approved" : "rejected",
               String(record.complianceNote ?? ""),
+            );
+            queryClient.setQueryData<Awaited<ReturnType<typeof listCounterparties>>>(
+              ["counterparties"],
+              (prev) => {
+                const list = prev ?? [];
+                const at = list.findIndex((c) => c.id === created.id);
+                if (at < 0) return [...list, updated];
+                const next = [...list];
+                next[at] = { ...list[at], ...updated };
+                return next;
+              },
             );
           }
         }
@@ -596,7 +619,7 @@ function useApiPlatformStore(): VedStore {
         return;
       }
     },
-    [invalidateRegistry, session?.role],
+    [invalidateRegistry, session?.role, queryClient],
   );
 
   const deleteRefRecord = useCallback(
