@@ -19,6 +19,8 @@ func TestApplyTable(t *testing.T) {
 		wantErr     bool
 	}{
 		{"creating to draft", StatusCreating, ActionRecognizeComplete, domain.RoleUser, false, false, StatusDraft, false},
+		{"creating submit to org wait", StatusCreating, ActionSubmit, domain.RoleUser, false, false, StatusOrganizationWaitingVerification, false},
+		{"creating submit to form wait if org approved", StatusCreating, ActionSubmit, domain.RoleUser, true, false, StatusFormWaitingVerification, false},
 		{"draft to org wait", StatusDraft, ActionSubmit, domain.RoleUser, false, false, StatusOrganizationWaitingVerification, false},
 		{"draft to form wait if org approved", StatusDraft, ActionSubmit, domain.RoleUser, true, false, StatusFormWaitingVerification, false},
 		{"no documents cannot submit", StatusDraft, ActionSubmit, domain.RoleUser, true, true, "", true},

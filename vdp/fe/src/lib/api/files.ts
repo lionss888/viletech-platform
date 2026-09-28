@@ -1,4 +1,4 @@
-import { loadAuthTokens, newRequestId } from "./client";
+import { loadAuthTokens, newRequestId, refreshTokens } from "./client";
 
 export type UploadedFileMeta = {
   id: string;
@@ -23,6 +23,8 @@ export class UploadError extends Error {
 
 /** User-facing upload error text from status code. */
 export function formatUploadError(status: number, fallback?: string): string {
+  if (status === 401) return "Сессия истекла — войдите снова";
+  if (status === 403) return "Недостаточно прав для загрузки файла";
   if (status === 413) return "Файл слишком большой (максимум 15 МБ)";
   if (status === 415) return "Недопустимый тип файла — загрузите PDF";
   return fallback ?? "Не удалось загрузить файл";
@@ -40,19 +42,33 @@ function apiBase(): string {
   return (fromEnv ?? "").replace(/\/$/, "");
 }
 
+/**
+ * Authenticated fetch for multipart/raw bodies; refreshes once on 401
+ * (same contract as apiFetch JSON path).
+ */
+async function authFetch(path: string, init: RequestInit, retried = false): Promise<Response> {
+  const headers = new Headers(init.headers);
+  headers.set("X-Request-ID", headers.get("X-Request-ID") ?? newRequestId());
+  const tokens = loadAuthTokens();
+  if (tokens?.token) headers.set("Authorization", `Bearer ${tokens.token}`);
+  const response = await fetch(`${apiBase()}${path}`, { ...init, headers });
+  if (response.status === 401 && !retried) {
+    const refreshed = await refreshTokens();
+    if (refreshed) {
+      return authFetch(path, init, true);
+    }
+  }
+  return response;
+}
+
 /** Multipart upload to file-store; returns file id for docs/attach. */
 export async function uploadFile(formId: string, file: File): Promise<UploadedFileMeta> {
   assertFileSize(file);
   const formData = new FormData();
   formData.append("file", file);
   formData.append("form_id", formId);
-  const headers = new Headers();
-  headers.set("X-Request-ID", newRequestId());
-  const tokens = loadAuthTokens();
-  if (tokens?.token) headers.set("Authorization", `Bearer ${tokens.token}`);
-  const response = await fetch(`${apiBase()}/api/v1/file-store/upload`, {
+  const response = await authFetch("/api/v1/file-store/upload", {
     method: "POST",
-    headers,
     body: formData,
   });
   if (!response.ok) {
@@ -62,39 +78,32 @@ export async function uploadFile(formId: string, file: File): Promise<UploadedFi
 }
 
 /** Links an uploaded file_id to the form DocsJSON via nest prefix. */
-export function attachDocToForm(
+export async function attachDocToForm(
   formId: string,
   fileId: string,
   kind: string,
   label?: string,
 ): Promise<Record<string, unknown>> {
-  const headers = new Headers();
-  headers.set("Content-Type", "application/json");
-  headers.set("X-Request-ID", newRequestId());
-  const tokens = loadAuthTokens();
-  if (tokens?.token) headers.set("Authorization", `Bearer ${tokens.token}`);
-  return fetch(`${apiBase()}/api/v1/forms/${formId}/docs/attach`, {
+  const response = await authFetch(`/api/v1/forms/${formId}/docs/attach`, {
     method: "POST",
-    headers,
+    headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ file_id: fileId, kind, label: label ?? kind }),
-  }).then(async (response) => {
-    if (!response.ok) throw new Error(response.statusText || "Attach failed");
-    return (await response.json()) as Record<string, unknown>;
   });
+  if (!response.ok) {
+    throw new UploadError(response.status, formatUploadError(response.status, response.statusText || "Attach failed"));
+  }
+  return (await response.json()) as Record<string, unknown>;
 }
 
 /** Nest DELETE …/files/{fileId} — removes file ref from form docs_json. */
-export function detachDocFromForm(formId: string, fileId: string, nestPrefix: string): Promise<unknown> {
-  const headers = new Headers();
-  headers.set("X-Request-ID", newRequestId());
-  const tokens = loadAuthTokens();
-  if (tokens?.token) headers.set("Authorization", `Bearer ${tokens.token}`);
-  return fetch(`${apiBase()}/api/v1/${nestPrefix}/form-payment/${formId}/files/${encodeURIComponent(fileId)}`, {
-    method: "DELETE",
-    headers,
-  }).then(async (response) => {
-    if (!response.ok) throw new Error(response.statusText || "Delete failed");
-    if (response.status === 204) return {};
-    return (await response.json()) as unknown;
-  });
+export async function detachDocFromForm(formId: string, fileId: string, nestPrefix: string): Promise<unknown> {
+  const response = await authFetch(
+    `/api/v1/${nestPrefix}/form-payment/${formId}/files/${encodeURIComponent(fileId)}`,
+    { method: "DELETE" },
+  );
+  if (!response.ok) {
+    throw new UploadError(response.status, formatUploadError(response.status, response.statusText || "Delete failed"));
+  }
+  if (response.status === 204) return {};
+  return (await response.json()) as unknown;
 }

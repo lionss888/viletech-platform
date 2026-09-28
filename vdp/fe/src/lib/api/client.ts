@@ -65,7 +65,8 @@ type ApiFetchOptions = RequestInit & {
 
 let refreshInFlight: Promise<AuthTokens | null> | null = null;
 
-async function refreshTokens(): Promise<AuthTokens | null> {
+/** Shared refresh for multipart/raw fetch paths that cannot use apiFetch. */
+export async function refreshTokens(): Promise<AuthTokens | null> {
   if (refreshInFlight) return refreshInFlight;
   refreshInFlight = (async () => {
     const current = loadAuthTokens();

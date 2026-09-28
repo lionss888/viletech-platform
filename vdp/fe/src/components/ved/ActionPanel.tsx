@@ -9,6 +9,7 @@ import {
   orgHasAcceptedAgencyContract,
   type ContractType,
 } from "@/lib/api/contract";
+import { formatActionError } from "@/lib/api/format-api-error";
 import { assertFileSize, UploadError } from "@/lib/api/files";
 import { marksFor } from "@/lib/ved/compliance";
 import { effectiveActionsFor, effectiveActionsFormCtx } from "@/lib/ved/effective-actions";
@@ -262,7 +263,7 @@ export function ActionPanel({
       await Promise.resolve(applyAction(form.id, action, extra));
       close();
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Не удалось выполнить действие");
+      setError(formatActionError(err));
       setBusy(false);
     }
   }
