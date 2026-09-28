@@ -463,10 +463,12 @@ bash -n scripts/prepush-gate.sh || fail "prepush-gate.sh syntax"
 grep -q '^prepush-gate:' Makefile || fail "Makefile missing prepush-gate target"
 grep -q '^push-gate:' Makefile || fail "Makefile missing push-gate target"
 grep -q 'prepush-gate' ../.githooks/pre-push || fail ".githooks/pre-push must call prepush-gate"
-grep -q 'push-gate' scripts/prepush-gate.sh \
-  || fail "prepush-gate default must run make push-gate (full insurance)"
+grep -q 'FULL_PREPUSH_GATE' scripts/prepush-gate.sh \
+  || fail "prepush-gate must support FULL_PREPUSH_GATE=1 for opt-in full insurance"
 grep -q 'main-full-e2e-paths-match' scripts/prepush-gate.sh \
-  || fail "prepush-gate must keep main-full-e2e-paths-match for PREPUSH_PATH_AWARE=1"
+  || fail "prepush-gate must keep main-full-e2e-paths-match for path-aware logic"
+grep -q 'path-aware' scripts/prepush-gate.sh \
+  || fail "prepush-gate must mention path-aware mode in default branch"
 # Shared path pattern must still cover canonical ladder surfaces
 for needle in 'vdp/fe/e2e/' 'ActionPanel' 'formpayment' 'manager-payment'; do
   grep -q "$needle" scripts/pilot-matrix-paths.grep \

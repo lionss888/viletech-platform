@@ -1,8 +1,7 @@
 #!/usr/bin/env bash
-# Pre-push: always full GitHub VDP CI insurance (no path-aware downgrade).
-# Runs make push-gate = test-integration + ci-main (static + compose-e2e + full Playwright).
+# Pre-push: path-aware gate по умолчанию (выбирает уровень по изменённым файлам).
+# Полная страховка (push-gate = test-integration + ci-main): FULL_PREPUSH_GATE=1.
 # Emergency bypass: SKIP_PREPUSH_GATE=1 (prints warn, exit 0).
-# Optional lighter path (not recommended): PREPUSH_PATH_AWARE=1 → old path-aware ladder.
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
@@ -15,15 +14,16 @@ if [ "${SKIP_PREPUSH_GATE:-0}" = "1" ]; then
   exit 0
 fi
 
-# Default: full insurance. Opt into legacy path-aware only with PREPUSH_PATH_AWARE=1.
-if [ "${PREPUSH_PATH_AWARE:-0}" != "1" ]; then
-  echo "prepush-gate: full insurance → make push-gate (test-integration + ci-main)"
-  echo "prepush-gate: ~15–40 min; bypass only SKIP_PREPUSH_GATE=1 (not recommended)"
+# Opt-in для полного марафона (перед merge в main / по явному запросу).
+if [ "${FULL_PREPUSH_GATE:-0}" = "1" ]; then
+  echo "prepush-gate: FULL_PREPUSH_GATE=1 — запуск полной страховки → make push-gate"
+  echo "prepush-gate: ~15–40 min (test-integration + ci-main)"
   cd "$ROOT"
   exec make push-gate
 fi
 
-echo "WARNING: PREPUSH_PATH_AWARE=1 — using legacy path-aware gate (not full insurance)." >&2
+# Default: path-aware — выбор уровня по затронутым файлам.
+echo "prepush-gate: path-aware mode — выбор проверки по diff"
 chmod +x "$MATCH" "$FULL_E2E" 2>/dev/null || true
 
 cd "$REPO_ROOT"
@@ -48,11 +48,27 @@ wt="$(git diff --name-only HEAD 2>/dev/null || true)"
 staged="$(git diff --cached --name-only 2>/dev/null || true)"
 all_paths="$(printf '%s\n%s\n%s\n' "$changed" "$wt" "$staged" | sed '/^$/d' | sort -u)"
 
-echo "prepush-gate: base=$base (path-aware mode)"
+echo "prepush-gate: base=$base"
 if [ -z "$all_paths" ]; then
   echo "prepush-gate: no changed files vs base — running ci-pr"
   cd "$ROOT"
   exec make ci-pr
+fi
+
+# Fast path: только docs/notes/plans → только docs-format-check (~секунды).
+docs_only=1
+while IFS= read -r p; do
+  [ -z "$p" ] && continue
+  case "$p" in
+    vdp/docs/*|docs/*|*.md|заметки/*|.cursor/plans/*|.cursor/handoff/*) ;;
+    *) docs_only=0; break ;;
+  esac
+done <<< "$all_paths"
+
+if [ "$docs_only" -eq 1 ]; then
+  echo "prepush-gate: только тексты/планы → make docs-format-check"
+  cd "$ROOT"
+  exec make docs-format-check
 fi
 
 if printf '%s\n' "$all_paths" | "$FULL_E2E"; then

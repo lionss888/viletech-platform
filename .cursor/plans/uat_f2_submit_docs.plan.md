@@ -4,16 +4,16 @@ overview: "Пункт 2: на карточке черновика кнопка �
 todos:
   - id: f2-repro
     content: "Localhost: draft 0 docs — CTA активна (baseline)"
-    status: pending
+    status: completed
   - id: f2-gate
     content: Helper + ActionPanel disabled+reason для submit без docs
-    status: pending
+    status: completed
   - id: f2-tests
     content: Unit + E2E disabled→attach→enabled
-    status: pending
+    status: completed
   - id: f2-qg
     content: check-env-parity → ci-pr-pilot; закрыть DoD + notify + sync queue
-    status: pending
+    status: completed
 isProject: false
 ---
 
@@ -63,11 +63,11 @@ User на draft/creating с `documents.length === 0`: primary submit disabled + 
 
 ## DoD / QG
 
-- [ ] Localhost repro: 0 docs → кнопка disabled визуально
-- [ ] `make check-env-parity`
-- [ ] FE unit gate
-- [ ] `make ci-pr-pilot` (ActionPanel / status CTA)
-- [ ] Todos + DoD; sync-handoff-queue; notify-mgmt
+- [x] Localhost repro: 0 docs → кнопка disabled визуально
+- [x] `make check-env-parity`
+- [x] FE unit gate
+- [x] `make ci-pr-pilot` (ActionPanel / status CTA)
+- [x] Todos + DoD; sync-handoff-queue; notify-mgmt
 
 ## Accept
 

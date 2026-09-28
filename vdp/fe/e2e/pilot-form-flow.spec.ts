@@ -56,6 +56,7 @@ test.describe("Pilot form flow @pilot-flow", () => {
     test.setTimeout(180_000);
     const tokens = await loginAllRoles();
     const formId = await createDraftForm(tokens, `pilot-${Date.now()}`);
+    await uploadAndAttachInvoice(tokens.user, formId);
 
     // 1. User submit
     await loginAs("user");
@@ -124,12 +125,12 @@ test.describe("Pilot form flow @pilot-flow", () => {
 
   test("S-Mgr-04 PDF preview iframe @pilot-flow", async ({ page, loginAs }) => {
     const tokens = await loginAllRoles();
+    // createSubmittedForm already attaches an invoice (fileId present).
     const formId = await createSubmittedForm(tokens, `pilot-pdf-${Date.now()}`);
-    await uploadAndAttachInvoice(tokens.user, formId);
 
     await loginAs("manager");
     await waitForFormDetail(page, formId);
-    await page.getByRole("button", { name: "Посмотреть" }).click();
+    await page.getByRole("button", { name: "Посмотреть" }).first().click();
     await expect(page.locator("iframe")).toBeVisible({ timeout: 20_000 });
     await expect(page.getByText(/Demo: предпросмотр|предпросмотр без файла/i)).toHaveCount(0);
   });

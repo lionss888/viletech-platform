@@ -9,7 +9,8 @@
 - UAT feedback 2026-09-27 — **7 планов** F1–F7 в `.cursor/plans/uat_f*.plan.md`
 - Прочие планы — в `.cursor/plans/архив/`
 - UAT F1 — **done** (`ci-pr-pilot`)
-- Next: **UAT F2** submit docs disabled
+- UAT F2 — **done** (`ci-pr-pilot`)
+- Next: **UAT F3** counterparty verify
 
 Chat id / transcript: `ac80db37-0d65-4fe5-953d-15cb41e4282e`  
 Файл истории: `chat-ac80db37.jsonl`
@@ -17,8 +18,8 @@ Chat id / transcript: `ac80db37-0d65-4fe5-953d-15cb41e4282e`
 ## Очередь (daily)
 
 1. UAT F1 — done — `.cursor/plans/uat_f1_api_session.plan.md`
-2. **UAT F2** ← next — `uat_f2_submit_docs.plan.md`
-3. UAT F3 — `uat_f3_cp_verify.plan.md`
+2. UAT F2 — done — `uat_f2_submit_docs.plan.md`
+3. **UAT F3** ← next — `uat_f3_cp_verify.plan.md`
 4. UAT F4 — `uat_f4_delete_confirm.plan.md`
 5. UAT F5 — `uat_f5_no_dashes.plan.md`
 6. UAT F6 — `uat_f6_receipt_cta.plan.md`

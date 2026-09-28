@@ -28,6 +28,10 @@ import {
 } from "@/lib/ved/manager-payment";
 import { usePlatformStore } from "@/lib/ved/platform-store";
 import { useProcessRolesRows } from "@/lib/ved/use-process-roles-snapshot";
+import {
+  blocksSubmitWithoutDocuments,
+  SUBMIT_DOCS_REQUIRED_LOCK,
+} from "@/lib/ved/submit-docs-gate";
 import type { ActionTone, FormAction, PaymentForm } from "@/lib/ved/types";
 import { cn } from "@/lib/utils";
 
@@ -125,6 +129,7 @@ export function ActionPanel({
       ? (executionQuery.data ?? []).map((row) => ({ id: row.id, name: row.name }))
       : executionProviders.map((user) => ({ id: user.id, name: user.name }));
   const hasInvoice = hasInvoiceDocument(form.documents);
+  const hasDocuments = form.documents.length > 0;
 
   const role = session?.role ?? "user";
   const formCtx = useMemo(
@@ -305,6 +310,7 @@ export function ActionPanel({
     const softDisabled = !lockNote && !!lockAcceptNote && isAcceptOnly(action);
     const providerGate = blocksPaymentStartWithoutProvider(form.status, action.id, form.providerId);
     const invoiceGate = isFormConfirmAction(action.id) && !hasInvoice;
+    const submitDocsGate = blocksSubmitWithoutDocuments(action.id, form.documents);
     const rateGate = blocksAdvanceSigningWithoutRate({
       status: form.status,
       actionId: action.id,
@@ -312,7 +318,8 @@ export function ActionPanel({
       rateOnProvider: form.rateOnProvider,
       rate: form.rate,
     });
-    const disabled = hardDisabled || softDisabled || providerGate || invoiceGate || rateGate || busy;
+    const disabled =
+      hardDisabled || softDisabled || providerGate || invoiceGate || submitDocsGate || rateGate || busy;
     const tip = hardDisabled
       ? lockNote
       : softDisabled
@@ -321,9 +328,11 @@ export function ActionPanel({
           ? PAYMENT_START_PROVIDER_LOCK
           : invoiceGate
             ? INVOICE_REQUIRED_LOCK
-            : rateGate
-              ? ADVANCE_SIGNING_NEEDS_RATE
-              : action.label;
+            : submitDocsGate
+              ? SUBMIT_DOCS_REQUIRED_LOCK
+              : rateGate
+                ? ADVANCE_SIGNING_NEEDS_RATE
+                : action.label;
     return (
       <button
         key={action.id}
@@ -379,6 +388,15 @@ export function ActionPanel({
           {INVOICE_REQUIRED_LOCK}
         </p>
       )}
+      {!hasDocuments &&
+        visibleActions.some((action) => blocksSubmitWithoutDocuments(action.id, form.documents)) && (
+          <p
+            className="mt-2 rounded-md bg-wait-soft px-2 py-1.5 text-xs text-wait"
+            data-testid="submit-docs-required-lock"
+          >
+            {SUBMIT_DOCS_REQUIRED_LOCK}
+          </p>
+        )}
       {form.status === "payment_received" && !form.providerId && (
         <p className="mt-2 rounded-md bg-wait-soft px-2 py-1.5 text-xs text-wait">{PAYMENT_START_PROVIDER_LOCK}</p>
       )}

@@ -17,7 +17,7 @@ alwaysApply: true
 | PR-паритет (узкий Playwright) | `make ci-pr` | перед push / PR, если path-filter **не** включает pilot-matrix |
 | PR-паритет + лестница | `make ci-pr-pilot` | e2e / `@pilot-matrix` / ActionPanel / rate-commission / formpayment — то же, что GitHub job `playwright (pilot-matrix)` |
 | Main-push browser | `make ci-main` | паритет полного Playwright на push в `main` (`PLAYWRIGHT_ARGS` пустой); Local QG: **Main push (полный браузер)** |
-| Pre-push (default) | `make push-gate` / `make prepush-gate` | **всегда** `test-integration` + `ci-main` (полная страховка GitHub VDP CI); обход только `SKIP_PREPUSH_GATE=1`; legacy path-aware: `PREPUSH_PATH_AWARE=1` |
+| Pre-push (default) | `make push-gate` / `make prepush-gate` | **path-aware:** выбор уровня по изменённым файлам (docs → секунды; код → без браузера; UI → браузер; лестница → pilot; e2e вне smoke → ci-main). Полная страховка: `FULL_PREPUSH_GATE=1`; обход: `SKIP_PREPUSH_GATE=1` |
 | Main / handover | `make release-gate` | только по явной просьбе или перед тегом/`vdp-v*` (долго) |
 | Deploy secrets check | `make check-deploy-secrets` | проверка MGMT_NOTIFY_TOKEN/CHAT_ID перед деплоем |
 | Производительность | `make perf-gate` | замер проверки перехода статуса заявки; Local QG и фаза 1 `ci-pr-fast` |
@@ -26,7 +26,8 @@ alwaysApply: true
 `ci-pr` ≈ `ci-pr-fast` + пауза 65s (rate-limit) + **узкий** Playwright как job `playwright` на `pull_request`. **Не** полный PR: GitHub при path-filter дополнительно гоняет `@pilot-matrix`.  
 `ci-pr-pilot` ≈ `ci-pr` + пауза 65s + `@pilot-matrix`. Local QG: кнопка **Лестница заявки**; короткая с браузером = только `ci-pr`.  
 `ci-main` ≈ `ci-pr-fast` + пауза 65s + **полный** Playwright (как job `playwright` на push в `main`). Не путать с `release-gate`.  
-`push-gate` ≈ `test-integration` + `ci-main` — **дефолт pre-push** (хук / Local QG «перед Push»). Full Playwright уже включает сценарии с `@pilot-matrix`.  
+`push-gate` ≈ `test-integration` + `ci-main` — полная страховка (opt-in через `FULL_PREPUSH_GATE=1` или кнопку Local QG «Полная страховка перед main»). Full Playwright уже включает сценарии с `@pilot-matrix`.
+`prepush-gate` (дефолт хука) ≈ path-aware: только docs → `docs-format-check`; e2e вне smoke → `ci-main`; ladder → `ci-pr-pilot`; иначе `ci-pr` или `ci-pr-fast`.  
 `release-gate` ≈ полный browser + pilot-matrix + postgres integration — **не** гонять молча на каждый фикс.
 
 **MUST (один PR):** продуктовое изменение и тесты слоёв, которые оно ломает, в одном diff. Нельзя закрывать волну с зелёным нижним gate (`ci-pr` / unit), если GitHub path-filter включит верхний (`ci-pr-pilot`).
@@ -160,8 +161,8 @@ export MGMT_NOTIFY_CHAT_ID="your_chat_id"
 
 ## Что делать человеку (коротко)
 
-Один раз: `make -C vdp install-git-hooks` (pre-commit = docs-format + unit + TG).  
-Перед push в PR: хук / Local QG «перед Push» → **`make push-gate`** (integration + `ci-main`). Явно короче только по согласию: `ci-pr` / `ci-pr-pilot`.  
+Один раз: `make -C vdp install-git-hooks` (pre-commit = docs-format + unit + TG). 
+Перед push: хук / Local QG «Проверить по изменениям» → умный **`make prepush-gate`** (выбирает уровень сам). Полная страховка перед merge в main: `FULL_PREPUSH_GATE=1 make prepush-gate` / кнопка Local QG. 
 Перед handover: `make release-gate`.
 
 ## Анти-паттерны

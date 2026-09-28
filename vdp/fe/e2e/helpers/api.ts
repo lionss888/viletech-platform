@@ -172,8 +172,17 @@ export async function createDraftForm(
 }
 
 /** Draft → form_waiting_verification (org may already be approved). */
-export async function createSubmittedForm(tokens: ApiTokens, suffix: string): Promise<string> {
+export async function createSubmittedForm(
+  tokens: ApiTokens,
+  suffix: string,
+  opts: { attachInvoice?: boolean } = {},
+): Promise<string> {
   const id = await createDraftForm(tokens, suffix);
+  // Default attach so UI submit gate and domain invoice checks stay green for ladder seeds.
+  // Invoice-lock UI test passes { attachInvoice: false }.
+  if (opts.attachInvoice !== false) {
+    await uploadAndAttachInvoice(tokens.user, id);
+  }
   await authPut(tokens.user, `/api/v1/site/form-payment/${id}/form/accept`);
   return id;
 }

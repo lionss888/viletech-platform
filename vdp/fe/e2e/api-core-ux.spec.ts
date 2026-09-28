@@ -54,6 +54,9 @@ test.describe("API Core UX fixes (journeys)", () => {
     await expect(params).toContainText("8542");
     await expect(page.getByTestId("counterparty-block")).toContainText(cpName);
 
+    await uploadAndAttachInvoice(tokens.user, formId);
+    await page.reload({ waitUntil: "domcontentloaded" });
+    await waitForFormDetail(page, formId);
     await page.getByRole("button", { name: "Отправить на проверку" }).click();
     await expect(page.getByTestId("form-params")).toBeVisible({ timeout: 20_000 });
     await expect(page.getByTestId("form-params")).toContainText(/1[\s\u00a0]?250[,.]50|1250[,.]50/);
@@ -79,12 +82,12 @@ test.describe("API Core UX fixes (journeys)", () => {
 
   test("PDF preview: manager opens iframe when fileId attached", async ({ page, loginAs }) => {
     const tokens = await loginAllRoles();
+    // createSubmittedForm already attaches an invoice (fileId present).
     const formId = await createSubmittedForm(tokens, `pdf-${Date.now()}`);
-    await uploadAndAttachInvoice(tokens.user, formId);
 
     await loginAs("manager");
     await waitForFormDetail(page, formId);
-    await page.getByRole("button", { name: "Посмотреть" }).click();
+    await page.getByRole("button", { name: "Посмотреть" }).first().click();
     await expect(page.locator("iframe")).toBeVisible({ timeout: 20_000 });
     await expect(page.getByText(/Demo: предпросмотр|предпросмотр без файла/i)).toHaveCount(0);
   });
