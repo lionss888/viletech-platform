@@ -4,11 +4,102 @@
   "handoff_dir": ".cursor/handoff/очередь-компромисс-2026-09-26",
   "items": [
     {
-      "id": "uat-w7",
+      "id": "uat-f1",
       "order": "1",
-      "title": "UAT W7 browser ladders",
+      "title": "UAT F1 API / session",
       "lane": "daily",
-      "note": "Next; план в архиве. Hygiene W2+W4+W5 закрыт (ci-main).",
+      "note": "Done (ci-pr-pilot); alpha feedback 2026-09-27 пункт 1",
+      "plans": [
+        {
+          "label": "uat_f1",
+          "path": ".cursor/plans/uat_f1_api_session.plan.md"
+        }
+      ]
+    },
+    {
+      "id": "uat-f2",
+      "order": "2",
+      "title": "UAT F2 submit without docs disabled",
+      "lane": "daily",
+      "note": "Next; пункт 2",
+      "plans": [
+        {
+          "label": "uat_f2",
+          "path": ".cursor/plans/uat_f2_submit_docs.plan.md"
+        }
+      ]
+    },
+    {
+      "id": "uat-f3",
+      "order": "3",
+      "title": "UAT F3 counterparty verify",
+      "lane": "daily",
+      "note": "Пункт 3 + 3.1",
+      "plans": [
+        {
+          "label": "uat_f3",
+          "path": ".cursor/plans/uat_f3_cp_verify.plan.md"
+        }
+      ]
+    },
+    {
+      "id": "uat-f4",
+      "order": "4",
+      "title": "UAT F4 delete confirm",
+      "lane": "daily",
+      "note": "Пункт 4",
+      "plans": [
+        {
+          "label": "uat_f4",
+          "path": ".cursor/plans/uat_f4_delete_confirm.plan.md"
+        }
+      ]
+    },
+    {
+      "id": "uat-f5",
+      "order": "5",
+      "title": "UAT F5 no dashes",
+      "lane": "daily",
+      "note": "Пункт 5",
+      "plans": [
+        {
+          "label": "uat_f5",
+          "path": ".cursor/plans/uat_f5_no_dashes.plan.md"
+        }
+      ]
+    },
+    {
+      "id": "uat-f6",
+      "order": "6",
+      "title": "UAT F6 receipt CTA copy",
+      "lane": "daily",
+      "note": "Пункт 6",
+      "plans": [
+        {
+          "label": "uat_f6",
+          "path": ".cursor/plans/uat_f6_receipt_cta.plan.md"
+        }
+      ]
+    },
+    {
+      "id": "uat-f7",
+      "order": "7",
+      "title": "UAT F7 provider closed forms",
+      "lane": "daily",
+      "note": "Пункт 7",
+      "plans": [
+        {
+          "label": "uat_f7",
+          "path": ".cursor/plans/uat_f7_provider_closed.plan.md"
+        }
+      ]
+    },
+    {
+      "id": "uat-w7",
+      "order": "—",
+      "title": "UAT W7 browser ladders",
+      "lane": "later",
+      "note": "План в архиве; после F1–F7",
       "plans": [
         {
           "label": "uat_w7",

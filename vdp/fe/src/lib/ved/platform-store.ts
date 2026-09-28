@@ -137,10 +137,12 @@ function useApiPlatformStore(): VedStore {
   const agentsQuery = useQuery({ queryKey: ["agents"], queryFn: listAgents, enabled });
   const currenciesQuery = useQuery({ queryKey: ["currencies"], queryFn: listCurrencies, enabled });
   const hsQuery = useQuery({ queryKey: ["hs-codes"], queryFn: listHsCodes, enabled });
+  // Admin account list is root-only (GET /admin/account → 403 for manager).
+  // Manager/cabinets resolve client names via form.account_name projection.
   const usersQuery = useQuery({
     queryKey: ["admin-accounts"],
     queryFn: listAdminAccounts,
-    enabled: enabled && (auth.role === "root" || auth.role === "manager"),
+    enabled: enabled && auth.role === "root",
   });
 
   const session = useMemo(

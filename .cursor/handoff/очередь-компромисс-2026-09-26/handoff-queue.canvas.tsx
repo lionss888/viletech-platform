@@ -39,6 +39,90 @@ type QueueRow = {
 const QUEUE: QueueRow[] = [
   {
     order: "1",
+    item: "UAT F1 API / session",
+    plans: [
+      {
+        label: "uat_f1",
+        path: ".cursor/plans/uat_f1_api_session.plan.md",
+      }
+    ],
+    status: "done",
+    note: "Done (ci-pr-pilot); alpha feedback 2026-09-27 пункт 1",
+  },
+  {
+    order: "2",
+    item: "UAT F2 submit without docs disabled",
+    plans: [
+      {
+        label: "uat_f2",
+        path: ".cursor/plans/uat_f2_submit_docs.plan.md",
+      }
+    ],
+    status: "next",
+    note: "Next; пункт 2",
+  },
+  {
+    order: "3",
+    item: "UAT F3 counterparty verify",
+    plans: [
+      {
+        label: "uat_f3",
+        path: ".cursor/plans/uat_f3_cp_verify.plan.md",
+      }
+    ],
+    status: "queued",
+    note: "Пункт 3 + 3.1",
+  },
+  {
+    order: "4",
+    item: "UAT F4 delete confirm",
+    plans: [
+      {
+        label: "uat_f4",
+        path: ".cursor/plans/uat_f4_delete_confirm.plan.md",
+      }
+    ],
+    status: "queued",
+    note: "Пункт 4",
+  },
+  {
+    order: "5",
+    item: "UAT F5 no dashes",
+    plans: [
+      {
+        label: "uat_f5",
+        path: ".cursor/plans/uat_f5_no_dashes.plan.md",
+      }
+    ],
+    status: "queued",
+    note: "Пункт 5",
+  },
+  {
+    order: "6",
+    item: "UAT F6 receipt CTA copy",
+    plans: [
+      {
+        label: "uat_f6",
+        path: ".cursor/plans/uat_f6_receipt_cta.plan.md",
+      }
+    ],
+    status: "queued",
+    note: "Пункт 6",
+  },
+  {
+    order: "7",
+    item: "UAT F7 provider closed forms",
+    plans: [
+      {
+        label: "uat_f7",
+        path: ".cursor/plans/uat_f7_provider_closed.plan.md",
+      }
+    ],
+    status: "queued",
+    note: "Пункт 7",
+  },
+  {
+    order: "—",
     item: "UAT W7 browser ladders",
     plans: [
       {
@@ -46,8 +130,8 @@ const QUEUE: QueueRow[] = [
         path: ".cursor/plans/архив/uat_w7_browser_ladders_return.plan.md",
       }
     ],
-    status: "next",
-    note: "Next; план в архиве. Hygiene W2+W4+W5 закрыт (ci-main).",
+    status: "later",
+    note: "План в архиве; после F1–F7",
   },
   {
     order: "—",
@@ -143,13 +227,13 @@ export default function HandoffQueue() {
 
       <Callout tone="info">
         Статусы из frontmatter todos планов (completed/cancelled = done). После
-        закрытия плана: make -C vdp sync-handoff-queue. Next: UAT W7 browser ladders.
+        закрытия плана: make -C vdp sync-handoff-queue. Next: UAT F2 submit without docs disabled.
       </Callout>
 
       <Row gap={12} wrap>
+        <Stat value={"done"} label={"UAT F1 API / session"} tone="success" />
         <Stat value={"—"} label={"—"} tone="success" />
-        <Stat value={"—"} label={"—"} tone="success" />
-        <Stat value={"UAT W7 browser ladders"} label="Next implement" tone="info" />
+        <Stat value={"UAT F2 submit without docs disabled"} label="Next implement" tone="info" />
       </Row>
 
       <Card>

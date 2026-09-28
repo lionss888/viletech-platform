@@ -30,7 +30,14 @@ func merge(base map[Status][]Status, overlay map[Status][]Status) map[Status][]S
 }
 
 var transitionsImportForm = map[Status][]Status{
-	StatusCreating: {StatusDraft},
+	// creating: OCR/wizard in progress — still allow client submit (same targets as draft)
+	// and recognize_complete → draft; cancel by user.
+	StatusCreating: {
+		StatusDraft,
+		StatusCanceledByUser,
+		StatusOrganizationWaitingVerification,
+		StatusFormWaitingVerification,
+	},
 	StatusDraft: {
 		StatusCanceledByComplianceOfficer,
 		StatusCanceledByUser,
