@@ -36,15 +36,8 @@ function banksFromRecord(record: RefRecord): BankDraftRow[] {
 
 type Extra = { label: string; value: (record: RefRecord) => string };
 
-const AGENT_EMPTY_FIELDS = new Set(["country", "corridors", "contact"]);
-
-/** Agent table: empty country, corridors and contact read as «не указано», not a dash. */
-function registryCell(def: RegistryDef, field: RegistryField, value: unknown): string {
-  const text = labelFor(field, value);
-  if (def.key === "providers" && AGENT_EMPTY_FIELDS.has(field.key) && (text === "—" || text.trim() === "")) {
-    return "не указано";
-  }
-  return text;
+function registryCell(_def: RegistryDef, field: RegistryField, value: unknown): string {
+  return labelFor(field, value);
 }
 
 /** Универсальная таблица справочника: поиск, создание, редактирование, удаление и импорт. */

@@ -2,11 +2,34 @@
 
 const BLANK_DISPLAY = new Set(["", "—", "–", "-", "−"]);
 
+/** Canonical empty-field copy for card/registry cells (never a dash). */
+export const UNSPECIFIED = "не указано";
+
 /** Real text, or undefined when the field is empty or a dash sentinel. */
 export function presentValue(raw: string | undefined | null): string | undefined {
   const trimmed = (raw ?? "").trim();
   if (BLANK_DISPLAY.has(trimmed)) return undefined;
   return trimmed;
+}
+
+/** Display text or «не указано» — never a bare dash. */
+export function displayOrUnspecified(raw: string | undefined | null): string {
+  return presentValue(raw) ?? UNSPECIFIED;
+}
+
+/**
+ * Prefer catalog name; when id is set but catalog miss — selectedFallback (not UUID).
+ * Empty / dash id → «не указано».
+ */
+export function catalogPartyLabel(
+  catalogName: string | undefined | null,
+  id: string | undefined | null,
+  selectedFallback: string,
+): string {
+  const named = presentValue(catalogName);
+  if (named) return named;
+  if (presentValue(id)) return selectedFallback;
+  return UNSPECIFIED;
 }
 
 /** Organization address line. Never a bare dash. */

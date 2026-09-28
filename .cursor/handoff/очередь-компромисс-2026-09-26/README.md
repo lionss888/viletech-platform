@@ -12,7 +12,8 @@
 - UAT F2 — **done** (`ci-pr-pilot`)
 - UAT F3 — **done** (`ci-main`)
 - UAT F4 — **done** (`ci-main`)
-- Next: **UAT F5** no dashes
+- UAT F5 — **done** (`ci-pr-pilot`)
+- Next: **UAT F6** receipt CTA
 
 Chat id / transcript: `ac80db37-0d65-4fe5-953d-15cb41e4282e`  
 Файл истории: `chat-ac80db37.jsonl`
@@ -23,8 +24,8 @@ Chat id / transcript: `ac80db37-0d65-4fe5-953d-15cb41e4282e`
 2. UAT F2 — done — `uat_f2_submit_docs.plan.md`
 3. UAT F3 — done — `uat_f3_cp_verify.plan.md`
 4. UAT F4 — done — `uat_f4_delete_confirm.plan.md`
-5. **UAT F5** ← next — `uat_f5_no_dashes.plan.md`
-6. UAT F6 — `uat_f6_receipt_cta.plan.md`
+5. UAT F5 — done — `uat_f5_no_dashes.plan.md`
+6. **UAT F6** ← next — `uat_f6_receipt_cta.plan.md`
 7. UAT F7 — `uat_f7_provider_closed.plan.md`
 
 Later: UAT W7, Stage B, ops/alpha — см. `queue.json`

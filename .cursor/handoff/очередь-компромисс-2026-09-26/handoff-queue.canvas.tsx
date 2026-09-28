@@ -94,8 +94,8 @@ const QUEUE: QueueRow[] = [
         path: ".cursor/plans/uat_f5_no_dashes.plan.md",
       }
     ],
-    status: "next",
-    note: "Пункт 5",
+    status: "done",
+    note: "Done (ci-pr-pilot); пункт 5 — empty-state «не указано», не прочерк",
   },
   {
     order: "6",
@@ -106,7 +106,7 @@ const QUEUE: QueueRow[] = [
         path: ".cursor/plans/uat_f6_receipt_cta.plan.md",
       }
     ],
-    status: "queued",
+    status: "next",
     note: "Пункт 6",
   },
   {
@@ -227,13 +227,13 @@ export default function HandoffQueue() {
 
       <Callout tone="info">
         Статусы из frontmatter todos планов (completed/cancelled = done). После
-        закрытия плана: make -C vdp sync-handoff-queue. Next: UAT F5 no dashes.
+        закрытия плана: make -C vdp sync-handoff-queue. Next: UAT F6 receipt CTA copy.
       </Callout>
 
       <Row gap={12} wrap>
-        <Stat value={"done"} label={"UAT F3 counterparty verify"} tone="success" />
         <Stat value={"done"} label={"UAT F4 delete confirm"} tone="success" />
-        <Stat value={"UAT F5 no dashes"} label="Next implement" tone="info" />
+        <Stat value={"done"} label={"UAT F5 no dashes"} tone="success" />
+        <Stat value={"UAT F6 receipt CTA copy"} label="Next implement" tone="info" />
       </Row>
 
       <Card>

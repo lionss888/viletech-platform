@@ -60,7 +60,7 @@
       "order": "5",
       "title": "UAT F5 no dashes",
       "lane": "daily",
-      "note": "Пункт 5",
+      "note": "Done (ci-pr-pilot); пункт 5 — empty-state «не указано», не прочерк",
       "plans": [
         {
           "label": "uat_f5",

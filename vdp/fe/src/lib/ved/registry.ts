@@ -239,19 +239,23 @@ export function emptyRecord(def: Pick<RegistryDef, "fields">): RefRecord {
 /** VED helper: labelFor. */
 export function labelFor(field: RegistryField, value: unknown): string {
   if (field.type === "boolean") return value ? "Да" : "Нет";
-  if (field.type === "select") return field.options?.find((o) => o.value === value)?.label ?? String(value ?? "—");
+  if (field.type === "select") {
+    return field.options?.find((o) => o.value === value)?.label ?? String(value ?? "не указано");
+  }
   if (field.type === "banks") {
-    if (!Array.isArray(value) || value.length === 0) return "—";
+    if (!Array.isArray(value) || value.length === 0) return "не указано";
     return value
       .map((row) => {
         const r = row as { name?: string; swift?: string };
-        const name = r.name?.trim() || "—";
+        const name = r.name?.trim() || "не указано";
         return r.swift ? `${name} (${r.swift})` : name;
       })
       .join("; ");
   }
-  const text = value === undefined || value === null || value === "" ? "—" : String(value);
-  return text;
+  if (value === undefined || value === null || value === "") return "не указано";
+  const text = String(value).trim();
+  if (text === "" || text === "—" || text === "–" || text === "-" || text === "−") return "не указано";
+  return String(value);
 }
 
 /** VED helper: validate. */
