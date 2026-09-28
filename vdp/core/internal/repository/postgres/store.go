@@ -774,20 +774,52 @@ func (s *Store) CounterpartyByID(ctx context.Context, id string) (domain.Counter
 }
 
 func (s *Store) ListCounterparties(ctx context.Context) ([]domain.Counterparty, error) {
+	// Include approval columns so FE subject badges stay correct after SetCounterpartyApproval + list invalidate.
 	rows, err := s.db.QueryContext(ctx, `
-		SELECT id, name, COALESCE(country,''), COALESCE(inn,''), COALESCE(banks,''), COALESCE(created_by,''), form_payment_ids, COALESCE(created_at, NOW())
+		SELECT id, name, COALESCE(country,''), COALESCE(inn,''), COALESCE(banks,''), COALESCE(created_by,''), form_payment_ids, COALESCE(created_at, NOW()),
+			last_approval_status, last_approval_date, last_approval_comment
 		FROM counterparties`)
 	if err != nil {
-		return nil, err
+		// Older schemas without approval columns: fall back so list still works.
+		rows, err = s.db.QueryContext(ctx, `
+			SELECT id, name, COALESCE(country,''), COALESCE(inn,''), COALESCE(banks,''), COALESCE(created_by,''), form_payment_ids, COALESCE(created_at, NOW())
+			FROM counterparties`)
+		if err != nil {
+			return nil, err
+		}
+		defer rows.Close()
+		out := make([]domain.Counterparty, 0)
+		for rows.Next() {
+			var c domain.Counterparty
+			var ids sql.NullString
+			var createdBy sql.NullString
+			if scanErr := rows.Scan(&c.ID, &c.Name, &c.Country, &c.INN, &c.Banks, &createdBy, &ids, &c.CreatedAt); scanErr != nil {
+				continue
+			}
+			c.CreatedBy = createdBy.String
+			if ids.Valid && ids.String != "" {
+				_ = json.Unmarshal([]byte(ids.String), &c.FormPaymentIDs)
+			}
+			out = append(out, c)
+		}
+		return out, nil
 	}
 	defer rows.Close()
 	out := make([]domain.Counterparty, 0)
 	for rows.Next() {
 		var c domain.Counterparty
-		var ids sql.NullString
-		var createdBy sql.NullString
-		_ = rows.Scan(&c.ID, &c.Name, &c.Country, &c.INN, &c.Banks, &createdBy, &ids, &c.CreatedAt)
+		var ids, createdBy, status, comment sql.NullString
+		var approvedAt sql.NullTime
+		if scanErr := rows.Scan(&c.ID, &c.Name, &c.Country, &c.INN, &c.Banks, &createdBy, &ids, &c.CreatedAt, &status, &approvedAt, &comment); scanErr != nil {
+			continue
+		}
 		c.CreatedBy = createdBy.String
+		c.LastApprovalStatus = domain.CounterpartyApprovalStatus(status.String)
+		c.LastApprovalComment = comment.String
+		if approvedAt.Valid {
+			t := approvedAt.Time
+			c.LastApprovalDate = &t
+		}
 		if ids.Valid && ids.String != "" {
 			_ = json.Unmarshal([]byte(ids.String), &c.FormPaymentIDs)
 		}

@@ -34,7 +34,7 @@
       "order": "3",
       "title": "UAT F3 counterparty verify",
       "lane": "daily",
-      "note": "Next; пункт 3 + 3.1",
+      "note": "Done (ci-main); пункт 3 + 3.1 — CTA Проверить + badge после approve",
       "plans": [
         {
           "label": "uat_f3",
@@ -47,7 +47,7 @@
       "order": "4",
       "title": "UAT F4 delete confirm",
       "lane": "daily",
-      "note": "Пункт 4",
+      "note": "Next; пункт 4",
       "plans": [
         {
           "label": "uat_f4",

@@ -2,6 +2,7 @@ import { test, expect } from "./fixtures/auth.fixture";
 import { waitForFormDetail } from "./helpers/form-detail";
 import {
   assertCoreHealthy,
+  authPut,
   createCounterpartyApi,
   createDraftForm,
   createPersistedDraftForm,
@@ -82,6 +83,34 @@ test.describe("Form UX dead-ends (journeys)", () => {
     await expect(
       page.getByText(/Действия по участникам доступны ролям проверки \(ВКО\/КО\)/i),
     ).toHaveCount(0);
+  });
+
+  test("UAT F3: manager Проверить CP updates badge to Проверен @uat-f3", async ({ page, loginAs }) => {
+    test.setTimeout(90_000);
+    const tokens = await loginAllRoles();
+    const stamp = Date.now();
+    const cpName = `F3 CP ${stamp}`;
+    const cp = await createCounterpartyApi(tokens.user, { name: cpName, country: "CN" });
+    const formId = await createPersistedDraftForm(tokens, `f3-cp-${stamp}`, {
+      amount: "80",
+      currency: "USD",
+      counterpartyId: cp.id,
+    });
+    await uploadAndAttachInvoice(tokens.user, formId);
+    // Submit via API so the journey stays on one browser session (manager).
+    await authPut(tokens.user, `/api/v1/site/form-payment/${formId}/form/accept`);
+
+    await loginAs("manager");
+    await waitForFormDetail(page, formId);
+    const panel = page.locator("div.panel").filter({ hasText: "Проверка участников сделки" });
+    await expect(panel).toBeVisible();
+    const cpRow = panel.locator("li").filter({ hasText: cpName });
+    await expect(cpRow).toBeVisible({ timeout: 20_000 });
+    await expect(cpRow.getByText("Не проверен")).toBeVisible();
+    await cpRow.getByRole("button", { name: "Проверить" }).click();
+    await page.getByRole("button", { name: "Подтвердить" }).click();
+    await expect(cpRow.getByText("Проверен", { exact: true })).toBeVisible({ timeout: 20_000 });
+    await expect(cpRow.getByRole("button", { name: "Уже проверен" })).toBeDisabled();
   });
 
   test("S-User-03 timeline newest event first after submit", async ({ page, loginAs }) => {

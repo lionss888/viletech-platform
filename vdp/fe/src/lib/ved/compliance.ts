@@ -12,7 +12,7 @@ export function isComplianceRole(role: VedRole | undefined): boolean {
   return !!role && COMPLIANCE_ROLES.includes(role);
 }
 
-/** Roles who see subject-review buttons and may persist «Проверен». User and provider cannot. */
+/** Roles who see subject-review buttons and may persist approval («Проверить»). User and provider cannot. */
 export function canPersistSubjectApproval(role: VedRole | undefined): boolean {
   return isComplianceRole(role) || role === "manager" || role === "root";
 }
@@ -23,9 +23,12 @@ const CURRENT_VERDICT_REASON: Record<string, string> = {
   blocked: "Уже заблокирован",
 };
 
+/** Imperative CTA on SubjectReview approve button (badge text stays «Проверен»). */
+export const SUBJECT_APPROVE_ACTION_LABEL = "Проверить";
+
 /**
  * Reason the matching verdict button must stay closed.
- * `not_approved` matches no button, so «Проверен» stays available.
+ * `not_approved` matches no button, so «Проверить» stays available.
  */
 export function currentSubjectVerdictReason(status: string, verdict: string): string | undefined {
   if (status !== verdict) return undefined;

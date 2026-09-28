@@ -8,6 +8,7 @@ import {
   subjectsCleared,
   subjectsPendingReview,
   subjectState,
+  SUBJECT_APPROVE_ACTION_LABEL,
   type ReviewSubject,
 } from "./compliance";
 
@@ -66,6 +67,12 @@ describe("compliance gating", () => {
     expect(currentSubjectVerdictReason("blocked", "blocked")).toBe("Уже заблокирован");
     expect(currentSubjectVerdictReason("not_approved", "approved")).toBeUndefined();
     expect(currentSubjectVerdictReason("approved", "blocked")).toBeUndefined();
+  });
+
+  it("approve CTA is imperative Проверить while badge and locked copy stay distinct", () => {
+    expect(SUBJECT_APPROVE_ACTION_LABEL).toBe("Проверить");
+    expect(subjectState("approved").text).toBe("Проверен");
+    expect(currentSubjectVerdictReason("approved", "approved")).toBe("Уже проверен");
   });
 
   it("sends manager approval through the approval API, not a catalog patch", () => {

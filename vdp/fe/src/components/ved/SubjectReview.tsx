@@ -1,7 +1,7 @@
 import { useState } from "react";
 
 import { Modal, ModalButton } from "@/components/ved/Modal";
-import { marksFor, currentSubjectVerdictReason, subjectState, type ReviewSubject } from "@/lib/ved/compliance";
+import { marksFor, currentSubjectVerdictReason, subjectState, SUBJECT_APPROVE_ACTION_LABEL, type ReviewSubject } from "@/lib/ved/compliance";
 import { usePlatformStore } from "@/lib/ved/platform-store";
 import { cn } from "@/lib/utils";
 
@@ -9,7 +9,7 @@ type Verdict = "approved" | "waiting_verification" | "blocked";
 
 const VERDICT: Record<Verdict, { label: string; title: string; needsMark: boolean; tone: string }> = {
   approved: {
-    label: "Проверен",
+    label: SUBJECT_APPROVE_ACTION_LABEL,
     title: "Одобрить участника",
     needsMark: false,
     tone: "bg-accent text-accent-foreground",

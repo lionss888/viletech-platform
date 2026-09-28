@@ -4,16 +4,19 @@ overview: "Пункт 3+3.1: CTA контрагента «Проверить» (
 todos:
   - id: f3-repro
     content: "Localhost: клик Проверен/approve CP — Network + бейдж"
-    status: pending
+    status: completed
   - id: f3-copy
     content: "SubjectReview: label «Проверить» + согласовать disabled copy"
-    status: pending
+    status: completed
   - id: f3-fix-path
     content: Починить persist/invalidate чтобы бейдж обновлялся
-    status: pending
-  - id: f3-tests-gate
-    content: Unit/E2E → check-env-parity → ci-pr-pilot/ci-main; close DoD + notify
-    status: pending
+    status: completed
+  - id: f3-tests
+    content: Unit label/helper + approval path; E2E gesture approve CP (вне smoke → эскалация gate)
+    status: completed
+  - id: f3-qg
+    content: check-env-parity → unit-only/SubjectReview = ci-pr; e2e вне smoke = ci-main; prepush path-aware; close DoD + notify
+    status: completed
 isProject: false
 ---
 
@@ -62,11 +65,13 @@ isProject: false
 
 ## DoD / QG
 
-- [ ] Localhost repro «не работает» + скрин до/после
-- [ ] `make check-env-parity`
-- [ ] Unit + e2e/gesture на approve CP
-- [ ] Gate: `make ci-pr-pilot` если затронут detail/ActionPanel; иначе минимум `ci-pr`; новые e2e вне smoke → `ci-main`
-- [ ] DoD/todos; sync-handoff-queue; notify-mgmt
+Path-aware prepush (`make prepush-gate` / Local QG «Проверить по изменениям»): SubjectReview / compliance / platform-store **не** в ladder grep → без e2e вне smoke хук выберет `ci-pr`. Не требовать `ci-pr-pilot` «из‑за detail».
+
+- [x] Localhost repro «не работает» + скрин до/после
+- [x] `make check-env-parity`
+- [x] Unit + e2e/gesture на approve CP
+- [x] Gate по типу diff: unit/FE без e2e вне smoke → `make ci-pr`; правка `vdp/fe/e2e/**` вне smoke (`login-form` / `user-submit` / `provider-acl` / `reject-path`) → `make ci-main`
+- [x] DoD/todos; sync-handoff-queue; notify-mgmt
 
 ## Accept
 

@@ -70,8 +70,8 @@ const QUEUE: QueueRow[] = [
         path: ".cursor/plans/uat_f3_cp_verify.plan.md",
       }
     ],
-    status: "next",
-    note: "Next; пункт 3 + 3.1",
+    status: "done",
+    note: "Done (ci-main); пункт 3 + 3.1 — CTA Проверить + badge после approve",
   },
   {
     order: "4",
@@ -82,8 +82,8 @@ const QUEUE: QueueRow[] = [
         path: ".cursor/plans/uat_f4_delete_confirm.plan.md",
       }
     ],
-    status: "queued",
-    note: "Пункт 4",
+    status: "next",
+    note: "Next; пункт 4",
   },
   {
     order: "5",
@@ -227,13 +227,13 @@ export default function HandoffQueue() {
 
       <Callout tone="info">
         Статусы из frontmatter todos планов (completed/cancelled = done). После
-        закрытия плана: make -C vdp sync-handoff-queue. Next: UAT F3 counterparty verify.
+        закрытия плана: make -C vdp sync-handoff-queue. Next: UAT F4 delete confirm.
       </Callout>
 
       <Row gap={12} wrap>
-        <Stat value={"done"} label={"UAT F1 API / session"} tone="success" />
         <Stat value={"done"} label={"UAT F2 submit without docs disabled"} tone="success" />
-        <Stat value={"UAT F3 counterparty verify"} label="Next implement" tone="info" />
+        <Stat value={"done"} label={"UAT F3 counterparty verify"} tone="success" />
+        <Stat value={"UAT F4 delete confirm"} label="Next implement" tone="info" />
       </Row>
 
       <Card>

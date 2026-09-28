@@ -9,10 +9,10 @@ todos:
     content: "providerPaymentRequisites + остатки → presentValue / «не указано»; имена org/CP не UUID при наличии каталога"
     status: pending
   - id: f5-tests
-    content: Unit party-requisites/provider-acl; spot E2E или component assert
+    content: "Unit party-requisites/provider-acl; spot E2E только при нужде (файл диктует gate)"
     status: pending
   - id: f5-qg
-    content: check-env-parity → ci-pr; close DoD + notify
+    content: "check-env-parity → unit-only = ci-pr; только provider-acl.spec (smoke) = ci-pr-pilot; иной e2e = ci-main; close DoD + notify"
     status: pending
 isProject: false
 ---
@@ -63,10 +63,12 @@ Empty = фраза **«не указано»** / поле-специфичная
 
 ## DoD / QG
 
+Path-aware prepush: `provider-acl.ts` / party-requisites **не** в ladder. Default unit-only → `ci-pr`. Если правка только `e2e/provider-acl.spec.ts` (узкий smoke) → хук эскалирует в **`ci-pr-pilot`**. Любой другой `vdp/fe/e2e/**` → **`ci-main`**.
+
 - [ ] Аудит закрыт; provider block без `—`
 - [ ] `make check-env-parity`
 - [ ] Unit
-- [ ] `make ci-pr`
+- [ ] Gate по типу diff: unit-only → `make ci-pr`; только smoke `provider-acl` e2e → `make ci-pr-pilot`; иной e2e → `make ci-main`
 - [ ] DoD/todos; sync-handoff-queue; notify-mgmt
 
 ## Accept
