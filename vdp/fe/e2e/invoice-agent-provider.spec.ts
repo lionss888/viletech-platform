@@ -20,7 +20,9 @@ test.describe("Invoice, agent and provider card @pilot-matrix", () => {
 
   test("manager cannot confirm a form until an invoice is uploaded @pilot-matrix", async ({ page, loginAs }) => {
     const tokens = await loginAllRoles();
-    const formId = await createSubmittedForm(tokens, `invoice-lock-${Date.now()}`);
+    const formId = await createSubmittedForm(tokens, `invoice-lock-${Date.now()}`, {
+      attachInvoice: false,
+    });
     await loginAs("manager");
     await waitForFormDetail(page, formId);
     const start = page.getByRole("button", { name: "Взять заявку в проверку" });

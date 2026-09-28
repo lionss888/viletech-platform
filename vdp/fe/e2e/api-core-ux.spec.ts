@@ -54,6 +54,9 @@ test.describe("API Core UX fixes (journeys)", () => {
     await expect(params).toContainText("8542");
     await expect(page.getByTestId("counterparty-block")).toContainText(cpName);
 
+    await uploadAndAttachInvoice(tokens.user, formId);
+    await page.reload({ waitUntil: "domcontentloaded" });
+    await waitForFormDetail(page, formId);
     await page.getByRole("button", { name: "Отправить на проверку" }).click();
     await expect(page.getByTestId("form-params")).toBeVisible({ timeout: 20_000 });
     await expect(page.getByTestId("form-params")).toContainText(/1[\s\u00a0]?250[,.]50|1250[,.]50/);

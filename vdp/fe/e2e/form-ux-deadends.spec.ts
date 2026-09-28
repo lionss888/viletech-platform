@@ -3,6 +3,7 @@ import { waitForFormDetail } from "./helpers/form-detail";
 import {
   assertCoreHealthy,
   createCounterpartyApi,
+  createDraftForm,
   createPersistedDraftForm,
   createRejectedForm,
   createSubmittedForm,
@@ -89,6 +90,7 @@ test.describe("Form UX dead-ends (journeys)", () => {
       amount: "50",
       currency: "USD",
     });
+    await uploadAndAttachInvoice(tokens.user, formId);
     await loginAs("user");
     await waitForFormDetail(page, formId);
     await page.getByRole("button", { name: "Отправить на проверку" }).click();
@@ -129,5 +131,26 @@ test.describe("Form UX dead-ends (journeys)", () => {
     await expect(page.locator("tbody tr").filter({ hasText: fileLabel })).toHaveCount(0, {
       timeout: 20_000,
     });
+  });
+
+  test("UAT F2: submit disabled without docs; enabled after attach @pilot-matrix", async ({
+    page,
+    loginAs,
+  }) => {
+    const tokens = await loginAllRoles();
+    const formId = await createDraftForm(tokens, `submit-docs-${Date.now()}`);
+    await loginAs("user");
+    await waitForFormDetail(page, formId);
+    const submit = page.getByRole("button", { name: "Отправить на проверку" });
+    await expect(submit).toBeVisible();
+    await expect(submit).toBeDisabled();
+    await expect(page.getByTestId("submit-docs-required-lock")).toHaveText(
+      "Нужен хотя бы один документ",
+    );
+    await uploadAndAttachInvoice(tokens.user, formId, `submit-docs-${Date.now()}.pdf`);
+    await page.reload({ waitUntil: "domcontentloaded" });
+    await waitForFormDetail(page, formId);
+    await expect(page.getByRole("button", { name: "Отправить на проверку" })).toBeEnabled();
+    await expect(page.getByTestId("submit-docs-required-lock")).toHaveCount(0);
   });
 });

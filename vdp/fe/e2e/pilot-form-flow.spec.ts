@@ -56,6 +56,7 @@ test.describe("Pilot form flow @pilot-flow", () => {
     test.setTimeout(180_000);
     const tokens = await loginAllRoles();
     const formId = await createDraftForm(tokens, `pilot-${Date.now()}`);
+    await uploadAndAttachInvoice(tokens.user, formId);
 
     // 1. User submit
     await loginAs("user");

@@ -5,6 +5,7 @@ import {
   createPersistedDraftForm,
   createSubmittedForm,
   loginAllRoles,
+  uploadAndAttachInvoice,
 } from "./helpers/api";
 import { expectFormStatus } from "./helpers/status";
 import { waitForFormDetail } from "./helpers/form-detail";
@@ -22,6 +23,7 @@ test.describe("Wave1 parties / orgs", () => {
       amount: "80",
       currency: "USD",
     });
+    await uploadAndAttachInvoice(tokens.user, formId);
 
     await loginAs("user");
     await waitForFormDetail(page, formId);

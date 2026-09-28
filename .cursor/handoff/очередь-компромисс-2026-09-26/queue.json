@@ -21,7 +21,7 @@
       "order": "2",
       "title": "UAT F2 submit without docs disabled",
       "lane": "daily",
-      "note": "Next; пункт 2",
+      "note": "Done (ci-pr-pilot); пункт 2 — plan file left pending by agent instruction",
       "plans": [
         {
           "label": "uat_f2",
@@ -34,7 +34,7 @@
       "order": "3",
       "title": "UAT F3 counterparty verify",
       "lane": "daily",
-      "note": "Пункт 3 + 3.1",
+      "note": "Next; пункт 3 + 3.1",
       "plans": [
         {
           "label": "uat_f3",

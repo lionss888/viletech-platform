@@ -247,6 +247,7 @@ test.describe("Pilot robot matrix full UI ladder @pilot-matrix", () => {
       contract_number: `REJ-${Date.now()}`,
       contract_date: pack.deal_fields.contract_date,
     });
+    await uploadAndAttachInvoice(tokens.user, formId);
 
     await loginAs("user");
     await waitForFormDetail(page, formId);
