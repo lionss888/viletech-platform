@@ -17,6 +17,15 @@ export const KIND_LABEL: Record<AttachedDocument["kind"], string> = {
   other: "Документ",
 };
 
+/** Copy for the destructive delete confirm on the form document list. */
+export function documentDeleteConfirmCopy(title: string): { title: string; description: string } {
+  const name = title.trim() || "файл";
+  return {
+    title: "Удалить документ?",
+    description: `«${name}» будет удалён из заявки. Действие нельзя отменить.`,
+  };
+}
+
 function isPdfDocument(doc: AttachedDocument): boolean {
   const ext = doc.ext?.toLowerCase() ?? "";
   const title = doc.title?.toLowerCase() ?? "";
@@ -42,6 +51,8 @@ export function DocumentList({
 }: DocumentListProps) {
   const mode = usePlatformMode();
   const [open, setOpen] = useState<AttachedDocument | null>(null);
+  const [pendingDelete, setPendingDelete] = useState<AttachedDocument | null>(null);
+  const [deleting, setDeleting] = useState(false);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -92,6 +103,27 @@ export function DocumentList({
     }
   }
 
+  function closeDeleteConfirm() {
+    if (deleting) return;
+    setPendingDelete(null);
+  }
+
+  async function confirmDelete() {
+    if (!pendingDelete || !onDelete || deleting) return;
+    setDeleting(true);
+    setError(null);
+    try {
+      await onDelete(pendingDelete);
+      setPendingDelete(null);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Не удалось удалить документ");
+    } finally {
+      setDeleting(false);
+    }
+  }
+
+  const deleteCopy = pendingDelete ? documentDeleteConfirmCopy(pendingDelete.title) : null;
+
   return (
     <>
       {error && (
@@ -138,9 +170,9 @@ export function DocumentList({
                 {canDelete && onDelete && (
                   <button
                     type="button"
-                    disabled={busy}
+                    disabled={busy || deleting}
                     data-testid="doc-delete"
-                    onClick={() => void onDelete(d)}
+                    onClick={() => setPendingDelete(d)}
                     className="rounded-md border border-transparent bg-destructive-soft px-2.5 py-1.5 text-xs font-semibold text-destructive hover:opacity-90 disabled:opacity-50"
                   >
                     Удалить
@@ -188,6 +220,28 @@ export function DocumentList({
           </div>
         )}
       </Modal>
+
+      <Modal
+        open={pendingDelete !== null}
+        onOpenChange={(v) => !v && closeDeleteConfirm()}
+        title={deleteCopy?.title ?? ""}
+        description={deleteCopy?.description}
+        footer={
+          <>
+            <ModalButton variant="quiet" onClick={closeDeleteConfirm} disabled={deleting}>
+              Отмена
+            </ModalButton>
+            <ModalButton
+              variant="danger"
+              data-testid="doc-delete-confirm"
+              onClick={() => void confirmDelete()}
+              disabled={deleting}
+            >
+              {deleting ? "Удаляем…" : "Удалить"}
+            </ModalButton>
+          </>
+        }
+      />
     </>
   );
 }

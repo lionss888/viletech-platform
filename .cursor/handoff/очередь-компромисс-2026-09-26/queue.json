@@ -47,7 +47,7 @@
       "order": "4",
       "title": "UAT F4 delete confirm",
       "lane": "daily",
-      "note": "Next; пункт 4",
+      "note": "Done (ci-main); пункт 4 — confirm перед удалением документа",
       "plans": [
         {
           "label": "uat_f4",
