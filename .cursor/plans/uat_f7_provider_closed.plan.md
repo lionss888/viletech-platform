@@ -4,19 +4,19 @@ overview: "Пункт 7: провайдер должен видеть назна
 todos:
   - id: f7-repro
     content: "Localhost: completed + assigned provider — пустой реестр (baseline)"
-    status: pending
+    status: completed
   - id: f7-filter
     content: "visibleForms(provider): включать completed (+ cancel?) для assigned; обновить visible-forms.test"
-    status: pending
+    status: completed
   - id: f7-chips
     content: Сверить счётчик «Закрыто» / stage chip с новым scoped набором
-    status: pending
+    status: completed
   - id: f7-tests
-    content: "Unit visibleForms; optional provider-registry e2e (вне smoke → ci-main)"
-    status: pending
+    content: Unit visibleForms; optional provider-registry e2e (вне smoke → ci-main)
+    status: completed
   - id: f7-qg
-    content: "check-env-parity → unit-only = ci-pr; registry e2e вне smoke = ci-main; prepush path-aware; close DoD + notify"
-    status: pending
+    content: check-env-parity → unit-only = ci-pr; registry e2e вне smoke = ci-main; prepush path-aware; close DoD + notify
+    status: completed
 isProject: false
 ---
 
@@ -64,11 +64,11 @@ isProject: false
 
 Path-aware prepush: `store.tsx` / `visibleForms` **не** ladder → unit-only = `ci-pr`. Optional registry e2e (не smoke) ⇒ DoD gate = **`ci-main`**, не «ci-pr плюс потом».
 
-- [ ] Localhost: provider видит completed assigned
-- [ ] `make check-env-parity`
-- [ ] Unit visibleForms обновлён
-- [ ] Gate: unit-only → `make ci-pr`; e2e вне smoke → `make ci-main`
-- [ ] DoD/todos; sync-handoff-queue; notify-mgmt
+- [x] Localhost: provider видит completed assigned
+- [x] `make check-env-parity`
+- [x] Unit visibleForms обновлён
+- [x] Gate: unit-only → `make ci-pr`; e2e вне smoke → `make ci-main`
+- [x] DoD/todos; sync-handoff-queue; notify-mgmt
 
 ## Accept
 

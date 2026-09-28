@@ -86,7 +86,7 @@
       "order": "7",
       "title": "UAT F7 provider closed forms",
       "lane": "daily",
-      "note": "Пункт 7",
+      "note": "Done (ci-main); пункт 7 — провайдер видит completed в реестре/Закрыто",
       "plans": [
         {
           "label": "uat_f7",

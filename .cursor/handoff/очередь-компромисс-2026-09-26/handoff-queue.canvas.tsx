@@ -118,8 +118,8 @@ const QUEUE: QueueRow[] = [
         path: ".cursor/plans/uat_f7_provider_closed.plan.md",
       }
     ],
-    status: "next",
-    note: "Пункт 7",
+    status: "done",
+    note: "Done (ci-main); пункт 7 — провайдер видит completed в реестре/Закрыто",
   },
   {
     order: "—",
@@ -227,13 +227,13 @@ export default function HandoffQueue() {
 
       <Callout tone="info">
         Статусы из frontmatter todos планов (completed/cancelled = done). После
-        закрытия плана: make -C vdp sync-handoff-queue. Next: UAT F7 provider closed forms.
+        закрытия плана: make -C vdp sync-handoff-queue. Next: очередь пуста (daily).
       </Callout>
 
       <Row gap={12} wrap>
-        <Stat value={"done"} label={"UAT F5 no dashes"} tone="success" />
         <Stat value={"done"} label={"UAT F6 receipt CTA copy"} tone="success" />
-        <Stat value={"UAT F7 provider closed forms"} label="Next implement" tone="info" />
+        <Stat value={"done"} label={"UAT F7 provider closed forms"} tone="success" />
+        <Stat value={"—"} label="Next implement" tone="info" />
       </Row>
 
       <Card>
