@@ -234,4 +234,4 @@ cd vdp && make ci-pr        # + узкий Playwright как на pull_request
 cd vdp && make release-gate
 ```
 
-Правило процесса Cursor: `.cursor/rules/vdp-ci-local-gate.mdc`. Pre-commit (`docs-format-check` + unit + TG): `make -C vdp install-git-hooks`, затем `make precommit-gate`. После правок `docs/**` вне development — локально `make docs-format-check` до push.
+Правило процесса Cursor: `.cursor/rules/vdp-ci-local-gate.mdc`. Pre-commit (`docs-format-check` + unit + TG): `make -C vdp install-git-hooks`, затем `make precommit-gate`. Pre-push: умный `make prepush-gate` (выбирает уровень по diff); полная страховка перед main: `FULL_PREPUSH_GATE=1`. После правок `docs/**` вне development — локально `make docs-format-check` до push.

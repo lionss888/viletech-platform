@@ -424,7 +424,7 @@ precommit-gate:
 	@chmod +x scripts/precommit-mgmt-notify.sh
 	./scripts/precommit-mgmt-notify.sh
 
-# Default push insurance: push-gate (test-integration + ci-main). Legacy path-aware: PREPUSH_PATH_AWARE=1.
+# Path-aware push gate (default): выбор уровня по diff. Полная страховка: FULL_PREPUSH_GATE=1.
 # Bypass: SKIP_PREPUSH_GATE=1
 prepush-gate:
 	@chmod +x scripts/prepush-gate.sh scripts/pilot-matrix-paths-match.sh scripts/main-full-e2e-paths-match.sh

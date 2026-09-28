@@ -98,7 +98,7 @@ Browser E2E через Docker. Команды make playwright-e2e, make compose-
 
 ## push-gate и prepush-gate
 
-Дефолт перед Push: `make push-gate` = `test-integration` + `ci-main` (полный Playwright как на main). Хук `.githooks/pre-push` и Local QG «Проверить перед Push» вызывают `make prepush-gate` → тот же push-gate. Обход только `SKIP_PREPUSH_GATE=1`. Legacy path-aware (ci-pr / ci-pr-pilot / ci-main по путям): `PREPUSH_PATH_AWARE=1`. ~15–40 мин.
+`prepush-gate` (дефолт хука и Local QG): path-aware выбор уровня по diff (только docs → секунды; код без UI → без браузера; UI → ci-pr; лестница → ci-pr-pilot; e2e вне smoke → ci-main). Полная страховка: `FULL_PREPUSH_GATE=1 make prepush-gate` = `test-integration` + `ci-main` (гоняй перед merge в main). Обход: `SKIP_PREPUSH_GATE=1`. Время зависит от объёма правок.
 
 ## compose-db-migrate
 

@@ -58,8 +58,8 @@ const QUEUE: QueueRow[] = [
         path: ".cursor/plans/uat_f2_submit_docs.plan.md",
       }
     ],
-    status: "next",
-    note: "Next; пункт 2",
+    status: "done",
+    note: "Done (ci-pr-pilot); пункт 2",
   },
   {
     order: "3",
@@ -70,8 +70,8 @@ const QUEUE: QueueRow[] = [
         path: ".cursor/plans/uat_f3_cp_verify.plan.md",
       }
     ],
-    status: "queued",
-    note: "Пункт 3 + 3.1",
+    status: "next",
+    note: "Next; пункт 3 + 3.1",
   },
   {
     order: "4",
@@ -227,13 +227,13 @@ export default function HandoffQueue() {
 
       <Callout tone="info">
         Статусы из frontmatter todos планов (completed/cancelled = done). После
-        закрытия плана: make -C vdp sync-handoff-queue. Next: UAT F2 submit without docs disabled.
+        закрытия плана: make -C vdp sync-handoff-queue. Next: UAT F3 counterparty verify.
       </Callout>
 
       <Row gap={12} wrap>
         <Stat value={"done"} label={"UAT F1 API / session"} tone="success" />
-        <Stat value={"—"} label={"—"} tone="success" />
-        <Stat value={"UAT F2 submit without docs disabled"} label="Next implement" tone="info" />
+        <Stat value={"done"} label={"UAT F2 submit without docs disabled"} tone="success" />
+        <Stat value={"UAT F3 counterparty verify"} label="Next implement" tone="info" />
       </Row>
 
       <Card>

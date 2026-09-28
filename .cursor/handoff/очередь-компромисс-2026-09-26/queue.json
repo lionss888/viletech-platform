@@ -21,7 +21,7 @@
       "order": "2",
       "title": "UAT F2 submit without docs disabled",
       "lane": "daily",
-      "note": "Done (ci-pr-pilot); пункт 2 — plan file left pending by agent instruction",
+      "note": "Done (ci-pr-pilot); пункт 2",
       "plans": [
         {
           "label": "uat_f2",

@@ -19,7 +19,7 @@ const RUN =
 
 const PRECOMMIT_PROMPT = `${RUN} Команда (ровно одна): cd vdp && make precommit-gate. Это тот же слой, что GitHub Desktop при Commit и .githooks/pre-commit: версии программ, оформление текстов, автоматические проверки кода.`;
 
-const PREPUSH_PROMPT = `${RUN} Команда (ровно одна): cd vdp && make prepush-gate. По умолчанию это make push-gate: postgres integration + ci-main (полный Playwright как на main). ~15–40 мин. Не path-aware урезание. Аварийный обход только SKIP_PREPUSH_GATE=1 (не рекомендуй). Legacy легче: PREPUSH_PATH_AWARE=1 (не рекомендуй). Не коммить и не пушь сам.`;
+const PREPUSH_PROMPT = `${RUN} Команда (ровно одна): cd vdp && make prepush-gate. Умная проверка: сам выбирает уровень по изменённым файлам (только тексты → секунды; код без UI → без браузера; обычный UI → короткий браузер; лестница/e2e → полный). Для принудительной полной страховки перед main: FULL_PREPUSH_GATE=1. Аварийный обход: SKIP_PREPUSH_GATE=1 (не рекомендуй). Не коммить и не пушь сам.`;
 
 const PILOT_PROMPT = `${RUN} Команда (ровно одна): cd vdp && make ci-pr-pilot. Это проверка перед публикацией на GitHub: код, тексты, поднятие локальной среды и проход сценариев в браузере по заявке (включая длинную лестницу ролей и Pilot Robot Matrix). Тот же уровень, что pre-push при касании ladder paths без e2e вне smoke.`;
 
@@ -80,254 +80,315 @@ const DOCS_TEST_PROMPT = `${RUN} Документация · тест. Сдел�
 
 const PERF_PROMPT = `${RUN} Команда (ровно одна): cd vdp && make perf-gate. Замер скорости проверки перехода статуса заявки. Если дольше бюджета — скажи простым языком, что тормозит (не проценты комментариев). Не коммить.`;
 
+const FULL_PUSH_PROMPT = `${RUN} Команда (ровно одна): cd vdp && FULL_PREPUSH_GATE=1 make prepush-gate. Полная страховка: postgres integration + ci-main (весь Playwright). ~15–40 мин. Гоняй перед merge в main или когда сомневаешься в умном выборе. Не коммить и не пушь сам.`;
+
 const TRIAGE_PROMPT = `Local QG — подскажи проверку. Не запускай тесты, пока человек не нажмёт другую кнопку.
 
 По git status и git diff скажи простым языком:
 1. Что менялось (экраны, правила заявки, тексты, только план).
-2. Какую кнопку нажать в Local QG (Путь распознавания / перед коммитом / перед Push (=полный push-gate) / лестница / Main push полный браузер / без браузера / с браузером / До alpha / документация создать или тест / производительность / Pilot Robot Matrix).
+2. Какую кнопку нажать в Local QG (Что мне запустить / по типу работы / перед коммитом / по изменениям / Полная страховка / OCR / alpha / роботы / Документация · создать или · тест / производительность / handover).
 3. Почему именно её, одной фразой.
-Если в diff есть forms-new, extraction, ocr-progress, create-review-copy, ocr-readiness, extraction-docling или e2e/ocr-wizard-path — первой рекомендуй «Путь распознавания» (ocr-path-gate) до ручного UAT клиента и до лестницы.
-Если готовитесь к Push — рекомендуй «Проверить перед Push» (push-gate = integration + ci-main), не только лестницу.
-Если в diff есть vdp/fe/e2e/** вне login-form, user-submit, provider-acl, reject-path — для merge-ready рекомендуй «Main push (полный браузер)» (ci-main) или «перед Push»; не только лестницу.
+Если в diff есть forms-new, extraction, ocr-progress, create-review-copy, ocr-readiness, extraction-docling или e2e/ocr-wizard-path — первой рекомендуй «Путь распознавания» (ocr-path-gate) до ручного UAT клиента.
+Если готовитесь к Push — обычно достаточно «Проверить по изменениям» (умный prepush-gate). «Полная страховка» только перед merge в main или при сомнениях.
+Если в diff есть vdp/fe/e2e/** вне login-form, user-submit, provider-acl, reject-path — для merge-ready упомяни «Main push» или «Полная страховка».
 Не коммить. Не пушь. Не запускай make.`;
 
 export default function LocalQG() {
   const dispatch = useCanvasAction();
 
   return (
-    <Stack gap={24} style={{ padding: 24, maxWidth: 720 }}>
+      <Stack gap={24} style={{ padding: 24, maxWidth: 720 }}>
       <Stack gap={6}>
         <H1>Local QG</H1>
         <Text tone="secondary">
-          Локальный контроль качества. Нажмите кнопку — агент сам запустит
-          проверку и напишет, прошло или нет. Команды знать не нужно. Не
-          коммитит и не публикует сам.
+          Проверка качества работы перед коммитом и публикацией. 
+          Нажмите кнопку — агент сам запустит нужные тесты и скажет: прошло или нет.
         </Text>
       </Stack>
 
-      <Callout tone="neutral" title="Единица готовности — запрос заказчика / срез дня">
-        Не строки кода. Готово = Acceptance у роли + зелёная кнопка DoD из
-        плана. Эталон: заметки/ориентир-скорости-запросов-заказчика-2026-09-21.md.
-        Шаблон среза и онбординг: заметки/шаблон-среза-запроса-заказчика.md.
-        Замер недели: заметки/замер-lead-time-неделя-2026-09-22.md.
-        Неожиданный красный main → postmortem по
-        vdp/docs/postmortems/TEMPLATE.txt + один prevention item в план.
-      </Callout>
-
-      <Callout tone="info" title="Commit короткий · Push = полный gate · alpha отдельно">
-        GitHub Desktop при Commit гоняет короткий слой (как кнопка ниже). При
-        Push — всегда make push-gate: integration + полный браузер (ci-main),
-        без урезания до smoke. Это страховка от красного VDP CI на GitHub, не
-        гарантия уже выкатанной alpha. После merge смотрите «До alpha». Обход
-        Push только SKIP_PREPUSH_GATE=1. Не пушьте поверх уже идущего длинного
-        gate без крайней нужды. ~15–40 мин на Push.
-      </Callout>
-
-      <Callout tone="warning" title="OCR: не звать человека до «Путь распознавания»">
-        Если меняли мастер заявки, extraction или Docling — сначала кнопка
-        «Путь распознавания» (ocr-path-gate). Зелёные п.1–2 и Pilot Matrix не
-        доказывают, что баннер распознавания уходит в done или честный fail.
-        Ручной UAT клиента только после зелёного OCR path.
+      <Callout tone="info" title="Не знаете, что запустить?">
+        Начните с кнопки «Что мне запустить?» ниже. Агент посмотрит ваши изменения 
+        и подскажет нужную проверку.
       </Callout>
 
       <Stack gap={8}>
-        <H2>1. Перед коммитом</H2>
-        <Text tone="secondary" size="small">
-          То же, что при Commit в GitHub Desktop: версии программ на компьютере,
-          тексты без запрещённой разметки, автоматические проверки кода. Если
-          красное — коммит отклонят. ~2–5 мин.
-        </Text>
         <Button
+          variant="primary"
           onClick={() =>
-            dispatch({ type: "newComposerChat", userPrompt: PRECOMMIT_PROMPT })
+            dispatch({ type: "newComposerChat", userPrompt: TRIAGE_PROMPT })
           }
         >
-          Проверить перед коммитом
-        </Button>
-      </Stack>
-
-      <Divider />
-
-      <Stack gap={8}>
-        <H2>2. Перед Push на GitHub</H2>
-        <Text tone="secondary" size="small">
-          То же, что .githooks/pre-push: всегда push-gate (integration + полный
-          Playwright). Нажмите до Push в Desktop, чтобы ошибка была в чате.
-          ~15–40 мин.
-        </Text>
-        <Button
-          onClick={() =>
-            dispatch({ type: "newComposerChat", userPrompt: PREPUSH_PROMPT })
-          }
-        >
-          Проверить перед Push
+          Что мне запустить?
         </Button>
         <Text tone="tertiary" size="small">
-          Явно выбрать уровень (если не нужен полный push-gate):
+          Агент посмотрит, что вы меняли, и скажет какую кнопку нажать. Тесты не запустит.
         </Text>
-        <Button
-          onClick={() =>
-            dispatch({ type: "newComposerChat", userPrompt: MAIN_PROMPT })
-          }
-        >
-          Main push (полный браузер)
-        </Button>
-        <Button
-          onClick={() =>
-            dispatch({ type: "newComposerChat", userPrompt: PILOT_PROMPT })
-          }
-        >
-          Лестница заявки
-        </Button>
-        <Button
-          variant="secondary"
-          onClick={() =>
-            dispatch({ type: "newComposerChat", userPrompt: SMOKE_PROMPT })
-          }
-        >
-          Короткая проверка с браузером
-        </Button>
       </Stack>
 
       <Divider />
 
       <Stack gap={8}>
-        <H2>3. Путь распознавания (до ручного UAT)</H2>
+        <H2>По типу работы</H2>
         <Text tone="secondary" size="small">
-          Docling smoke и один сценарий в мастере: баннер не остаётся вечным
-          pending. Нужен уже поднятый Docker. Не заменяет Push-gate и не
-          проверяет качество полей IE. ~2–5 мин плюс до ~2 мин на timeout fail.
+          Выберите то, что делали. Если не уверены — жмите «Что мне запустить?» выше.
         </Text>
-        <Button
-          onClick={() =>
-            dispatch({ type: "newComposerChat", userPrompt: OCR_PATH_PROMPT })
-          }
-        >
-          Путь распознавания
-        </Button>
+      </Stack>
+
+      <Stack gap={12}>
+        <Card>
+          <CardHeader>Меняли только тексты / планы / заметки</CardHeader>
+          <CardBody>
+            <Stack gap={10}>
+              <Text size="small">
+                Проверка оформления текстов. Быстро, ~5–10 секунд.
+              </Text>
+              <Button
+                onClick={() =>
+                  dispatch({ type: "newComposerChat", userPrompt: `${RUN} Команда: cd vdp && make docs-format-check` })
+                }
+              >
+                Проверить тексты
+              </Button>
+            </Stack>
+          </CardBody>
+        </Card>
+
+        <Card>
+          <CardHeader>Код без экранов (backend, API, логика)</CardHeader>
+          <CardBody>
+            <Stack gap={10}>
+              <Text size="small">
+                Проверка кода без открытия браузера. ~3–7 минут.
+              </Text>
+              <Button
+                onClick={() =>
+                  dispatch({ type: "newComposerChat", userPrompt: NO_BROWSER_PROMPT })
+                }
+              >
+                Проверить код
+              </Button>
+            </Stack>
+          </CardBody>
+        </Card>
+
+        <Card>
+          <CardHeader>Экраны и кнопки (UI, кабинеты)</CardHeader>
+          <CardBody>
+            <Stack gap={10}>
+              <Text size="small">
+                Проверка с браузером: заходит в кабинет, кликает кнопки. ~10–15 минут.
+              </Text>
+              <Button
+                onClick={() =>
+                  dispatch({ type: "newComposerChat", userPrompt: SMOKE_PROMPT })
+                }
+              >
+                Проверить экраны
+              </Button>
+            </Stack>
+          </CardBody>
+        </Card>
+
+        <Card>
+          <CardHeader>Заявка, роли, статусы (лестница)</CardHeader>
+          <CardBody>
+            <Stack gap={10}>
+              <Text size="small">
+                Полная проверка сценариев заявки по всем ролям. ~15–25 минут.
+              </Text>
+              <Button
+                onClick={() =>
+                  dispatch({ type: "newComposerChat", userPrompt: PILOT_PROMPT })
+                }
+              >
+                Проверить заявку
+              </Button>
+            </Stack>
+          </CardBody>
+        </Card>
       </Stack>
 
       <Divider />
 
       <Stack gap={8}>
-        <H2>4. До alpha</H2>
-        <Text tone="secondary" size="small">
-          После merge в main: статусы VDP CI / Images / Deploy и живая проверка
-          login на alpha. Не заменяет Push-gate. Выкат из Local QG сам не
-          запускается — только диагностика.
-        </Text>
-        <Button
-          onClick={() =>
-            dispatch({ type: "newComposerChat", userPrompt: ALPHA_STATUS_PROMPT })
-          }
-        >
-          Статус main → alpha
-        </Button>
+        <H2>Стандартные этапы</H2>
+      </Stack>
+
+      <Stack gap={12}>
+        <Card>
+          <CardHeader>Перед коммитом</CardHeader>
+          <CardBody>
+            <Stack gap={10}>
+              <Text size="small">
+                Базовые проверки: версии программ, оформление, быстрые тесты. 
+                Запускается автоматически при Commit в GitHub Desktop. ~2–5 минут.
+              </Text>
+              <Button
+                variant="secondary"
+                onClick={() =>
+                  dispatch({ type: "newComposerChat", userPrompt: PRECOMMIT_PROMPT })
+                }
+              >
+                Запустить
+              </Button>
+            </Stack>
+          </CardBody>
+        </Card>
+
+        <Card>
+          <CardHeader>Перед Push (умная проверка)</CardHeader>
+          <CardBody>
+            <Stack gap={10}>
+              <Text size="small">
+                Сама выбирает нужный уровень по вашим изменениям. Время зависит от объёма: 
+                от секунд (тексты) до 20 минут (экраны и заявка).
+              </Text>
+              <Button
+                variant="secondary"
+                onClick={() =>
+                  dispatch({ type: "newComposerChat", userPrompt: PREPUSH_PROMPT })
+                }
+              >
+                Запустить
+              </Button>
+            </Stack>
+          </CardBody>
+        </Card>
+
+        <Card>
+          <CardHeader>Полная проверка (перед merge в main)</CardHeader>
+          <CardBody>
+            <Stack gap={10}>
+              <Text size="small">
+                Всё подряд: код, браузер, вся заявка. Долго, ~15–40 минут. 
+                Запускайте перед влиянием в главную ветку или когда сомневаетесь.
+              </Text>
+              <Button
+                variant="secondary"
+                onClick={() =>
+                  dispatch({ type: "newComposerChat", userPrompt: FULL_PUSH_PROMPT })
+                }
+              >
+                Запустить
+              </Button>
+            </Stack>
+          </CardBody>
+        </Card>
       </Stack>
 
       <Divider />
 
       <Stack gap={8}>
-        <H2>5. Pilot Robot Matrix</H2>
+        <H2>Специальные проверки</H2>
         <Text tone="secondary" size="small">
-          Роботы матрицы: сначала логика заявки (API), затем клики в кабинетах.
-          Нужна поднятая локальная среда. Данные по умолчанию — учебный пакет
-          template (не данные заказчика).
+          Нужны редко, только в конкретных ситуациях.
         </Text>
-        <Button
-          onClick={() =>
-            dispatch({ type: "newComposerChat", userPrompt: ROBOT_BOTH_PROMPT })
-          }
-        >
-          Запустить обоих роботов
-        </Button>
       </Stack>
 
       <Grid columns={2} gap={12}>
         <Card>
-          <CardHeader>Робот логики</CardHeader>
+          <CardHeader>Распознавание документов (OCR)</CardHeader>
           <CardBody>
             <Stack gap={10}>
-              <Text tone="secondary" size="small">
-                Прогоняет сценарии матрицы через API: статусы, роли, переходы.
-                Без открытия кабинетов. ~2–5 мин.
+              <Text size="small">
+                Если меняли мастер заявки или систему распознавания: проверить, 
+                что баннер исчезает после загрузки документа. ~3–7 минут.
               </Text>
               <Button
                 variant="secondary"
                 onClick={() =>
-                  dispatch({
-                    type: "newComposerChat",
-                    userPrompt: ROBOT_LOGIC_PROMPT,
-                  })
+                  dispatch({ type: "newComposerChat", userPrompt: OCR_PATH_PROMPT })
                 }
               >
-                Запустить
+                Проверить OCR
               </Button>
             </Stack>
           </CardBody>
         </Card>
 
         <Card>
-          <CardHeader>Робот кабинетов</CardHeader>
+          <CardHeader>Статус выката на alpha</CardHeader>
           <CardBody>
             <Stack gap={10}>
-              <Text tone="secondary" size="small">
-                Кликает лестницу ролей в браузере (метки @pilot-matrix). Нужен
-                уже поднятый Docker. ~5–15 мин.
+              <Text size="small">
+                После влития в main: проверить, дошли ли изменения до тестового 
+                сервера. Сам не выкатывает — только диагностика.
               </Text>
               <Button
                 variant="secondary"
                 onClick={() =>
-                  dispatch({
-                    type: "newComposerChat",
-                    userPrompt: ROBOT_CABINET_PROMPT,
-                  })
+                  dispatch({ type: "newComposerChat", userPrompt: ALPHA_STATUS_PROMPT })
                 }
               >
-                Запустить
+                Проверить alpha
               </Button>
             </Stack>
           </CardBody>
         </Card>
 
         <Card>
-          <CardHeader>Поднять среду</CardHeader>
+          <CardHeader>Роботы полного цикла</CardHeader>
           <CardBody>
             <Stack gap={10}>
-              <Text tone="secondary" size="small">
-                Docker compose-up. Делайте перед роботами, если стенд ещё не
-                запущен.
+              <Text size="small">
+                Автопрогон всей заявки: API и клики в кабинетах. 
+                Нужен запущенный Docker (кнопка ниже). ~7–20 минут.
               </Text>
               <Button
                 variant="secondary"
                 onClick={() =>
-                  dispatch({
-                    type: "newComposerChat",
-                    userPrompt: COMPOSE_UP_PROMPT,
-                  })
+                  dispatch({ type: "newComposerChat", userPrompt: ROBOT_BOTH_PROMPT })
                 }
               >
-                Поднять
+                Запустить роботов
               </Button>
             </Stack>
           </CardBody>
         </Card>
 
         <Card>
-          <CardHeader>Файлы матрицы</CardHeader>
+          <CardHeader>Запустить Docker</CardHeader>
           <CardBody>
             <Stack gap={10}>
-              <Text tone="secondary" size="small">
-                Быстро: на месте ли список сценариев и слоты фикстур. Сценарии
-                не гоняет. ~секунды.
+              <Text size="small">
+                Поднять локальную среду с базой данных и сервисами. 
+                Нужно перед роботами и некоторыми проверками.
               </Text>
               <Button
                 variant="secondary"
                 onClick={() =>
-                  dispatch({
-                    type: "newComposerChat",
-                    userPrompt: ROBOT_MATRIX_CHECK_PROMPT,
-                  })
+                  dispatch({ type: "newComposerChat", userPrompt: COMPOSE_UP_PROMPT })
+                }
+              >
+                Запустить Docker
+              </Button>
+            </Stack>
+          </CardBody>
+        </Card>
+      </Grid>
+
+      <Divider />
+
+      <Stack gap={8}>
+        <H2>Утилиты</H2>
+        <Text tone="secondary" size="small">
+          Дополнительные проверки и инструменты.
+        </Text>
+      </Stack>
+
+      <Grid columns={2} gap={12}>
+        <Card>
+          <CardHeader>Версии программ</CardHeader>
+          <CardBody>
+            <Stack gap={10}>
+              <Text size="small">
+                Проверить, что Node.js и Go той же версии, что в проекте. 
+                Если нет — скажет как исправить. ~5 секунд.
+              </Text>
+              <Button
+                variant="secondary"
+                onClick={() =>
+                  dispatch({ type: "newComposerChat", userPrompt: ENV_PROMPT })
                 }
               >
                 Проверить
@@ -335,70 +396,74 @@ export default function LocalQG() {
             </Stack>
           </CardBody>
         </Card>
+
+        <Card>
+          <CardHeader>Настройки уведомлений</CardHeader>
+          <CardBody>
+            <Stack gap={10}>
+              <Text size="small">
+                Проверить, может ли компьютер отправлять служебные сообщения 
+                о выкате. Не печатает токены. ~5 секунд.
+              </Text>
+              <Button
+                variant="secondary"
+                onClick={() =>
+                  dispatch({ type: "newComposerChat", userPrompt: SECRETS_PROMPT })
+                }
+              >
+                Проверить
+              </Button>
+            </Stack>
+          </CardBody>
+        </Card>
+
+        <Card>
+          <CardHeader>Производительность</CardHeader>
+          <CardBody>
+            <Stack gap={10}>
+              <Text size="small">
+                Замер скорости проверки статуса заявки. 
+                Если медленно — скажет что тормозит. ~10–30 секунд.
+              </Text>
+              <Button
+                variant="secondary"
+                onClick={() =>
+                  dispatch({ type: "newComposerChat", userPrompt: PERF_PROMPT })
+                }
+              >
+                Замерить
+              </Button>
+            </Stack>
+          </CardBody>
+        </Card>
+
+        <Card>
+          <CardHeader>Полный handover</CardHeader>
+          <CardBody>
+            <Stack gap={10}>
+              <Text size="small">
+                Всё подряд перед передачей: unit, API, браузер, роботы. 
+                Долго, ~20–40 минут. Не для каждого коммита.
+              </Text>
+              <Button
+                variant="secondary"
+                onClick={() =>
+                  dispatch({ type: "newComposerChat", userPrompt: RELEASE_GATE_PROMPT })
+                }
+              >
+                Запустить
+              </Button>
+            </Stack>
+          </CardBody>
+        </Card>
       </Grid>
 
       <Divider />
 
-      <H2>6. Частичные проверки</H2>
-      <Text tone="secondary" size="small">
-        Когда правили только часть и не хотите ждать четверть часа.
-      </Text>
-
-      <Grid columns={2} gap={12}>
-        <Card>
-          <CardHeader>Без браузера</CardHeader>
-          <CardBody>
-            <Stack gap={10}>
-              <Text tone="secondary" size="small">
-                Проверяет тексты и внутренние правила (статусы, роли, расчёты).
-                Не открывает кабинет. Подходит, если меняли только логику или
-                документы, не кнопки на экране. ~2–3 мин.
-              </Text>
-              <Button
-                variant="secondary"
-                onClick={() =>
-                  dispatch({
-                    type: "newComposerChat",
-                    userPrompt: NO_BROWSER_PROMPT,
-                  })
-                }
-              >
-                Запустить
-              </Button>
-            </Stack>
-          </CardBody>
-        </Card>
-
-        <Card>
-          <CardHeader>С браузером</CardHeader>
-          <CardBody>
-            <Stack gap={10}>
-              <Text tone="secondary" size="small">
-                Робот заходит в кабинеты как пользователь: вход, заявка,
-                действия ролей. Нужна уже запущенная локальная среда. Не
-                проверяет оформление документов. ~1–8 мин.
-              </Text>
-              <Button
-                variant="secondary"
-                onClick={() =>
-                  dispatch({
-                    type: "newComposerChat",
-                    userPrompt: BROWSER_ONLY_PROMPT,
-                  })
-                }
-              >
-                Запустить
-              </Button>
-            </Stack>
-          </CardBody>
-        </Card>
-      </Grid>
-
-      <Stack gap={6}>
-        <Text size="small">Документация</Text>
+      <Stack gap={8}>
+        <H2>Документация</H2>
         <Text tone="secondary" size="small">
-          Создание — дописать JSDoc/GoDoc. Тест — оформление текстов и процент
-          наличия по diff («Документация: N%»).
+          Дописать комментарии в коде и проверить, сколько уже покрыто в ваших правках.
         </Text>
       </Stack>
 
@@ -407,9 +472,9 @@ export default function LocalQG() {
           <CardHeader>Документация · создать</CardHeader>
           <CardBody>
             <Stack gap={10}>
-              <Text tone="secondary" size="small">
-                Допишет JSDoc/GoDoc и короткие пояснения «зачем» в ваших
-                незакоммиченных правках. Процент не считает.
+              <Text size="small">
+                Допишет пояснения к публичным функциям и типам в незакоммиченных
+                правках (JSDoc / GoDoc). Процент не считает.
               </Text>
               <Button
                 variant="secondary"
@@ -430,10 +495,9 @@ export default function LocalQG() {
           <CardHeader>Документация · тест</CardHeader>
           <CardBody>
             <Stack gap={10}>
-              <Text tone="secondary" size="small">
-                Сначала оформление текстов (как на GitHub), затем процент
-                наличия документации по diff: «Документация: N% (X из Y)».
-                Ничего не правит. ~10–30 сек.
+              <Text size="small">
+                Сначала оформление текстов, затем процент покрытия по diff:
+                «Документация: N% (X из Y)». Ничего не правит. ~10–30 секунд.
               </Text>
               <Button
                 variant="secondary"
@@ -451,150 +515,64 @@ export default function LocalQG() {
         </Card>
       </Grid>
 
-      <Grid columns={2} gap={12}>
-        <Card>
-          <CardHeader>Производительность</CardHeader>
-          <CardBody>
-            <Stack gap={10}>
-              <Text tone="secondary" size="small">
-                Замер: сколько занимает проверка «можно ли перевести заявку в
-                этот статус». Если дольше бюджета — gate красный. ~10–30 сек.
-              </Text>
-              <Button
-                variant="secondary"
-                onClick={() =>
-                  dispatch({
-                    type: "newComposerChat",
-                    userPrompt: PERF_PROMPT,
-                  })
-                }
-              >
-                Запустить
-              </Button>
-            </Stack>
-          </CardBody>
-        </Card>
-
-        <Card>
-          <CardHeader>Полный handover</CardHeader>
-          <CardBody>
-            <Stack gap={10}>
-              <Text tone="secondary" size="small">
-                Самый длинный Local QG перед передачей или тегом: unit, API,
-                браузер, матрица. Не для каждого коммита. ~20–40 мин.
-              </Text>
-              <Button
-                variant="secondary"
-                onClick={() =>
-                  dispatch({
-                    type: "newComposerChat",
-                    userPrompt: RELEASE_GATE_PROMPT,
-                  })
-                }
-              >
-                Запустить
-              </Button>
-            </Stack>
-          </CardBody>
-        </Card>
-      </Grid>
-
       <Divider />
 
-      <H2>Помощники</H2>
-      <Grid columns={2} gap={12}>
-        <Card>
-          <CardHeader>Что мне запустить</CardHeader>
-          <CardBody>
-            <Stack gap={10}>
-              <Text tone="secondary" size="small">
-                Смотрит, какие файлы вы меняли, и называет одну кнопку выше.
-                Ничего не гоняет.
-              </Text>
-              <Button
-                variant="secondary"
-                onClick={() =>
-                  dispatch({ type: "newComposerChat", userPrompt: TRIAGE_PROMPT })
-                }
-              >
-                Подсказать
-              </Button>
-            </Stack>
-          </CardBody>
-        </Card>
-
-        <Card>
-          <CardHeader>Версии на компьютере</CardHeader>
-          <CardBody>
-            <Stack gap={10}>
-              <Text tone="secondary" size="small">
-                Часто коммит падает сразу: другая версия Node или Go. Эта
-                кнопка проверяет совпадение с проектом. ~5 сек.
-              </Text>
-              <Button
-                variant="secondary"
-                onClick={() =>
-                  dispatch({ type: "newComposerChat", userPrompt: ENV_PROMPT })
-                }
-              >
-                Проверить
-              </Button>
-            </Stack>
-          </CardBody>
-        </Card>
-
-        <Card>
-          <CardHeader>Сообщение о выкате</CardHeader>
-          <CardBody>
-            <Stack gap={10}>
-              <Text tone="secondary" size="small">
-                На сервере после выката должно уйти служебное сообщение в чат.
-                Если ключей нет — выкат на GitHub может упасть в конце.
-              </Text>
-              <Button
-                variant="secondary"
-                onClick={() =>
-                  dispatch({ type: "newComposerChat", userPrompt: SECRETS_PROMPT })
-                }
-              >
-                Проверить
-              </Button>
-            </Stack>
-          </CardBody>
-        </Card>
-      </Grid>
+      <Stack gap={8}>
+        <H2>Справка</H2>
+        <Text tone="secondary" size="small">
+          Пояснения и советы по использованию.
+        </Text>
+      </Stack>
 
       <Card collapsible defaultOpen={false}>
-        <CardHeader>Как выбрать (если сомневаетесь)</CardHeader>
+        <CardHeader>Частые вопросы</CardHeader>
         <CardBody>
-          <Stack gap={8}>
-            <Text size="small">
-              Сейчас жмёте Commit в GitHub Desktop — «Проверить перед коммитом».
-            </Text>
-            <Text size="small">
-              Перед Push — «Проверить перед Push» (всегда полный push-gate).
-              Явно короче: «Лестница заявки» или короткая с браузером.
-            </Text>
-            <Text size="small">
-              После merge, alpha отстаёт — «Статус main → alpha».
-            </Text>
-            <Text size="small">
-              Хотите только путь заявки роботами — «Запустить обоих роботов» или
-              отдельно логика / кабинеты.
-            </Text>
-            <Text size="small">
-              Нужны docs — сначала «· создать», потом «· тест».
-            </Text>
-            <Text size="small">
-              Трогали статусы заявки / переходы — «Производительность».
-            </Text>
-            <Text size="small">Не знаете — «Что мне запустить».</Text>
+          <Stack gap={12}>
+            <Stack gap={4}>
+              <Text size="small" weight="semibold">
+                Не знаю, что запустить
+              </Text>
+              <Text size="small" tone="secondary">
+                Жмите «Что мне запустить?» в самом начале. Агент посмотрит ваши 
+                изменения и скажет нужную кнопку.
+              </Text>
+            </Stack>
+
+            <Stack gap={4}>
+              <Text size="small" weight="semibold">
+                Перед Commit в GitHub Desktop
+              </Text>
+              <Text size="small" tone="secondary">
+                Ничего не нажимайте — проверка запустится автоматически. 
+                Если хотите проверить заранее — «Проверить перед коммитом».
+              </Text>
+            </Stack>
+
+            <Stack gap={4}>
+              <Text size="small" weight="semibold">
+                Перед Push на GitHub
+              </Text>
+              <Text size="small" tone="secondary">
+                Обычно: «Проверить по изменениям» (умная, быстрая). 
+                Перед слиянием в main: «Полная страховка».
+              </Text>
+            </Stack>
+
+            <Stack gap={4}>
+              <Text size="small" weight="semibold">
+                Долго выполняется
+              </Text>
+              <Text size="small" tone="secondary">
+                Время зависит от объёма изменений: от секунд (тексты) до 40 минут 
+                (полная проверка). Прервать нельзя — дождитесь результата.
+              </Text>
+            </Stack>
           </Stack>
         </CardBody>
       </Card>
 
       <Row justify="center">
-        <Text tone="quaternary" size="small">
+        <Text tone="tertiary" size="small">
           Local QG · кнопка = запуск · агент не публикует сам
         </Text>
       </Row>

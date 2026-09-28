@@ -9,7 +9,7 @@
 - UAT feedback 2026-09-27 — **7 планов** F1–F7 в `.cursor/plans/uat_f*.plan.md`
 - Прочие планы — в `.cursor/plans/архив/`
 - UAT F1 — **done** (`ci-pr-pilot`)
-- UAT F2 — **done** (`ci-pr-pilot`; код/gate; plan.md не правился по инструкции)
+- UAT F2 — **done** (`ci-pr-pilot`)
 - Next: **UAT F3** counterparty verify
 
 Chat id / transcript: `ac80db37-0d65-4fe5-953d-15cb41e4282e`  
