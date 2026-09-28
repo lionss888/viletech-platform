@@ -162,6 +162,36 @@ test.describe("Form UX dead-ends (journeys)", () => {
     });
   });
 
+  test("UAT F4: form doc delete requires confirm; cancel keeps file @uat-f4", async ({ page, loginAs }) => {
+    test.setTimeout(90_000);
+    const tokens = await loginAllRoles();
+    const stamp = Date.now();
+    const fileLabel = `f4-del-${stamp}.pdf`;
+    const formId = await createPersistedDraftForm(tokens, `f4-del-${stamp}`, {
+      amount: "35",
+      currency: "USD",
+    });
+    await uploadAndAttachInvoice(tokens.user, formId, fileLabel);
+
+    await loginAs("user");
+    await waitForFormDetail(page, formId);
+    const docRow = page.locator("li").filter({ hasText: fileLabel });
+    await expect(docRow).toBeVisible({ timeout: 20_000 });
+    await docRow.getByTestId("doc-delete").click();
+    const confirmDialog = page.getByRole("dialog");
+    await expect(confirmDialog.getByRole("heading", { name: "Удалить документ?" })).toBeVisible();
+    await expect(confirmDialog.getByText(`«${fileLabel}» будет удалён из заявки.`)).toBeVisible();
+    await confirmDialog.getByRole("button", { name: "Отмена" }).click();
+    await expect(page.getByRole("dialog")).toHaveCount(0);
+    await expect(docRow).toBeVisible();
+
+    await docRow.getByTestId("doc-delete").click();
+    await page.getByTestId("doc-delete-confirm").click();
+    await expect(page.locator("li").filter({ hasText: fileLabel })).toHaveCount(0, {
+      timeout: 20_000,
+    });
+  });
+
   test("UAT F2: submit disabled without docs; enabled after attach @pilot-matrix", async ({
     page,
     loginAs,

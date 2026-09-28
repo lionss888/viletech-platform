@@ -1,10 +1,12 @@
 import { describe, expect, it } from "vitest";
 
 import {
+  catalogPartyLabel,
   counterpartyGapLine,
   counterpartyPlaceLine,
   counterpartySubjectDetail,
   counterpartySwiftLine,
+  displayOrUnspecified,
   innLine,
   organizationAddressLine,
   presentValue,
@@ -22,6 +24,29 @@ describe("presentValue", () => {
   it("keeps a real value", () => {
     expect(presentValue("Надеждия")).toBe("Надеждия");
     expect(presentValue("  BOFAUS3N  ")).toBe("BOFAUS3N");
+  });
+});
+
+describe("displayOrUnspecified", () => {
+  it("replaces dashes with не указано", () => {
+    expect(displayOrUnspecified(undefined)).toBe("не указано");
+    expect(displayOrUnspecified("—")).toBe("не указано");
+    expect(displayOrUnspecified("DE")).toBe("DE");
+  });
+});
+
+describe("catalogPartyLabel", () => {
+  it("prefers catalog name over raw id", () => {
+    expect(catalogPartyLabel("Acme LLC", "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa", "организация выбрана")).toBe(
+      "Acme LLC",
+    );
+  });
+
+  it("does not surface UUID when catalog misses", () => {
+    expect(catalogPartyLabel(undefined, "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa", "организация выбрана")).toBe(
+      "организация выбрана",
+    );
+    expect(catalogPartyLabel("—", "—", "организация выбрана")).toBe("не указано");
   });
 });
 

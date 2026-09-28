@@ -321,7 +321,7 @@ function continuityInjectedActions(
   if (canTreasurerDispositionAdvance(processRoles, role)) {
     const treasActs = (MATRIX.treasurer[status] ?? []).map((action) =>
       action.id === "treas_confirm_payment"
-        ? { ...action, label: "Подтвердить поступление (без казначея)" }
+        ? { ...action, label: "Подтвердить поступление" }
         : action,
     );
     injected.push(...treasActs);

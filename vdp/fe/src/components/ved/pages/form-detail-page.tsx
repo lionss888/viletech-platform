@@ -64,6 +64,7 @@ import {
   providerVisibleDocuments,
 } from "@/lib/ved/provider-acl";
 import {
+  catalogPartyLabel,
   counterpartyGapLine,
   counterpartyPlaceLine,
   counterpartySwiftLine,
@@ -494,7 +495,9 @@ export function FormDetail() {
             <div className="grid gap-4 sm:grid-cols-2">
               <div className="panel p-4" data-testid="organization-block">
                 <p className="label-caps">Организация клиента</p>
-                <p className="mt-2 text-sm font-semibold">{org?.name ?? form.organizationId}</p>
+                <p className="mt-2 text-sm font-semibold">
+                  {catalogPartyLabel(org?.name, form.organizationId, "организация выбрана")}
+                </p>
                 <p className="font-mono text-xs text-muted-foreground">{innLine(org?.inn)}</p>
                 <p className="mt-1 text-xs text-muted-foreground">{organizationAddressLine(org?.legalAddress)}</p>
                 {canChangeParties && (

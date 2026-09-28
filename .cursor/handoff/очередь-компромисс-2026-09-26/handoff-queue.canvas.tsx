@@ -82,8 +82,8 @@ const QUEUE: QueueRow[] = [
         path: ".cursor/plans/uat_f4_delete_confirm.plan.md",
       }
     ],
-    status: "next",
-    note: "Next; пункт 4",
+    status: "done",
+    note: "Done (ci-main); пункт 4 — confirm перед удалением документа",
   },
   {
     order: "5",
@@ -94,8 +94,8 @@ const QUEUE: QueueRow[] = [
         path: ".cursor/plans/uat_f5_no_dashes.plan.md",
       }
     ],
-    status: "queued",
-    note: "Пункт 5",
+    status: "done",
+    note: "Done (ci-pr-pilot); пункт 5 — empty-state «не указано», не прочерк",
   },
   {
     order: "6",
@@ -106,8 +106,8 @@ const QUEUE: QueueRow[] = [
         path: ".cursor/plans/uat_f6_receipt_cta.plan.md",
       }
     ],
-    status: "queued",
-    note: "Пункт 6",
+    status: "done",
+    note: "Done (ci-pr-pilot); пункт 6 — CTA «Подтвердить поступление»",
   },
   {
     order: "7",
@@ -118,8 +118,8 @@ const QUEUE: QueueRow[] = [
         path: ".cursor/plans/uat_f7_provider_closed.plan.md",
       }
     ],
-    status: "queued",
-    note: "Пункт 7",
+    status: "done",
+    note: "Done (ci-main); пункт 7 — провайдер видит completed в реестре/Закрыто",
   },
   {
     order: "—",
@@ -227,13 +227,13 @@ export default function HandoffQueue() {
 
       <Callout tone="info">
         Статусы из frontmatter todos планов (completed/cancelled = done). После
-        закрытия плана: make -C vdp sync-handoff-queue. Next: UAT F4 delete confirm.
+        закрытия плана: make -C vdp sync-handoff-queue. Next: очередь пуста (daily).
       </Callout>
 
       <Row gap={12} wrap>
-        <Stat value={"done"} label={"UAT F2 submit without docs disabled"} tone="success" />
-        <Stat value={"done"} label={"UAT F3 counterparty verify"} tone="success" />
-        <Stat value={"UAT F4 delete confirm"} label="Next implement" tone="info" />
+        <Stat value={"done"} label={"UAT F6 receipt CTA copy"} tone="success" />
+        <Stat value={"done"} label={"UAT F7 provider closed forms"} tone="success" />
+        <Stat value={"—"} label="Next implement" tone="info" />
       </Row>
 
       <Card>

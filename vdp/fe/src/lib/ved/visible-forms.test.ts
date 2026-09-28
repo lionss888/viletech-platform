@@ -49,13 +49,16 @@ describe("visibleForms", () => {
     expect(visibleForms(forms, "user").map((f) => f.id)).toEqual(["a", "b"]);
   });
 
-  it("provider sees payment-stage forms only", () => {
+  it("provider sees payment-stage, completed and canceled assigned forms", () => {
     const forms = [
       stubForm({ id: "a", status: "payment_processing", ownerName: "X" }),
       stubForm({ id: "b", status: "draft", ownerName: "X" }),
+      stubForm({ id: "c", status: "completed", ownerName: "X" }),
+      stubForm({ id: "d", status: "canceled_by_manager", ownerName: "X" }),
+      stubForm({ id: "e", status: "form_accepted", ownerName: "X" }),
     ];
     const actual = visibleForms(forms, "provider");
-    expect(actual.map((f) => f.id)).toEqual(["a"]);
+    expect(actual.map((f) => f.id)).toEqual(["a", "c", "d"]);
   });
 
   it("ECO sees form_* queue including waiting_verification and verification", () => {

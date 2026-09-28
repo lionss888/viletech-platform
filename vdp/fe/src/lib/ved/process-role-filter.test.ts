@@ -90,6 +90,11 @@ describe("actionsFor with process roles", () => {
     ];
     const mgrIds = actionsFor("manager", "payment_received", rows).map((a) => a.id);
     expect(mgrIds).toContain("treas_confirm_payment");
+    const confirm = actionsFor("manager", "payment_received", rows).find(
+      (a) => a.id === "treas_confirm_payment",
+    );
+    expect(confirm?.label).toBe("Подтвердить поступление");
+    expect(confirm?.label).not.toMatch(/без казначея/i);
     const treasIds = actionsFor("treasurer", "payment_received", rows).map((a) => a.id);
     expect(treasIds).not.toContain("treas_confirm_payment");
   });

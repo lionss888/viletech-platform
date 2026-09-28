@@ -47,7 +47,7 @@
       "order": "4",
       "title": "UAT F4 delete confirm",
       "lane": "daily",
-      "note": "Next; пункт 4",
+      "note": "Done (ci-main); пункт 4 — confirm перед удалением документа",
       "plans": [
         {
           "label": "uat_f4",
@@ -60,7 +60,7 @@
       "order": "5",
       "title": "UAT F5 no dashes",
       "lane": "daily",
-      "note": "Пункт 5",
+      "note": "Done (ci-pr-pilot); пункт 5 — empty-state «не указано», не прочерк",
       "plans": [
         {
           "label": "uat_f5",
@@ -73,7 +73,7 @@
       "order": "6",
       "title": "UAT F6 receipt CTA copy",
       "lane": "daily",
-      "note": "Пункт 6",
+      "note": "Done (ci-pr-pilot); пункт 6 — CTA «Подтвердить поступление»",
       "plans": [
         {
           "label": "uat_f6",
@@ -86,7 +86,7 @@
       "order": "7",
       "title": "UAT F7 provider closed forms",
       "lane": "daily",
-      "note": "Пункт 7",
+      "note": "Done (ci-main); пункт 7 — провайдер видит completed в реестре/Закрыто",
       "plans": [
         {
           "label": "uat_f7",

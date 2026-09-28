@@ -7,6 +7,7 @@ import { createCounterparty } from "@/lib/api/catalog-mutations";
 import { nestFormPrefixForRole, patchForm } from "@/lib/api/forms";
 import { ApiError } from "@/lib/api/client";
 import type { Counterparty } from "@/lib/ved/types";
+import { counterpartyPlaceLine, displayOrUnspecified } from "@/lib/ved/party-requisites";
 
 type Props = {
   open: boolean;
@@ -187,8 +188,7 @@ export function CounterpartyPickDialog({
                       <span>
                         <span className="font-medium">{cp.name}</span>
                         <span className="mt-0.5 block text-xs text-muted-foreground">
-                          {cp.country ?? "—"}
-                          {cp.bank && cp.bank !== "—" ? ` · ${cp.bank}` : ""}
+                          {counterpartyPlaceLine(cp.country, cp.bank) ?? displayOrUnspecified(cp.country)}
                         </span>
                       </span>
                     </label>

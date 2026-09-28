@@ -24,5 +24,7 @@ test.describe("Provider ACL (no client PII in UI)", () => {
     await expect(page.getByText("Участники")).toHaveCount(0);
     await expect(page.getByText("Организация клиента")).toHaveCount(0);
     await expect(page.getByRole("button", { name: "Платёж отправлен" })).toBeVisible();
+    const requisites = page.locator("dl").filter({ has: page.getByText("SWIFT", { exact: true }) });
+    await expect(requisites.getByText("—", { exact: true })).toHaveCount(0);
   });
 });

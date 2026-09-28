@@ -10,6 +10,7 @@ import {
 import { nestFormPrefixForRole, patchForm } from "@/lib/api/forms";
 import { ApiError } from "@/lib/api/client";
 import type { Organization } from "@/lib/ved/types";
+import { innLine } from "@/lib/ved/party-requisites";
 
 type Props = {
   open: boolean;
@@ -219,7 +220,7 @@ export function OrganizationPickDialog({
                       <span>
                         <span className="font-medium">{org.name}</span>
                         <span className="mt-0.5 block text-xs text-muted-foreground">
-                          ИНН {org.inn ?? "—"}
+                          {innLine(org.inn)}
                         </span>
                       </span>
                     </label>

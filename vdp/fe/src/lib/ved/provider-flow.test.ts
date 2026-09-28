@@ -103,6 +103,39 @@ describe("provider ACL helpers", () => {
     expect(joined).not.toContain("Secret St");
   });
 
+  it("payment requisites use не указано instead of dash when bank facts missing", () => {
+    const emptyCp: Counterparty = {
+      ...cp,
+      country: "—",
+      countryCode: "—",
+      bank: "—",
+      swift: "—",
+    };
+    const emptyOrg: Organization = { ...org, inn: "—" };
+    const rows = providerPaymentRequisites(stubForm(), emptyOrg, emptyCp);
+    const byKey = Object.fromEntries(rows);
+    expect(byKey["ИНН"]).toBe("не указано");
+    expect(byKey["Страна"]).toBe("не указано");
+    expect(byKey["Банк"]).toBe("не указано");
+    expect(byKey["SWIFT"]).toBe("не указано");
+    expect(Object.values(byKey).join(" ")).not.toContain("—");
+  });
+
+  it("payment requisites prefer catalog names over UUID ids", () => {
+    const rows = providerPaymentRequisites(
+      stubForm({
+        organizationId: "bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb",
+        counterpartyId: "cccccccc-cccc-cccc-cccc-cccccccccccc",
+      }),
+      undefined,
+      undefined,
+    );
+    const byKey = Object.fromEntries(rows);
+    expect(byKey["Организация"]).toBe("организация выбрана");
+    expect(byKey["Контрагент"]).toBe("контрагент выбран");
+    expect(byKey["Организация"]).not.toMatch(/^[0-9a-f-]{36}$/i);
+  });
+
   it("visible documents exclude agency contract but keep deal docs", () => {
     const docs = providerVisibleDocuments(
       stubForm({

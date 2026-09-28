@@ -4,16 +4,16 @@ overview: "Пункт 4: страхующий диалог перед удале
 todos:
   - id: f4-repro
     content: Localhost: клик Удалить без confirm (baseline)
-    status: pending
+    status: completed
   - id: f4-dialog
     content: "Confirm modal (паттерн RegistryManager) в DocumentList / form-detail"
-    status: pending
+    status: completed
   - id: f4-tests
     content: "Unit + E2E gesture: cancel не удаляет; confirm удаляет (e2e вне smoke)"
-    status: pending
+    status: completed
   - id: f4-qg
     content: "check-env-parity → без e2e = ci-pr; с confirm-e2e вне smoke = ci-main; prepush path-aware; close DoD + notify"
-    status: pending
+    status: completed
 isProject: false
 ---
 
@@ -61,11 +61,11 @@ isProject: false
 
 Path-aware prepush: DocumentViewer / form-detail **не** ladder. Confirm-жест почти наверняка в e2e вне smoke → целевой gate волны с e2e = **`ci-main`**. Без e2e в diff → `ci-pr`.
 
-- [ ] Localhost: диалог появляется; Отмена не удаляет
-- [ ] `make check-env-parity`
-- [ ] Unit + e2e (cancel / confirm)
-- [ ] Gate: unit-only → `make ci-pr`; e2e вне smoke → `make ci-main` (DoD при планируемом gesture-e2e)
-- [ ] DoD/todos; sync-handoff-queue; notify-mgmt
+- [x] Localhost: диалог появляется; Отмена не удаляет
+- [x] `make check-env-parity`
+- [x] Unit + e2e (cancel / confirm)
+- [x] Gate: unit-only → `make ci-pr`; e2e вне smoke → `make ci-main` (DoD при планируемом gesture-e2e)
+- [x] DoD/todos; sync-handoff-queue; notify-mgmt
 
 ## Accept
 

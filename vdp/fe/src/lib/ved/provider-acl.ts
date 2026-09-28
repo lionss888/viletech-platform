@@ -1,5 +1,6 @@
 import { PROVIDER_HIDDEN_FIELDS } from "./actions";
 import { money } from "./format";
+import { catalogPartyLabel, displayOrUnspecified } from "./party-requisites";
 import type { Counterparty, Organization, PaymentForm } from "./types";
 
 /** Search haystack for provider registry — no client PII fields. */
@@ -69,13 +70,19 @@ export function providerPaymentRequisites(
   cp: Counterparty | undefined,
 ): [string, string][] {
   return [
-    ["Организация", org?.name ?? form.organizationId],
-    ["ИНН", org?.inn ?? "—"],
+    [
+      "Организация",
+      catalogPartyLabel(org?.name, form.organizationId, "организация выбрана"),
+    ],
+    ["ИНН", displayOrUnspecified(org?.inn)],
     ["Сумма", money(form.amountMinor, form.currency)],
-    ["Контрагент", cp?.name ?? form.counterpartyId],
-    ["Страна", cp?.country ?? cp?.countryCode ?? "—"],
-    ["Банк", cp?.bank ?? "—"],
-    ["SWIFT", cp?.swift ?? "—"],
+    [
+      "Контрагент",
+      catalogPartyLabel(cp?.name, form.counterpartyId, "контрагент выбран"),
+    ],
+    ["Страна", displayOrUnspecified(cp?.country ?? cp?.countryCode)],
+    ["Банк", displayOrUnspecified(cp?.bank)],
+    ["SWIFT", displayOrUnspecified(cp?.swift)],
   ];
 }
 
