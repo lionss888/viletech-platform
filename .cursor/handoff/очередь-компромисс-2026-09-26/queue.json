@@ -73,7 +73,7 @@
       "order": "6",
       "title": "UAT F6 receipt CTA copy",
       "lane": "daily",
-      "note": "Пункт 6",
+      "note": "Done (ci-pr-pilot); пункт 6 — CTA «Подтвердить поступление»",
       "plans": [
         {
           "label": "uat_f6",

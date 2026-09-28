@@ -106,8 +106,8 @@ const QUEUE: QueueRow[] = [
         path: ".cursor/plans/uat_f6_receipt_cta.plan.md",
       }
     ],
-    status: "next",
-    note: "Пункт 6",
+    status: "done",
+    note: "Done (ci-pr-pilot); пункт 6 — CTA «Подтвердить поступление»",
   },
   {
     order: "7",
@@ -118,7 +118,7 @@ const QUEUE: QueueRow[] = [
         path: ".cursor/plans/uat_f7_provider_closed.plan.md",
       }
     ],
-    status: "queued",
+    status: "next",
     note: "Пункт 7",
   },
   {
@@ -227,13 +227,13 @@ export default function HandoffQueue() {
 
       <Callout tone="info">
         Статусы из frontmatter todos планов (completed/cancelled = done). После
-        закрытия плана: make -C vdp sync-handoff-queue. Next: UAT F6 receipt CTA copy.
+        закрытия плана: make -C vdp sync-handoff-queue. Next: UAT F7 provider closed forms.
       </Callout>
 
       <Row gap={12} wrap>
-        <Stat value={"done"} label={"UAT F4 delete confirm"} tone="success" />
         <Stat value={"done"} label={"UAT F5 no dashes"} tone="success" />
-        <Stat value={"UAT F6 receipt CTA copy"} label="Next implement" tone="info" />
+        <Stat value={"done"} label={"UAT F6 receipt CTA copy"} tone="success" />
+        <Stat value={"UAT F7 provider closed forms"} label="Next implement" tone="info" />
       </Row>
 
       <Card>
