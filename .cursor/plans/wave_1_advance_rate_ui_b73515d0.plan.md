@@ -1,7 +1,35 @@
 ---
 name: Wave 1 Advance Rate UI
 overview: Монтирование UI для выбора курса и комиссии до первичного поручения (advance route §3.1 из спецификации)
-todos: []
+status: completed
+todos:
+  - id: wave1-advance-rate-panel
+    content: Создать AdvanceRateCommissionPanel.tsx с testid контрактом
+    status: completed
+  - id: wave1-helper-mount
+    content: canSelectAdvanceRate + mount в form-detail-page.tsx
+    status: completed
+  - id: wave1-fe-unit
+    content: FE unit canSelectAdvanceRate в manager-payment.test.ts
+    status: completed
+  - id: wave1-e2e
+    content: E2E pilot-matrix-advance-rate.spec.ts @pilot-matrix
+    status: completed
+  - id: wave1-platform-mounts
+    content: Реестр check-platform-mounts.sh
+    status: completed
+  - id: wave1-gate-env
+    content: make check-env-parity
+    status: completed
+  - id: wave1-gate-ci
+    content: make ci-pr-pilot зелёный
+    status: completed
+  - id: wave1-known-gaps
+    content: Обновить known-gaps.md
+    status: completed
+  - id: wave1-mgmt-notify
+    content: notify-mgmt KIND=done
+    status: completed
 isProject: false
 ---
 
@@ -368,19 +396,19 @@ make -C vdp notify-mgmt \
 
 ## DoD
 
-- [ ] AdvanceRateCommissionPanel.tsx создан с testid-контрактом
-- [ ] Helper canSelectAdvanceRate добавлен в form-detail-page.tsx
-- [ ] AdvanceRateCommissionPanel смонтирован в form-detail-page.tsx
-- [ ] FE unit manager-payment.test.ts покрывает canSelectAdvanceRate
-- [ ] E2E pilot-matrix-advance-rate.spec.ts создан с @pilot-matrix
-- [ ] Реестр check-platform-mounts.sh обновлен
-- [ ] make platform-mounts-check зеленый
-- [ ] make check-env-parity зеленый
-- [ ] npm test зеленый (FE units)
-- [ ] make ci-pr-pilot зеленый (включая новый E2E)
-- [ ] known-gaps.md обновлен: advance rate UI gap закрыт
-- [ ] Management notification отправлено (kind=done, продуктовый язык)
-- [ ] План закрыт: todos completed + DoD checklist [x] + status done
+- [x] AdvanceRateCommissionPanel.tsx создан с testid-контрактом
+- [x] Helper canSelectAdvanceRate добавлен в form-detail-page.tsx (и в manager-payment.ts)
+- [x] AdvanceRateCommissionPanel смонтирован в form-detail-page.tsx
+- [x] FE unit manager-payment.test.ts покрывает canSelectAdvanceRate
+- [x] E2E pilot-matrix-advance-rate.spec.ts создан с @pilot-matrix
+- [x] Реестр check-platform-mounts.sh обновлен
+- [x] make platform-mounts-check зеленый
+- [x] make check-env-parity зеленый
+- [x] npm test зеленый (FE units)
+- [x] make ci-pr-pilot зеленый (включая новый E2E)
+- [x] known-gaps.md обновлен: advance rate UI gap закрыт
+- [x] Management notification отправлено (kind=done, продуктовый язык)
+- [x] План закрыт: todos completed + DoD checklist [x] + status done
 
 ## Риски и митигация
 
@@ -394,6 +422,14 @@ make -C vdp notify-mgmt \
 
 ## Оценка
 
-**Трудозатраты**: 1-2 дня (новый компонент, helper, unit, E2E, gate).
+Эталон: [ориентир-скорости-запросов-заказчика-2026-09-21.md](../../заметки/ориентир-скорости-запросов-заказчика-2026-09-21.md). LOC-темп 25.08 (~3.8 todo/ч) к этой волне не применять — живой контур + `@pilot-matrix`, не каркас.
 
-**Приоритет**: P1 — workshop gap из pilot/known-gaps.md; блокирует полноту advance route.
+**Запрос (язык роли):** менеджер до первичного поручения на авансе видит и фиксирует курс и комиссию на карточке заявки.
+
+**Acceptance:** manager на заявке с пустым rate (до `signing_order`) → панель → сохранить → курс на карточке, панель скрыта; `make ci-pr-pilot` зелёный.
+
+**Срез:** один (не дробить на «сначала UI, потом E2E»).
+
+**Lead time:** ≤ 24 ч рабочего дня (реализация 4–6 ч + Local QG `ci-pr-pilot` 2–4 ч). Не «1–2 дня» календарём без gate: бюджет суток уже включает длинный pilot-matrix.
+
+**Приоритет:** P1 — workshop gap из known-gaps; блокирует полноту advance §3.1.

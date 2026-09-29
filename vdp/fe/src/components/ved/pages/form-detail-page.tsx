@@ -24,6 +24,7 @@ import { OrganizationPickDialog } from "@/components/ved/OrganizationPickDialog"
 import { FormParamsEditDialog } from "@/components/ved/FormParamsEditDialog";
 import { ActionPanel } from "@/components/ved/ActionPanel";
 import { DocumentList } from "@/components/ved/DocumentViewer";
+import { AdvanceRateCommissionPanel } from "@/components/ved/AdvanceRateCommissionPanel";
 import { RateCommissionPanel } from "@/components/ved/RateCommissionPanel";
 import { RefundPanel } from "@/components/ved/RefundPanel";
 import { ShipmentPanel } from "@/components/ved/ShipmentPanel";
@@ -55,7 +56,7 @@ import {
 } from "@/lib/ved/extraction";
 import { canProviderDeleteDocuments, canUploadDocuments } from "@/lib/ved/doc-upload-policy";
 import { dateTime, money } from "@/lib/ved/format";
-import { isPostpayRateOnPP } from "@/lib/ved/manager-payment";
+import { canSelectAdvanceRate, isAdvanceRateSurface, isPostpayRateOnPP, isRateEmpty } from "@/lib/ved/manager-payment";
 import { usePlatformMode } from "@/lib/ved/platform-mode";
 import { cpByIdFrom, orgByIdFrom, usePlatformStore } from "@/lib/ved/platform-store";
 import {
@@ -336,6 +337,27 @@ export function FormDetail() {
     }) &&
     (role === "manager" || role === "root");
   const canEditRateCommission = showRateCommission;
+  const showAdvanceRateCommission = canSelectAdvanceRate({
+    status: form.status,
+    role,
+    rate: form.rate,
+    condition: form.condition,
+    direction: form.direction,
+    paymentMethod: form.paymentMethod,
+    platformPostpayMode: form.platformPostpayMode,
+    rateOnProvider: form.rateOnProvider,
+  });
+  const canEditAdvanceRateCommission = showAdvanceRateCommission;
+  const showAdvanceRateSummary =
+    isAdvanceRateSurface({
+      status: form.status,
+      role,
+      condition: form.condition,
+      direction: form.direction,
+      paymentMethod: form.paymentMethod,
+      platformPostpayMode: form.platformPostpayMode,
+      rateOnProvider: form.rateOnProvider,
+    }) && !isRateEmpty(form.rate);
 
   return (
     <VedAppShell title={form.number} subtitle={`${meta.label} · роль: ${roleTitle(role)}`}>
@@ -683,6 +705,32 @@ export function FormDetail() {
                   }
                   currency={form.currency}
                 />
+              )}
+              {showAdvanceRateCommission && (
+                <AdvanceRateCommissionPanel
+                  formId={form.id}
+                  canEdit={canEditAdvanceRateCommission}
+                  rate={form.rate}
+                  commission={form.commission}
+                  invoiceAmount={
+                    form.amountMinor ? String(form.amountMinor / 100) : undefined
+                  }
+                  currency={form.currency}
+                />
+              )}
+              {showAdvanceRateSummary && (
+                <div className="panel p-4" data-testid="form-rate-display">
+                  <p className="label-caps">Курс и комиссия</p>
+                  <p className="mt-1 font-mono text-sm">
+                    {form.rate?.value} {form.rate?.currency || form.currency}
+                    {form.commission?.rewardMode
+                      ? ` · ${form.commission.rewardMode}`
+                      : ""}
+                    {form.commission?.feeAmount
+                      ? ` · ${form.commission.feeAmount} ${form.commission.feeCurrency || form.currency}`
+                      : ""}
+                  </p>
+                </div>
               )}
               {(role === "manager" || role === "root") && form.status.includes("signing_order") ? (
                 <PogStatusPanel form={form} />

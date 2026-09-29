@@ -90,9 +90,12 @@ export function isPostpayRateOnPP(input: {
   return false;
 }
 
-/** True when rate.value is missing or blank. */
+/** True when rate.value is missing, blank, or placeholder zero (seed default). */
 export function isRateEmpty(rate?: { value?: string }): boolean {
-  return !rate?.value?.trim();
+  const value = rate?.value?.trim() ?? "";
+  if (!value) return true;
+  const asNumber = Number(value);
+  return Number.isFinite(asNumber) && asNumber === 0;
 }
 
 /**
@@ -121,6 +124,60 @@ export function blocksAdvanceSigningWithoutRate(input: {
 /** Guided copy when advance signing waits for rate + commission. */
 export const ADVANCE_SIGNING_NEEDS_RATE =
   "Укажите курс и комиссию — без этого доп. поручение сформировать нельзя.";
+
+const ADVANCE_RATE_STATUSES = new Set([
+  "form_accepted",
+  "contract_waiting",
+  "contract_verification",
+]);
+
+/**
+ * Import advance surface (§3.1): manager/root on pre-signing_order statuses, not POSTPAY_RATE_ON_PP.
+ */
+export function isAdvanceRateSurface(input: {
+  status: string;
+  role: string;
+  condition?: string;
+  direction?: string;
+  paymentMethod?: string;
+  platformPostpayMode?: string;
+  rateOnProvider?: boolean;
+}): boolean {
+  if (input.role !== "manager" && input.role !== "root") return false;
+  if (!ADVANCE_RATE_STATUSES.has(input.status)) return false;
+  if (
+    isPostpayRateOnPP({
+      platformPostpayMode: input.platformPostpayMode,
+      rateOnProvider: input.rateOnProvider,
+      paymentMethod: input.paymentMethod,
+      condition: input.condition,
+    })
+  ) {
+    return false;
+  }
+  return isImportAdvanceCoverageGate({
+    condition: input.condition,
+    direction: input.direction,
+    paymentMethod: input.paymentMethod,
+  });
+}
+
+/**
+ * Import advance §3.1: show editable rate/commission panel while rate is still empty.
+ * Mutually exclusive with RateCommissionPanel on payment_sent (POSTPAY_RATE_ON_PP).
+ */
+export function canSelectAdvanceRate(input: {
+  status: string;
+  role: string;
+  rate?: { value?: string };
+  condition?: string;
+  direction?: string;
+  paymentMethod?: string;
+  platformPostpayMode?: string;
+  rateOnProvider?: boolean;
+}): boolean {
+  return isAdvanceRateSurface(input) && isRateEmpty(input.rate);
+}
 
 /** Export form_accepted only allows advance_signing; import keeps agent/contract CTAs. */
 export function hidesFormAcceptedActionForDirection(input: {

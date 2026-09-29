@@ -14,6 +14,8 @@ fail() {
 HOST="$ROOT/fe/src/components/ved/pages/process-roles-page.tsx"
 PANEL="$ROOT/fe/src/components/ved/ManagerRouteHintPanel.tsx"
 AGENTS="$ROOT/fe/AGENTS.md"
+FORM_DETAIL="$ROOT/fe/src/components/ved/pages/form-detail-page.tsx"
+ADVANCE_RATE="$ROOT/fe/src/components/ved/AdvanceRateCommissionPanel.tsx"
 
 [ -f "$HOST" ] || fail "missing host $HOST"
 [ -f "$PANEL" ] || fail "missing panel $PANEL"
@@ -30,6 +32,17 @@ fi
 # Forbidden process phrase: accepting a missing mount as a later chore.
 if [ -f "$AGENTS" ] && grep -q 're-wire into form-detail-page if needed' "$AGENTS"; then
   fail "fe/AGENTS.md must not defer the manager route hint mount"
+fi
+
+[ -f "$FORM_DETAIL" ] || fail "missing host $FORM_DETAIL"
+[ -f "$ADVANCE_RATE" ] || fail "missing panel $ADVANCE_RATE"
+
+if [ -f "$FORM_DETAIL" ] && ! grep -q 'AdvanceRateCommissionPanel' "$FORM_DETAIL"; then
+  fail "form-detail-page.tsx must mount AdvanceRateCommissionPanel (orphan mount)"
+fi
+
+if [ -f "$ADVANCE_RATE" ] && ! grep -q 'data-testid="advance-rate-commission-panel"' "$ADVANCE_RATE"; then
+  fail 'AdvanceRateCommissionPanel.tsx must keep data-testid="advance-rate-commission-panel"'
 fi
 
 if [ "$FAILED" -ne 0 ]; then
