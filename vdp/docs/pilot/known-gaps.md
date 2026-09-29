@@ -1,109 +1,109 @@
 # Известные пробелы
 
-Честный список ограничений MVP. Не блокеры для пилот demo при принятии оговорок readiness-and-limits.md. Дата сверки 2026-09-16: in-scope маршруты вводных покрыты domain to E2E при зелёной ci-pr-pilot (import advance, RATE_ON_PP, export PAY_FROM_EXPORT, refund, shipment branch). Residual: bank live webhook, PDF pixel, analytics placeholders, продукт логистов, POSTPAY_FIXED_RATE, own OCR PRIMARY, Nest data migration, полный browser matrix.
+Честный перечень ограничений MVP. Это не блокеры для пилотной демонстрации, если приняты оговорки из [readiness-and-limits.md](readiness-and-limits.md). Дата сверки 2026-09-29. Маршруты из вводных, которые входят в scope, покрыты от домена до сквозных проверок при зелёной команде ci-pr-pilot: импорт с авансом, постоплата с курсом в день платёжки, экспорт с оплатой из валюты контрагента, возврат средств, ветка отгрузки. Ещё не закрыты: живой банковский webhook, пиксельная точность PDF, заглушки аналитики, отдельный продукт логистов, постоплата с фиксированным курсом, собственная OCR-модель как основной движок, миграция данных из Nest, полный браузерный прогон всех ролей по всем статусам.
 
-## Nest parity semantics
+## Паритет с Nest
 
-331/331 route mapping done in R12 gate. Product depth differs: stubs shortcuts residual gap analysis items outside R11 Must Should.
+В гейте R12 замаплено 331 из 331 маршрута. Глубина продукта при этом разная: часть ответов — заглушки и сокращённые пути. Остаточные пункты из gap-анализа вне Must и Should волны R11 сюда не входят как «закрытый паритет».
 
-## Hub integrations depth
+## Глубина интеграций Hub
 
-Docs and mail HTTP contract verified in CI via make test-adapters with httptest.Server. Staging: make staging-smoke or scripts/staging-smoke.sh plus staging-env.example for DOCS_URL and MAIL_URL. Phase 3 (2026-09-15): local compose green with live docs-service and mail-gateway and sms-gateway URLs (not empty fixture). Alpha public core health and seed login OK; hub docs mail remain loopback on VM; remote on-host smoke and rollback need refreshed DEPLOY_SSH_KEY (SSH publickey denied from workstation). Empty DOCS_URL or MAIL_URL still stubs in hub. Diadoc ONEC bank OCR stay fixture or manual until vendor URL in secret store — do not claim 100 percent live.
+Контракты HTTP для документов и почты проверяются в CI командой make test-adapters на тестовом HTTP-сервере. Для staging: make staging-smoke или scripts/staging-smoke.sh и пример staging-env.example с переменными DOCS_URL и MAIL_URL. Фаза 3 от 2026-09-15: локальный compose зелёный с живыми URL docs-service, mail-gateway и sms-gateway (не пустые фикстуры). На alpha публичный health core и вход по seed в порядке; docs и mail на ВМ пока loopback. Удалённый smoke и откат на хосте ждут обновлённый DEPLOY_SSH_KEY (сейчас отказ publickey с рабочей станции). Пустые DOCS_URL или MAIL_URL в hub по-прежнему дают заглушки. Diadoc, 1С, банк и OCR остаются фикстурой или ручным режимом, пока URL вендора не лежит в хранилище секретов. Нельзя обещать «всё живое на сто процентов».
 
-## XLSX and templates
+## XLSX и шаблоны
 
-Nest form-payment XLSX and compliance export use real OOXML (export.MinimalXLSX). PDF generation payload includes agent template_id per PA (docs_payload.go); prod fidelity still depends on external docs service behind DOCS_URL. Primary поручение без курса на POSTPAY_RATE_ON_PP поддержано в payload; pixel fidelity PDF и legal sign-off шаблонов по ПА — открыты.
+Экспорт XLSX заявок и compliance из Nest-совместимого контура строится на реальном OOXML (MinimalXLSX). В payload PDF передаётся template_id агента по платёжному агенту. Качество в проде зависит от внешнего docs-сервиса за DOCS_URL. Первичное поручение без курса на маршруте POSTPAY_RATE_ON_PP в payload поддержано. Пиксельная верность PDF и юридическое согласование шаблонов по каждому агенту — открыты.
 
-## Import routes IMP package
+## Импортные маршруты (пакет IMP)
 
-Пакет IMP0–IMP7 закрыт на уровне домена API и кабинетов Manager или Treasurer. Аванс: казначей confirm-payment с опциональным execution_deadline → payment_processing (IMP7 @pilot-matrix); API rate/commission доступен до signing_order для §10.2 п.1 primary-фиксации (r12_verification_test.go), UI workshop отдельно. Постоплата POSTPAY_RATE_ON_PP: provider-first, курс и три режима вознаграждения после ПП, доп. поручение, казначей → report_waiting; полный browser ladder до completed в pilot-matrix-postpay-rate (IMP8 @pilot-matrix). Verify: unit HTTP FE unit, ci-pr-pilot зелёная 2026-09-16 включая полный browser suite и pilot-matrix. Не заявлено: полный wizard payment_method:advance end-to-end. Вне scope: POSTPAY_FIXED_RATE, экспортный overpay-treasurer redesign, PDF primary без курса как отдельный UX-воркшоп.
+Пакет IMP0–IMP7 закрыт на уровне домена, API и кабинетов менеджера и казначея. На авансе казначей подтверждает покрытие с опциональным сроком исполнения и переводит заявку в исполнение (проверка в pilot-matrix, IMP7). API курса и комиссии доступен до подписания первичного поручения; отдельный UI-воркшоп по выбору курса до поручения — отдельно. Постоплата POSTPAY_RATE_ON_PP: сначала провайдер, затем курс и три режима вознаграждения после платёжки, доп. поручение, подтверждение казначеем или менеджером при отключённом казначее, отчёт, закрытие сделки. Браузер: pilot-matrix-postpay-rate до принятия доп. поручения и pilot-matrix-postpay-full-ladder до completed при skip казначея. Правила зафиксированы в [postpay-rate-on-pp-invariants.md](../domain/postpay-rate-on-pp-invariants.md). Проверка: unit, HTTP, FE unit, ci-pr-pilot с pilot-matrix. Не заявлено: полный мастер создания заявки с методом аванс от начала до конца в браузере. Вне scope: POSTPAY_FIXED_RATE, переработка экспортного overpay у казначея, отдельный UX первичного PDF без курса.
 
-## Export routes Phase 5-6
+## Экспортные маршруты (фазы 5–6)
 
-Экспортный маршрут PAY_FROM_EXPORT закрыт на уровне домена API и кабинетов Manager и Treasurer (Phase 5 domain, Phase 6 UI/E2E). State machine: форма принята → advance_signing_order → получение валюты от контрагента → казначей confirm с методом PAY_FROM_EXPORT → treasurer_signing → User верификационный документ → treasurer_complete → completed. Отделён от импортного покрытия клиента без смены импортной логики. Unit: export_machine_test.go (happy path, transition matrix, role AuthZ, payment method guard, idempotency). HTTP: export_flow_test.go (creation, happy path, treasurer AuthZ, invalid transitions). FE: wizard direction export, actions.ts treasurer export CTA, statuses labels, action-bridge mapping, unit tests manager-payment/wizard-steps. UI E2E: pilot-matrix-export.spec.ts @pilot-matrix happy path до completed. CI: path-filter export surface (actions/statuses/wizard-steps/e2e/formpayment). Verify: ci-pr-pilot 2026-09-16 включает export spec (зелёный). Не заявлено: полный wizard export payment_method end-to-end, множественные экспортные сценарии за пределами treasurer happy path, browser матрица всех экспортных статусов × ролей. Казначейские кабинеты export и UI воркшоп верификационных полей — отдельно от Phase 6 scope.
+Экспортный маршрут PAY_FROM_EXPORT закрыт на уровне домена, API и кабинетов менеджера и казначея. Цепочка статусов: форма принята, предоплатное поручение, получение валюты от контрагента, подтверждение казначеем с методом PAY_FROM_EXPORT, поручение казначея, верификационный документ клиента, завершение сделки. Импортная логика покрытия клиента при этом не менялась. Покрыты unit и HTTP, FE (направление export в мастере, CTA казначея, подписи статусов), UI E2E pilot-matrix-export до completed, path-filter на экспортной поверхности в CI. Не заявлено: полный мастер export payment_method end-to-end, все экспортные сценарии сверх happy path казначея, матрица всех экспортных статусов по всем ролям в браузере. Отдельный воркшоп кабинетов казначея и полей верификации — вне фазы 6.
 
-## B.2 Documents (2026-08 pilot)
+## Документы (B.2, пилот 2026-08)
 
-Готовность ~90% after B.2 wave 1–2 backend + FE recovery (2026-08-31). Backend: org signer fields, enriched docs payload, 15MB upload limit, DOCS API, docs-service, compose-e2e docs assert. FE: OrgProfileCard (PATCH org signer/contact), wizard upload with 413 guard, document download via preview API, payment proof soft warning. Still open: customer workshop D4/D5 (report N orders, RUB formulas), legal template sign-off per PA, prod PDF pixel fidelity. Matrix: docs/pilot/b2-uat-field-matrix.md. Diadoc/OCR: manual / optional per b2-decisions.md.
+Готовность около 90 процентов после волн backend и восстановления FE (2026-08-31). Сделано: поля подписанта организации, обогащённый payload документов, лимит загрузки 15 МБ, DOCS API и docs-service, проверка в compose-e2e; на FE — карточка профиля организации, загрузка в мастере с защитой от 413, скачивание через preview API, мягкое предупреждение по proof платежа. Открыто: заказчицкий воркшоп по отчётам и формулам в рублях, юридический sign-off шаблонов по агентам, пиксельная точность PDF в проде. Матрица полей: [b2-uat-field-matrix.md](b2-uat-field-matrix.md). Diadoc и OCR — вручную или опционально по [b2-decisions.md](b2-decisions.md).
 
-## FE app contour (post-Lovable)
+## Контур фронтенда после Lovable
 
-JWT app contour restored after Lovable sync regression. Волны UX 0–4 и клиентские правки parties wizard docs provider report close закрыты в коде. Shared FilePickButton и rule fe-interaction-contracts закрепляют жест загрузки через filechooser. Browser UAT на compose seed выборочный: PR smoke узкий; pilot-matrix на template fixture; полный матричный browser all roles × all statuses не покрыт. Customer robot fixture pack awaiting_import.
+JWT-контур приложения восстановлен после регрессии от sync Lovable. Волны UX 0–4 и правки клиента по сторонам сделки, мастеру, документам, провайдеру, отчёту и закрытию — в коде. Общий FilePickButton и правило fe-interaction-contracts закрепляют жест загрузки через системный выбор файла. Браузерный UAT на seed compose выборочный: узкий PR smoke, pilot-matrix на шаблонных фикстурах; полный прогон всех ролей по всем статусам не покрыт. Пакет robot-фикстур заказчика ждёт импорта.
 
-FE ops caveat: default VDP_API_PROXY_TARGET в fe vite и server proxy указывает на alpha host если env не задан; для локального compose задавайте VDP_API_PROXY_TARGET=http://localhost:8080 явно перед запуском dev-сервера. exactOptionalPropertyTypes в fe tsconfig выключен после sync.
+Операционный нюанс: если не задать VDP_API_PROXY_TARGET, прокси фронта по умолчанию смотрит на alpha. Для локального compose перед dev-сервером явно указывайте VDP_API_PROXY_TARGET=http://localhost:8080. Строгий exactOptionalPropertyTypes в tsconfig фронта после sync выключен.
 
-## CI CD in vdp repo
+## CI и CD в репозитории vdp
 
-GitHub Actions: vdp-ci.yml (fast/docs/integration/playwright; на PR path-filter может включить playwright-pilot-matrix при касании ladder surface), vdp-release.yml (make release-gate), vdp-images.yml (GHCR digest from branch or tag, GitHub Release catalog, GitLab registry copy), vdp-deploy.yml (alpha/beta/gamma/demo/test compose by digest), vdp-deploy-schedule.yml, vdp-preview.yml, vdp-lovable-sync.yml, vdp-mirror-gitlab.yml. Promote policy API and console live under vdp/release-gate and vdp/release-gate-console; that is not the same as the Makefile target make release-gate. GitLab CI: root .gitlab-ci.yml — parallel regression plus promote jobs without rebuild when Environment secrets exist. Partial CD: six named VMs are not all bootstrapped until ops runs bootstrap-host.sh. Green pipeline ≠ prod product ready. Git hooks post-commit post-merge pre-push могут слать TG notify для eng (sanitize).
+На GitHub: быстрые проверки, docs, integration, Playwright; на PR path-filter может включить pilot-matrix при касании лестницы заявки; отдельные workflow на release-gate, образы, выкат по digest, расписание, preview, sync Lovable, зеркало в GitLab. Политика promote живёт в release-gate и console — это не то же самое, что цель Makefile make release-gate. В GitLab: параллельная регрессия и promote без пересборки при наличии секретов Environment. CD частичный: шесть именованных ВМ не все подняты, пока ops не прогонит bootstrap-host.sh. Зелёный пайплайн не равен готовности продукта к проду. Git hooks после commit, merge и перед push могут слать уведомления в Telegram для инженеров (с санитизацией).
 
-## Playwright UI coverage
+## Покрытие UI в браузере
 
-Playwright: login-form, user-submit, happy-path, completed-journey, reject-path, ico-org, provider-acl, bank-badge, manager-payment, manager-hides-drafts, wave и pilot-form-flow и pilot-matrix specs: full-ladder, postpay-rate, export, refund, shipment. ci-pr-pilot 2026-09-16: 9 passed @pilot-matrix. Full browser matrix all roles × all statuses not covered.
+Есть сценарии входа, отправки заявки, happy-path, completed, отказа, ICO, ACL провайдера, банковского бейджа, платежей менеджера, скрытия черновиков, волн UX, pilot-form-flow и pilot-matrix: полная лестница, постоплата (rate и full-ladder), экспорт, возврат, отгрузка. Полная матрица «все роли × все статусы» в браузере не покрыта.
 
-## CTA / process-roles touchpoints
+## Кнопки действий и роли процесса
 
-Status or CTA copy changes must land in FE actions.ts (+ continuity labels), action-bridge, core AuthZ, and scenarioverify when journeys depend on them. Continuity contract test: cta-continuity-contract.test.ts. Seed wipe on local compose: SEED_WIPE_FORMS=1 (явный флаг перекрывает demo) / make core-seed-reset / кнопка «Очистить все заявки» на /testing (POST admin/probe-data/wipe) — accounts kept, forms cleared.
+Смена текста статуса или CTA должна попадать в actions.ts (и continuity-подписи), action-bridge, проверку прав в core и в scenarioverify, если от этого зависят сценарии. Контракт continuity: cta-continuity-contract.test.ts. Очистка заявок на локальном compose: флаг SEED_WIPE_FORMS=1, команда make core-seed-reset или кнопка «Очистить все заявки» на странице testing. Учётные записи сохраняются, заявки сбрасываются.
 
-## Postgres test coverage
+## Покрытие Postgres
 
-make test-integration with build tag integration runs five postgres tests in CI before compose-e2e. Unit HTTP gates remain memory driver by design for speed.
+Команда make test-integration с тегом integration гоняет пять postgres-тестов в CI до compose-e2e. Unit и HTTP гейты намеренно на memory-драйвере ради скорости.
 
-## Observability prod
+## Наблюдаемость в проде
 
-Phase 4 Ops Excellence complete (2026-09-15). Correlation: hub logger enhanced with context-based form_payment_id and event_id matching core pattern. Dispatcher enriches context before plugin execution. Full flow documented in correlation-logging.md. Tests: core/pkg/logger/logger_test.go, hub/pkg/logger/logger_test.go. 
+Фаза 4 Ops Excellence закрыта (2026-09-15). Корреляция: логгер hub обогащает context идентификаторами заявки и события по тому же паттерну, что core. Диспетчер обогащает context до плагинов. Поток описан в correlation-logging.md. Есть unit-тесты логгеров core и hub.
 
-Semantic alerts: Prometheus rules defined in ops/prometheus-rules.example.yml covering stuck payments (30m warning, 2h critical), hub inbox failures (5+ warning, 10+ critical per hour), gateway health (DOCS MAIL SMS), compliance backlog (24h warning, 72h critical), and refund delays. Deployment script scripts/deploy-alerts-staging.sh with verification checklist ready.
+Семантические алерты: пример правил Prometheus покрывает зависшие платежи, сбои inbox hub, здоровье шлюзов документов почты и SMS, бэклог compliance, задержки возвратов. Есть скрипт выката алертов на staging и чеклист проверки.
 
-Runbooks: stuck-payment.md and hub-failure.md with dry-run verification. On-call guide established at on-call-guide.md with rotation, escalation paths, and common scenarios.
+Runbook-и: stuck-payment и hub-failure с dry-run. Руководство дежурства: on-call-guide.md (ротация, эскалации, типовые сценарии).
 
-Awaiting ops infrastructure: Prometheus with /metrics endpoints from core and hub, Alertmanager with on-call notification channel, live alert firing test. Phase 4 deliverables met: alerting architecture defined, tested, and deployment-ready.
+Ждёт инфраструктуры ops: Prometheus с метриками core и hub, Alertmanager с каналом дежурных, живой прогон срабатывания алерта. Поставка фазы 4 закрыта на уровне архитектуры и готовности к выкату; живой контур мониторинга — у ops.
 
-## Migration from Nest
+## Миграция из Nest
 
-Data migration legacy Nest monolith not in vdp scope. Greenfield seed data only.
+Перенос данных из legacy Nest-монолита в scope vdp не входит. Только greenfield и seed.
 
-## Out of scope roadmap
+## Вне roadmap пилота
 
-Полный флоу логистов как отдельный продукт и доска из секции 8 вводных. Ветка SHIPMENT_* в заявке это закрывающие документы отгрузки внутри form-payment не логистический модуль. Product modules analytics and assistant under vdp/analytics and vdp/assistant remain placeholders (.gitkeep). Full BDUI schema engine. Client feedback items waiting Dasha forms: provider return-funds UI and Word cycle for order or report templates.
+Полный продукт логистов и доска из секции 8 вводных. Ветка отгрузки внутри заявки — это закрывающие документы, не модуль логистики. Модули analytics и assistant — заглушки. Полный движок BDUI-схем. Обратная связь заказчика: UI возврата средств у провайдера и цикл Word-шаблонов поручения или отчёта.
 
-## Gap analysis reference
+## Ссылка на gap-анализ
 
-Internal analysis заметки/gap-analysis-backend.md wider than R11 closed items. Pilot package does not include internal notes path; summary captured here.
+Внутренний разбор в заметках шире закрытых пунктов R11. В пилотный пакет путь к внутренним заметкам не входит; итог сведён здесь.
 
-## Phase 8 shipment branch
+## Ветка отгрузки (фаза 8)
 
-Ветка отгрузки закрыта как опциональный контур form-payment не как процент полного логистического продукта. Domain unit HTTP FE ShipmentPanel CTA Manager User E2E pilot-matrix-shipment.spec.ts compose-e2e P5. Happy path остаётся report accept completed. Не заявлено: отдельный кабинет логистов статусы ожидания информации от логистов трекинг груза. Verify: ci-pr-pilot 2026-09-16 включает shipment spec (зелёный). Не входит в обязательный PR smoke.
+Ветка отгрузки закрыта как опциональный контур заявки, а не как процент полного логистического продукта. Есть домен, HTTP, FE-панель, CTA менеджера и клиента, E2E и smoke в compose. Happy path по-прежнему: принятие отчёта и completed. Не заявлено: кабинет логистов, статусы ожидания от логистов, трекинг груза. Не входит в обязательный узкий PR smoke.
 
-## Residual R11
+## Остаток R11
 
-Must Should and section 9 extension marked ParityDone in gates. Residual non-product gaps documented in gap analysis medium risk.
+Пункты Must, Should и расширение раздела 9 в гейтах помечены как ParityDone. Непродуктовые остатки — в gap-анализе со средним риском.
 
-## Copy RW programs
+## Программы копирайта RW
 
-RW1–RW9 copy layer and glossariy synced per RW9 gate. Root wording unchanged by design.
+Слой копирайта RW1–RW9 и глоссарий синхронизированы по гейту RW9. Формулировки root намеренно не менялись.
 
-## Security prod sign-off
+## Security sign-off для прода
 
-Role ACL tested in unit e2e including treasurer AuthZ on confirm. Checklist security-signoff-checklist.md. Prod config guard rejects dev JWT/S2S secrets. Milestone 1 2026-09-15: contractor software items on the checklist are marked done; локальная сборочная команда handover green. Customer signature and handover-secrets rotation remain open as a known-gap for import UAT. Formal customer sign-off pending. Alpha public core health 200. Remote SSH rotate still blocked until DEPLOY_SSH_KEY refresh.
+Права ролей проверены в unit и e2e, включая AuthZ казначея на подтверждение. Чеклист: security-signoff-checklist.md. Prod-конфиг отвергает dev-секреты JWT и S2S. Веха 1 от 2026-09-15: программные пункты подрядчика в чеклисте отмечены; локальная сборочная команда handover зелёная. Подпись заказчика и ротация handover-секретов открыты как known-gap для UAT импорта. Формальный sign-off заказчика ещё не получен. Публичный health alpha отвечает 200. Удалённая ротация SSH блокирована, пока не обновят DEPLOY_SSH_KEY.
 
-## OCR / document extraction
+## OCR и извлечение документов
 
-Dual-track behind hub OCR_URL (vdp/extraction). Fixture works without vendor keys.
-Pilot PRIMARY equals Docling (EXTRACTION_PRIMARY equals docling, EXTRACTION_DOCLING_URL equals http://docling:5001, EXTRACTION_FALLBACK equals doctr, EXTRACTION_DOCTR_URL equals http://doctr:5002, OCR_TIMEOUT_MS equals 180000, GATEWAY_TIMEOUT equals 180). Yandex is not PRIMARY on this pilot. Smoke: make extraction-docling-smoke and make extraction-doctr-smoke.
-HITL confirm writes gold JSONL for offline train. Own model equals not ready for prod PRIMARY until Wave E held-out eval (see architecture/extraction.md). Commercial Yandex path remains available later via the same port (YANDEX_* plus EXTRACTION_PRIMARY equals yandex). Smoke for that path: make extraction-yandex-smoke. Keys leaked outside secret store must be rotated.
+Два пути за портом OCR_URL у hub (каталог extraction). Фикстура работает без ключей вендора.
 
-Own CPU: Ollama Qwen2.5-3b plus few-shot is testable (EXTRACTION_PRIMARY equals own, OLLAMA_BASE_URL); make extraction-ollama-ensure once; make extraction-eval-own keeps ready_for_prod_primary false. Weight-based own model equals Wave E after GPU (lora_recipe.md).
+На пилоте основной движок — Docling, запасной — docTR. Яндекс на этом пилоте не основной. Smoke: make extraction-docling-smoke и make extraction-doctr-smoke. Подтверждение человеком пишет gold JSONL для офлайн-обучения. Своя модель не готова как основной прод, пока нет held-out оценки волны E (см. architecture/extraction.md). Коммерческий путь Яндекса позже через тот же порт. Smoke: make extraction-yandex-smoke. Ключи, утёкшие вне secret store, нужно ротировать.
 
-Applied skips: YaLM 100B self-host; Onyx as OCR/IE. HF equals LoRA tooling only; open-llms equals license checklist before train (extraction/train/lora_recipe.md).
+Свой CPU-путь: Ollama Qwen2.5-3b и few-shot можно пробовать; make extraction-ollama-ensure один раз; make extraction-eval-own оставляет флаг готовности к прод-PRIMARY ложным. Весовая своя модель — волна E после GPU.
 
-OCR is optional side-path only. recognize_complete in app advances draft without vendor OCR. Never on transactional payment commit. Manual entry remains available.
+Осознанно не берём: self-host YaLM 100B; Onyx как OCR. Hugging Face — только tooling для LoRA; open-llms — чеклист лицензий до обучения.
 
-Wizard and form card: poll waits for ExtractionResult schema v1 (not form dump in invoice_json); timeout shows manual-fill banner; CTA Просмотр данных or Статус распознавания stays available with documents through early post-submit statuses including organization waiting. AttachHsCodes merges hs_codes without wiping meta.engine_id.
+OCR только побочный путь. Завершение распознавания в приложении двигает черновик без обязательного вендорного OCR. Никогда на транзакционном commit платежа. Ручной ввод всегда доступен.
 
-Alpha Docling pilot: set the same keys in .env.deploy, recreate docling plus extraction plus hub plus core after Images Deploy. On-host verify health primary equals docling and one live upload. Workstation SSH may stay blocked (publickey denied) until DEPLOY_SSH_KEY refresh; Deploy workflow still covers the host.
+В мастере и на карточке заявки опрос ждёт схему ExtractionResult v1; при таймауте — баннер ручного заполнения. Кнопки просмотра данных и статуса распознавания остаются с документами на ранних статусах после отправки, включая ожидание организации. Слияние кодов ТН ВЭД не затирает engine_id в meta.
 
-## Milestone 2 in-scope вводных
+Пилот Docling на alpha: те же ключи в .env.deploy, пересоздать docling, extraction, hub и core после Images Deploy. На хосте проверить health с primary docling и одну живую загрузку. SSH с рабочей станции может оставаться закрытым до обновления DEPLOY_SSH_KEY; workflow Deploy хост всё равно покрывает.
 
-2026-09-16. Честный claim: in-scope маршруты вводных покрыты domain to E2E. §9 чеклист синхронизирован с фактом кода: исходные девять пунктов domain/API закрыты; плюс export PAY_FROM_EXPORT и ветка shipment. Не 100 процентов продукта. Остаток: живой bank webhook, pixel PDF, продукт логистов, POSTPAY_FIXED_RATE, analytics/assistant, own OCR PRIMARY, Nest data migration, полный browser matrix, ротация секретов заказчика.
+## Веха 2: in-scope вводных
 
-При закрытии gap обновляйте readiness-and-limits.md и этот файл в одном PR.
+2026-09-16. Честная формулировка: маршруты вводных из scope покрыты от домена до E2E. Чеклист раздела 9 синхронизирован с кодом: исходные девять пунктов domain и API закрыты, плюс экспорт PAY_FROM_EXPORT и ветка отгрузки. Это не сто процентов продукта. Остаток: живой bank webhook, пиксельный PDF, продукт логистов, POSTPAY_FIXED_RATE, analytics и assistant, своя OCR как PRIMARY, миграция Nest, полный browser matrix, ротация секретов заказчика.
+
+При закрытии пробела обновляйте [readiness-and-limits.md](readiness-and-limits.md) и этот файл в одном запросе на слияние.
