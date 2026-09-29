@@ -1,0 +1,39 @@
+Postmortem: OCR wizard E2E timeout below FE poll budget
+
+Date
+2026-09-29
+
+Author
+Agent
+
+Status
+Resolved
+
+Impact
+Local pre-push / ci-main (compose-playwright) failed; push to remote blocked. Roles: User wizard OCR path. Customer lead time: engineer cannot push Wave 0 postpay ladder commit until gate green.
+
+Executive Summary
+Полный браузерный прогон падал на сценарии распознавания инвойса в мастере: баннер OCR оставался в состоянии ожидания дольше, чем ждал тест. Инженер не мог отправить изменения в удалённый репозиторий.
+
+Timeline (timezone Europe/Moscow)
+Evening 2026-09-29: push fail make ci-main Error 2 / compose-playwright Error 1.
+Repro: full PLAYWRIGHT_ARGS empty suite — 1 flaky then green on retry (ocr-wizard-path real invoice, 195s timeout).
+Root cause: FE OCR_POLL_TIMEOUT_MS raised to 225000; E2E still waited 195000 with stale comment about 165s.
+Fix: E2E terminal wait = 225s + 30s headroom; unit note tying e2e budget to OCR_POLL_TIMEOUT_MS.
+
+Root Cause
+Primary: E2E assertion timeout shorter than FE poll budget, so honest failed/degraded/done never appeared before expect failed when Docling was slow.
+Contributing: comment claimed 165s; CI retries=1 masked intermittent slow OCR as flaky; full ci-main suite runs OCR path unlike narrow PR smoke.
+
+Action Items Immediate
+Aligned ocr-wizard-path.spec.ts wait to OCR_POLL_TIMEOUT_MS + 30s.
+Documented coupling in extraction.test.ts.
+
+Prevention Measures
+Keep e2e OCR terminal timeout derived from OCR_POLL_TIMEOUT_MS + headroom; unit documents the headroom requirement next to the constant assertion.
+
+Lessons Learned
+When raising FE OCR poll budget, update ocr-wizard-path E2E in the same change. Local QG ci-main / full Playwright must be considered for e2e outside PR smoke; ci-pr-pilot alone would not catch this timeout mismatch if OCR finished under 195s on that run.
+
+Sign-off
+Author Agent. Reviewer pending. Date 2026-09-29.
