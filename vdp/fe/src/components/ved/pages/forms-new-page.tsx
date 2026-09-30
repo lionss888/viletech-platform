@@ -19,7 +19,11 @@ import {
 } from "@/lib/api/forms";
 import { assertFileSize, UploadError } from "@/lib/api/files";
 import { fetchOcrReadiness } from "@/lib/api/ocr-readiness";
-import { CREATE_REVIEW_OCR_BANNER, CREATE_REVIEW_OCR_CAPTION } from "@/lib/ved/create-review-copy";
+import {
+  CREATE_REVIEW_OCR_BANNER,
+  CREATE_REVIEW_OCR_CAPTION,
+  CREATE_REVIEW_OCR_DEGRADED,
+} from "@/lib/ved/create-review-copy";
 import {
   extractionPanelMode,
   extractionTriggerLabel,
@@ -29,6 +33,7 @@ import {
   ocrBannerFromExtraction,
   ocrPollTimedOut,
   parseExtractionResult,
+  shouldRenderWizardOcrProgress,
   type OcrBannerState,
 } from "@/lib/ved/extraction";
 import { usePlatformBasePath, usePlatformMode } from "@/lib/ved/platform-mode";
@@ -617,7 +622,11 @@ export function NewForm() {
 
       <div className="panel mt-4 w-full p-5 lg:w-3/4">
         {error && <p className="mb-4 rounded-md bg-destructive-soft px-2 py-1.5 text-xs text-destructive">{error}</p>}
-        {ocrProgressVisible && ocrBannerState && step > WIZARD_STEP.docs && !draft.noDocuments && (
+        {ocrProgressVisible &&
+          ocrBannerState &&
+          step > WIZARD_STEP.docs &&
+          !draft.noDocuments &&
+          shouldRenderWizardOcrProgress(step, WIZARD_STEP.review, ocrBannerState) && (
           <OcrProgress
             state={ocrBannerState}
             onHide={() => {
@@ -974,8 +983,7 @@ export function NewForm() {
                 className="rounded-md bg-wait-soft px-3 py-2 text-sm text-wait"
                 data-testid="wizard-review-ocr-degraded"
               >
-                Распознавание с ограничениями — на автоподстановку рассчитывать нельзя. Проверьте сумму и реквизиты
-                вручную или откройте «Просмотр данных».
+                {CREATE_REVIEW_OCR_DEGRADED}
               </p>
             )}
             <dl className="grid gap-3 sm:grid-cols-2">

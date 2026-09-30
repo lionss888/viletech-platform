@@ -255,9 +255,23 @@ export function canControlExtraction(role: string, status?: string): boolean {
 
 export type ExtractionPanelMode = ReturnType<typeof extractionPanelMode>;
 
+/**
+ * Review step owns the degraded banner (`wizard-review-ocr-degraded`).
+ * Hide OcrProgress there so the user sees one alert.
+ */
+export function shouldRenderWizardOcrProgress(
+  step: number,
+  reviewStep: number,
+  state: OcrBannerState | null | undefined,
+): boolean {
+  if (!state) return false;
+  if (step === reviewStep && state === "degraded") return false;
+  return true;
+}
+
 /** CTA label next to document upload for opening the extraction dialog. */
 export function extractionTriggerLabel(mode: ExtractionPanelMode): string {
-  if (mode === "pending") return "Распознавание…";
+  if (mode === "pending") return "Детали распознавания";
   if (mode === "review") return "Просмотр данных";
   if (mode === "idle") return "Статус распознавания";
   return "";
