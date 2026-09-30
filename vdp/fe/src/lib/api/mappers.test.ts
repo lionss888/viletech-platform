@@ -336,6 +336,76 @@ describe("waitingActorLabel", () => {
     expect(label).toBeTruthy();
     expect(label!.toLowerCase()).toMatch(/комплаенс|вко|внутренн/);
   });
+
+  it("omits treasurer from queue copy when processRoles snapshot is missing", () => {
+    const label = waitingActorLabel("payment_received", undefined, {
+      condition: "advance",
+      direction: "import",
+    });
+    expect(label).toBeTruthy();
+    expect(label!).not.toMatch(/казначе/i);
+  });
+
+  it("omits treasurer from queue copy when treasurer skip disposition", () => {
+    const skipRows = [
+      {
+        role: "treasurer",
+        enabled: false,
+        priority: 45,
+        influence: "none" as const,
+        capabilities: ["form.view", "treasurer.ops"],
+        removable: true,
+        mandatory: false,
+        disable_mode: "skip" as const,
+        handoff_role: "manager",
+      },
+      {
+        role: "manager",
+        enabled: true,
+        priority: 40,
+        influence: "actor" as const,
+        capabilities: ["form.view", "manager.ops", "manager.payment"],
+        removable: false,
+        mandatory: true,
+      },
+    ];
+    const label = waitingActorLabel("payment_received", skipRows, {
+      condition: "advance",
+      direction: "import",
+    });
+    expect(label).toBeTruthy();
+    expect(label!).not.toMatch(/казначе/i);
+    expect(label!).toMatch(/Менеджер/);
+  });
+
+  it("includes treasurer in queue copy when treasurer is enabled", () => {
+    const enabledRows = [
+      {
+        role: "treasurer",
+        enabled: true,
+        priority: 45,
+        influence: "actor" as const,
+        capabilities: ["form.view", "treasurer.ops"],
+        removable: true,
+        mandatory: false,
+      },
+      {
+        role: "manager",
+        enabled: true,
+        priority: 40,
+        influence: "actor" as const,
+        capabilities: ["form.view", "manager.ops", "manager.payment"],
+        removable: false,
+        mandatory: true,
+      },
+    ];
+    const label = waitingActorLabel("payment_received", enabledRows, {
+      condition: "advance",
+      direction: "import",
+    });
+    expect(label).toBeTruthy();
+    expect(label!).toMatch(/казначе/i);
+  });
 });
 
 describe("card facts from extraction", () => {

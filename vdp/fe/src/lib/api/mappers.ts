@@ -5,6 +5,7 @@ import { effectiveActionsFor, effectiveActionsFormCtx } from "@/lib/ved/effectiv
 import { documentSize } from "@/lib/ved/document-upload";
 import { roleTitle } from "@/lib/ved/roles";
 import { statusMetaForProcess } from "@/lib/ved/process-stage-filters";
+import { treasurerOpsRecipient } from "@/lib/ved/process-role-filter";
 import { getImportAdvanceCoverageCopy, isTreasurerSkipDisposition } from "@/lib/ved/status-copy";
 import { paymentMethodToCondition } from "@/lib/ved/wizard-steps";
 import type {
@@ -309,7 +310,14 @@ export function waitingActorRoles(
     contractId: formCtx?.contractId,
     providerId: formCtx?.providerId,
   });
-  return roles.filter((role) => effectiveActionsFor(role, ctx, processRoles).length > 0);
+  const withActions = roles.filter((role) => effectiveActionsFor(role, ctx, processRoles).length > 0);
+  // Queue copy: never advertise treasurer when skip/handoff or snapshot missing.
+  const hideTreasurer =
+    !processRoles?.length ||
+    Boolean(treasurerOpsRecipient(processRoles)) ||
+    isTreasurerSkipDisposition(processRoles);
+  if (!hideTreasurer) return withActions;
+  return withActions.filter((role) => role !== "treasurer");
 }
 
 /** Human label for who should act next on this status. */
