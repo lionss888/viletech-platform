@@ -289,7 +289,7 @@ export function FormsList() {
                       <span className="truncate">{form.number}</span>
                       <ChannelBadge channel={form.channel} />
                     </VedFormLink>
-                    <StatusBadge status={form.status} processRoles={processRoles} viewerRole={role} />
+                    <StatusBadge status={form.status} processRoles={processRoles} viewerRole={role} pogStatus={form.pogStatus} />
                   </div>
                   <FormReadinessChips form={form} role={role} processRoles={processRoles} />
                   <p className="mt-1 truncate text-xs">{cpByIdFrom(counterparties, form.counterpartyId)?.name}</p>
@@ -388,7 +388,7 @@ export function FormsList() {
                     <span className="text-[11px] text-muted-foreground">{orgByIdFrom(organizations, form.organizationId)?.name}</span>
                   </td>
                   <td className="py-2 pr-4">
-                    <StatusBadge status={form.status} processRoles={processRoles} viewerRole={role} />
+                    <StatusBadge status={form.status} processRoles={processRoles} viewerRole={role} pogStatus={form.pogStatus} />
                     <FormReadinessChips form={form} role={role} processRoles={processRoles} className="mt-1" />
                   </td>
                   <td className="py-2 pr-4">

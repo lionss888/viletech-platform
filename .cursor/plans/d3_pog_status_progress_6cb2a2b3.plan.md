@@ -4,13 +4,13 @@ overview: "Срез D3: согласованный copy статуса vs POG, �
 todos:
   - id: d3-status-copy
     content: Проекция copy/badge status+pogStatus (idle=ожидает формирования)
-    status: pending
+    status: completed
   - id: d3-progress-hide
     content: Indeterminate progress + скрыть панель на success
-    status: pending
+    status: completed
   - id: d3-gate
     content: Unit + ci-pr + Acceptance + notify + закрыть план
-    status: pending
+    status: completed
 isProject: false
 ---
 

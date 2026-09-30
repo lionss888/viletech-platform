@@ -81,6 +81,7 @@ import {
 } from "@/lib/ved/review-checklist";
 import { roleTitle } from "@/lib/ved/roles";
 import { statusMetaForProcess } from "@/lib/ved/process-stage-filters";
+import { overlayStatusMetaForPog } from "@/lib/ved/pog-status-copy";
 import { useProcessRolesRows } from "@/lib/ved/use-process-roles-snapshot";
 import type { AttachedDocument } from "@/lib/ved/types";
 import { cn } from "@/lib/utils";
@@ -234,7 +235,11 @@ export function FormDetail() {
 
   const org = orgByIdFrom(organizations, form.organizationId);
   const cp = cpByIdFrom(counterparties, form.counterpartyId);
-  const meta = statusMetaForProcess(form.status, processRoles, role);
+  const meta = overlayStatusMetaForPog(
+    statusMetaForProcess(form.status, processRoles, role),
+    form.status,
+    form.pogStatus,
+  );
   const compliance = isComplianceRole(role);
   const subjects = subjectsOf(form, organizations, counterparties);
   const hasBlocked = orgBlocksApproval(subjects);
@@ -363,7 +368,13 @@ export function FormDetail() {
     <VedAppShell title={form.number} subtitle={`${meta.label} · роль: ${roleTitle(role)}`}>
       <div className="panel flex flex-wrap items-center gap-3 p-4">
         <DirectionTag direction={form.direction} />
-        <StatusBadge status={form.status} full processRoles={processRoles} viewerRole={role} />
+        <StatusBadge
+          status={form.status}
+          full
+          processRoles={processRoles}
+          viewerRole={role}
+          pogStatus={form.pogStatus}
+        />
         {form.channel === "bank" && <ChannelBadge channel="bank" labeled />}
         {form.channel === "ui" && <ChannelBadge channel="ui" labeled />}
         {form.executionDeadline ? (
