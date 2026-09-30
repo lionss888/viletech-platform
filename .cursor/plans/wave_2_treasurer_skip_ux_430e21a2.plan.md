@@ -4,25 +4,25 @@ overview: Рефакторинг UX copy для устранения упоми�
 todos:
   - id: wave2-action-panel
     content: "ActionPanel.tsx: скрыть 'awaits treasurer' banner при skip"
-    status: pending
+    status: completed
   - id: wave2-status-copy
     content: "status-copy.ts: fallback copy при treasurer skip"
-    status: pending
+    status: completed
   - id: wave2-unit
     content: FE unit process-role-filter.test.ts покрывает treasurerOpsRecipient + copy
-    status: pending
+    status: completed
   - id: wave2-gate-env
     content: Выполнить make check-env-parity из vdp/
-    status: pending
+    status: completed
   - id: wave2-gate-unit
     content: Выполнить npm test из vdp/fe (FE units)
-    status: pending
+    status: completed
   - id: wave2-gate-ci
     content: Выполнить make ci-pr из vdp/ (E2E не требуется, но не ломается)
-    status: pending
+    status: completed
   - id: wave2-mgmt-notify
     content: "Отправить management notification: make notify-mgmt KIND=done (продуктовый язык)"
-    status: pending
+    status: completed
 isProject: false
 ---
 

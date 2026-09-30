@@ -2,6 +2,7 @@ import type { ProcessRoleRow } from "@/lib/api/process-roles";
 import { isImportAdvanceCoverageGate } from "@/lib/ved/manager-payment";
 import { effectiveActionsFor, effectiveActionsFormCtx } from "@/lib/ved/effective-actions";
 import { isOrderWaitingTake, isWaitingTakeStatus } from "@/lib/ved/review-checklist";
+import { importAdvanceCoverageChipLabel } from "@/lib/ved/status-copy";
 import type { PaymentForm, VedRole } from "@/lib/ved/types";
 
 export type ReadinessChip = {
@@ -29,9 +30,17 @@ export function readinessChips(
   }
   if (
     form.status === "payment_received" &&
-    isImportAdvanceCoverageGate({ condition: form.condition, direction: form.direction, paymentMethod: form.paymentMethod })
+    isImportAdvanceCoverageGate({
+      condition: form.condition,
+      direction: form.direction,
+      paymentMethod: form.paymentMethod,
+    })
   ) {
-    chips.push({ id: "treasurer", label: "Ждём казначея", tone: "wait" });
+    chips.push({
+      id: "treasurer",
+      label: importAdvanceCoverageChipLabel(processRoles),
+      tone: "wait",
+    });
   }
   if (form.pogStatus === "pending") {
     chips.push({ id: "pog", label: "Формируем поручение", tone: "wait" });

@@ -1,6 +1,10 @@
 package domain
 
-import "time"
+import (
+	"fmt"
+	"strings"
+	"time"
+)
 
 // ContractType matches расширение вводных §1.2.
 type ContractType string
@@ -60,17 +64,27 @@ const (
 )
 
 type Counterparty struct {
-	ID                   string                     `json:"id"`
-	CreatedBy            string                     `json:"created_by"`
-	Name                 string                     `json:"name"`
-	Country              string                     `json:"country,omitempty"`
-	INN                  string                     `json:"inn,omitempty"`
-	Banks                string                     `json:"banks,omitempty"`
-	FormPaymentIDs       []string                   `json:"form_payment_ids,omitempty"`
-	LastApprovalStatus   CounterpartyApprovalStatus `json:"last_approval_status,omitempty"`
-	LastApprovalDate     *time.Time                 `json:"last_approval_date,omitempty"`
-	LastApprovalComment  string                     `json:"last_approval_comment,omitempty"`
-	CreatedAt            time.Time                  `json:"created_at"`
+	ID                  string                     `json:"id"`
+	CreatedBy           string                     `json:"created_by"`
+	Name                string                     `json:"name"`
+	Country             string                     `json:"country,omitempty"`
+	INN                 string                     `json:"inn,omitempty"`
+	RegistrationNumber  string                     `json:"registration_number,omitempty"`
+	LegalAddress        string                     `json:"legal_address,omitempty"`
+	Banks               string                     `json:"banks,omitempty"`
+	FormPaymentIDs      []string                   `json:"form_payment_ids,omitempty"`
+	LastApprovalStatus  CounterpartyApprovalStatus `json:"last_approval_status,omitempty"`
+	LastApprovalDate    *time.Time                 `json:"last_approval_date,omitempty"`
+	LastApprovalComment string                     `json:"last_approval_comment,omitempty"`
+	CreatedAt           time.Time                  `json:"created_at"`
+}
+
+// ValidateCounterparty checks required catalog fields. RegistrationNumber and LegalAddress are optional.
+func ValidateCounterparty(c Counterparty) error {
+	if strings.TrimSpace(c.Name) == "" {
+		return fmt.Errorf("counterparty name is required")
+	}
+	return nil
 }
 
 type CommentKind string

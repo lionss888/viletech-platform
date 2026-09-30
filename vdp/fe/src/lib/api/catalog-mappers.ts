@@ -99,6 +99,10 @@ export function mapCoreCounterparty(cp: CoreCounterparty): Counterparty {
     banks,
     scope: "foreign",
     status: approved ? "approved" : "not_approved",
+    ...(cp.registration_number?.trim()
+      ? { registrationNumber: cp.registration_number.trim() }
+      : {}),
+    ...(cp.legal_address?.trim() ? { legalAddress: cp.legal_address.trim() } : {}),
   };
 }
 

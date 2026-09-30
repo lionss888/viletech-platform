@@ -533,10 +533,14 @@ function useApiPlatformStore(): VedStore {
         const country = String(record.country ?? record.countryCode ?? "");
         const bankRows = Array.isArray(record.banks) ? (record.banks as BankDraftRow[]) : [];
         const banksPayload = banksDraftToPayload(bankRows);
+        const registrationNumber = String(record.registrationNumber ?? "").trim();
+        const legalAddress = String(record.legalAddress ?? "").trim();
         const catalog = {
           name: String(record.name ?? ""),
           country,
           inn: String(record.inn ?? ""),
+          ...(registrationNumber ? { registration_number: registrationNumber } : {}),
+          ...(legalAddress ? { legal_address: legalAddress } : {}),
           banks: banksPayload,
         };
         if (canSetApproval && originalId) {

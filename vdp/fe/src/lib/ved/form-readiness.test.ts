@@ -38,7 +38,31 @@ describe("readinessChips", () => {
       baseForm({ status: "payment_received", documents: [] }),
       "user",
     );
-    expect(chips.some((c) => c.id === "treasurer")).toBe(true);
+    expect(chips.some((c) => c.id === "treasurer" && c.label === "Ждём казначея")).toBe(true);
+  });
+
+  it("avoids treasurer wording on coverage chip when treasurer skip", () => {
+    const skipRows = [
+      {
+        role: "treasurer",
+        enabled: false,
+        priority: 45,
+        influence: "none" as const,
+        capabilities: ["form.view", "treasurer.ops"],
+        removable: true,
+        mandatory: false,
+        disable_mode: "skip" as const,
+        handoff_role: "manager",
+      },
+    ];
+    const chips = readinessChips(
+      baseForm({ status: "payment_received", documents: [] }),
+      "user",
+      skipRows,
+    );
+    const coverage = chips.find((c) => c.id === "treasurer");
+    expect(coverage?.label).toBe("Нужно подтвердить поступление");
+    expect(coverage?.label.toLowerCase()).not.toMatch(/казнач/);
   });
 
   it("flags missing invoice when not no-documents", () => {

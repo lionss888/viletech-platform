@@ -38,6 +38,8 @@ export type CreateCounterpartyInput = {
   name: string;
   country?: string;
   inn?: string;
+  registration_number?: string;
+  legal_address?: string;
   banks?: CounterpartyBankInput[];
 };
 
@@ -159,6 +161,8 @@ export function createCounterparty(input: CreateCounterpartyInput): Promise<Core
       name: input.name,
       country: input.country,
       inn: input.inn,
+      registration_number: input.registration_number,
+      legal_address: input.legal_address,
       banks: input.banks ?? [],
     }),
   });
@@ -172,6 +176,8 @@ export function updateCounterparty(id: string, input: CreateCounterpartyInput): 
       name: input.name,
       country: input.country,
       inn: input.inn,
+      registration_number: input.registration_number,
+      legal_address: input.legal_address,
       ...(input.banks !== undefined ? { banks: input.banks } : {}),
     }),
   });

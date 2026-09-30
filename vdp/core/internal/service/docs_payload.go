@@ -108,6 +108,8 @@ func (s *FormPaymentService) mergeCounterpartyPayload(ctx context.Context, out m
 	out["counterparty_name"] = cp.Name
 	out["counterparty_inn"] = cp.INN
 	out["counterparty_country"] = cp.Country
+	out["counterparty_registration_number"] = cp.RegistrationNumber
+	out["counterparty_legal_address"] = cp.LegalAddress
 	var banks []CounterpartyBank
 	if cp.Banks != "" && cp.Banks != "[]" {
 		_ = json.Unmarshal([]byte(cp.Banks), &banks)

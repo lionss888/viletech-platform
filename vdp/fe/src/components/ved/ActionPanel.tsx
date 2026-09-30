@@ -21,11 +21,11 @@ import {
   blocksAdvanceSigningWithoutRate,
   blocksPaymentStartWithoutProvider,
   IMPORT_ADVANCE_AWAITS_TREASURER,
-  isImportAdvanceCoverageGate,
   isPostpayRateOnPP,
   partyOptionLabel,
   PAYMENT_START_PROVIDER_LOCK,
 } from "@/lib/ved/manager-payment";
+import { showAwaitsTreasurerBanner } from "@/lib/ved/status-copy";
 import { usePlatformStore } from "@/lib/ved/platform-store";
 import { useProcessRolesRows } from "@/lib/ved/use-process-roles-snapshot";
 import {
@@ -144,10 +144,14 @@ export function ActionPanel({
     [role, formCtx, processRoles],
   );
   const actionsWithoutProvider = actions;
-  const awaitsTreasurer =
-    form.status === "payment_received" &&
-    isImportAdvanceCoverageGate({ condition: form.condition, direction: form.direction }) &&
-    (role === "manager" || role === "root");
+  const awaitsTreasurer = showAwaitsTreasurerBanner({
+    status: form.status,
+    role,
+    condition: form.condition,
+    direction: form.direction,
+    paymentMethod: form.paymentMethod,
+    processRoles,
+  });
   const needsRateForAdvance =
     form.status === "payment_sent" &&
     isPostpayRateOnPP({

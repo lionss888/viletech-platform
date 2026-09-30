@@ -2,10 +2,13 @@
 # Retry a docker compose (or any) command for Desktop recreate races:
 # - compose --wait sees old container exit 0 during recreate
 # - "No such container" on full stack up after migrate
+# Before the first attempt: ensure Docker daemon is up (starts Desktop on macOS).
 #
 # Usage:
 #   compose-up-with-retry.sh [--attempts N] [--sleep S] [--] cmd [args...]
 set -euo pipefail
+
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 
 attempts=3
 sleep_s=3
@@ -37,6 +40,10 @@ if [ $# -eq 0 ]; then
   echo "usage: compose-up-with-retry.sh [--attempts N] [--sleep S] [--] cmd [args...]" >&2
   exit 2
 fi
+
+# Auto-start Docker Desktop / daemon when sock is missing (pre-push / Local QG).
+chmod +x "$SCRIPT_DIR/ensure-docker.sh" 2>/dev/null || true
+"$SCRIPT_DIR/ensure-docker.sh"
 
 ok=0
 i=1

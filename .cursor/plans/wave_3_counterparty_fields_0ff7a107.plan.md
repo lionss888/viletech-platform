@@ -4,37 +4,37 @@ overview: Добавление полей регистрационного но�
 todos:
   - id: wave3-domain
     content: counterparty.go + DB migration (RegistrationNumber, LegalAddress)
-    status: pending
+    status: completed
   - id: wave3-go-unit
     content: Go unit counterparty_test.go покрывает новые поля
-    status: pending
+    status: completed
   - id: wave3-fe-wizard
     content: "CounterpartyStep.tsx: два новых optional поля"
-    status: pending
+    status: completed
   - id: wave3-fe-unit
     content: FE unit counterparty.test.ts покрывает новые поля
-    status: pending
+    status: completed
   - id: wave3-e2e
     content: pilot-matrix-wizard.spec.ts с заполнением новых полей
-    status: pending
+    status: completed
   - id: wave3-gate-env
     content: Выполнить make check-env-parity из vdp/
-    status: pending
+    status: completed
   - id: wave3-gate-go
     content: Выполнить go test ./internal/domain/formpayment/... -v
-    status: pending
+    status: completed
   - id: wave3-gate-fe
     content: Выполнить npm test из vdp/fe
-    status: pending
+    status: completed
   - id: wave3-gate-ci
     content: Выполнить make ci-pr-pilot из vdp/
-    status: pending
+    status: completed
   - id: wave3-known-gaps
     content: "Обновить vdp/docs/pilot/known-gaps.md: counterparty fields closed"
-    status: pending
+    status: completed
   - id: wave3-mgmt-notify
     content: "Отправить management notification: make notify-mgmt KIND=done (продуктовый язык)"
-    status: pending
+    status: completed
 isProject: false
 ---
 

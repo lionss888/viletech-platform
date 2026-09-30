@@ -39,7 +39,7 @@ func (s *CatalogService) Blobs() storage.BlobStore {
 	return s.blobs
 }
 
-func (s *CatalogService) CreateCounterparty(ctx context.Context, principal authz.Principal, name, country, inn, banksJSON string) (domain.Counterparty, error) {
+func (s *CatalogService) CreateCounterparty(ctx context.Context, principal authz.Principal, name, country, inn, banksJSON, registrationNumber, legalAddress string) (domain.Counterparty, error) {
 	if name == "" {
 		return domain.Counterparty{}, apperrors.ErrInvalidInput
 	}
@@ -48,8 +48,12 @@ func (s *CatalogService) CreateCounterparty(ctx context.Context, principal authz
 	}
 	c := domain.Counterparty{
 		ID: s.newID(), CreatedBy: principal.AccountID, Name: name, Country: country, INN: inn,
+		RegistrationNumber: registrationNumber, LegalAddress: legalAddress,
 		Banks: banksJSON, FormPaymentIDs: []string{}, LastApprovalStatus: domain.CounterpartyApprovalPending,
 		CreatedAt: time.Now().UTC(),
+	}
+	if err := domain.ValidateCounterparty(c); err != nil {
+		return domain.Counterparty{}, apperrors.ErrInvalidInput
 	}
 	return c, s.store.SaveCounterparty(ctx, c)
 }
@@ -90,7 +94,7 @@ func (s *CatalogService) ListCounterpartiesFor(ctx context.Context, principal au
 	return out, nil
 }
 
-func (s *CatalogService) UpdateCounterparty(ctx context.Context, principal authz.Principal, id, name, country, inn, banksJSON string) (domain.Counterparty, error) {
+func (s *CatalogService) UpdateCounterparty(ctx context.Context, principal authz.Principal, id, name, country, inn, banksJSON, registrationNumber, legalAddress string) (domain.Counterparty, error) {
 	c, err := s.requireOwnCounterparty(ctx, principal, id)
 	if err != nil {
 		return domain.Counterparty{}, err
@@ -103,6 +107,12 @@ func (s *CatalogService) UpdateCounterparty(ctx context.Context, principal authz
 	}
 	if inn != "" {
 		c.INN = inn
+	}
+	if registrationNumber != "" {
+		c.RegistrationNumber = registrationNumber
+	}
+	if legalAddress != "" {
+		c.LegalAddress = legalAddress
 	}
 	if banksJSON != "" {
 		c.Banks = banksJSON
@@ -252,7 +262,7 @@ func (s *CatalogService) FindOrCreateCounterparty(ctx context.Context, principal
 	if name == "" {
 		name = "Counterparty"
 	}
-	return s.CreateCounterparty(ctx, principal, name, "", inn, banksJSON)
+	return s.CreateCounterparty(ctx, principal, name, "", inn, banksJSON, "", "")
 }
 
 func (s *CatalogService) CounterpartyRequests(ctx context.Context, principal authz.Principal, id string) ([]formpayment.Form, error) {

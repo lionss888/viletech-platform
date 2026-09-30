@@ -32,6 +32,8 @@ export type CoreCounterparty = {
   status?: string;
   last_approval_status?: string;
   inn?: string;
+  registration_number?: string;
+  legal_address?: string;
   banks?: string | CounterpartyBankCore[];
 };
 

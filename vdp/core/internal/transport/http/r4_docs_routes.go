@@ -107,17 +107,19 @@ func (s *Server) handleCPGet(w http.ResponseWriter, r *http.Request, principal a
 
 func (s *Server) handleCPCreate(w http.ResponseWriter, r *http.Request, principal authz.Principal) {
 	var body struct {
-		Name    string          `json:"name"`
-		Country string          `json:"country"`
-		INN     string          `json:"inn"`
-		Banks   json.RawMessage `json:"banks"`
+		Name               string          `json:"name"`
+		Country            string          `json:"country"`
+		INN                string          `json:"inn"`
+		RegistrationNumber string          `json:"registration_number"`
+		LegalAddress       string          `json:"legal_address"`
+		Banks              json.RawMessage `json:"banks"`
 	}
 	_ = json.NewDecoder(r.Body).Decode(&body)
 	banks := "[]"
 	if len(body.Banks) > 0 {
 		banks = string(body.Banks)
 	}
-	c, err := s.catalog.CreateCounterparty(r.Context(), principal, body.Name, body.Country, body.INN, banks)
+	c, err := s.catalog.CreateCounterparty(r.Context(), principal, body.Name, body.Country, body.INN, banks, body.RegistrationNumber, body.LegalAddress)
 	if err != nil {
 		writeError(w, err)
 		return
@@ -141,17 +143,19 @@ func (s *Server) handleCPFindOrCreate(w http.ResponseWriter, r *http.Request, pr
 
 func (s *Server) handleCPUpdate(w http.ResponseWriter, r *http.Request, principal authz.Principal) {
 	var body struct {
-		Name    string          `json:"name"`
-		Country string          `json:"country"`
-		INN     string          `json:"inn"`
-		Banks   json.RawMessage `json:"banks"`
+		Name               string          `json:"name"`
+		Country            string          `json:"country"`
+		INN                string          `json:"inn"`
+		RegistrationNumber string          `json:"registration_number"`
+		LegalAddress       string          `json:"legal_address"`
+		Banks              json.RawMessage `json:"banks"`
 	}
 	_ = json.NewDecoder(r.Body).Decode(&body)
 	banks := ""
 	if len(body.Banks) > 0 {
 		banks = string(body.Banks)
 	}
-	c, err := s.catalog.UpdateCounterparty(r.Context(), principal, r.PathValue("id"), body.Name, body.Country, body.INN, banks)
+	c, err := s.catalog.UpdateCounterparty(r.Context(), principal, r.PathValue("id"), body.Name, body.Country, body.INN, banks, body.RegistrationNumber, body.LegalAddress)
 	if err != nil {
 		writeError(w, err)
 		return
