@@ -4,13 +4,13 @@ overview: "Срез D2: срок исполнения на карточке, в�
 todos:
   - id: d2-deadline
     content: Map execution_deadline + показать срок на карточке
-    status: pending
+    status: completed
   - id: d2-rate-ui
     content: Справочник валют + виджет курса с Редактировать
-    status: pending
+    status: completed
   - id: d2-gate
     content: Unit + ci-pr + Acceptance + notify + закрыть план
-    status: pending
+    status: completed
 isProject: false
 ---
 

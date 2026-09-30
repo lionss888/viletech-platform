@@ -26,7 +26,10 @@ test.describe("Advance Rate Selection @pilot-matrix", () => {
 
     await expect(page.getByTestId("advance-rate-commission-panel")).toBeVisible({ timeout: 15_000 });
     await expect(page.getByTestId("rate-commission-panel")).toHaveCount(0);
+    await expect(page.getByTestId("advance-rate-commission-widget")).toBeVisible();
+    await expect(page.getByTestId("advance-rate-input")).toHaveCount(0);
 
+    await page.getByTestId("advance-rate-commission-edit-open").click();
     await page.getByTestId("advance-rate-input").fill("95.50");
     await page.getByTestId("advance-commission-mode-select").selectOption("fixed");
     await page.getByTestId("advance-commission-value-input").fill("1000");

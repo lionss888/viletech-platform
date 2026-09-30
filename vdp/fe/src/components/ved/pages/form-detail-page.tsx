@@ -55,7 +55,7 @@ import {
   parseExtractionResult,
 } from "@/lib/ved/extraction";
 import { canProviderDeleteDocuments, canUploadDocuments } from "@/lib/ved/doc-upload-policy";
-import { dateTime, money } from "@/lib/ved/format";
+import { dateOnly, dateTime, money } from "@/lib/ved/format";
 import { canSelectAdvanceRate, isAdvanceRateSurface, isPostpayRateOnPP, isRateEmpty } from "@/lib/ved/manager-payment";
 import { usePlatformMode } from "@/lib/ved/platform-mode";
 import { cpByIdFrom, orgByIdFrom, usePlatformStore } from "@/lib/ved/platform-store";
@@ -366,6 +366,15 @@ export function FormDetail() {
         <StatusBadge status={form.status} full processRoles={processRoles} viewerRole={role} />
         {form.channel === "bank" && <ChannelBadge channel="bank" labeled />}
         {form.channel === "ui" && <ChannelBadge channel="ui" labeled />}
+        {form.executionDeadline ? (
+          <span
+            className="rounded-full bg-wait-soft px-2.5 py-0.5 text-xs font-semibold text-wait"
+            data-testid="form-execution-deadline"
+            title={dateTime(form.executionDeadline)}
+          >
+            Срок: {dateOnly(form.executionDeadline)}
+          </span>
+        ) : null}
         {form.correlationId && (
           <span className="font-mono text-[11px] text-muted-foreground" title="Correlation ID">
             corr: {form.correlationId}
@@ -704,6 +713,7 @@ export function FormDetail() {
                     form.amountMinor ? String(form.amountMinor / 100) : undefined
                   }
                   currency={form.currency}
+                  currencies={currencies.map((item) => ({ code: item.code, title: item.title }))}
                 />
               )}
               {showAdvanceRateCommission && (
@@ -716,6 +726,7 @@ export function FormDetail() {
                     form.amountMinor ? String(form.amountMinor / 100) : undefined
                   }
                   currency={form.currency}
+                  currencies={currencies.map((item) => ({ code: item.code, title: item.title }))}
                 />
               )}
               {showAdvanceRateSummary && (

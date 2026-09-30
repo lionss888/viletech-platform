@@ -412,6 +412,7 @@ export function mapCoreFormToPaymentForm(
     paymentMethod: form.payment_method || undefined,
     platformPostpayMode: form.platform_postpay_mode || undefined,
     rateOnProvider: form.rate_on_provider || undefined,
+    executionDeadline: form.execution_deadline?.trim() || undefined,
     rate: form.rate
       ? {
           value: form.rate.value || undefined,
