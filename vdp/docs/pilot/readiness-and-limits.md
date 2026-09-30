@@ -1,63 +1,67 @@
 # Готовность и ограничения MVP
 
-Дата оценки 2026-09-16. Правило честности: done в матрице Nest to vdp означает маршрут замаплен и проходит gate test. Не полный продуктовый паритет Nest. Не боевые интеграции без staging config. In-scope маршруты вводных закрыты domain to E2E: импорт аванс, импорт POSTPAY_RATE_ON_PP, экспорт PAY_FROM_EXPORT, возврат ДС, опциональная ветка отгрузки. Локальная команда ci-pr-pilot зелёная 2026-09-16 (узкий PR smoke плюс вся лестница pilot-matrix: export refund shipment IMP7 IMP8). Локальная сборочная команда handover (release-gate) зелёная 2026-09-15. Полный wizard payment_method:advance, POSTPAY_FIXED_RATE, продукт логистов, analytics, own OCR PRIMARY, Nest data migration — вне in-scope.
+Дата оценки 2026-09-29. Правило честности: done в матрице Nest to vdp означает маршрут замаплен и проходит gate test. Это не полный продуктовый паритет Nest и не боевые интеграции без staging-конфига.
 
-Post-Lovable FE app-контур восстановлен. Волны UX 0–4 (parties wizard docs provider report close) и FE gesture contracts (FilePickButton filechooser) в коде. B.2 FE org/docs upload ~90% (см. b2-fe-handoff.md). Staging deploy — workflows и rollback docs ready; VM Environments still ops-side.
+Маршруты вводных из scope закрыты от домена до E2E: импорт с авансом, импорт POSTPAY_RATE_ON_PP, экспорт PAY_FROM_EXPORT, возврат ДС, опциональная ветка отгрузки. Локальная команда ci-pr-pilot зелёная 2026-09-29 (узкий PR smoke плюс @pilot-matrix: 21 passed, в том числе фиксация курса на авансе до поручения и полный постоплатный ladder до completed при отключённом казначее). Локальная сборочная команда handover (release-gate) зелёная 2026-09-15. Вне in-scope: полный мастер с payment_method advance, POSTPAY_FIXED_RATE, продукт логистов, analytics, своя OCR как PRIMARY, миграция данных Nest.
+
+Контур FE после Lovable восстановлен. Волны UX 0–4 (стороны сделки, мастер, документы, провайдер, отчёт, закрытие) и контракты жеста загрузки (FilePickButton и filechooser) в коде. Документы B.2 на FE около 90 процентов (см. b2-fe-handoff.md). Staging deploy: workflows и rollback-документы готовы; Environments на ВМ — сторона ops.
+
+Для демо с тремя ролями (клиент, менеджер, провайдер) казначей можно отключить через process-roles с режимом skip: подтверждение поступления выполняет менеджер. Инварианты постоплаты: [postpay-rate-on-pp-invariants.md](../domain/postpay-rate-on-pp-invariants.md).
 
 ## Полнота реализации
 
-Оценка около 97 процентов in-scope контура вводных после зелёной ci-pr-pilot 2026-09-16. Не 100 процентов продукта. Backend R0–R12 + B.2 + IMP + export + refund + shipment. FE: кабинеты User Manager Provider Treasurer, RefundPanel, ShipmentPanel, курс и комиссия на RATE_ON_PP. Browser ladders: import advance treasurer, import postpay RATE_ON_PP, export PAY_FROM_EXPORT, refund, shipment optional. Остаток продукта: pixel PDF, живой bank webhook, live Prometheus, ротация секретов заказчика, полный browser matrix all roles × statuses, analytics/assistant placeholders.
+Оценка около 97–98 процентов in-scope контура вводных после зелёной ci-pr-pilot 2026-09-29. Не 100 процентов продукта. Backend R0–R12, B.2, IMP, export, refund, shipment. FE: кабинеты User, Manager, Provider, Treasurer; RefundPanel; ShipmentPanel; панель курса и комиссии на RATE_ON_PP после payment_sent; панель курса и комиссии на авансе до первичного поручения. Browser ladders: импорт аванс с казначеем, импорт постоплата RATE_ON_PP до completed (в том числе при skip казначея), экспорт PAY_FROM_EXPORT, возврат, опциональная отгрузка. Остаток продукта: пиксельный PDF, живой bank webhook, live Prometheus, ротация секретов заказчика, полная browser-матрица всех ролей по всем статусам, заглушки analytics и assistant.
 
 ## Качество MVP
 
-Оценка 8 из 10 для in-scope demo маршрутов вводных. Оценка 6.5 из 10 для prod ownership: секреты заказчика и live alerting не закрыты. Не 10 и не 100 процентов продукта.
+Оценка 8 из 10 для in-scope demo-маршрутов вводных. Оценка 6.5 из 10 для prod ownership: секреты заказчика и live alerting не закрыты. Не 10 и не 100 процентов продукта.
 
-Сильные unit и HTTP gate tests включая IMP1–3. compose reproducible. RH program и path-filter pilot-matrix на PR при касании ladder surface. Phase 4 Ops: correlation logging, semantic alerts architecture, runbooks complete. Слабее: live Prometheus deployment (awaiting ops infrastructure), real vendor integrations on staging, wizard payment_method:advance end-to-end browser и import journeys вне обязательного PR smoke.
+Сильные стороны: unit и HTTP gate включая IMP1–3; воспроизводимый compose; RH-программа и path-filter pilot-matrix на PR при касании лестницы заявки; Phase 4 Ops (correlation logging, архитектура semantic alerts, runbooks). Слабее: выкат live Prometheus (ждёт инфраструктуру ops), реальные вендорские интеграции на staging, полный браузерный мастер advance и часть import-journey вне обязательного узкого PR smoke.
 
 ## Передача пилот
 
-In-scope маршруты вводных: 100 процентов заявленной матрицы domain to E2E при зелёной ci-pr-pilot 2026-09-16 и принятых known-gaps. Это не 100 процентов roadmap. UAT demo этих маршрутов 96–97 процентов. Prod go-live 55–60 процентов: alpha health 200, software gate зелёный; ротация секретов и live alerting у заказчика и ops.
+Маршруты вводных из scope: 100 процентов заявленной матрицы domain to E2E при зелёной ci-pr-pilot 2026-09-29 и принятых known-gaps. Это не 100 процентов roadmap. UAT demo этих маршрутов 96–98 процентов. Prod go-live 55–60 процентов: alpha health 200, software gate зелёный; ротация секретов и live alerting у заказчика и ops.
 
 ## Что можно показывать на пилоте
 
-Полный app journey User to completed на seed data через compose (process spine User Manager Provider; ICO ECO optional via process-roles).
+Полный путь User to completed на seed через compose. Ось процесса: клиент, менеджер, провайдер; ICO и ECO опциональны через process-roles. Казначей опционален: при skip менеджер подтверждает поступление.
 
-Role cabinets ICO ECO Manager Provider Treasurer (import advance confirm, export PAY_FROM_EXPORT) Bank channel smoke. Manager rate and commission panel на POSTPAY_RATE_ON_PP после payment_sent. Pilot-matrix browser: import advance treasurer с deadline, import postpay RATE_ON_PP до completed, export PAY_FROM_EXPORT treasurer до completed, refund happy path, optional shipment branch. Ветка отгрузки не заменяет report completed и не равна полному логистическому продукту.
+Кабинеты ролей ICO, ECO, Manager, Provider, Treasurer (аванс import, экспорт PAY_FROM_EXPORT), smoke банковского канала. Панель курса и комиссии менеджера на POSTPAY_RATE_ON_PP после payment_sent и на авансе до первичного поручения. Браузер pilot-matrix: импорт аванс с казначеем и сроком исполнения; фиксация курса на авансе до поручения; импорт постоплата до completed (rate/commission и full ladder со skip); экспорт PAY_FROM_EXPORT до completed (в том числе skip казначея); возврат; опциональная отгрузка. Ветка отгрузки не заменяет report completed и не равна продукту логистов.
 
-Unit postgres integration compose-e2e полный browser suite plus pilot-matrix. ci-pr-pilot зелёная 2026-09-16. Локальная сборочная команда handover зелёная 2026-09-15. CI vdp-ci.yml on main.
+Unit, postgres integration, compose-e2e, полный browser suite и pilot-matrix. ci-pr-pilot зелёная 2026-09-29 (21 passed @pilot-matrix). Локальная handover зелёная 2026-09-15. CI: vdp-ci.yml на main.
 
 ## Что нельзя обещать на пилоте
 
-100 процентов готовности продукта. Полный паритет Nest. Полный browser matrix all statuses. Полный wizard payment_method:advance. Множественные экспортные сценарии за пределами PAY_FROM_EXPORT treasurer happy path. Продукт логистов. POSTPAY_FIXED_RATE. Prod Diadoc mail OCR without staging config. Real XLSX pixel fidelity. Prod secrets in compose defaults. Analytics assistant. Own OCR model as PRIMARY. Nest data migration.
+Сто процентов готовности продукта. Полный паритет Nest. Полная browser-матрица всех статусов. Полный мастер payment_method advance. Множественные экспортные сценарии сверх PAY_FROM_EXPORT treasurer happy path. Продукт логистов. POSTPAY_FIXED_RATE. Prod Diadoc, mail и OCR без staging-конфига. Пиксельная верность XLSX и PDF. Prod-секреты в defaults compose. Analytics и assistant. Своя OCR-модель как PRIMARY. Миграция данных Nest.
 
-## Document extraction (dual-track)
+## Извлечение документов (два пути)
 
-Commercial path (Yandex PRIMARY plus HITL gold plus shadow): optional behind hub OCR_URL with YANDEX_* keys. Live Yandex: set YANDEX_* in gitignored .env, EXTRACTION_PRIMARY equals yandex; smoke make extraction-yandex-smoke.
+Коммерческий путь (Yandex PRIMARY, HITL gold, shadow): опционально за hub OCR_URL с ключами YANDEX_*. Живой Yandex: ключи в gitignored .env, EXTRACTION_PRIMARY equals yandex; smoke make extraction-yandex-smoke.
 
-Pilot PRIMARY equals Docling with docTR FALLBACK (EXTRACTION_PRIMARY equals docling, EXTRACTION_FALLBACK equals doctr, EXTRACTION_DOCLING_URL, EXTRACTION_DOCTR_URL, OCR_TIMEOUT_MS equals 180000, GATEWAY_TIMEOUT equals 180). Yandex is not PRIMARY on this pilot. Smoke: make extraction-docling-smoke and make extraction-doctr-smoke. HITL confirm remains mandatory. Demo runtime does not force fixture money on total OCR fail.
+На пилоте PRIMARY — Docling, FALLBACK — docTR (EXTRACTION_PRIMARY equals docling, EXTRACTION_FALLBACK equals doctr, URL Docling и docTR, OCR_TIMEOUT_MS equals 180000, GATEWAY_TIMEOUT equals 180). Yandex на этом пилоте не PRIMARY. Smoke: make extraction-docling-smoke и make extraction-doctr-smoke. HITL-подтверждение обязательно. Demo runtime не подставляет фикстурные суммы при полном провале OCR.
 
-Own CPU: Ollama plus few-shot testable; prod PRIMARY own not ready until Wave E eval. EXTRACTION_PRIMARY equals own without eval report equals partial readiness only. Weights equals Wave E (lora_recipe.md).
+Свой CPU: Ollama и few-shot можно пробовать; prod PRIMARY own не готов до оценки волны E. EXTRACTION_PRIMARY equals own без eval-отчёта — только частичная готовность. Веса — волна E (lora_recipe.md).
 
-Applied: HF for LoRA tooling; skip YaLM 100B self-host and Onyx-as-OCR; open-llms license gate before train.
+Применено: Hugging Face для tooling LoRA; без self-host YaLM 100B и без Onyx как OCR; open-llms — лицензионный чеклист до обучения.
 
-## Stub inventory hub
+## Инвентарь заглушек Hub
 
-Docs mail stub when URL empty; HTTP contract tested in CI. OCR not on user path. Diadoc TG 1C partner callback only without vendor URL.
+Docs и mail — stub при пустом URL; HTTP-контракт проверен в CI. OCR не на пользовательском транзакционном пути. Diadoc, Telegram, 1С, partner callback — только без URL вендора.
 
-## Stub inventory export
+## Инвентарь заглушек экспорта
 
-Nest/compliance XLSX — real OOXML. PDF — payload with PA template_id; file bytes from DOCS_URL service or dev stub.pdf. POSTPAY_RATE_ON_PP primary may omit rate in payload by design.
+XLSX Nest/compliance — реальный OOXML. PDF — payload с template_id платёжного агента; байты файла из сервиса DOCS_URL или dev stub.pdf. На POSTPAY_RATE_ON_PP первичное поручение может не содержать курс в payload по задумке.
 
-## Dev secrets compose
+## Dev-секреты compose
 
-JWT_SECRET vdp-core-dev-secret. HUB_SHARED_SECRET vdp-s2s-dev-secret. Only for local compose never prod. Core/hub exit on production with these defaults.
+JWT_SECRET equals vdp-core-dev-secret. HUB_SHARED_SECRET equals vdp-s2s-dev-secret. Только для локального compose, никогда для prod. Core и hub завершаются при production с этими defaults.
 
-## Gate metrics reference
+## Справка по метрикам гейтов
 
-R1 form-payment 148/148 done. R12 matrix 331/331 in-scope done. IMP series закрыт: HTTP IMP1 IMP2 IMP3; FE unit treasurer rate commission; compose-e2e IMP1 IMP2; pilot-matrix IMP7 IMP8. Export Phase 5-6: domain HTTP FE unit E2E PAY_FROM_EXPORT treasurer до completed. Refund Phase 7: domain HTTP FE E2E. Shipment Phase 8: optional branch domain HTTP FE E2E. ci-pr-pilot green 2026-09-16 (9 specs @pilot-matrix). Локальная сборочная команда handover green 2026-09-15.
+R1 form-payment 148 из 148. R12 matrix 331 из 331 in-scope. Серия IMP закрыта: HTTP IMP1 IMP2 IMP3; FE unit казначей, курс, комиссия; compose-e2e IMP1 IMP2 (в том числе dual-config treasurer on и skip); pilot-matrix IMP7 (аванс) и IMP8 (постоплата rate плюс full ladder до completed); UI курса на авансе до первичного поручения. Export фазы 5–6: domain, HTTP, FE unit, E2E PAY_FROM_EXPORT до completed. Refund фаза 7: domain, HTTP, FE, E2E. Shipment фаза 8: опциональная ветка domain, HTTP, FE, E2E. ci-pr-pilot green 2026-09-29 (21 specs @pilot-matrix). Локальная handover green 2026-09-15.
 
 ## Следующие шаги prod
 
-Staging: staging-env.example, scripts/staging-smoke.sh. Security: security-signoff-checklist.md. Ops: semantic-alerts.md, runbooks. Load testing. Customer robot fixture import for QG. Explicit local VDP_API_PROXY_TARGET for fe. Nest data migration out of scope.
+Staging: staging-env.example, scripts/staging-smoke.sh. Security: security-signoff-checklist.md. Ops: semantic-alerts.md, runbooks. Нагрузочное тестирование. Импорт robot-фикстур заказчика для QG. Явный локальный VDP_API_PROXY_TARGET для FE. Миграция Nest вне scope. При необходимости демо без казначея — process-roles treasurer skip; не путать с отсутствием роли в домене.
 
-UAT сценарии: [uat-scenarios.md](uat-scenarios.md). Gaps: [known-gaps.md](known-gaps.md). Lifecycle: [form-lifecycle.md](../domain/form-lifecycle.md). CI: [ci.md](../operations/ci.md).
+UAT-сценарии: [uat-scenarios.md](uat-scenarios.md). Пробелы: [known-gaps.md](known-gaps.md). Жизненный цикл: [form-lifecycle.md](../domain/form-lifecycle.md). CI: [ci.md](../operations/ci.md).

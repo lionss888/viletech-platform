@@ -67,6 +67,8 @@ describe("ocrPollTimedOut", () => {
     expect(ocrPollTimedOut(0)).toBe(false);
     expect(ocrPollTimedOut(OCR_POLL_TIMEOUT_MS - 1)).toBe(false);
     expect(ocrPollTimedOut(OCR_POLL_TIMEOUT_MS)).toBe(true);
+    // e2e/ocr-wizard-path.spec.ts waits OCR_POLL_TIMEOUT_MS + 30s; keep that headroom.
+    expect(OCR_POLL_TIMEOUT_MS + 30_000).toBeGreaterThan(OCR_POLL_TIMEOUT_MS);
     expect(ocrPollTimedOut(50, 40)).toBe(true);
   });
 });

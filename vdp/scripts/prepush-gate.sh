@@ -14,10 +14,17 @@ if [ "${SKIP_PREPUSH_GATE:-0}" = "1" ]; then
   exit 0
 fi
 
+ensure_docker_for_gate() {
+  # Compose / Playwright need the daemon; start Desktop if sock is missing.
+  chmod +x "$ROOT/scripts/ensure-docker.sh" 2>/dev/null || true
+  "$ROOT/scripts/ensure-docker.sh"
+}
+
 # Opt-in для полного марафона (перед merge в main / по явному запросу).
 if [ "${FULL_PREPUSH_GATE:-0}" = "1" ]; then
   echo "prepush-gate: FULL_PREPUSH_GATE=1 — запуск полной страховки → make push-gate"
   echo "prepush-gate: ~15–40 min (test-integration + ci-main)"
+  ensure_docker_for_gate
   cd "$ROOT"
   exec make push-gate
 fi
@@ -39,6 +46,7 @@ if [ -z "$base" ] && git rev-parse --verify origin/master >/dev/null 2>&1; then
 fi
 if [ -z "$base" ]; then
   echo "prepush-gate: no upstream/origin/main base — running ci-pr-pilot (safe default)" >&2
+  ensure_docker_for_gate
   cd "$ROOT"
   exec make ci-pr-pilot
 fi
@@ -51,6 +59,7 @@ all_paths="$(printf '%s\n%s\n%s\n' "$changed" "$wt" "$staged" | sed '/^$/d' | so
 echo "prepush-gate: base=$base"
 if [ -z "$all_paths" ]; then
   echo "prepush-gate: no changed files vs base — running ci-pr"
+  ensure_docker_for_gate
   cd "$ROOT"
   exec make ci-pr
 fi
@@ -73,16 +82,19 @@ fi
 
 if printf '%s\n' "$all_paths" | "$FULL_E2E"; then
   echo "prepush-gate: e2e outside PR-smoke → make ci-main"
+  ensure_docker_for_gate
   cd "$ROOT"
   exec make ci-main
 fi
 
 if printf '%s\n' "$all_paths" | "$MATCH"; then
   echo "prepush-gate: ladder paths detected → make ci-pr-pilot"
+  ensure_docker_for_gate
   cd "$ROOT"
   exec make ci-pr-pilot
 fi
 
 echo "prepush-gate: no ladder / full-e2e paths → make ci-pr"
+ensure_docker_for_gate
 cd "$ROOT"
 exec make ci-pr

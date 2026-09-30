@@ -356,12 +356,22 @@ export async function createOrganizationApi(
 /** Create counterparty for the seed user org. */
 export async function createCounterpartyApi(
   token: string,
-  input: { name: string; country?: string; inn?: string },
+  input: {
+    name: string;
+    country?: string;
+    inn?: string;
+    registration_number?: string;
+    legal_address?: string;
+  },
 ): Promise<{ id: string; name: string }> {
   const created = (await authPost(token, "/api/v1/counterparty/create", {
     name: input.name,
     country: input.country ?? "CN",
     inn: input.inn ?? `E2E${Date.now()}`,
+    ...(input.registration_number
+      ? { registration_number: input.registration_number }
+      : {}),
+    ...(input.legal_address ? { legal_address: input.legal_address } : {}),
     banks: [],
   })) as { id: string; name: string };
   return created;

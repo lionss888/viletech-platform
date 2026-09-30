@@ -105,6 +105,8 @@ export type Counterparty = {
   banks: CounterpartyBank[];
   scope: "foreign" | "russian";
   status: "approved" | "not_approved";
+  registrationNumber?: string;
+  legalAddress?: string;
 };
 
 export type PlatformUser = {

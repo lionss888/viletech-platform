@@ -2,6 +2,12 @@ import { describe, expect, it } from "vitest";
 
 import { actionsFor } from "./actions";
 import type { ProcessRoleRow } from "@/lib/api/process-roles";
+import { treasurerOpsRecipient } from "./process-role-filter";
+import {
+  getImportAdvanceCoverageCopy,
+  isTreasurerSkipDisposition,
+  showAwaitsTreasurerBanner,
+} from "./status-copy";
 
 describe("actionsFor with process roles", () => {
   it("hides CTA when role disabled in process config", () => {
@@ -122,5 +128,75 @@ describe("actionsFor with process roles", () => {
     ];
     const mgrIds = actionsFor("manager", "payment_received", rows).map((a) => a.id);
     expect(mgrIds).not.toContain("treas_confirm_payment");
+  });
+});
+
+describe("getImportAdvanceCoverageCopy with treasurer skip", () => {
+  const skipRows: ProcessRoleRow[] = [
+    {
+      role: "treasurer",
+      enabled: false,
+      priority: 45,
+      influence: "none",
+      capabilities: ["form.view", "treasurer.ops"],
+      removable: true,
+      mandatory: false,
+      disable_mode: "skip",
+      handoff_role: "manager",
+    },
+  ];
+
+  it("returns manager-focused copy when treasurer is skipped", () => {
+    expect(getImportAdvanceCoverageCopy({ role: "manager", processRoles: skipRows })).toBe(
+      "Подтвердите поступление средств",
+    );
+  });
+
+  it("does not mention treasurer for user when treasurer is skipped", () => {
+    const copy = getImportAdvanceCoverageCopy({ role: "user", processRoles: skipRows });
+    expect(copy).not.toMatch(/казначе/i);
+    expect(copy).toBe("Ожидается подтверждение поступления средств");
+  });
+
+  it("returns treasurer mention when treasurer is enabled", () => {
+    const enabledRows: ProcessRoleRow[] = [
+      {
+        role: "treasurer",
+        enabled: true,
+        priority: 45,
+        influence: "actor",
+        capabilities: ["form.view", "treasurer.ops"],
+        removable: true,
+        mandatory: false,
+      },
+    ];
+    expect(getImportAdvanceCoverageCopy({ role: "user", processRoles: enabledRows })).toMatch(
+      /казначе/i,
+    );
+  });
+
+  it("hides awaits-treasurer banner for manager when treasurer is skipped", () => {
+    expect(
+      showAwaitsTreasurerBanner({
+        status: "payment_received",
+        role: "manager",
+        condition: "advance",
+        direction: "import",
+        processRoles: skipRows,
+      }),
+    ).toBe(false);
+    expect(
+      showAwaitsTreasurerBanner({
+        status: "payment_received",
+        role: "manager",
+        condition: "advance",
+        direction: "import",
+      }),
+    ).toBe(true);
+  });
+
+  it("exposes treasurerOpsRecipient as manager on skip", () => {
+    expect(treasurerOpsRecipient(skipRows)).toBe("manager");
+    expect(isTreasurerSkipDisposition(skipRows)).toBe(true);
   });
 });

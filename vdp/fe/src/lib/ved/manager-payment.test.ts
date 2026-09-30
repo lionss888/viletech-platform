@@ -6,6 +6,8 @@ import { appActionsFor } from "./app-actions";
 import {
   ADVANCE_SIGNING_NEEDS_RATE,
   blocksAdvanceSigningWithoutRate,
+  canSelectAdvanceRate,
+  isAdvanceRateSurface,
   partyOptionLabel,
   withoutAssignedProviderAction,
   blocksPaymentStartWithoutProvider,
@@ -128,6 +130,8 @@ describe("postpay RATE_ON_PP rate gate (IMP5)", () => {
     expect(isRateEmpty(undefined)).toBe(true);
     expect(isRateEmpty({})).toBe(true);
     expect(isRateEmpty({ value: "  " })).toBe(true);
+    expect(isRateEmpty({ value: "0" })).toBe(true);
+    expect(isRateEmpty({ value: "0.00" })).toBe(true);
     expect(isRateEmpty({ value: "95.5" })).toBe(false);
   });
 
@@ -171,7 +175,59 @@ describe("postpay RATE_ON_PP rate gate (IMP5)", () => {
     const ids = actionsFor("manager", "payment_sent").map((a) => a.id);
     expect(ids).toContain("mgr_advance_signing");
   });
+});
 
+describe("canSelectAdvanceRate (§3.1 advance before primary order)", () => {
+  const base = {
+    status: "form_accepted",
+    role: "manager",
+    condition: "advance",
+    direction: "import",
+  } as const;
+
+  it("returns true when rate is empty on form_accepted for manager", () => {
+    expect(canSelectAdvanceRate({ ...base, rate: undefined })).toBe(true);
+    expect(canSelectAdvanceRate({ ...base, rate: { value: "  " } })).toBe(true);
+  });
+
+  it("returns false when rate is already set", () => {
+    expect(canSelectAdvanceRate({ ...base, rate: { value: "95.5" } })).toBe(false);
+    expect(
+      isAdvanceRateSurface({
+        status: base.status,
+        role: base.role,
+        condition: base.condition,
+        direction: base.direction,
+      }),
+    ).toBe(true);
+  });
+
+  it("returns false when status is signing_order", () => {
+    expect(canSelectAdvanceRate({ ...base, status: "signing_order", rate: undefined })).toBe(false);
+  });
+
+  it("returns false for user role", () => {
+    expect(canSelectAdvanceRate({ ...base, role: "user", rate: undefined })).toBe(false);
+  });
+
+  it("returns false for postpay RATE_ON_PP", () => {
+    expect(
+      canSelectAdvanceRate({
+        ...base,
+        condition: "postPayment",
+        paymentMethod: "post_payment",
+        platformPostpayMode: "POSTPAY_RATE_ON_PP",
+        rate: undefined,
+      }),
+    ).toBe(false);
+  });
+
+  it("returns false for export", () => {
+    expect(canSelectAdvanceRate({ ...base, direction: "export", rate: undefined })).toBe(false);
+  });
+});
+
+describe("form_accepted direction gates (continued)", () => {
   it("keeps export form_accepted on advance signing and hides it for import", () => {
     expect(
       hidesFormAcceptedActionForDirection({

@@ -720,14 +720,16 @@ func (s *Store) SaveCounterparty(ctx context.Context, c domain.Counterparty) err
 	ids, _ := json.Marshal(c.FormPaymentIDs)
 	_, err := s.db.ExecContext(ctx, `
 		INSERT INTO counterparties (id, name, country, inn, banks, created_by, form_payment_ids, created_at,
-			last_approval_status, last_approval_date, last_approval_comment)
-		VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11)
+			last_approval_status, last_approval_date, last_approval_comment, registration_number, legal_address)
+		VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13)
 		ON CONFLICT (id) DO UPDATE SET name=EXCLUDED.name, country=EXCLUDED.country, inn=EXCLUDED.inn,
 			banks=EXCLUDED.banks, created_by=EXCLUDED.created_by, form_payment_ids=EXCLUDED.form_payment_ids,
 			last_approval_status=EXCLUDED.last_approval_status, last_approval_date=EXCLUDED.last_approval_date,
-			last_approval_comment=EXCLUDED.last_approval_comment`,
+			last_approval_comment=EXCLUDED.last_approval_comment,
+			registration_number=EXCLUDED.registration_number, legal_address=EXCLUDED.legal_address`,
 		c.ID, c.Name, c.Country, c.INN, c.Banks, c.CreatedBy, string(ids), c.CreatedAt,
-		nullStr(string(c.LastApprovalStatus)), c.LastApprovalDate, c.LastApprovalComment)
+		nullStr(string(c.LastApprovalStatus)), c.LastApprovalDate, c.LastApprovalComment,
+		c.RegistrationNumber, c.LegalAddress)
 	if err != nil {
 		_, err = s.db.ExecContext(ctx, `
 			INSERT INTO counterparties (id, name, country, inn, banks, created_by, form_payment_ids, created_at)
@@ -745,9 +747,11 @@ func (s *Store) CounterpartyByID(ctx context.Context, id string) (domain.Counter
 	var approvedAt sql.NullTime
 	err := s.db.QueryRowContext(ctx, `
 		SELECT id, name, COALESCE(country,''), COALESCE(inn,''), COALESCE(banks,''), COALESCE(created_by,''), form_payment_ids, COALESCE(created_at, NOW()),
-			last_approval_status, last_approval_date, last_approval_comment
+			last_approval_status, last_approval_date, last_approval_comment,
+			COALESCE(registration_number,''), COALESCE(legal_address,'')
 		FROM counterparties WHERE id=$1`, id).
-		Scan(&c.ID, &c.Name, &c.Country, &c.INN, &c.Banks, &createdBy, &ids, &c.CreatedAt, &status, &approvedAt, &comment)
+		Scan(&c.ID, &c.Name, &c.Country, &c.INN, &c.Banks, &createdBy, &ids, &c.CreatedAt, &status, &approvedAt, &comment,
+			&c.RegistrationNumber, &c.LegalAddress)
 	if err != nil && err != sql.ErrNoRows {
 		err = s.db.QueryRowContext(ctx, `
 			SELECT id, name, COALESCE(country,''), COALESCE(inn,''), COALESCE(banks,''), COALESCE(created_by,''), form_payment_ids, COALESCE(created_at, NOW())
@@ -774,13 +778,14 @@ func (s *Store) CounterpartyByID(ctx context.Context, id string) (domain.Counter
 }
 
 func (s *Store) ListCounterparties(ctx context.Context) ([]domain.Counterparty, error) {
-	// Include approval columns so FE subject badges stay correct after SetCounterpartyApproval + list invalidate.
+	// Include approval + optional address columns so FE stays correct after SetCounterpartyApproval + list invalidate.
 	rows, err := s.db.QueryContext(ctx, `
 		SELECT id, name, COALESCE(country,''), COALESCE(inn,''), COALESCE(banks,''), COALESCE(created_by,''), form_payment_ids, COALESCE(created_at, NOW()),
-			last_approval_status, last_approval_date, last_approval_comment
+			last_approval_status, last_approval_date, last_approval_comment,
+			COALESCE(registration_number,''), COALESCE(legal_address,'')
 		FROM counterparties`)
 	if err != nil {
-		// Older schemas without approval columns: fall back so list still works.
+		// Older schemas without approval/address columns: fall back so list still works.
 		rows, err = s.db.QueryContext(ctx, `
 			SELECT id, name, COALESCE(country,''), COALESCE(inn,''), COALESCE(banks,''), COALESCE(created_by,''), form_payment_ids, COALESCE(created_at, NOW())
 			FROM counterparties`)
@@ -810,7 +815,8 @@ func (s *Store) ListCounterparties(ctx context.Context) ([]domain.Counterparty, 
 		var c domain.Counterparty
 		var ids, createdBy, status, comment sql.NullString
 		var approvedAt sql.NullTime
-		if scanErr := rows.Scan(&c.ID, &c.Name, &c.Country, &c.INN, &c.Banks, &createdBy, &ids, &c.CreatedAt, &status, &approvedAt, &comment); scanErr != nil {
+		if scanErr := rows.Scan(&c.ID, &c.Name, &c.Country, &c.INN, &c.Banks, &createdBy, &ids, &c.CreatedAt, &status, &approvedAt, &comment,
+			&c.RegistrationNumber, &c.LegalAddress); scanErr != nil {
 			continue
 		}
 		c.CreatedBy = createdBy.String

@@ -21,7 +21,7 @@ func TestCreatePersistsCounterpartyAndHsCodes(t *testing.T) {
 	catalog := service.NewCatalogService(store, outbox.NewMemoryStore(), seqID())
 	user := authz.Principal{AccountID: seed.UserID, Role: domain.RoleUser, OrganizationID: seed.OrgID}
 
-	cp, err := catalog.CreateCounterparty(ctx, user, "Persist CP Ltd", "CN", "998877", `[]`)
+	cp, err := catalog.CreateCounterparty(ctx, user, "Persist CP Ltd", "CN", "998877", `[]`, "", "")
 	if err != nil {
 		t.Fatal(err)
 	}

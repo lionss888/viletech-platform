@@ -63,7 +63,7 @@ func TestDocsGeneratePayloadMatrixKeys(t *testing.T) {
 	org.SignerPosition = domain.SignerGeneralDirector
 	_ = store.SaveOrganization(ctx, org)
 
-	cp, err := catalog.CreateCounterparty(ctx, user, "Beneficiary LLC", "US", "999", `[{"uuid":"b1","name":"Main","accounts":[{"uuid":"a1","number":"40802810","currency":"USD","iban":"US00TEST"}]}]`)
+	cp, err := catalog.CreateCounterparty(ctx, user, "Beneficiary LLC", "US", "999", `[{"uuid":"b1","name":"Main","accounts":[{"uuid":"a1","number":"40802810","currency":"USD","iban":"US00TEST"}]}]`, "", "")
 	if err != nil {
 		t.Fatal(err)
 	}

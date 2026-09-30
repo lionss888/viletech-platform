@@ -3,6 +3,8 @@ import { useQueryClient } from "@tanstack/react-query";
 
 import { BanksEditor, banksDraftToPayload, emptyBankRow, type BankDraftRow } from "@/components/ved/BanksEditor";
 import { Modal, ModalButton } from "@/components/ved/Modal";
+import { CounterpartyCreateFields } from "@/components/ved/wizard/CounterpartyCreateFields";
+import type { CoreCounterparty } from "@/lib/api/catalog";
 import { createCounterparty } from "@/lib/api/catalog-mutations";
 import { nestFormPrefixForRole, patchForm } from "@/lib/api/forms";
 import { ApiError } from "@/lib/api/client";
@@ -37,6 +39,8 @@ export function CounterpartyPickDialog({
   const [creating, setCreating] = useState(false);
   const [newName, setNewName] = useState("");
   const [newCountry, setNewCountry] = useState("");
+  const [newRegistrationNumber, setNewRegistrationNumber] = useState("");
+  const [newLegalAddress, setNewLegalAddress] = useState("");
   const [banks, setBanks] = useState<BankDraftRow[]>([]);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -47,6 +51,8 @@ export function CounterpartyPickDialog({
     setQuery("");
     setCreating(false);
     setBanks([]);
+    setNewRegistrationNumber("");
+    setNewLegalAddress("");
     setError(null);
   }, [open, selectedId]);
 
@@ -105,11 +111,25 @@ export function CounterpartyPickDialog({
       const created = await createCounterparty({
         name,
         ...(newCountry.trim() ? { country: newCountry.trim() } : {}),
+        ...(newRegistrationNumber.trim()
+          ? { registration_number: newRegistrationNumber.trim() }
+          : {}),
+        ...(newLegalAddress.trim() ? { legal_address: newLegalAddress.trim() } : {}),
         ...(payloadBanks.length > 0 ? { banks: payloadBanks } : {}),
+      });
+      queryClient.setQueryData<CoreCounterparty[]>(["counterparties"], (prev) => {
+        const list = prev ?? [];
+        const at = list.findIndex((c) => c.id === created.id);
+        if (at < 0) return [...list, created];
+        const next = [...list];
+        next[at] = { ...list[at], ...created };
+        return next;
       });
       setCreating(false);
       setNewName("");
       setNewCountry("");
+      setNewRegistrationNumber("");
+      setNewLegalAddress("");
       setBanks([]);
       await finish(created.id);
     } catch (e) {
@@ -215,6 +235,7 @@ export function CounterpartyPickDialog({
           <label className="block text-xs font-medium text-muted-foreground">
             Наименование
             <input
+              data-testid="counterparty-name-input"
               value={newName}
               onChange={(e) => setNewName(e.target.value)}
               className="field mt-1 w-full"
@@ -225,12 +246,25 @@ export function CounterpartyPickDialog({
           <label className="block text-xs font-medium text-muted-foreground">
             Страна
             <input
+              data-testid="counterparty-country-input"
               value={newCountry}
               onChange={(e) => setNewCountry(e.target.value)}
               className="field mt-1 w-full"
               placeholder="Китай"
             />
           </label>
+          <CounterpartyCreateFields
+            showIdentity={false}
+            disabled={busy}
+            value={{
+              registrationNumber: newRegistrationNumber,
+              legalAddress: newLegalAddress,
+            }}
+            onChange={(next) => {
+              setNewRegistrationNumber(next.registrationNumber ?? "");
+              setNewLegalAddress(next.legalAddress ?? "");
+            }}
+          />
           <BanksEditor rows={banks} onChange={setBanks} disabled={busy} />
           <button
             type="button"

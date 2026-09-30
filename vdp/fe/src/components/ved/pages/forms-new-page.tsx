@@ -979,23 +979,58 @@ export function NewForm() {
               </p>
             )}
             <dl className="grid gap-3 sm:grid-cols-2">
-              {[
-                ["Направление", draft.direction === "import" ? "Импорт" : "Экспорт"],
-                ["Предмет", draft.kind === "good" ? "Товар" : "Услуга"],
-                ["Условие оплаты", draft.condition === "advance" ? "Аванс" : "Постоплата"],
-                ["Организация", organizations.find((o) => o.id === draft.organizationId)?.name ?? ""],
-                ["Контрагент", counterparties.find((c) => c.id === draft.counterpartyId)?.name ?? ""],
-                ["Сумма", `${draft.amount || 0} ${derivedCurrency}`],
-                ["Валюты", `${draft.clientCurrency} / ${draft.counterpartyCurrency}`],
-                ["ТН ВЭД", draft.hsCode || "—"],
-                [
-                  "Документы",
-                  documentsLabel(draft.noDocuments, Boolean(draft.invoiceFile), Boolean(draft.contractFile)),
-                ],
-              ].map(([k, v]) => (
-                <div key={k}>
-                  <dt className="label-caps">{k}</dt>
-                  <dd className="text-sm">{v}</dd>
+              {(() => {
+                const selectedCp = counterparties.find((c) => c.id === draft.counterpartyId);
+                const rows: Array<{ key: string; value: string; testId?: string }> = [
+                  { key: "Направление", value: draft.direction === "import" ? "Импорт" : "Экспорт" },
+                  { key: "Предмет", value: draft.kind === "good" ? "Товар" : "Услуга" },
+                  {
+                    key: "Условие оплаты",
+                    value: draft.condition === "advance" ? "Аванс" : "Постоплата",
+                  },
+                  {
+                    key: "Организация",
+                    value: organizations.find((o) => o.id === draft.organizationId)?.name ?? "",
+                  },
+                  { key: "Контрагент", value: selectedCp?.name ?? "" },
+                ];
+                if (selectedCp?.registrationNumber) {
+                  rows.push({
+                    key: "Регистрационный номер",
+                    value: selectedCp.registrationNumber,
+                    testId: "wizard-review-registration-number",
+                  });
+                }
+                if (selectedCp?.legalAddress) {
+                  rows.push({
+                    key: "Юридический адрес",
+                    value: selectedCp.legalAddress,
+                    testId: "wizard-review-legal-address",
+                  });
+                }
+                rows.push(
+                  { key: "Сумма", value: `${draft.amount || 0} ${derivedCurrency}` },
+                  {
+                    key: "Валюты",
+                    value: `${draft.clientCurrency} / ${draft.counterpartyCurrency}`,
+                  },
+                  { key: "ТН ВЭД", value: draft.hsCode || "—" },
+                  {
+                    key: "Документы",
+                    value: documentsLabel(
+                      draft.noDocuments,
+                      Boolean(draft.invoiceFile),
+                      Boolean(draft.contractFile),
+                    ),
+                  },
+                );
+                return rows;
+              })().map((row) => (
+                <div key={row.key}>
+                  <dt className="label-caps">{row.key}</dt>
+                  <dd className="text-sm" {...(row.testId ? { "data-testid": row.testId } : {})}>
+                    {row.value}
+                  </dd>
                 </div>
               ))}
             </dl>

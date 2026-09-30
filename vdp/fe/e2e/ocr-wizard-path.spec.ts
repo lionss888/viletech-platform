@@ -4,8 +4,12 @@ import { assertCoreHealthy } from "./helpers/api";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
-/** Poll timeout in FE is 165s; allow headroom for create + late degraded callback. */
-const OCR_TERMINAL_TIMEOUT_MS = 195_000;
+/**
+ * Must stay above FE OCR_POLL_TIMEOUT_MS (225s in src/lib/ved/extraction.ts).
+ * Below that budget the banner stays pending and this suite flakes / fails push gates.
+ */
+const OCR_POLL_TIMEOUT_MS = 225_000;
+const OCR_TERMINAL_TIMEOUT_MS = OCR_POLL_TIMEOUT_MS + 30_000;
 
 const FE_ROOT = path.dirname(fileURLToPath(import.meta.url));
 /** Prefer compose-playwright mount; fall back to workspace path for host runs. */

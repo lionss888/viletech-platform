@@ -297,6 +297,37 @@ describe("nextStepHint", () => {
     });
     expect(hint.toLowerCase()).toMatch(/казнач/);
   });
+
+  it("avoids treasurer wording for manager when treasurer skip disposition", () => {
+    const skipRows = [
+      {
+        role: "treasurer",
+        enabled: false,
+        priority: 45,
+        influence: "none" as const,
+        capabilities: ["form.view", "treasurer.ops"],
+        removable: true,
+        mandatory: false,
+        disable_mode: "skip" as const,
+        handoff_role: "manager",
+      },
+      {
+        role: "manager",
+        enabled: true,
+        priority: 40,
+        influence: "actor" as const,
+        capabilities: ["form.view", "manager.ops", "manager.payment"],
+        removable: false,
+        mandatory: true,
+      },
+    ];
+    const hint = nextStepHint("payment_received", "manager", skipRows, {
+      condition: "advance",
+      direction: "import",
+    });
+    expect(hint.toLowerCase()).not.toMatch(/казнач/);
+    expect(hint).toMatch(/Подтвердите поступление/i);
+  });
 });
 
 describe("waitingActorLabel", () => {

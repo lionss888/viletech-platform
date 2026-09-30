@@ -24,7 +24,7 @@ func TestDocsCounterpartyBanksAndAttach(t *testing.T) {
 	})
 	user := authz.Principal{AccountID: "u1", Role: domain.RoleUser, OrganizationID: "o1"}
 	banks := `[{"uuid":"b1","name":"Bank","accounts":[]}]`
-	cp, err := catalog.CreateCounterparty(context.Background(), user, "Name", "DE", "1", banks)
+	cp, err := catalog.CreateCounterparty(context.Background(), user, "Name", "DE", "1", banks, "", "")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -55,7 +55,7 @@ func TestDocsApprovalIndicatorAndCanSkip(t *testing.T) {
 	})
 	user := authz.Principal{AccountID: "u1", Role: domain.RoleUser}
 	eco := authz.Principal{AccountID: "eco", Role: domain.RoleComplianceOfficer}
-	cp, err := catalog.CreateCounterparty(context.Background(), user, "ACME", "DE", "1", "[]")
+	cp, err := catalog.CreateCounterparty(context.Background(), user, "ACME", "DE", "1", "[]", "", "")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -160,7 +160,7 @@ func TestManagerCanSetCounterpartyApprovalUserCannot(t *testing.T) {
 	})
 	user := authz.Principal{AccountID: "u1", Role: domain.RoleUser}
 	manager := authz.Principal{AccountID: "m1", Role: domain.RoleManager}
-	cp, err := catalog.CreateCounterparty(context.Background(), user, "Test reel", "RU", "1", "[]")
+	cp, err := catalog.CreateCounterparty(context.Background(), user, "Test reel", "RU", "1", "[]", "", "")
 	if err != nil {
 		t.Fatal(err)
 	}

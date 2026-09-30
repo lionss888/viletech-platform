@@ -19,6 +19,7 @@ for script in \
   scripts/gitlab-promote.sh \
   scripts/compose-db-migrate.sh \
   scripts/compose-up-with-retry.sh \
+  scripts/ensure-docker.sh \
   scripts/compose-playwright.sh \
   scripts/db-migrate-host.sh \
   scripts/lib/e2e-continuity.sh \
@@ -460,6 +461,16 @@ grep -q 'pilot-matrix-paths-match.sh' ../.github/workflows/vdp-ci.yml \
 bash -n scripts/pilot-matrix-paths-match.sh || fail "pilot-matrix-paths-match.sh syntax"
 bash -n scripts/main-full-e2e-paths-match.sh || fail "main-full-e2e-paths-match.sh syntax"
 bash -n scripts/prepush-gate.sh || fail "prepush-gate.sh syntax"
+grep -q 'ensure-docker' scripts/compose-up-with-retry.sh \
+  || fail "compose-up-with-retry must call ensure-docker before compose"
+grep -q 'ensure-docker' scripts/prepush-gate.sh \
+  || fail "prepush-gate must call ensure-docker before docker gates"
+grep -q 'SKIP_ENSURE_DOCKER' scripts/ensure-docker.sh \
+  || fail "ensure-docker must support SKIP_ENSURE_DOCKER=1"
+grep -q 'com.docker.backend' scripts/ensure-docker.sh \
+  || fail "ensure-docker must fall back to com.docker.backend on macOS"
+grep -q '/Applications/Docker.app' scripts/ensure-docker.sh \
+  || fail "ensure-docker must target /Applications/Docker.app"
 grep -q '^prepush-gate:' Makefile || fail "Makefile missing prepush-gate target"
 grep -q '^push-gate:' Makefile || fail "Makefile missing push-gate target"
 grep -q 'prepush-gate' ../.githooks/pre-push || fail ".githooks/pre-push must call prepush-gate"

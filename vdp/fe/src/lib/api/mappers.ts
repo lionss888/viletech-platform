@@ -5,6 +5,7 @@ import { effectiveActionsFor, effectiveActionsFormCtx } from "@/lib/ved/effectiv
 import { documentSize } from "@/lib/ved/document-upload";
 import { roleTitle } from "@/lib/ved/roles";
 import { statusMetaForProcess } from "@/lib/ved/process-stage-filters";
+import { getImportAdvanceCoverageCopy, isTreasurerSkipDisposition } from "@/lib/ved/status-copy";
 import { paymentMethodToCondition } from "@/lib/ved/wizard-steps";
 import type {
   AttachedDocument,
@@ -449,6 +450,9 @@ export function nextStepHint(
       paymentMethod: formCtx?.paymentMethod,
     })
   ) {
+    if (isTreasurerSkipDisposition(processRoles)) {
+      return `Следующий шаг: ${getImportAdvanceCoverageCopy({ role, processRoles })}.`;
+    }
     return `Следующий шаг: казначей подтверждает покрытие. ${IMPORT_ADVANCE_AWAITS_TREASURER}`;
   }
   const ctx = role
