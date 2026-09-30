@@ -4,10 +4,10 @@ overview: "Срез D4: «Подтвердить доп. поручение» н
 todos:
   - id: d4-matrix
     content: Убрать advance_accept с waiting_verification в матрице FE
-    status: pending
+    status: completed
   - id: d4-gate
     content: Unit + ci-pr-pilot + Acceptance + notify + закрыть план
-    status: pending
+    status: completed
 isProject: false
 ---
 
