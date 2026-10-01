@@ -133,7 +133,6 @@ const MATRIX: Record<VedRole, Record<string, FormAction[]>> = {
     ],
     advance_signing_order_waiting_verification: [
       { id: "mgr_order_advance_start", label: "Взять доп. поручение в проверку", tone: "primary", nextStatus: "advance_signing_order_verification" },
-      { id: "mgr_order_advance_accept", label: "Подтвердить доп. поручение", tone: "accent", nextStatus: "advance_signing_order_accepted" },
       { id: "mgr_order_advance_reject", label: "Вернуть доп. поручение", tone: "quiet", requiresReason: true, nextStatus: "advance_signing_order_waiting_corrections" },
     ],
     advance_signing_order_verification: [

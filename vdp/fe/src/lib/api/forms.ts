@@ -37,6 +37,8 @@ export type CoreForm = {
   payment_method?: string;
   platform_postpay_mode?: string;
   rate_on_provider?: boolean;
+  /** RFC3339 deadline from core (assign / provider start). */
+  execution_deadline?: string;
   contract_number?: string;
   contract_date?: string;
   no_documents?: boolean;

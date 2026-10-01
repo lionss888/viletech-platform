@@ -16,6 +16,7 @@ import {
   OCR_POLL_TIMEOUT_MS,
   parseExtractionResult,
   shortExtractionWarnings,
+  shouldRenderWizardOcrProgress,
 } from "./extraction";
 
 describe("parseExtractionResult", () => {
@@ -262,9 +263,17 @@ describe("canControlExtraction", () => {
 describe("extraction dialog copy", () => {
   it("maps trigger labels by mode", () => {
     expect(extractionTriggerLabel("idle")).toBe("Статус распознавания");
-    expect(extractionTriggerLabel("pending")).toBe("Распознавание…");
+    expect(extractionTriggerLabel("pending")).toBe("Детали распознавания");
     expect(extractionTriggerLabel("review")).toBe("Просмотр данных");
     expect(extractionTriggerLabel("hide")).toBe("");
+  });
+
+  it("hides OcrProgress on review when degraded so only one alert shows", () => {
+    const reviewStep = 4;
+    expect(shouldRenderWizardOcrProgress(reviewStep, reviewStep, "degraded")).toBe(false);
+    expect(shouldRenderWizardOcrProgress(3, reviewStep, "degraded")).toBe(true);
+    expect(shouldRenderWizardOcrProgress(reviewStep, reviewStep, "pending")).toBe(true);
+    expect(shouldRenderWizardOcrProgress(reviewStep, reviewStep, null)).toBe(false);
   });
 
   it("maps dialog titles by mode", () => {

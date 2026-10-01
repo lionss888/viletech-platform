@@ -1,4 +1,5 @@
 import { statusMetaForProcess } from "@/lib/ved/process-stage-filters";
+import { overlayStatusMetaForPog } from "@/lib/ved/pog-status-copy";
 import type { ProcessRoleRow } from "@/lib/api/process-roles";
 import type { FormStatus, StatusTone } from "@/lib/ved/types";
 import { cn } from "@/lib/utils";
@@ -16,6 +17,7 @@ export function StatusBadge({
   full = false,
   processRoles,
   viewerRole,
+  pogStatus,
   className,
 }: {
   status: FormStatus;
@@ -23,9 +25,15 @@ export function StatusBadge({
   processRoles?: ProcessRoleRow[];
   /** When set (e.g. manager), queue badges use role-relative shorts. */
   viewerRole?: string;
+  /** POG generation state — overlays signing_order copy while PDF is not ready. */
+  pogStatus?: string;
   className?: string;
 }) {
-  const meta = statusMetaForProcess(status, processRoles, viewerRole);
+  const meta = overlayStatusMetaForPog(
+    statusMetaForProcess(status, processRoles, viewerRole),
+    status,
+    pogStatus,
+  );
   return (
     <span
       data-testid="status-badge"

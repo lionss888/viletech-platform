@@ -100,6 +100,24 @@ describe("mapCoreFormToPaymentForm", () => {
     expect(mapped.commission?.rewardMode).toBe("percent");
     expect(mapped.commission?.feePercent).toBe("1.5");
   });
+
+  it("maps execution_deadline onto payment form", () => {
+    const form = {
+      id: "ca3dcfcd-dd3d-e79d-1910-9c885e5f397b",
+      account_id: "a1",
+      organization_id: "o1",
+      status: "payment_received",
+      direction: "import",
+      kind: "good",
+      invoice_amount: "1000",
+      currency: "USD",
+      execution_deadline: "2026-10-15T12:00:00Z",
+      created_at: "2026-01-01T00:00:00Z",
+      updated_at: "2026-01-01T00:00:00Z",
+    } as CoreForm;
+    const mapped = mapCoreFormToPaymentForm(form, "User");
+    expect(mapped.executionDeadline).toBe("2026-10-15T12:00:00Z");
+  });
 });
 
 describe("parseDocsJson", () => {

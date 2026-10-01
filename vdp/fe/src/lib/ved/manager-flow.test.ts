@@ -64,4 +64,12 @@ describe("manager contract/order bridge", () => {
     const orderReview = actionsFor("manager", "signing_order_verification").map((a) => a.id);
     expect(orderReview).toContain("mgr_order_accept");
   });
+
+  it("hides advance accept until taken into review", () => {
+    const waiting = actionsFor("manager", "advance_signing_order_waiting_verification").map((a) => a.id);
+    expect(waiting).toContain("mgr_order_advance_start");
+    expect(waiting).not.toContain("mgr_order_advance_accept");
+    const review = actionsFor("manager", "advance_signing_order_verification").map((a) => a.id);
+    expect(review).toContain("mgr_order_advance_accept");
+  });
 });

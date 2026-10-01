@@ -55,7 +55,7 @@ import {
   parseExtractionResult,
 } from "@/lib/ved/extraction";
 import { canProviderDeleteDocuments, canUploadDocuments } from "@/lib/ved/doc-upload-policy";
-import { dateTime, money } from "@/lib/ved/format";
+import { dateOnly, dateTime, money } from "@/lib/ved/format";
 import { canSelectAdvanceRate, isAdvanceRateSurface, isPostpayRateOnPP, isRateEmpty } from "@/lib/ved/manager-payment";
 import { usePlatformMode } from "@/lib/ved/platform-mode";
 import { cpByIdFrom, orgByIdFrom, usePlatformStore } from "@/lib/ved/platform-store";
@@ -81,6 +81,7 @@ import {
 } from "@/lib/ved/review-checklist";
 import { roleTitle } from "@/lib/ved/roles";
 import { statusMetaForProcess } from "@/lib/ved/process-stage-filters";
+import { overlayStatusMetaForPog } from "@/lib/ved/pog-status-copy";
 import { useProcessRolesRows } from "@/lib/ved/use-process-roles-snapshot";
 import type { AttachedDocument } from "@/lib/ved/types";
 import { cn } from "@/lib/utils";
@@ -234,7 +235,11 @@ export function FormDetail() {
 
   const org = orgByIdFrom(organizations, form.organizationId);
   const cp = cpByIdFrom(counterparties, form.counterpartyId);
-  const meta = statusMetaForProcess(form.status, processRoles, role);
+  const meta = overlayStatusMetaForPog(
+    statusMetaForProcess(form.status, processRoles, role),
+    form.status,
+    form.pogStatus,
+  );
   const compliance = isComplianceRole(role);
   const subjects = subjectsOf(form, organizations, counterparties);
   const hasBlocked = orgBlocksApproval(subjects);
@@ -363,9 +368,24 @@ export function FormDetail() {
     <VedAppShell title={form.number} subtitle={`${meta.label} · роль: ${roleTitle(role)}`}>
       <div className="panel flex flex-wrap items-center gap-3 p-4">
         <DirectionTag direction={form.direction} />
-        <StatusBadge status={form.status} full processRoles={processRoles} viewerRole={role} />
+        <StatusBadge
+          status={form.status}
+          full
+          processRoles={processRoles}
+          viewerRole={role}
+          pogStatus={form.pogStatus}
+        />
         {form.channel === "bank" && <ChannelBadge channel="bank" labeled />}
         {form.channel === "ui" && <ChannelBadge channel="ui" labeled />}
+        {form.executionDeadline ? (
+          <span
+            className="rounded-full bg-wait-soft px-2.5 py-0.5 text-xs font-semibold text-wait"
+            data-testid="form-execution-deadline"
+            title={dateTime(form.executionDeadline)}
+          >
+            Срок: {dateOnly(form.executionDeadline)}
+          </span>
+        ) : null}
         {form.correlationId && (
           <span className="font-mono text-[11px] text-muted-foreground" title="Correlation ID">
             corr: {form.correlationId}
@@ -704,6 +724,7 @@ export function FormDetail() {
                     form.amountMinor ? String(form.amountMinor / 100) : undefined
                   }
                   currency={form.currency}
+                  currencies={currencies.map((item) => ({ code: item.code, title: item.title }))}
                 />
               )}
               {showAdvanceRateCommission && (
@@ -716,6 +737,7 @@ export function FormDetail() {
                     form.amountMinor ? String(form.amountMinor / 100) : undefined
                   }
                   currency={form.currency}
+                  currencies={currencies.map((item) => ({ code: item.code, title: item.title }))}
                 />
               )}
               {showAdvanceRateSummary && (

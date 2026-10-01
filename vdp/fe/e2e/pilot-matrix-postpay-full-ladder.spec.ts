@@ -187,7 +187,9 @@ test.describe("Pilot matrix POSTPAY_RATE_ON_PP full ladder treasurer skip @pilot
       await loginAs("manager");
       await waitForFormDetail(page, formId!);
       await expect(page.getByTestId("rate-commission-panel")).toBeVisible({ timeout: 15_000 });
+      await page.getByTestId("rate-commission-edit-open").click();
       await page.getByTestId("rate-value").fill("95.5");
+      await page.getByTestId("fee-percent").fill("1.5");
       await page.getByTestId("save-rate-commission").click();
       await expect(page.getByTestId("rate-commission-ack")).toBeVisible({ timeout: 15_000 });
       await expect(page.getByTestId("needs-rate-advance")).toHaveCount(0);

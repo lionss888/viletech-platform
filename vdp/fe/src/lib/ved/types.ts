@@ -155,6 +155,8 @@ export type PaymentForm = {
   paymentMethod?: string | undefined;
   platformPostpayMode?: string | undefined;
   rateOnProvider?: boolean | undefined;
+  /** Execution deadline ISO from core `execution_deadline`. */
+  executionDeadline?: string | undefined;
   rate?: FormRate | undefined;
   commission?: FormCommission | undefined;
   pogStatus?: string | undefined;
